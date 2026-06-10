@@ -707,6 +707,9 @@ export default function DashboardPage() {
           <p className="text-sm text-muted-foreground">No recent activity</p>
         )}
       </div>
+
+      {/* HomeLab-style additional sections */}
+      <HomelabSections />
     </AppLayout>
   );
 }
