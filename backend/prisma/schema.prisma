@@ -1,0 +1,639 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+  AGENT
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  AUDIO
+  VIDEO
+  DOCUMENT
+  TEMPLATE
+}
+
+enum ConversationStatus {
+  ACTIVE
+  RESOLVED
+  PENDING
+  OPEN
+}
+
+enum AlertType {
+  POD_CRASH
+  POD_RESTART
+  HIGH_CPU
+  HIGH_MEMORY
+  DEPLOYMENT_FAILED
+  POD_PENDING
+  IMAGE_PULL_ERROR
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(USER)
+  isActive  Boolean  @default(true)
+  mustChangePassword Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  conversations   Conversation[]
+  messages        Message[]
+  whatsappContacts WhatsappContact[]
+  documents       Document[]
+  documentVersions DocumentVersion[] @relation("DocumentVersionAuthor")
+  documentCollaborators DocumentCollaborator[]
+  
+  // Learning & Career relations
+  savedJobs           SavedJob[]
+  pathEnrollments     PathEnrollment[]
+  certificationTrackers CertificationTracker[]
+  cvs                 CV[]
+  bookTrackers        BookTracker[]
+  conferenceInterests ConferenceInterest[]
+  blogPosts           BlogPost[]
+  
+  // Automation relations
+  scripts             Script[]
+  workflowTemplates   WorkflowTemplate[]
+  
+  // Collaboration relations
+  channels            Channel[]
+  knowledgeArticles   KnowledgeArticle[]
+  codeReviews         CodeReview[]
+  calendarEvents      CalendarEvent[]
+  
+  // Integrations relations
+  webhooks            Webhook[]
+
+  // Platform relations
+  projects            Project[]
+  apiKeys             ApiKey[]
+  appSecrets          AppSecret[]
+  auditLogs           AuditLog[]
+}
+
+model Conversation {
+  id          String            @id @default(uuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id])
+  platform    String
+  contactId   String?
+  platformId  String?
+  title       String?
+  status      ConversationStatus @default(OPEN)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  messages Message[]
+}
+
+model Message {
+  id             String      @id @default(uuid())
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  channelId      String?
+  channel        Channel?    @relation(fields: [channelId], references: [id])
+  role           String
+  content        String
+  type           MessageType @default(TEXT)
+  mediaUrl       String?
+  waMessageId    String?
+  direction      String     @default("OUTBOUND")
+  createdAt      DateTime   @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+}
+
+model WhatsappContact {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  waId      String   @unique
+  name      String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WebhookLog {
+  id        String   @id @default(uuid())
+  platform  String
+  eventType String
+  source    String?
+  payload   Json
+  processed Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AlertRule {
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+  type          AlertType
+  enabled       Boolean        @default(true)
+  severity      AlertSeverity  @default(WARNING)
+  
+  // Rule conditions
+  namespace     String?        // Optional: filter by namespace
+  labelSelector String?        // Optional: filter by labels
+  threshold     Float?         // For CPU/Memory alerts
+  duration      Int?           // Duration in seconds before triggering
+  
+  // Notification settings
+  notifyEmail   Boolean        @default(false)
+  notifySlack   Boolean        @default(false)
+  webhookUrl    String?        // For custom webhook notifications
+  
+  // Relationships
+  alerts        Alert[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Alert {
+  id            String         @id @default(uuid())
+  ruleId        String
+  rule          AlertRule      @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  
+  // Alert details
+  type          AlertType
+  severity      AlertSeverity
+  namespace     String
+  resourceName  String         // Pod name, deployment name, etc.
+  resourceType  String         // Pod, Deployment, Service, etc.
+  
+  // Status
+  status        String         @default("FIRING")  // FIRING, RESOLVED
+  message       String
+  details       Json?          // Additional details in JSON format
+  
+  // Timeline
+  firedAt       DateTime       @default(now())
+  resolvedAt    DateTime?
+  acknowledgedAt DateTime?
+  
+  // Tracking
+  notificationSent Boolean      @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model DeploymentHistory {
+  id           String   @id @default(uuid())
+  provider     String
+  owner        String?
+  repo         String
+  workflowId   String?
+  ref          String?
+  status       String   @default("PENDING")
+  initiatedBy  String?
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  logsUrl      String?
+  details      Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Documentation models
+model Document {
+  id          String              @id @default(uuid())
+  title       String
+  content     String              @db.Text
+  categoryId  String?
+  category    DocumentCategory?   @relation(fields: [categoryId], references: [id])
+  authorId    String
+  author      User                @relation(fields: [authorId], references: [id])
+  fileType    String?
+  fileName    String?
+  fileSize    Int?
+  isRunbook   Boolean             @default(false)
+  incidentId  String?
+  tags        DocumentTag[]
+  collaborators DocumentCollaborator[]
+  versions    DocumentVersion[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model DocumentCategory {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String?
+  documents   Document[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model DocumentTag {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  documents Document[]
+  createdAt DateTime   @default(now())
+}
+
+model DocumentVersion {
+  id                  String   @id @default(uuid())
+  documentId          String
+  document            Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  content             String   @db.Text
+  versionNumber       Int
+  createdBy           String
+  createdByUser       User     @relation("DocumentVersionAuthor", fields: [createdBy], references: [id])
+  isRestore           Boolean  @default(false)
+  restoredFromVersionId String?
+  createdAt           DateTime @default(now())
+}
+
+model DocumentCollaborator {
+  id         String   @id @default(uuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  permission String   @default("read") // read, write, admin
+  addedAt    DateTime @default(now())
+}
+
+// Learning & Career models
+model SavedJob {
+  id        String   @id @default(uuid())
+  jobId     String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  savedAt   DateTime @default(now())
+  
+  @@unique([jobId, userId])
+}
+
+model LearningPath {
+  id          String           @id @default(uuid())
+  title       String
+  description String
+  category    String
+  difficulty  String
+  duration    Int              // in hours
+  modules     LearningModule[]
+  enrollments PathEnrollment[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model LearningModule {
+  id          String            @id @default(uuid())
+  pathId      String
+  path        LearningPath      @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  order       Int
+  resources   LearningResource[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model LearningResource {
+  id          String         @id @default(uuid())
+  moduleId    String
+  module      LearningModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title       String
+  type        String         // video, article, exercise, quiz
+  url         String?
+  content     String?
+  duration    Int?
+  createdAt   DateTime       @default(now())
+}
+
+model PathEnrollment {
+  id        String       @id @default(uuid())
+  pathId    String
+  path      LearningPath @relation(fields: [pathId], references: [id])
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  status    String       @default("not_started") // not_started, in_progress, completed
+  enrolledAt DateTime     @default(now())
+  completedAt DateTime?
+  progress  PathProgress[]
+  
+  @@unique([userId, pathId])
+}
+
+model PathProgress {
+  id           String        @id @default(uuid())
+  enrollmentId String
+  enrollment   PathEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  moduleId     String
+  completed    Boolean       @default(false)
+  completedAt  DateTime?
+  createdAt    DateTime      @default(now())
+}
+
+model Certification {
+  id          String                @id @default(uuid())
+  title       String
+  provider    String                // AWS, Azure, Google, CNCF, etc.
+  category    String                // cloud, devops, security, etc.
+  level       String                // associate, professional, expert, etc.
+  description String
+  duration    Int                   // in hours
+  cost        Float?
+  url         String?
+  trackers    CertificationTracker[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+}
+
+model CertificationTracker {
+  id              String         @id @default(uuid())
+  certificationId String
+  certification   Certification @relation(fields: [certificationId], references: [id])
+  userId          String
+  user            User           @relation(fields: [userId], references: [id])
+  status          String         @default("not_started") // not_started, in_progress, completed, expired
+  targetDate      DateTime?
+  completedAt     DateTime?
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@unique([userId, certificationId])
+}
+
+model CV {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  title       String
+  templateId  String?
+  content     String     @db.Text
+  fileType    String     // latex, markdown
+  fileName    String?
+  atsScore    Int?
+  sections    CVSection[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model CVSection {
+  id        String   @id @default(uuid())
+  cvId      String
+  cv        CV       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  title     String
+  content   String   @db.Text
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CVTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  category    String   // devops, sre, cloud, academic, etc.
+  description String
+  content     String   @db.Text
+  preview     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Conference {
+  id          String               @id @default(uuid())
+  name        String
+  description String
+  location    String
+  startDate   DateTime
+  endDate     DateTime
+  year        Int
+  url         String?
+  interests   ConferenceInterest[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model ConferenceInterest {
+  id            String      @id @default(uuid())
+  conferenceId  String
+  conference    Conference  @relation(fields: [conferenceId], references: [id])
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  registeredAt  DateTime    @default(now())
+  
+  @@unique([userId, conferenceId])
+}
+
+model Book {
+  id          String       @id @default(uuid())
+  title       String
+  author      String
+  isbn        String?
+  category    String
+  description String
+  coverUrl    String?
+  amazonUrl   String?
+  trackers    BookTracker[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model BookTracker {
+  id         String   @id @default(uuid())
+  bookId     String
+  book       Book     @relation(fields: [bookId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  status     String   @default("to_read") // to_read, reading, completed
+  rating     Int?
+  review     String?
+  startedAt  DateTime?
+  completedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([userId, bookId])
+}
+
+model Script {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  language    String   // python, bash, javascript, etc.
+  content     String   @db.Text
+  category    String
+  tags        String[]
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WorkflowTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  category    String
+  steps       Json     // Array of workflow steps
+  parameters  Json     // Workflow parameters
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Channel {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  isPrivate   Boolean  @default(false)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  messages    Message[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model KnowledgeArticle {
+  id          String   @id @default(uuid())
+  title       String
+  content     String   @db.Text
+  category    String
+  tags        String[]
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CodeReview {
+  id             String   @id @default(uuid())
+  title          String
+  description    String
+  repository     String
+  pullRequestUrl String
+  status         String   @default("pending") // pending, in_review, approved, rejected
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CalendarEvent {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  date        DateTime
+  time        String
+  attendees   String[]
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Webhook {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  method    String   @default("POST")
+  headers   Json?
+  events    String[]
+  active    Boolean  @default(true)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BlogPost {
+  id          String   @id @default(uuid())
+  title       String
+  content     String   @db.Text
+  category    String
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  published   Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  repository  String?
+  namespace   String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  name       String
+  keyHash    String
+  keyPrefix  String
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model AppSecret {
+  id             String    @id @default(uuid())
+  name           String
+  namespace      String    @default("default")
+  encryptedValue String
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, name, namespace])
+}
+
+model ClusterConfig {
+  id             String   @id @default(uuid())
+  name           String
+  context        String
+  environment    String   @default("production")
+  isDefault      Boolean  @default(false)
+  kubeconfigPath String?
+  apiServer      String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  userEmail String?
+  resource  String?
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+}

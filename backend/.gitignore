@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+*.log
+
+# Prisma
+prisma/migrations/*.sql.bak
+
+# OS
+.DS_Store
+Thumbs.db

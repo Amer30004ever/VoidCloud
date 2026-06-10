@@ -1,0 +1,176 @@
+# 🔧 Fix: Init Script Hash Not Updated Properly
+
+The issue is that your `sed` command used `$CORRECT_HASH` but that variable **wasn't defined** in that shell session, so the placeholder wasn't replaced correctly.
+
+Let's fix this properly:
+
+---
+
+## ✅ Solution: Update Init Script with Correct Hash
+
+### Step 1: Get the Correct Hash Again
+```bash
+# Generate the hash using your backend container
+CORRECT_HASH=$(docker compose exec -T backend node -e "
+const bcrypt = require('bcryptjs');
+bcrypt.hash('AmerDevOps2026!', 10).then(h => console.log(h));
+" 2>/dev/null)
+
+echo "✅ Generated hash: $CORRECT_HASH"
+```
+
+### Step 2: Update the Init Script Properly
+```bash
+# Backup first
+cp backend/init/init-db.sh backend/init/init-db.sh.bak
+
+# Replace the placeholder hash with the real one
+# Use a different delimiter to avoid issues with $ and /
+sed -i "s|\\\$2b\\\$10\\\$YKKk5zJXKk5zJXKk5zJXKuYKKk5zJXKk5zJXKk5zJXKk5zJXKk5zJXK|$CORRECT_HASH|g" backend/init/init-db.sh
+
+# Verify the change
+echo "✅ Updated INSERT statement:"
+grep -A1 "admin@amer.dev" backend/init/init-db.sh | head -2
+```
+
+### Step 3: Rebuild & Test Fresh Deploy
+```bash
+# Stop and clear everything
+docker compose down -v
+
+# Rebuild backend
+docker compose build backend --no-cache
+
+# Start fresh
+docker compose up -d
+
+# Wait ~30 seconds for init to complete
+sleep 30
+
+# Test login
+curl -X POST http://localhost:3001/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@amer.dev","password":"AmerDevOps2026!"}'
+```
+
+✅ Expected response:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": {
+    "email": "admin@amer.dev",
+    "name": "Amer Admin",
+    "role": "ADMIN"
+  }
+}
+```
+
+---
+
+## 🔄 Alternative: Skip Init Script & Use API Registration (Simpler)
+
+If you just want to get working now, skip the init script complexity:
+
+### 1. Remove the admin INSERT from `init-db.sh`:
+```bash
+# Edit backend/init/init-db.sh and delete this section:
+# -- Insert admin user (password: AmerDevOps2026!)
+# INSERT INTO "User" ... ON CONFLICT ...
+```
+
+### 2. Keep only schema creation in the init script:
+```sh
+# backend/init/init-db.sh - Keep only these parts:
+#!/bin/sh
+set -e
+echo "🔧 Initializing database..."
+# ... wait for postgres ...
+echo "✅ Postgres is ready"
+echo "Creating database schema..."
+PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U $POSTGRES_USER -d $POSTGRES_DB << 'SQL'
+-- Create enum types and tables only (no user INSERT)
+-- ... your CREATE TABLE statements ...
+SQL
+echo "✅ Database schema created"
+```
+
+### 3. Register your admin via API after startup:
+```bash
+# After docker compose up -d, run:
+curl -X POST http://localhost:3001/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@amer.dev",
+    "password": "AmerDevOps2026!",
+    "name": "Amer Admin",
+    "role": "ADMIN"
+  }'
+```
+
+This will:
+- ✅ Hash the password correctly via your NestJS backend
+- ✅ Create the user with proper Prisma validation
+- ✅ Return a JWT token immediately
+
+---
+
+## 🧹 Quick Fix for Your Current State
+
+Since your database already has the user from the direct psql command earlier, but the password hash might be wrong, let's just update it directly:
+
+```bash
+# 1. Generate a fresh hash
+NEW_HASH=$(docker compose exec -T backend node -e "
+const bcrypt = require('bcryptjs');
+bcrypt.hash('AmerDevOps2026!', 10).then(h => console.log(h));
+" 2>/dev/null)
+
+echo "🔐 New hash: $NEW_HASH"
+
+# 2. Update the existing user in the database
+docker compose exec postgres psql -U postgres -d amer_portal -c "
+UPDATE \"User\" 
+SET password = '$NEW_HASH', 
+    \"isActive\" = true, 
+    role = 'ADMIN',
+    name = 'Amer Admin',
+    \"updatedAt\" = NOW()
+WHERE email = 'admin@amer.dev';
+"
+
+# 3. Test login immediately
+curl -X POST http://localhost:3001/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@amer.dev","password":"AmerDevOps2026!"}'
+```
+
+---
+
+## 📋 Summary
+
+| Issue | Root Cause | Solution |
+|-------|-----------|----------|
+| Login fails with 401 | Init script still has old/placeholder hash | Update script with `sed` using properly defined `$CORRECT_HASH` |
+| `sed` didn't work | `$CORRECT_HASH` variable wasn't set in that shell | Generate hash first, store in variable, then run sed |
+| Complex init script | Raw SQL + bcrypt hash management is error-prone | Use API registration instead (simpler, more reliable) |
+
+---
+
+## 🎯 Your Amer Portal Credentials
+
+| Field | Value |
+|-------|-------|
+| **Email** | `admin@amer.dev` |
+| **Password** | `AmerDevOps2026!` |
+| **Frontend** | `http://localhost:3000/login` |
+| **Backend API** | `http://localhost:3001/api/v1` |
+
+---
+
+**Recommendation**: For now, use the **"Quick Fix for Your Current State"** above to update the password hash directly in the database. Then, for future deploys, either:
+1. Fix the init script properly with the correct hash, OR
+2. Remove the user INSERT from the init script and register via API after startup
+
+Your backend is running correctly — this is just a password hash synchronization issue. 🚀
+
+Need me to provide the **complete updated `init-db.sh`** without the user INSERT? Just say `"clean init script"`! 🛠️

@@ -1,0 +1,57 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: amer-portal-ingress
+  namespace: amer-portal
+  annotations:
+    # Traefik annotations
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-security-headers@kubernetescrd
+    
+    # Optional: Rate limiting
+    traefik.ingress.kubernetes.io/router.middlewares: "traefik-rate-limit@kubernetescrd"
+    
+    # CORS if needed
+    traefik.ingress.kubernetes.io/service-cors-headers: |
+      Access-Control-Allow-Origin: https://amer.portal.com
+      Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS
+      Access-Control-Allow-Headers: Content-Type,Authorization
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - amer.portal.com
+        - api.amer.portal.com
+      secretName: amer-portal-tls
+  rules:
+    # Frontend rule
+    - host: amer.portal.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000
+    
+    # Backend API rule
+    - host: api.amer.portal.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 3001
+          - path: /api/docs
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 3001

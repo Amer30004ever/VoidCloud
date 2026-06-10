@@ -1,0 +1,1 @@
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/amer_portal" npx prisma migrate dev --name add-documentation-and-learning-models

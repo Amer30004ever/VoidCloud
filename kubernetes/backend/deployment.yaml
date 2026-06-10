@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: amer-portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-secret
+      containers:
+        - name: backend
+          image: amer30004ever/amer-portal-backend:latest  # Will be updated by script
+          imagePullPolicy: Always
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: DATABASE_URL
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: JWT_SECRET
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: POSTGRES_DB
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: WHATSAPP_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: WHATSAPP_ACCESS_TOKEN
+            - name: WHATSAPP_PHONE_NUMBER_ID
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: WHATSAPP_PHONE_NUMBER_ID
+            - name: WHATSAPP_WABA_ID
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: WHATSAPP_WABA_ID
+            - name: WHATSAPP_VERIFY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: WHATSAPP_VERIFY_TOKEN
+            - name: WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: WEBHOOK_SECRET
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: amer-portal-config
+                  key: NODE_ENV
+          ports:
+            - containerPort: 3001
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 5

@@ -1,0 +1,464 @@
+name: CI - Test & Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Test/Build Mode'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - auto                    # Auto-detect changes
+          - test-backend-only       # Test backend code only
+          - test-frontend-only      # Test frontend code only
+          - test-both               # Test both backend and frontend
+          - build-backend-only      # Test + Build + Push backend image
+          - build-frontend-only     # Test + Build + Push frontend image
+          - build-both              # Test + Build + Push both images
+          - full-ci-backend         # Test code → Build → Test artifact → Push backend
+          - full-ci-frontend        # Test code → Build → Test artifact → Push frontend
+          - full-ci-both            # Complete CI for both
+
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/ci.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/ci.yaml'
+
+env:
+  DOCKER_HUB_USERNAME: amer30004ever
+  DOCKER_HUB_REPO: amer-portal
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      mode: ${{ github.event.inputs.mode }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changes
+        id: changes
+        run: |
+          echo "backend=false" >> $GITHUB_OUTPUT
+          echo "frontend=false" >> $GITHUB_OUTPUT
+          
+          MODE="${{ github.event.inputs.mode }}"
+          
+          # For manual triggers, respect the mode
+          if [[ "$MODE" == "test-backend-only" ]] || [[ "$MODE" == "build-backend-only" ]] || [[ "$MODE" == "full-ci-backend" ]]; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "✅ Manual: Backend selected"
+          fi
+          
+          if [[ "$MODE" == "test-frontend-only" ]] || [[ "$MODE" == "build-frontend-only" ]] || [[ "$MODE" == "full-ci-frontend" ]]; then
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "✅ Manual: Frontend selected"
+          fi
+          
+          if [[ "$MODE" == "test-both" ]] || [[ "$MODE" == "build-both" ]] || [[ "$MODE" == "full-ci-both" ]]; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "✅ Manual: Both selected"
+          fi
+          
+          # For auto mode, detect changes from git
+          if [[ "$MODE" == "auto" ]]; then
+            if git diff --name-only HEAD~1 HEAD | grep -q "^backend/"; then
+              echo "backend=true" >> $GITHUB_OUTPUT
+              echo "✅ Backend changes detected"
+            fi
+            if git diff --name-only HEAD~1 HEAD | grep -q "^frontend/"; then
+              echo "frontend=true" >> $GITHUB_OUTPUT
+              echo "✅ Frontend changes detected"
+            fi
+          fi
+
+  # ============================================
+  # BACKEND TESTS
+  # ============================================
+  test-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: cd backend && npm ci
+
+      - name: Run linter
+        run: cd backend && npm run lint
+
+      - name: Generate Prisma Client
+        run: cd backend && npx prisma generate
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+
+      - name: Run Prisma migrations
+        run: cd backend && npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+
+      - name: Run unit tests
+        run: cd backend && npm test
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+          NODE_ENV: test
+          JWT_SECRET: test_secret_key_for_ci_only
+
+      - name: Build backend (TypeScript compile)
+        run: cd backend && npm run build
+
+  # ============================================
+  # FRONTEND TESTS
+  # ============================================
+  test-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Run linter
+        run: cd frontend && npm run lint
+
+      - name: Run TypeScript type check
+        run: cd frontend && npx tsc --noEmit
+
+      - name: Build frontend (Next.js build)
+        run: cd frontend && npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.amer-portal.cc.cd/api/v1
+
+      - name: Run frontend tests
+        run: cd frontend && npm test -- --watchAll=false --passWithNoTests
+
+  # ============================================
+  # BACKEND ARTIFACT TESTS (Container testing)
+  # ============================================
+  test-backend-artifact:
+    needs: [detect-changes, test-backend]
+    if: |
+      needs.detect-changes.outputs.backend == 'true' && 
+      (contains(github.event.inputs.mode, 'full-ci') || github.event.inputs.mode == 'build-backend-only' || github.event.inputs.mode == 'build-both')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build backend image for testing
+        run: |
+          cd backend
+          docker build -t backend-test:latest .
+
+      - name: Create network for containers to communicate
+        run: docker network create test-network || true
+  
+      - name: Run PostgreSQL container
+        run: |
+          docker run -d \
+            --name test-postgres \
+            --network test-network \
+            -e POSTGRES_USER=test_user \
+            -e POSTGRES_PASSWORD=test_password \
+            -e POSTGRES_DB=test_db \
+            -p 5432:5432 \
+            postgres:15-alpine
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL to start..."
+          for i in {1..30}; do
+            if docker exec test-postgres pg_isready -U test_user; then
+              echo "PostgreSQL is ready!"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Run backend container with network
+        run: |
+          docker run -d \
+            --name test-backend \
+            --network test-network \
+            -p 8080:3001 \
+            -e DATABASE_URL="postgresql://test_user:test_password@test-postgres:5432/test_db" \
+            -e POSTGRES_HOST="test-postgres" \
+            -e POSTGRES_USER="test_user" \
+            -e POSTGRES_PASSWORD="test_password" \
+            -e POSTGRES_DB="test_db" \
+            -e JWT_SECRET="test_secret_key_for_ci_only" \
+            -e NODE_ENV="test" \
+            backend-test:latest
+
+      - name: Wait for backend to be ready
+        run: |
+          echo "Waiting for backend to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8080/api/v1/health 2>/dev/null; then
+              echo "Backend is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/30 - Backend not ready yet, waiting..."
+            docker logs test-backend --tail 10
+            sleep 3
+          done
+          echo "❌ Backend failed to start within timeout"
+          docker logs test-backend
+          exit 1
+
+      - name: Test health endpoint
+        run: |
+          HEALTH_RESPONSE=$(curl -s http://localhost:8080/api/v1/health)
+          echo "Health response: $HEALTH_RESPONSE"
+        
+          if echo "$HEALTH_RESPONSE" | grep -q '"status":"ok"'; then
+            echo "✅ Backend health check passed!"
+          else
+            echo "❌ Backend health check failed"
+            exit 1
+          fi
+
+      - name: Show logs if failed
+        if: failure()
+        run: |
+          echo "=== Backend Logs ==="
+          docker logs test-backend
+          echo "=== PostgreSQL Logs ==="
+          docker logs test-postgres
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop test-backend test-postgres || true
+          docker rm test-backend test-postgres || true
+          docker network rm test-network || true
+          docker rmi backend-test:latest || true
+
+  # ============================================
+  # FRONTEND ARTIFACT TESTS (Container testing)
+  # ============================================
+  test-frontend-artifact:
+    needs: [detect-changes, test-frontend]
+    if: |
+      needs.detect-changes.outputs.frontend == 'true' && 
+      (contains(github.event.inputs.mode, 'full-ci') || github.event.inputs.mode == 'build-frontend-only' || github.event.inputs.mode == 'build-both')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build frontend image for testing
+        run: |
+          cd frontend
+          docker build -t frontend-test:latest .
+
+      - name: Test frontend container starts
+        run: |
+          docker run -d --name test-frontend -p 8081:3000 frontend-test:latest
+          sleep 10
+          curl -f http://localhost:8081 || exit 1
+          docker stop test-frontend
+          docker rm test-frontend
+
+      - name: Clean up test image
+        run: docker rmi frontend-test:latest || true
+
+  # ============================================
+  # BUILD AND PUSH BACKEND
+  # ============================================
+  build-backend:
+    needs: [detect-changes, test-backend, test-backend-artifact]
+    if: |
+      needs.detect-changes.outputs.backend == 'true' && 
+      (github.event.inputs.mode == 'build-backend-only' || 
+       github.event.inputs.mode == 'build-both' || 
+       contains(github.event.inputs.mode, 'full-ci'))
+    runs-on: ubuntu-latest
+    outputs:
+      backend_tag: ${{ steps.build.outputs.TIMESTAMP }}
+      backend_built: ${{ steps.build.outputs.BUILT }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Delete old backend images from runner
+        run: |
+          docker system prune -f
+          docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend) 2>/dev/null || true
+
+      - name: Build backend image
+        id: build
+        run: |
+          cd backend
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:latest .
+          docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:${TIMESTAMP} .
+          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "BUILT=true" >> $GITHUB_OUTPUT
+
+      - name: Push backend image
+        run: |
+          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:latest
+          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:${{ steps.build.outputs.TIMESTAMP }}
+
+  # ============================================
+  # BUILD AND PUSH FRONTEND
+  # ============================================
+  build-frontend:
+    needs: [detect-changes, test-frontend, test-frontend-artifact]
+    if: |
+      needs.detect-changes.outputs.frontend == 'true' && 
+      (github.event.inputs.mode == 'build-frontend-only' || 
+       github.event.inputs.mode == 'build-both' || 
+       contains(github.event.inputs.mode, 'full-ci'))
+    runs-on: ubuntu-latest
+    outputs:
+      frontend_tag: ${{ steps.build.outputs.TIMESTAMP }}
+      frontend_built: ${{ steps.build.outputs.BUILT }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Delete old frontend images from runner
+        run: |
+          docker system prune -f
+          docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend) 2>/dev/null || true
+
+      - name: Build frontend image
+        id: build
+        run: |
+          cd frontend
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest .
+          docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${TIMESTAMP} .
+          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "BUILT=true" >> $GITHUB_OUTPUT
+
+      - name: Push frontend image
+        run: |
+          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest
+          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${{ steps.build.outputs.TIMESTAMP }}
+
+  # ============================================
+  # SUMMARY (FIXED)
+  # ============================================
+  summary:
+    needs: [detect-changes, test-backend, test-frontend, test-backend-artifact, test-frontend-artifact, build-backend, build-frontend]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Print summary
+        run: |
+          echo "========================================="
+          echo "📊 CI Summary"
+          echo "========================================="
+          echo ""
+          echo "Mode: ${{ github.event.inputs.mode }}"
+          echo ""
+          echo "Backend selected: ${{ needs.detect-changes.outputs.backend }}"
+          echo "Frontend selected: ${{ needs.detect-changes.outputs.frontend }}"
+          echo ""
+          echo "Code Test Results:"
+          echo "  Backend code tests: ${{ needs.test-backend.result }}"
+          echo "  Frontend code tests: ${{ needs.test-frontend.result }}"
+          echo ""
+          echo "Artifact Test Results:"
+          echo "  Backend artifact tests: ${{ needs.test-backend-artifact.result }}"
+          echo "  Frontend artifact tests: ${{ needs.test-frontend-artifact.result }}"
+          echo ""
+          echo "Build & Push Results:"
+          echo "  Backend build: ${{ needs.build-backend.result }}"
+          echo "  Frontend build: ${{ needs.build-frontend.result }}"
+          echo ""
+          echo "Backend Image Tag: ${{ needs.build-backend.outputs.backend_tag }}"
+          echo "Frontend Image Tag: ${{ needs.build-frontend.outputs.frontend_tag }}"
+          echo ""
+          echo "========================================="
+          
+          if [[ "${{ needs.build-backend.result }}" == "success" ]]; then
+            echo "✅ Backend image pushed to Docker Hub"
+          fi
+          if [[ "${{ needs.build-frontend.result }}" == "success" ]]; then
+            echo "✅ Frontend image pushed to Docker Hub"
+          fi
+          echo "========================================="
+
+      - name: Save build info
+        if: always()
+        run: |
+          mkdir -p build-info
+          echo "backend_built=${{ needs.build-backend.result == 'success' }}" > build-info/build.txt
+          echo "frontend_built=${{ needs.build-frontend.result == 'success' }}" >> build-info/build.txt
+          echo "backend_tag=${{ needs.build-backend.outputs.backend_tag }}" >> build-info/build.txt
+          echo "frontend_tag=${{ needs.build-frontend.outputs.frontend_tag }}" >> build-info/build.txt
+          echo "ci_run_id=${{ github.run_id }}" >> build-info/build.txt
+          echo "ci_run_number=${{ github.run_number }}" >> build-info/build.txt
+
+      - name: Upload build info
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info
+          path: build-info/
