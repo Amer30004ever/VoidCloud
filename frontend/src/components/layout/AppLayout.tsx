@@ -10,6 +10,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute>
       <ChangePasswordModal />
+      <CommandPalette />
       <div className="flex h-screen w-full overflow-hidden bg-background">
         <Sidebar />
         <div className="relative z-0 flex flex-1 flex-col overflow-hidden">
