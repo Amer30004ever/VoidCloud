@@ -1,88 +1,63 @@
+"use client";
+
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
+import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
-import { MessageSquare } from "lucide-react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { alertsApi } from "@/lib/alerts";
+import { Inbox as InboxIcon, CheckCircle2 } from "lucide-react";
 
 export default function InboxPage() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["alerts", "active"],
+    queryFn: () => alertsApi.getActiveAlerts().then((r) => r.data),
+  });
+  const ack = useMutation({
+    mutationFn: (id: string) => alertsApi.acknowledgeAlert(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["alerts"] }),
+  });
+  const resolve = useMutation({
+    mutationFn: (id: string) => alertsApi.resolveAlert(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["alerts"] }),
+  });
+
   return (
     <AppLayout>
-      <PageHeader
-        title="Inbox"
-        description="All incoming WhatsApp conversations"
-      />
+      <PageHeader title="Inbox" description="Active alerts that require your attention." />
 
-      <div className="flex h-[calc(100vh-10rem)] overflow-hidden rounded-xl border border-border bg-card">
-        {/* Conversation list panel */}
-        <div className="w-80 shrink-0 border-r border-border">
-          <div className="border-b border-border p-4">
-            <input
-              id="inbox-search"
-              type="search"
-              placeholder="Search conversations…"
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-
-          {/* Filter tabs */}
-          <div className="flex border-b border-border">
-            {["All", "Unread", "Assigned", "Resolved"].map((f) => (
-              <button
-                key={f}
-                className="flex-1 border-b-2 border-transparent px-2 py-2.5 text-xs font-medium text-muted-foreground transition-colors first:border-primary first:text-primary"
-              >
-                {f}
-              </button>
+      <div className="rounded-xl border border-border bg-card">
+        {isLoading ? (
+          <LoadingState />
+        ) : !data?.length ? (
+          <EmptyState icon={<InboxIcon className="h-6 w-6" />} title="Inbox zero" description="No active alerts" />
+        ) : (
+          <div className="divide-y divide-border">
+            {data.map((a) => (
+              <div key={a.id} className="flex items-start justify-between px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium">{a.ruleName}</p>
+                  <p className="text-xs text-muted-foreground">{a.message}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {a.severity} • {new Date(a.firedAt).toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => ack.mutate(a.id)} className="rounded-md border border-border px-2 py-1 text-xs hover:bg-muted">
+                    Ack
+                  </button>
+                  <button
+                    onClick={() => resolve.mutate(a.id)}
+                    className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-muted"
+                  >
+                    <CheckCircle2 className="h-3 w-3" /> Resolve
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
-
-          {/* Conversation list placeholder */}
-          <div className="flex h-full items-center justify-center">
-            <EmptyState
-              icon={<MessageSquare className="h-6 w-6" />}
-              title="No conversations yet"
-              description="Webhook messages will appear here"
-            />
-          </div>
-        </div>
-
-        {/* Thread panel */}
-        <div className="flex flex-1 flex-col">
-          <div className="flex flex-1 items-center justify-center">
-            <EmptyState
-              icon={<MessageSquare className="h-8 w-8" />}
-              title="Select a conversation"
-              description="Choose a conversation from the list to view messages"
-            />
-          </div>
-
-          {/* Message composer placeholder */}
-          <div className="border-t border-border p-4">
-            <div className="flex items-center gap-3">
-              <input
-                id="inbox-composer"
-                type="text"
-                placeholder="Type a message…"
-                disabled
-                className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:opacity-50"
-              />
-              <button
-                id="inbox-send"
-                disabled
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-              >
-                Send
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* CRM side panel placeholder */}
-        <div className="hidden w-72 shrink-0 border-l border-border p-4 xl:block">
-          <h3 className="text-sm font-semibold text-foreground">Customer Info</h3>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Contact details and CRM links will appear here.
-          </p>
-        </div>
+        )}
       </div>
     </AppLayout>
   );
