@@ -5,6 +5,7 @@ import { Topbar } from "./Topbar";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ChangePasswordModal } from "@/components/auth/ChangePasswordModal";
 import { CommandPalette } from "@/components/CommandPalette";
+import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
