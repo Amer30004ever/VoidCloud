@@ -53,10 +53,11 @@ export const alertsApi = {
 
   // Alerts
   getActiveAlerts: () => api.get<Alert[]>('/alerts/active'),
-  getAllAlerts: () => api.get<Alert[]>('/alerts/all'),
-  acknowledgeAlert: (id: string) => api.post<Alert>(`/alerts/${id}/acknowledge`, {}),
-  resolveAlert: (id: string) => api.post<Alert>(`/alerts/${id}/resolve`, {}),
+  getAllAlerts: () => api.get<Alert[]>('/alerts'),
+  getAlertById: (id: string) => api.get<Alert>(`/alerts/${id}`),
+  acknowledgeAlert: (id: string) => api.put<Alert>(`/alerts/${id}/acknowledge`, {}),
+  resolveAlert: (id: string) => api.put<Alert>(`/alerts/${id}/resolve`, {}),
 
   // Stats
-  getAlertStats: () => api.get<AlertStats>('/alerts/stats'),
+  getAlertStats: () => api.get<AlertStats>('/alerts/stats/overview'),
 };

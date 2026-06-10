@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { API_BASE_URL } from "@/lib/constants";
+import { getSocketAuthOptions, getSocketBaseUrl } from "@/lib/socket-auth";
 
 export interface LiveMetricsPayload {
   timestamp: string;
@@ -15,11 +15,6 @@ export interface LiveMetricsPayload {
   runningNamespaces?: number;
 }
 
-function getMetricsSocketUrl() {
-  const apiUrl = new URL(API_BASE_URL);
-  return `${apiUrl.protocol === "https:" ? "wss" : "ws"}://${apiUrl.host}`;
-}
-
 export function useMetricsWebSocket(enabled = true) {
   const [metrics, setMetrics] = useState<LiveMetricsPayload | null>(null);
   const [connected, setConnected] = useState(false);
@@ -27,8 +22,8 @@ export function useMetricsWebSocket(enabled = true) {
   useEffect(() => {
     if (!enabled) return;
 
-    const socket: Socket = io(`${getMetricsSocketUrl()}/metrics`, {
-      transports: ["websocket", "polling"],
+    const socket: Socket = io(`${getSocketBaseUrl()}/metrics`, {
+      ...getSocketAuthOptions(),
       autoConnect: true,
     });
 

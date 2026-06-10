@@ -80,4 +80,53 @@ export const settingsApi = {
     const { data } = await api.post("/settings/roles", payload);
     return data;
   },
+  updateRole: async (id: string, payload: { name?: string; description?: string; permissions?: string[] }) => {
+    const { data } = await api.put(`/settings/roles/${id}`, payload);
+    return data;
+  },
+
+  // Notifications
+  getNotificationPrefs: async (userId: string) => {
+    const { data } = await api.get<{ preferences: Record<string, unknown> }>(`/settings/notifications/${userId}`);
+    return data.preferences;
+  },
+  updateNotificationPrefs: async (userId: string, payload: Record<string, unknown>) => {
+    const { data } = await api.put<{ success: boolean; preferences: Record<string, unknown> }>(
+      `/settings/notifications/${userId}`,
+      payload,
+    );
+    return data;
+  },
+
+  // Theme
+  getTheme: async (userId: string) => {
+    const { data } = await api.get<{ theme: { mode: "light" | "dark" | "system"; accent?: string } }>(
+      `/settings/theme/${userId}`,
+    );
+    return data.theme;
+  },
+  updateTheme: async (userId: string, payload: { mode: "light" | "dark" | "system"; accent?: string }) => {
+    const { data } = await api.put<{ success: boolean; theme: typeof payload }>(
+      `/settings/theme/${userId}`,
+      payload,
+    );
+    return data;
+  },
+
+  // Backups
+  listBackups: async () => {
+    const { data } = await api.get<{ backups: Array<Record<string, unknown>> }>("/settings/backups");
+    return data.backups ?? [];
+  },
+  createBackup: async (payload?: { note?: string }) => {
+    const { data } = await api.post<{ success: boolean; backup: Record<string, unknown> }>(
+      "/settings/backup",
+      payload ?? {},
+    );
+    return data;
+  },
+  restoreBackup: async (id: string) => {
+    const { data } = await api.post<{ success: boolean }>(`/settings/backup/${id}/restore`, {});
+    return data;
+  },
 };

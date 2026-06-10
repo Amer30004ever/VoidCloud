@@ -2,13 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { API_BASE_URL } from "@/lib/constants";
+import { getSocketAuthOptions, getSocketBaseUrl } from "@/lib/socket-auth";
 import type { ChatMessage } from "@/lib/collaboration";
-
-function getChatSocketUrl() {
-  const apiUrl = new URL(API_BASE_URL);
-  return `${apiUrl.protocol === "https:" ? "wss" : "ws"}://${apiUrl.host}`;
-}
 
 export function useChatWebSocket(channelId: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -18,8 +13,8 @@ export function useChatWebSocket(channelId: string | null) {
   useEffect(() => {
     if (!channelId) return;
 
-    const socket = io(`${getChatSocketUrl()}/chat`, {
-      transports: ["websocket", "polling"],
+    const socket = io(`${getSocketBaseUrl()}/chat`, {
+      ...getSocketAuthOptions(),
     });
     socketRef.current = socket;
 
