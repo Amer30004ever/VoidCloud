@@ -89,6 +89,7 @@ model User {
   apiKeys             ApiKey[]
   appSecrets          AppSecret[]
   auditLogs           AuditLog[]
+  notes               Note[]
 }
 
 model Conversation {
@@ -636,4 +637,17 @@ model AuditLog {
   details   Json?
   ipAddress String?
   createdAt DateTime @default(now())
+}
+model Note {
+  id        String   @id @default(uuid())
+  title     String
+  content   String   @db.Text
+  tags      String?
+  pinned    Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt])
 }

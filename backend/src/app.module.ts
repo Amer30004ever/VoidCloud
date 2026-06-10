@@ -22,6 +22,7 @@ import { PlatformModule } from './platform/platform.module';
 import { ProjectsModule } from './projects/projects.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { PipelinesModule } from './pipelines/pipelines.module';
+import { NotesModule } from './notes/notes.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { AppController } from './app.controller';
@@ -57,6 +58,7 @@ import { AppController } from './app.controller';
     ProjectsModule,
     MetricsModule,
     PipelinesModule,
+    NotesModule,
   ],
   controllers: [AppController],
   providers: [
