@@ -64,4 +64,8 @@ export const ALL_ROUTES: RouteEntry[] = [
 
   // Admin
   { href: "/settings", label: "Settings", section: "Admin" },
+  { href: "/favorites", label: "Favorites", section: "Admin" },
+  { href: "/notifications", label: "Notifications", section: "Admin" },
+  { href: "/prompts", label: "Saved Prompts", section: "AI" },
+  { href: "/status", label: "Public Status Page", section: "Public" },
 ];
