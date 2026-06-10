@@ -215,7 +215,7 @@ function QuickLinksCard() {
     { label: "Pipelines", href: "/pipelines", icon: Workflow, hint: "CI / CD" },
     { label: "Infrastructure", href: "/infrastructure", icon: Server, hint: "Clusters & nodes" },
     { label: "Deployments", href: "/deployments", icon: Cloud, hint: "Releases" },
-    { label: "GitHub", href: "https://github.com/Amer30004ever", icon: Code2 as Github, hint: "Source", external: true },
+    { label: "GitHub", href: "https://github.com/Amer30004ever", icon: Github, hint: "Source", external: true },
     { label: "Docs", href: "/documentation", icon: BookOpen, hint: "Runbooks" },
   ];
 
