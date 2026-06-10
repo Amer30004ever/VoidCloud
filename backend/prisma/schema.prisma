@@ -89,6 +89,7 @@ model User {
   apiKeys             ApiKey[]
   appSecrets          AppSecret[]
   auditLogs           AuditLog[]
+  notes               Note[]
 }
 
 model Conversation {
