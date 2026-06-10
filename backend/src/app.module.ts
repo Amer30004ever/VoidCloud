@@ -58,6 +58,7 @@ import { AppController } from './app.controller';
     ProjectsModule,
     MetricsModule,
     PipelinesModule,
+    NotesModule,
   ],
   controllers: [AppController],
   providers: [
