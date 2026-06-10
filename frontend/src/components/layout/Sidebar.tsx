@@ -120,6 +120,68 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    title: "Productivity",
+    items: [
+      { href: "/notes", label: "Notes", icon: StickyNote },
+      { href: "/bookmarks", label: "Bookmarks", icon: Bookmark },
+      { href: "/snippets", label: "Snippets", icon: Code2 },
+      { href: "/calendar", label: "Calendar", icon: CalendarDays },
+      { href: "/timeline", label: "Timeline", icon: Activity },
+      { href: "/pomodoro", label: "Pomodoro", icon: Timer },
+    ],
+  },
+  {
+    title: "DevOps Core",
+    items: [
+      { href: "/runbooks", label: "Runbooks", icon: BookOpen },
+      { href: "/incidents", label: "Incidents", icon: AlertTriangle },
+      { href: "/changelog", label: "Changelog", icon: GitCommit },
+      { href: "/sla", label: "SLA / SLO", icon: Gauge },
+      { href: "/cost", label: "Cost", icon: DollarSign },
+      { href: "/inventory", label: "Inventory", icon: Boxes },
+      { href: "/dns", label: "DNS", icon: Globe2 },
+      { href: "/ssl-monitor", label: "SSL Monitor", icon: ShieldCheck },
+      { href: "/uptime", label: "Uptime", icon: Heart },
+      { href: "/backups", label: "Backups", icon: Database },
+      { href: "/disaster-recovery", label: "DR", icon: LifeBuoy },
+    ],
+  },
+  {
+    title: "Knowledge",
+    items: [
+      { href: "/flashcards", label: "Flashcards", icon: Layers },
+      { href: "/quizzes", label: "Quizzes", icon: HelpCircle },
+      { href: "/glossary", label: "Glossary", icon: BookA },
+      { href: "/lab-environments", label: "Lab Environments", icon: Server },
+    ],
+  },
+  {
+    title: "Career",
+    items: [
+      { href: "/portfolio", label: "Portfolio", icon: Briefcase },
+      { href: "/interview-prep", label: "Interview Prep", icon: MessageSquareQuote },
+      { href: "/job-tracker", label: "Job Tracker", icon: Target },
+      { href: "/skills-matrix", label: "Skills Matrix", icon: Radar },
+    ],
+  },
+  {
+    title: "Team",
+    items: [
+      { href: "/team", label: "Directory", icon: Users },
+      { href: "/oncall", label: "On-Call", icon: PhoneCall },
+      { href: "/announcements", label: "Announcements", icon: Megaphone },
+    ],
+  },
+  {
+    title: "Security",
+    items: [
+      { href: "/security/audit-log", label: "Audit Log", icon: History },
+      { href: "/security/compliance", label: "Compliance", icon: ShieldCheck },
+      { href: "/security/sbom", label: "SBOM", icon: FileBox },
+      { href: "/security/secrets", label: "Secrets", icon: Shield },
+    ],
+  },
+  {
     title: "Integrations",
     items: [
       { href: "/integrations/slack", label: "Slack", icon: Puzzle },
