@@ -22,11 +22,19 @@ export const learningApi = {
     return data.jobs;
   },
   enrollPath: async (pathId: string, userId: string) => {
-    const { data } = await api.post("/learning/paths/enroll", { pathId, userId });
+    const { data } = await api.post(`/learning/paths/${pathId}/enroll`, { userId });
     return data;
   },
-  getPathProgress: async (userId: string) => {
-    const { data } = await api.get(`/learning/paths/progress/${userId}`);
+  getPathProgress: async (pathId: string, userId: string) => {
+    const { data } = await api.get(`/learning/paths/${pathId}/progress/${userId}`);
+    return data;
+  },
+  getPaths: async () => {
+    const { data } = await api.get<{ paths: Array<Record<string, unknown>> }>("/learning/paths");
+    return data.paths ?? [];
+  },
+  getPath: async (id: string) => {
+    const { data } = await api.get(`/learning/paths/${id}`);
     return data;
   },
 };
