@@ -12,7 +12,7 @@ import {
   Database,
   Cloud,
   BookOpen,
-  Github,
+  Code2 as Github,
   Gauge,
   Workflow,
 } from "lucide-react";

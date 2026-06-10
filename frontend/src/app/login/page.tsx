@@ -18,8 +18,8 @@ import {
   Cpu,
   HardDrive,
   Activity,
-  Github,
-  Linkedin,
+  Code2 as Github,
+  Briefcase as Linkedin,
   ShieldCheck,
   Globe2,
 } from "lucide-react";
