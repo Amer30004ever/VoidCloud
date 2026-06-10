@@ -12,6 +12,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <ProtectedRoute>
       <ChangePasswordModal />
       <CommandPalette />
+      <KeyboardShortcuts />
       <div className="flex h-screen w-full overflow-hidden bg-background">
         <Sidebar />
         <div className="relative z-0 flex flex-1 flex-col overflow-hidden">
