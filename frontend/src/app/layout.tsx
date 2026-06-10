@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   title: "Amer Portal — DevOps Project Hub",
   description:
     "Manage your DevOps projects, CI/CD pipelines, deployments, and infrastructure in one unified platform.",
+  manifest: "/manifest.webmanifest",
   keywords: ["DevOps", "CI/CD", "Kubernetes", "Docker", "Infrastructure", "Monitoring", "Projects"],
 };
 
