@@ -7,8 +7,8 @@ export default function AdminBillingPage() {
   async function load() { setTx(await cloudApi.admin.transactions()); }
   useEffect(() => { load(); }, []);
 
-  async function confirm(id: string) { await cloudApi.admin.confirm(id); load(); }
-  async function refund(id: string) { if (confirm("Refund full amount?")) { await cloudApi.admin.refund(id); load(); } }
+  async function confirmPay(id: string) { await cloudApi.admin.confirm(id); load(); }
+  async function refund(id: string) { if (window.confirm("Refund full amount?")) { await cloudApi.admin.refund(id); load(); } }
 
   return (
     <div>
@@ -28,7 +28,7 @@ export default function AdminBillingPage() {
                 <td><span className={`rounded-full border px-2 py-0.5 text-xs ${i.status === "PAID" ? "border-green-500/30 bg-green-500/10 text-green-300" : i.status === "REFUNDED" ? "border-gray-500/30 bg-gray-500/10 text-gray-300" : "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"}`}>{i.status}</span></td>
                 <td className="text-white/60">{new Date(i.createdAt).toLocaleDateString()}</td>
                 <td className="space-x-2 p-4">
-                  {i.status === "PENDING" && <button onClick={() => confirm(i.id)} className="text-green-300 hover:underline">Confirm</button>}
+                  {i.status === "PENDING" && <button onClick={() => confirmPay(i.id)} className="text-green-300 hover:underline">Confirm</button>}
                   {i.status === "PAID" && <button onClick={() => refund(i.id)} className="text-red-300 hover:underline">Refund</button>}
                 </td>
               </tr>

@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cloudApi } from "@/lib/cloud";
 
-// Reuse dashboard layout
-export { default as layout } from "../dashboard/layout";
+
+
 
 export default function AdminOverview() {
   const [stats, setStats] = useState<any>(null);
