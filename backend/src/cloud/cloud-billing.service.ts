@@ -53,43 +53,32 @@ export class CloudBillingService {
       },
     });
 
-    // Stub: if provider is stripe (test mode) auto-activate; in Phase 2 real Stripe Checkout URL
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
     let checkout: Record<string, unknown> = { provider, invoiceId: invoice.id, number: invoice.number };
-    if (provider === 'fawry') {
-      checkout = {
-        ...checkout,
-        reference: invoice.providerRef,
-        qrPayload: `fawry:${invoice.providerRef}:${plan.priceEGP}`,
-        amount: plan.priceEGP,
-        currency: 'EGP',
-        instructions: 'Pay at any Fawry location or via Fawry app using the reference number.',
-      };
+
+    if (provider === 'stripe') {
+      const s = await this.stripe.createCheckoutSession({
+        userEmail: user!.email, planName: plan.name, priceUSD: plan.priceUSD,
+        invoiceId: invoice.id, userId, planId,
+        successUrl: `${process.env.FRONTEND_URL}/amercloud/dashboard/billing?success=1`,
+        cancelUrl: `${process.env.FRONTEND_URL}/amercloud/dashboard/billing?canceled=1`,
+      });
+      checkout = { ...checkout, sessionUrl: s.url, sessionId: s.sessionId, amount: plan.priceUSD, currency: 'USD' };
+    } else if (provider === 'fawry') {
+      const f = await this.fawry.createPayment({
+        userEmail: user!.email, planName: plan.name, amountEGP: plan.priceEGP, invoiceId: invoice.id,
+      });
+      checkout = { ...checkout, paymentUrl: f.paymentUrl, reference: f.referenceId, qrCode: f.qrCode, amount: plan.priceEGP, currency: 'EGP' };
     } else if (provider === 'instapay') {
-      checkout = {
-        ...checkout,
-        bankAccount: 'IBAN EG-AMERCLOUD-1234',
-        reference: invoice.providerRef,
-        deepLink: `instapay://pay?amount=${plan.priceEGP}&ref=${invoice.providerRef}`,
-        amount: plan.priceEGP,
-        currency: 'EGP',
-      };
-    } else if (provider === 'stripe') {
-      checkout = {
-        ...checkout,
-        // In Phase 2: real Stripe Checkout Session
-        sessionUrl: `https://checkout.amercloud.dev/mock/${invoice.id}`,
-        amount: plan.priceUSD,
-        currency: 'USD',
-      };
+      const i = await this.instapay.createPayment({
+        userName: user!.name, userEmail: user!.email, amountEGP: plan.priceEGP, invoiceId: invoice.id,
+      });
+      checkout = { ...checkout, paymentUrl: i.paymentUrl, reference: i.referenceId, amount: plan.priceEGP, currency: 'EGP', instructions: (i as any).instructions };
     } else if (provider === 'cash') {
-      checkout = {
-        ...checkout,
-        instructions: 'Cash payments are confirmed manually by an admin within 24 hours.',
-        amount: plan.priceEGP,
-        currency: 'EGP',
-      };
+      checkout = { ...checkout, instructions: 'Cash payments confirmed manually within 24h.', amount: plan.priceEGP, currency: 'EGP' };
     }
 
+    this.email.invoice(user!.email, useEGP ? plan.priceEGP : plan.priceUSD, useEGP ? 'EGP' : 'USD', invoice.id);
     return { invoice, checkout };
   }
 
