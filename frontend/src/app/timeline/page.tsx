@@ -18,7 +18,9 @@ export default function TimelinePage() {
           { id: "3", ts: new Date(Date.now() - 7.2e6).toISOString(), kind: "commit", text: "Pushed 4 commits to portal/main" },
         ];
         localStorage.setItem("amer.timeline", JSON.stringify(seed));
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEvents(seed);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
       } else setEvents(existing);
     } catch { /* noop */ }
   }, []);

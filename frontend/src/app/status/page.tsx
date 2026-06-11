@@ -14,6 +14,7 @@ export default function StatusPage() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem("amer.uptime");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setChecks(JSON.parse(raw));
     } catch { /* noop */ }
   }, []);

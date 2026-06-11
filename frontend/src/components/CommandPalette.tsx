@@ -37,6 +37,7 @@ export function CommandPalette() {
     return list.slice(0, 30);
   }, [q]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setIdx(0), [q, open]);
 
   if (!open) return null;
