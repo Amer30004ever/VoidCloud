@@ -103,6 +103,11 @@ model User {
   appSecrets          AppSecret[]
   auditLogs           AuditLog[]
   notes               Note[]
+
+  // Cloud (HaaS) relations
+  cloudDeployments    CloudDeployment[]
+  cloudInvoices       CloudInvoice[]
+  cloudPaymentMethods CloudPaymentMethod[]
 }
 
 model Conversation {
