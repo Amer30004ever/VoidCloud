@@ -67,7 +67,7 @@ export class CloudDeploymentsService {
     if ((input.customDomains?.length ?? 0) > limits.customDomainLimit)
       throw new BadRequestException(`Domain count exceeds plan limit (${limits.customDomainLimit})`);
 
-    return this.prisma.cloudDeployment.create({
+    const deployment = await this.prisma.cloudDeployment.create({
       data: {
         userId,
         name: input.name,
@@ -85,6 +85,41 @@ export class CloudDeploymentsService {
         status: 'PENDING',
       },
     });
+    this.provision(deployment.id, user.email).catch((e) =>
+      this.logger.error(`provision failed for ${deployment.id}: ${e.message}`),
+    );
+    return deployment;
+  }
+
+  private k8sName(name: string) { return name.toLowerCase().replace(/[^a-z0-9-]/g, '-'); }
+
+  private async provision(deploymentId: string, userEmail: string) {
+    const d = await this.prisma.cloudDeployment.findUnique({ where: { id: deploymentId } });
+    if (!d) return;
+    await this.prisma.cloudDeployment.update({ where: { id: deploymentId }, data: { status: 'DEPLOYING' } });
+    try {
+      const ns = await this.k8s.createNamespace(d.userId, d.id);
+      await this.k8s.applyResourceQuota(ns, {
+        cpu: String(d.cpu), memory: `${d.memory}Mi`, storage: `${d.storage}Mi`,
+      });
+      const image = d.type === 'DOCKER_IMAGE' ? d.source : d.source;
+      const name = this.k8sName(d.name);
+      await this.k8s.createOrUpdateDeployment({
+        namespace: ns, name, image,
+        envVars: (d.envVars as any) ?? {},
+        cpu: String(d.cpu), memory: `${d.memory}Mi`, replicas: d.replicas,
+      });
+      await this.k8s.createService(ns, name);
+      if (d.customDomains?.length) await this.k8s.createIngress(ns, name, d.customDomains);
+      await this.prisma.cloudDeployment.update({
+        where: { id: deploymentId },
+        data: { status: 'RUNNING', namespace: ns, lastDeployedAt: new Date() },
+      });
+    } catch (e: any) {
+      this.logger.error(`provision error: ${e.message}`);
+      await this.prisma.cloudDeployment.update({ where: { id: deploymentId }, data: { status: 'FAILED' } });
+      this.email.deploymentFailed(userEmail, d.name, e.message);
+    }
   }
 
   async update(userId: string, id: string, input: Partial<DeploymentInput>) {
@@ -92,45 +127,50 @@ export class CloudDeploymentsService {
     return this.prisma.cloudDeployment.update({
       where: { id },
       data: {
-        name: input.name,
-        source: input.source,
-        cpu: input.cpu,
-        memory: input.memory,
-        storage: input.storage,
-        replicas: input.replicas,
-        customDomains: input.customDomains,
-        envVars: input.envVars as any,
-        healthCheck: input.healthCheck,
+        name: input.name, source: input.source, cpu: input.cpu, memory: input.memory,
+        storage: input.storage, replicas: input.replicas, customDomains: input.customDomains,
+        envVars: input.envVars as any, healthCheck: input.healthCheck,
       },
     });
   }
 
   async remove(userId: string, id: string) {
-    await this.get(userId, id);
-    return this.prisma.cloudDeployment.update({
-      where: { id },
-      data: { status: 'DELETED' },
-    });
+    const d = await this.get(userId, id);
+    await this.k8s.deleteNamespace(d.namespace).catch(() => undefined);
+    return this.prisma.cloudDeployment.update({ where: { id }, data: { status: 'DELETED' } });
   }
 
   async restart(userId: string, id: string) {
-    await this.get(userId, id);
+    const d = await this.get(userId, id);
+    await this.k8s.restartDeployment(d.namespace, this.k8sName(d.name));
     return this.prisma.cloudDeployment.update({
-      where: { id },
-      data: { status: 'DEPLOYING', lastDeployedAt: new Date() },
+      where: { id }, data: { status: 'DEPLOYING', lastDeployedAt: new Date() },
     });
   }
 
-  /** Stub metrics (Phase 2 wires Prometheus) */
   async metrics(userId: string, id: string) {
     const d = await this.get(userId, id);
-    const seed = parseInt(d.id.slice(0, 6), 36);
-    const rand = (n: number) => ((seed * (n + 7)) % 100) / 100;
-    return {
-      cpu: Array.from({ length: 30 }, (_, i) => ({ t: i, v: rand(i) * d.cpu })),
-      memory: Array.from({ length: 30 }, (_, i) => ({ t: i, v: rand(i + 1) * d.memory })),
-      requests: Array.from({ length: 30 }, (_, i) => ({ t: i, v: Math.floor(rand(i + 2) * 200) })),
-    };
+    const name = this.k8sName(d.name);
+    const [live, range] = await Promise.all([
+      this.prom.getDeploymentMetrics(d.namespace, name),
+      this.prom.getRange(d.namespace, name, 24),
+    ]);
+    return { live, range };
+  }
+
+  async tailLogs(userId: string, id: string) {
+    const d = await this.get(userId, id);
+    const body = await this.k8s.getPodLogs(d.namespace, this.k8sName(d.name));
+    return { lines: (body || '').split(/\r?\n/).filter(Boolean) };
+  }
+
+  async streamLogs(userId: string, id: string, onLine: (l: string) => void): Promise<() => void> {
+    const d = await this.get(userId, id);
+    if (!this.k8s.isEnabled()) {
+      ['INFO  starting application…', 'INFO  http listening on :3000', 'INFO  ready'].forEach(onLine);
+      return () => undefined;
+    }
+    return this.k8s.streamPodLogs(d.namespace, this.k8sName(d.name), onLine);
   }
 
   async usage(userId: string) {
