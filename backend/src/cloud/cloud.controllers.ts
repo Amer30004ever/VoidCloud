@@ -88,7 +88,7 @@ export class CloudDeploymentsController {
   }
 
   @Get(':id/logs/stream')
-  async logsStream(@Req() req: AuthedRequest, @Param('id') id: string, @Res() res: Response) {
+  async logsStream(@Req() req: any, @Param('id') id: string, @Res() res: Response) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -97,7 +97,7 @@ export class CloudDeploymentsController {
       res.write(`data: ${JSON.stringify({ line })}\n\n`);
     });
     const hb = setInterval(() => res.write(': ping\n\n'), 25000);
-    req.on?.('close' as any, () => { clearInterval(hb); stop(); });
+    req.on('close', () => { clearInterval(hb); stop(); });
   }
 }
 
@@ -146,20 +146,19 @@ export class CloudBillingController {
 export class CloudWebhooksController {
   constructor(
     private billing: CloudBillingService,
-    private stripe: StripeService,
-    private fawry: FawryService,
+    private stripeSvc: StripeService,
+    private fawrySvc: FawryService,
   ) {}
 
   @Public()
   @Post('stripe')
   @HttpCode(200)
   async stripe(@Req() req: RawBodyRequest<any>, @Headers('stripe-signature') sig: string, @Body() body: any) {
-    if (this.stripe.isLive()) {
+    if (this.stripeSvc.isLive()) {
       if (!sig || !req.rawBody) throw new BadRequestException('Missing signature/body');
-      const event = this.stripe.verifyWebhook(req.rawBody, sig);
+      const event = this.stripeSvc.verifyWebhook(req.rawBody, sig);
       if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as any;
-        const invoiceId = session?.metadata?.invoiceId;
+        const invoiceId = event.data.object?.metadata?.invoiceId;
         if (invoiceId) await this.billing.confirmPayment(invoiceId);
       }
       return { received: true };
@@ -174,7 +173,7 @@ export class CloudWebhooksController {
   @Post('fawry')
   @HttpCode(200)
   async fawry(@Body() body: any, @Headers('x-fawry-signature') sig?: string) {
-    if (process.env.FAWRY_SECURITY_KEY && !this.fawry.verifyWebhook(body, sig)) {
+    if (process.env.FAWRY_SECURITY_KEY && !this.fawrySvc.verifyWebhook(body, sig)) {
       throw new BadRequestException('Invalid signature');
     }
     const invoiceId = body?.merchantRefNumber?.replace(/^amercloud_/, '') || body?.invoiceId;
