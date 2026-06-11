@@ -13,6 +13,7 @@ export default function FlashcardsPage() {
   const due = items.filter((c) => new Date(c.due) <= new Date());
   const card = due[idx];
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setRevealed(false); }, [idx, card?.id]);
 
   const grade = (g: "again" | "good" | "easy") => {
