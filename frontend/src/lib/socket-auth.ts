@@ -20,7 +20,7 @@ export function getAuthToken(): string | null {
 export function getSocketAuthOptions() {
   const token = getAuthToken();
   return {
-    transports: ["websocket", "polling"] as const,
+    transports: ["websocket", "polling"] as string[],
     auth: token ? { token } : undefined,
     extraHeaders: token ? { Authorization: `Bearer ${token}` } : undefined,
   };
