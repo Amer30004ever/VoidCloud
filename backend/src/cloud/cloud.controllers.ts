@@ -1,7 +1,9 @@
 import {
-  Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards, ForbiddenException,
+  Body, Controller, Delete, Get, Param, Post, Put, Query, Req, Res, UseGuards, Headers,
+  ForbiddenException, BadRequestException, HttpCode, RawBodyRequest,
 } from '@nestjs/common';
 import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
@@ -10,6 +12,13 @@ import { CloudPlansService } from './cloud-plans.service';
 import { CloudDeploymentsService } from './cloud-deployments.service';
 import { CloudBillingService } from './cloud-billing.service';
 import { CloudAdminService } from './cloud-admin.service';
+import { StripeService } from './billing/stripe.service';
+import { FawryService } from './billing/fawry.service';
+import { InstapayService } from './billing/instapay.service';
+import { TwoFactorService } from './auth/two-factor.service';
+import { CloudAuditService } from './audit/cloud-audit.service';
+import { CloudBackupService } from './backup/cloud-backup.service';
+import { CloudEmailService } from './notifications/email.service';
 
 interface AuthedRequest { user: { id: string; role: Role; email: string } }
 
@@ -74,15 +83,21 @@ export class CloudDeploymentsController {
   }
 
   @Get(':id/logs')
-  logs(@Req() req: AuthedRequest, @Param('id') id: string) {
-    // Phase 2: real k8s log stream
-    const sample = [
-      'INFO  starting application…',
-      'INFO  connected to database',
-      'INFO  http server listening on :3000',
-      'INFO  ready',
-    ];
-    return { deploymentId: id, lines: sample };
+  async logs(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.deployments.tailLogs(req.user.id, id);
+  }
+
+  @Get(':id/logs/stream')
+  async logsStream(@Req() req: any, @Param('id') id: string, @Res() res: Response) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+    const stop = await this.deployments.streamLogs(req.user.id, id, (line) => {
+      res.write(`data: ${JSON.stringify({ line })}\n\n`);
+    });
+    const hb = setInterval(() => res.write(': ping\n\n'), 25000);
+    req.on('close', () => { clearInterval(hb); stop(); });
   }
 }
 
@@ -129,12 +144,25 @@ export class CloudBillingController {
 @ApiTags('Cloud / Webhooks')
 @Controller('cloud/webhooks')
 export class CloudWebhooksController {
-  constructor(private billing: CloudBillingService) {}
+  constructor(
+    private billing: CloudBillingService,
+    private stripeSvc: StripeService,
+    private fawrySvc: FawryService,
+  ) {}
 
   @Public()
   @Post('stripe')
-  stripe(@Body() body: any) {
-    // Phase 2: verify Stripe signature
+  @HttpCode(200)
+  async stripe(@Req() req: RawBodyRequest<any>, @Headers('stripe-signature') sig: string, @Body() body: any) {
+    if (this.stripeSvc.isLive()) {
+      if (!sig || !req.rawBody) throw new BadRequestException('Missing signature/body');
+      const event = this.stripeSvc.verifyWebhook(req.rawBody, sig);
+      if (event.type === 'checkout.session.completed') {
+        const invoiceId = event.data.object?.metadata?.invoiceId;
+        if (invoiceId) await this.billing.confirmPayment(invoiceId);
+      }
+      return { received: true };
+    }
     if (body?.type === 'checkout.session.completed' && body?.data?.invoiceId) {
       return this.billing.confirmPayment(body.data.invoiceId);
     }
@@ -143,21 +171,59 @@ export class CloudWebhooksController {
 
   @Public()
   @Post('fawry')
-  fawry(@Body() body: any) {
-    if (body?.invoiceId && body?.status === 'PAID') {
-      return this.billing.confirmPayment(body.invoiceId);
+  @HttpCode(200)
+  async fawry(@Body() body: any, @Headers('x-fawry-signature') sig?: string) {
+    if (process.env.FAWRY_SECURITY_KEY && !this.fawrySvc.verifyWebhook(body, sig)) {
+      throw new BadRequestException('Invalid signature');
+    }
+    const invoiceId = body?.merchantRefNumber?.replace(/^amercloud_/, '') || body?.invoiceId;
+    if (invoiceId && (body?.orderStatus === 'PAID' || body?.status === 'PAID')) {
+      return this.billing.confirmPayment(invoiceId);
     }
     return { received: true };
   }
 
   @Public()
   @Post('instapay')
+  @HttpCode(200)
   instapay(@Body() body: any) {
-    if (body?.invoiceId && body?.status === 'PAID') {
-      return this.billing.confirmPayment(body.invoiceId);
+    const invoiceId = body?.reference_id?.replace(/^AMP_/, '') || body?.invoiceId;
+    if (invoiceId && (body?.status === 'PAID' || body?.status === 'success')) {
+      return this.billing.confirmPayment(invoiceId);
     }
     return { received: true };
   }
+}
+
+@ApiTags('Cloud / 2FA')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/auth/2fa')
+export class CloudTwoFactorController {
+  constructor(private tfa: TwoFactorService) {}
+  @Post('enable')  enable(@Req() req: AuthedRequest) { return this.tfa.beginEnable(req.user.id, req.user.email); }
+  @Post('verify')  verify(@Req() req: AuthedRequest, @Body() b: { token: string }) { return this.tfa.verifyAndActivate(req.user.id, b.token); }
+  @Post('disable') disable(@Req() req: AuthedRequest) { return this.tfa.disable(req.user.id); }
+}
+
+@ApiTags('Cloud / Backups')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/deployments/:id/backups')
+export class CloudBackupController {
+  constructor(private backups: CloudBackupService, private deployments: CloudDeploymentsService) {}
+  @Get()
+  async list(@Req() req: AuthedRequest, @Param('id') id: string) {
+    await this.deployments.get(req.user.id, id);
+    return this.backups.list(id);
+  }
+  @Post()
+  async create(@Req() req: AuthedRequest, @Param('id') id: string) {
+    await this.deployments.get(req.user.id, id);
+    return this.backups.backup(id);
+  }
+  @Post('restore/:backupId')
+  restore(@Param('backupId') backupId: string) { return this.backups.restore(backupId); }
 }
 
 @ApiTags('Cloud / Admin')
@@ -170,7 +236,14 @@ export class CloudAdminController {
     private admin: CloudAdminService,
     private plans: CloudPlansService,
     private billing: CloudBillingService,
+    private audit: CloudAuditService,
   ) {}
+
+  @Get('audit-logs')
+  auditLogs(@Query('targetId') targetId?: string, @Query('action') action?: string) {
+    return this.audit.list({ targetId, action });
+  }
+
 
   @Get('stats') stats() { return this.admin.stats(); }
 

@@ -121,3 +121,44 @@ export const cloudApi = {
     announcements: async () => (await api.get("/cloud/admin/announcements")).data,
   },
 };
+
+/* ============ Phase 2 helpers ============ */
+
+export function streamDeploymentLogs(
+  deploymentId: string,
+  onLine: (line: string) => void,
+  onError?: (e: Event) => void,
+): () => void {
+  const base = (api.defaults?.baseURL || "").replace(/\/$/, "");
+  const token = typeof window !== "undefined" ? localStorage.getItem("amer_token") : null;
+  const url = `${base}/cloud/deployments/${deploymentId}/logs/stream${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+  const es = new EventSource(url, { withCredentials: true });
+  es.onmessage = (e) => {
+    try {
+      const { line } = JSON.parse(e.data);
+      if (line) onLine(line);
+    } catch {}
+  };
+  if (onError) es.onerror = onError;
+  return () => es.close();
+}
+
+export const cloudTwoFactor = {
+  enable: async () => (await api.post("/cloud/auth/2fa/enable")).data,
+  verify: async (token: string) => (await api.post("/cloud/auth/2fa/verify", { token })).data,
+  disable: async () => (await api.post("/cloud/auth/2fa/disable")).data,
+};
+
+export const cloudBackups = {
+  list: async (deploymentId: string) =>
+    (await api.get(`/cloud/deployments/${deploymentId}/backups`)).data,
+  create: async (deploymentId: string) =>
+    (await api.post(`/cloud/deployments/${deploymentId}/backups`)).data,
+  restore: async (deploymentId: string, backupId: string) =>
+    (await api.post(`/cloud/deployments/${deploymentId}/backups/restore/${backupId}`)).data,
+};
+
+export const cloudAudit = {
+  list: async (params?: { targetId?: string; action?: string }) =>
+    (await api.get("/cloud/admin/audit-logs", { params })).data,
+};
