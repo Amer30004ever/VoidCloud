@@ -36,10 +36,13 @@ export function useLocalStore<T extends LocalRecord>(key: string, seed: T[] = []
     const existing = read<T>(key);
     if (existing.length === 0 && seed.length > 0) {
       write(key, seed);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setItems(seed);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setItems(existing);
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
