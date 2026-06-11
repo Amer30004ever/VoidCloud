@@ -6,7 +6,6 @@ export interface LocalRecord {
   id: string;
   createdAt: string;
   updatedAt: string;
-  [key: string]: unknown;
 }
 
 function read<T extends LocalRecord>(key: string): T[] {
