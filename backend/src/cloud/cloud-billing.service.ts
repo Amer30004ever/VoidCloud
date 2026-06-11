@@ -1,10 +1,20 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomBytes } from 'crypto';
+import { StripeService } from './billing/stripe.service';
+import { FawryService } from './billing/fawry.service';
+import { InstapayService } from './billing/instapay.service';
+import { CloudEmailService } from './notifications/email.service';
 
 @Injectable()
 export class CloudBillingService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private stripe: StripeService,
+    private fawry: FawryService,
+    private instapay: InstapayService,
+    private email: CloudEmailService,
+  ) {}
 
   async currentSubscription(userId: string) {
     const user = await this.prisma.user.findUnique({
