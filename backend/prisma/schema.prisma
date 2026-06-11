@@ -54,6 +54,17 @@ model User {
   role      Role     @default(USER)
   isActive  Boolean  @default(true)
   mustChangePassword Boolean @default(false)
+  avatar             String?
+  emailVerified      Boolean  @default(false)
+  twoFactorSecret    String?
+  cloudPlanId        String?
+  cloudPlan          CloudPlan? @relation(fields: [cloudPlanId], references: [id])
+  trialEndsAt        DateTime?
+  subscriptionStatus CloudSubscriptionStatus @default(TRIALING)
+  overrideLimits     Json?
+  suspendedAt        DateTime?
+  suspendedReason    String?
+  lastLoginAt        DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
