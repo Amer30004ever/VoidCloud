@@ -10,6 +10,8 @@ enum Role {
   USER
   ADMIN
   AGENT
+  SUPER_ADMIN
+  BILLING_MANAGER
 }
 
 enum MessageType {
