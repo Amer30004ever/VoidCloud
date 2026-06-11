@@ -1,6 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomNamespace, randomSubdomain } from './cloud-plans.service';
+import { KubernetesService } from './kubernetes/kubernetes.service';
+import { PrometheusService } from './metrics/prometheus.service';
+import { CloudEmailService } from './notifications/email.service';
 
 export interface DeploymentInput {
   name: string;
