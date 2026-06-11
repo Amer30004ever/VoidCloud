@@ -4,12 +4,12 @@ import Stripe from 'stripe';
 @Injectable()
 export class StripeService {
   private readonly logger = new Logger(StripeService.name);
-  private stripe: Stripe | null = null;
+  private stripe: any = null;
 
   constructor() {
     const key = process.env.STRIPE_SECRET_KEY;
     if (key) {
-      this.stripe = new Stripe(key, { apiVersion: '2024-12-18.acacia' as any });
+      this.stripe = new (Stripe as any)(key);
     } else {
       this.logger.warn('STRIPE_SECRET_KEY not set; running in stub mode');
     }
@@ -45,7 +45,7 @@ export class StripeService {
     return { sessionId: session.id, url: session.url };
   }
 
-  verifyWebhook(body: Buffer, signature: string): Stripe.Event {
+  verifyWebhook(body: Buffer, signature: string): any {
     if (!this.stripe) throw new BadRequestException('Stripe not configured');
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!secret) throw new BadRequestException('STRIPE_WEBHOOK_SECRET not set');

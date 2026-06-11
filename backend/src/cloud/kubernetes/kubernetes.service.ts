@@ -16,9 +16,9 @@ export interface DeploymentSpec {
 export class KubernetesService {
   private readonly logger = new Logger(KubernetesService.name);
   private kc: k8s.KubeConfig;
-  private core: k8s.CoreV1Api;
-  private apps: k8s.AppsV1Api;
-  private net: k8s.NetworkingV1Api;
+  private core!: k8s.CoreV1Api;
+  private apps!: k8s.AppsV1Api;
+  private net!: k8s.NetworkingV1Api;
   private enabled = true;
 
   constructor() {
@@ -40,23 +40,27 @@ export class KubernetesService {
 
   isEnabled() { return this.enabled; }
 
+  private isConflict(e: any) { return e?.code === 409 || e?.response?.statusCode === 409; }
+
   async createNamespace(userId: string, deploymentId: string): Promise<string> {
     const name = `amercloud-${userId.slice(0, 8)}-${deploymentId.slice(0, 8)}`.toLowerCase();
     if (!this.enabled) return name;
-    await this.core.createNamespace({
-      body: {
-        metadata: {
-          name,
-          labels: { 'amercloud/user': userId, 'amercloud/deployment': deploymentId, 'managed-by': 'amercloud' },
+    try {
+      await this.core.createNamespace({
+        body: {
+          metadata: {
+            name,
+            labels: { 'amercloud/user': userId, 'amercloud/deployment': deploymentId, 'managed-by': 'amercloud' },
+          },
         },
-      },
-    }).catch((e) => { if (e?.response?.statusCode !== 409) throw e; });
+      });
+    } catch (e) { if (!this.isConflict(e)) throw e; }
     return name;
   }
 
   async applyResourceQuota(namespace: string, limits: { cpu: string; memory: string; storage: string }) {
     if (!this.enabled) return;
-    const body = {
+    const body: any = {
       metadata: { name: 'amercloud-quota', namespace },
       spec: {
         hard: {
@@ -70,12 +74,13 @@ export class KubernetesService {
         },
       },
     };
-    await this.core.createNamespacedResourceQuota(namespace, { body } as any)
-      .catch(async (e) => {
-        if (e?.response?.statusCode === 409) {
-          await this.core.replaceNamespacedResourceQuota('amercloud-quota', namespace, { body } as any);
-        } else throw e;
-      });
+    try {
+      await this.core.createNamespacedResourceQuota({ namespace, body });
+    } catch (e) {
+      if (this.isConflict(e)) {
+        await this.core.replaceNamespacedResourceQuota({ name: 'amercloud-quota', namespace, body });
+      } else throw e;
+    }
   }
 
   async createOrUpdateDeployment(spec: DeploymentSpec) {
@@ -103,17 +108,18 @@ export class KubernetesService {
         },
       },
     };
-    await this.apps.createNamespacedDeployment(spec.namespace, { body })
-      .catch(async (e) => {
-        if (e?.response?.statusCode === 409) {
-          await this.apps.replaceNamespacedDeployment(spec.name, spec.namespace, { body } as any);
-        } else throw e;
-      });
+    try {
+      await this.apps.createNamespacedDeployment({ namespace: spec.namespace, body });
+    } catch (e) {
+      if (this.isConflict(e)) {
+        await this.apps.replaceNamespacedDeployment({ name: spec.name, namespace: spec.namespace, body });
+      } else throw e;
+    }
   }
 
   async createService(namespace: string, name: string, port = 3000) {
     if (!this.enabled) return;
-    const body = {
+    const body: any = {
       metadata: { name, namespace, labels: { app: name } },
       spec: {
         selector: { app: name },
@@ -121,16 +127,16 @@ export class KubernetesService {
         type: 'ClusterIP',
       },
     };
-    await this.core.createNamespacedService(namespace, { body } as any)
-      .catch((e) => { if (e?.response?.statusCode !== 409) throw e; });
+    try {
+      await this.core.createNamespacedService({ namespace, body });
+    } catch (e) { if (!this.isConflict(e)) throw e; }
   }
 
   async createIngress(namespace: string, name: string, hosts: string[], port = 3000) {
     if (!this.enabled || !hosts.length) return;
     const body: any = {
       metadata: {
-        name,
-        namespace,
+        name, namespace,
         annotations: {
           'cert-manager.io/cluster-issuer': 'letsencrypt-prod',
           'traefik.ingress.kubernetes.io/router.tls': 'true',
@@ -140,61 +146,60 @@ export class KubernetesService {
         tls: [{ hosts, secretName: `${name}-tls` }],
         rules: hosts.map((host) => ({
           host,
-          http: {
-            paths: [{
-              path: '/', pathType: 'Prefix',
-              backend: { service: { name, port: { number: port } } },
-            }],
-          },
+          http: { paths: [{ path: '/', pathType: 'Prefix', backend: { service: { name, port: { number: port } } } }] },
         })),
       },
     };
-    await this.net.createNamespacedIngress(namespace, { body })
-      .catch(async (e) => {
-        if (e?.response?.statusCode === 409) {
-          await this.net.replaceNamespacedIngress(name, namespace, { body } as any);
-        } else throw e;
-      });
+    try {
+      await this.net.createNamespacedIngress({ namespace, body });
+    } catch (e) {
+      if (this.isConflict(e)) {
+        await this.net.replaceNamespacedIngress({ name, namespace, body });
+      } else throw e;
+    }
   }
 
   async restartDeployment(namespace: string, name: string) {
     if (!this.enabled) return;
-    const patch = [{
-      op: 'add', path: '/spec/template/metadata/annotations',
-      value: { 'amercloud.io/restartedAt': new Date().toISOString() },
-    }];
-    await this.apps.patchNamespacedDeployment(name, namespace, { body: patch } as any, undefined, undefined, undefined, undefined, undefined, {
-      headers: { 'Content-Type': 'application/json-patch+json' },
-    } as any).catch((e) => this.logger.warn(`restart failed: ${e.message}`));
+    try {
+      const patch = [{
+        op: 'add', path: '/spec/template/metadata/annotations',
+        value: { 'amercloud.io/restartedAt': new Date().toISOString() },
+      }];
+      await (this.apps as any).patchNamespacedDeployment({ name, namespace, body: patch });
+    } catch (e: any) {
+      this.logger.warn(`restart failed: ${e.message}`);
+    }
   }
 
   async deleteNamespace(namespace: string) {
     if (!this.enabled) return;
-    await this.core.deleteNamespace(namespace).catch(() => undefined);
+    try { await this.core.deleteNamespace({ name: namespace }); } catch {}
   }
 
   async getPodLogs(namespace: string, app: string, tailLines = 500): Promise<string> {
     if (!this.enabled) return '';
-    const pods = await this.core.listNamespacedPod(namespace, undefined, undefined, undefined, undefined, `app=${app}`);
-    const pod = pods.body.items[0];
+    const pods = await this.core.listNamespacedPod({ namespace, labelSelector: `app=${app}` });
+    const pod = pods.items[0];
     if (!pod?.metadata?.name) return '';
-    const res = await this.core.readNamespacedPodLog(
-      pod.metadata.name, namespace, undefined, false, undefined, undefined, undefined, undefined, undefined, tailLines,
-    );
-    return res.body as unknown as string;
+    const out = await this.core.readNamespacedPodLog({
+      name: pod.metadata.name, namespace, tailLines,
+    });
+    return typeof out === 'string' ? out : String(out);
   }
 
   async streamPodLogs(namespace: string, app: string, onLine: (line: string) => void): Promise<() => void> {
     if (!this.enabled) return () => undefined;
-    const pods = await this.core.listNamespacedPod(namespace, undefined, undefined, undefined, undefined, `app=${app}`);
-    const pod = pods.body.items[0];
+    const pods = await this.core.listNamespacedPod({ namespace, labelSelector: `app=${app}` });
+    const pod = pods.items[0];
     if (!pod?.metadata?.name) return () => undefined;
     const log = new k8s.Log(this.kc);
-    const stream = new (require('stream').PassThrough)();
+    const { PassThrough } = await import('stream');
+    const stream = new PassThrough();
     stream.on('data', (chunk: Buffer) => {
       chunk.toString('utf8').split(/\r?\n/).filter(Boolean).forEach(onLine);
     });
-    const req = await log.log(namespace, pod.metadata.name, '', stream, { follow: true, tailLines: 100 });
-    return () => { try { (req as any).abort?.(); stream.destroy(); } catch {} };
+    const req: any = await (log as any).log(namespace, pod.metadata.name, '', stream, { follow: true, tailLines: 100 });
+    return () => { try { req?.abort?.(); stream.destroy(); } catch {} };
   }
 }
