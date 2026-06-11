@@ -669,3 +669,142 @@ model Note {
 
   @@index([userId, updatedAt])
 }
+
+// ============================================================
+// AmerCloud — Hosting as a Service (HaaS)
+// ============================================================
+
+enum CloudSubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  EXPIRED
+  SUSPENDED
+}
+
+enum CloudDeploymentStatus {
+  PENDING
+  DEPLOYING
+  RUNNING
+  STOPPED
+  FAILED
+  DELETED
+}
+
+enum CloudDeploymentType {
+  GITHUB
+  DOCKER_IMAGE
+  DOCKER_COMPOSE
+}
+
+enum CloudInvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum CloudPaymentMethodType {
+  CREDIT_CARD
+  FAWRY
+  INSTAPAY
+  VODAFONE_CASH
+  CASH
+}
+
+model CloudPlan {
+  id                 String   @id @default(uuid())
+  name               String   @unique
+  slug               String   @unique
+  description        String?
+  priceUSD           Float    @default(0)
+  priceEGP           Float    @default(0)
+  interval           String   @default("monthly")
+  cpuLimit           Float    @default(0.25)
+  memoryLimit        Int      @default(512)
+  storageLimit       Int      @default(1024)
+  deploymentLimit    Int      @default(1)
+  customDomainLimit  Int      @default(0)
+  apiRequestLimit    Int      @default(10000)
+  teamMemberLimit    Int      @default(1)
+  databaseSizeLimit  Int      @default(0)
+  redisLimit         Int?
+  trialDays          Int      @default(0)
+  features           Json
+  isActive           Boolean  @default(true)
+  isPopular          Boolean  @default(false)
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  users User[]
+}
+
+model CloudDeployment {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  status        CloudDeploymentStatus @default(PENDING)
+  type          CloudDeploymentType   @default(DOCKER_IMAGE)
+  source        String
+  namespace     String   @unique
+  subdomain     String?  @unique
+  cpu           Float    @default(0.25)
+  memory        Int      @default(512)
+  storage       Int      @default(1024)
+  replicas      Int      @default(1)
+  customDomains String[]
+  envVars       Json?
+  healthCheck   String?
+  lastDeployedAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, status])
+}
+
+model CloudInvoice {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  number      String   @unique
+  amountUSD   Float?
+  amountEGP   Float?
+  currency    String   @default("USD")
+  status      CloudInvoiceStatus @default(PENDING)
+  description String
+  provider    String?
+  providerRef String?
+  dueDate     DateTime
+  paidAt      DateTime?
+  refundedAt  DateTime?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, status])
+}
+
+model CloudPaymentMethod {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       CloudPaymentMethodType
+  providerId String
+  label      String?
+  last4      String?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model CloudAnnouncement {
+  id        String   @id @default(uuid())
+  title     String
+  body      String   @db.Text
+  severity  String   @default("info")
+  audience  String   @default("all")
+  createdAt DateTime @default(now())
+}
