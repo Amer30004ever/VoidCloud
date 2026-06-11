@@ -1,0 +1,855 @@
+name: CI/CD - Test, Build & Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Test/Build Mode'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - auto                    # Auto-detect changes
+          - test-backend-only       # Test backend code only
+          - test-frontend-only      # Test frontend code only
+          - test-both               # Test both backend and frontend
+          - build-backend-only      # Test + Build + Push backend image + Deploy
+          - build-frontend-only     # Test + Build + Push frontend image + Deploy
+          - build-both              # Test + Build + Push both images + Deploy both
+          - full-ci-backend         # Complete CI + Deploy backend
+          - full-ci-frontend        # Complete CI + Deploy frontend
+          - full-ci-both            # Complete CI + Deploy both
+      deploy_enabled:
+        description: 'Enable auto-deploy after build'
+        required: false
+        type: boolean
+        default: true
+      backend_image:
+        description: 'Backend image tag for manual deploy (optional)'
+        required: false
+        type: string
+        default: 'latest'
+      frontend_image:
+        description: 'Frontend image tag for manual deploy (optional)'
+        required: false
+        type: string
+        default: 'latest'
+      force_pull:
+        description: 'Force pull new images on deploy'
+        required: false
+        type: boolean
+        default: true
+
+  pull_request:
+    branches: [main, feature/devops-portal-features]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/combined-ci-cd.yaml'
+
+  push:
+    branches: [main, feature/devops-portal-features]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/combined-ci-cd.yaml'
+
+env:
+  DOCKER_HUB_USERNAME: amer30004ever
+  DOCKER_HUB_REPO: amer-portal
+  NAMESPACE: amer-portal
+
+jobs:
+  # ============================================
+  # DETECT CHANGES
+  # ============================================
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      mode: ${{ steps.changes.outputs.mode }}
+      deploy_enabled: ${{ steps.changes.outputs.deploy_enabled }}
+      backend_tag: ${{ steps.changes.outputs.backend_tag }}
+      frontend_tag: ${{ steps.changes.outputs.frontend_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changes
+        id: changes
+        run: |
+          echo "backend=false" >> $GITHUB_OUTPUT
+          echo "frontend=false" >> $GITHUB_OUTPUT
+          
+          MODE="${{ github.event.inputs.mode }}"
+          DEPLOY_ENABLED="${{ github.event.inputs.deploy_enabled }}"
+          
+          # Default deploy_enabled to true for push events
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            DEPLOY_ENABLED="true"
+          fi
+          
+          # For manual triggers, respect the mode
+          if [[ "$MODE" == "test-backend-only" ]] || [[ "$MODE" == "build-backend-only" ]] || [[ "$MODE" == "full-ci-backend" ]]; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "✅ Manual: Backend selected"
+          fi
+          
+          if [[ "$MODE" == "test-frontend-only" ]] || [[ "$MODE" == "build-frontend-only" ]] || [[ "$MODE" == "full-ci-frontend" ]]; then
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "✅ Manual: Frontend selected"
+          fi
+          
+          if [[ "$MODE" == "test-both" ]] || [[ "$MODE" == "build-both" ]] || [[ "$MODE" == "full-ci-both" ]]; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "✅ Manual: Both selected"
+          fi
+          
+          # For auto mode, detect changes from git
+          if [[ "$MODE" == "auto" ]]; then
+            if git diff --name-only HEAD~1 HEAD | grep -q "^backend/"; then
+              echo "backend=true" >> $GITHUB_OUTPUT
+              echo "✅ Backend changes detected"
+            fi
+            if git diff --name-only HEAD~1 HEAD | grep -q "^frontend/"; then
+              echo "frontend=true" >> $GITHUB_OUTPUT
+              echo "✅ Frontend changes detected"
+            fi
+          fi
+          
+          # Determine if we should build (for push events or build/full-ci modes)
+          SHOULD_BUILD_BACKEND="false"
+          SHOULD_BUILD_FRONTEND="false"
+          
+          if [[ "$MODE" == "build-backend-only" ]] || [[ "$MODE" == "build-both" ]] || [[ "$MODE" == "full-ci-backend" ]] || [[ "$MODE" == "full-ci-both" ]]; then
+            SHOULD_BUILD_BACKEND="true"
+          fi
+          
+          if [[ "$MODE" == "build-frontend-only" ]] || [[ "$MODE" == "build-both" ]] || [[ "$MODE" == "full-ci-frontend" ]] || [[ "$MODE" == "full-ci-both" ]]; then
+            SHOULD_BUILD_FRONTEND="true"
+          fi
+          
+          # For push events, build what changed
+          if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            SHOULD_BUILD_BACKEND="${{ steps.changes.outputs.backend }}"
+            SHOULD_BUILD_FRONTEND="${{ steps.changes.outputs.frontend }}"
+          fi
+          
+          echo "build_backend=${SHOULD_BUILD_BACKEND}" >> $GITHUB_OUTPUT
+          echo "build_frontend=${SHOULD_BUILD_FRONTEND}" >> $GITHUB_OUTPUT
+          echo "deploy_enabled=${DEPLOY_ENABLED}" >> $GITHUB_OUTPUT
+          echo "mode=${MODE}" >> $GITHUB_OUTPUT
+          
+          # Get image tags from inputs
+          echo "backend_tag=${{ github.event.inputs.backend_image }}" >> $GITHUB_OUTPUT
+          echo "frontend_tag=${{ github.event.inputs.frontend_image }}" >> $GITHUB_OUTPUT
+
+  # ============================================
+  # BACKEND TESTS
+  # ============================================
+  test-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: cd backend && npm ci
+
+      - name: Run linter
+        run: cd backend && npm run lint
+
+      - name: Generate Prisma Client
+        run: cd backend && npx prisma generate
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+
+      - name: Run Prisma migrations
+        run: cd backend && npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+
+      - name: Run unit tests
+        run: cd backend && npm test
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+          NODE_ENV: test
+          JWT_SECRET: test_secret_key_for_ci_only
+
+      - name: Build backend (TypeScript compile)
+        run: cd backend && npm run build
+
+  # ============================================
+  # FRONTEND TESTS
+  # ============================================
+  test-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Run linter
+        run: cd frontend && npm run lint
+
+      - name: Run TypeScript type check
+        run: cd frontend && npx tsc --noEmit
+
+      - name: Build frontend (Next.js build)
+        run: cd frontend && npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.amer-portal.cc.cd/api/v1
+
+      - name: Run frontend tests
+        run: cd frontend && npm test -- --watchAll=false --passWithNoTests
+
+  # ============================================
+  # BACKEND ARTIFACT TESTS
+  # ============================================
+  test-backend-artifact:
+    needs: [detect-changes, test-backend]
+    if: |
+      needs.detect-changes.outputs.backend == 'true' && 
+      (needs.detect-changes.outputs.build_backend == 'true' ||
+       contains(github.event.inputs.mode, 'full-ci'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build backend image for testing
+        run: |
+          cd backend
+          docker build -t backend-test:latest .
+
+      - name: Create network for containers
+        run: docker network create test-network || true
+  
+      - name: Run PostgreSQL container
+        run: |
+          docker run -d \
+            --name test-postgres \
+            --network test-network \
+            -e POSTGRES_USER=test_user \
+            -e POSTGRES_PASSWORD=test_password \
+            -e POSTGRES_DB=test_db \
+            -p 5432:5432 \
+            postgres:15-alpine
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL to start..."
+          for i in {1..30}; do
+            if docker exec test-postgres pg_isready -U test_user; then
+              echo "PostgreSQL is ready!"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Run backend container
+        run: |
+          docker run -d \
+            --name test-backend \
+            --network test-network \
+            -p 8080:3001 \
+            -e DATABASE_URL="postgresql://test_user:test_password@test-postgres:5432/test_db" \
+            -e POSTGRES_HOST="test-postgres" \
+            -e POSTGRES_USER="test_user" \
+            -e POSTGRES_PASSWORD="test_password" \
+            -e POSTGRES_DB="test_db" \
+            -e JWT_SECRET="test_secret_key_for_ci_only" \
+            -e NODE_ENV="test" \
+            backend-test:latest
+
+      - name: Wait for backend to be ready
+        run: |
+          echo "Waiting for backend to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8080/api/v1/health 2>/dev/null; then
+              echo "Backend is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/30 - Backend not ready yet, waiting..."
+            docker logs test-backend --tail 10
+            sleep 3
+          done
+          echo "❌ Backend failed to start"
+          docker logs test-backend
+          exit 1
+
+      - name: Test health endpoint
+        run: |
+          HEALTH_RESPONSE=$(curl -s http://localhost:8080/api/v1/health)
+          if echo "$HEALTH_RESPONSE" | grep -q '"status":"ok"'; then
+            echo "✅ Backend health check passed!"
+          else
+            echo "❌ Backend health check failed"
+            exit 1
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop test-backend test-postgres || true
+          docker rm test-backend test-postgres || true
+          docker network rm test-network || true
+          docker rmi backend-test:latest || true
+
+  # ============================================
+  # FRONTEND ARTIFACT TESTS
+  # ============================================
+  test-frontend-artifact:
+    needs: [detect-changes, test-frontend]
+    if: |
+      needs.detect-changes.outputs.frontend == 'true' && 
+      (needs.detect-changes.outputs.build_frontend == 'true' ||
+       contains(github.event.inputs.mode, 'full-ci'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build frontend image for testing
+        run: |
+          cd frontend
+          docker build -t frontend-test:latest .
+
+      - name: Test frontend container starts
+        run: |
+          docker run -d --name test-frontend -p 8081:3000 frontend-test:latest
+          sleep 10
+          curl -f http://localhost:8081 || exit 1
+          docker stop test-frontend
+          docker rm test-frontend
+
+      - name: Clean up
+        run: docker rmi frontend-test:latest || true
+
+  # ============================================
+  # BUILD AND PUSH BACKEND
+  # ============================================
+  build-backend:
+    needs: [detect-changes, test-backend, test-backend-artifact]
+    if: |
+      (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.build_backend == 'true') ||
+      needs.detect-changes.outputs.build_backend == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      backend_tag: ${{ steps.build.outputs.TIMESTAMP }}
+      backend_built: ${{ steps.build.outputs.BUILT }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Clean old images
+        run: |
+          docker system prune -f
+          docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend) 2>/dev/null || true
+
+      - name: Build backend image
+        id: build
+        run: |
+          cd backend
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:latest .
+          docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:${TIMESTAMP} .
+          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "BUILT=true" >> $GITHUB_OUTPUT
+
+      - name: Push backend image
+        run: |
+          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:latest
+          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:${{ steps.build.outputs.TIMESTAMP }}
+
+  # ============================================
+  # BUILD AND PUSH FRONTEND
+  # ============================================
+  build-frontend:
+    needs: [detect-changes, test-frontend, test-frontend-artifact]
+    if: |
+      (needs.detect-changes.outputs.frontend == 'true' && needs.detect-changes.outputs.build_frontend == 'true') ||
+      needs.detect-changes.outputs.build_frontend == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      frontend_tag: ${{ steps.build.outputs.TIMESTAMP }}
+      frontend_built: ${{ steps.build.outputs.BUILT }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Clean old images
+        run: |
+          docker system prune -f
+          docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend) 2>/dev/null || true
+
+      - name: Build frontend image
+        id: build
+        run: |
+          cd frontend
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest .
+          docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${TIMESTAMP} .
+          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "BUILT=true" >> $GITHUB_OUTPUT
+
+      - name: Push frontend image
+        run: |
+          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest
+          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${{ steps.build.outputs.TIMESTAMP }}
+
+  # ============================================
+  # DEPLOY BACKEND (Self-Hosted Runner)
+  # ============================================
+  deploy-backend:
+    needs: [detect-changes, build-backend]
+    if: |
+      needs.build-backend.result == 'success' &&
+      needs.detect-changes.outputs.deploy_enabled == 'true' &&
+      (needs.detect-changes.outputs.build_backend == 'true' ||
+       contains(github.event.inputs.mode, 'full-ci') ||
+       github.event.inputs.mode == 'build-backend-only' ||
+       github.event.inputs.mode == 'build-both')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Verify cluster connection
+        run: kubectl get nodes
+
+      - name: Set deployment info
+        id: deployment_info
+        run: |
+          BACKEND_TAG="${{ needs.build-backend.outputs.backend_tag }}"
+          if [[ -z "$BACKEND_TAG" ]] || [[ "$BACKEND_TAG" == "null" ]]; then
+            BACKEND_TAG="latest"
+          fi
+          echo "backend_image=${BACKEND_TAG}" >> $GITHUB_OUTPUT
+          echo "Using backend image: ${BACKEND_TAG}"
+
+      - name: Remove old backend images from nodes
+        if: github.event.inputs.force_pull == 'true' || github.event_name == 'push'
+        run: |
+          echo "🗑️ Removing old Amer Portal backend images from cluster nodes..."
+          NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
+          for NODE in $NODES; do
+            ssh -o StrictHostKeyChecking=no $NODE "sudo crictl images | grep 'amer-portal-backend' | awk '{print \$3}' | xargs -r sudo crictl rmi" 2>/dev/null || echo "⚠️ Could not clean images on $NODE"
+          done
+          echo "✅ Backend images cleaned"
+
+      - name: Deploy Backend
+        run: |
+          echo "🚀 Deploying backend..."
+          
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl apply -f kubernetes/backend/service.yaml 2>/dev/null || true
+          kubectl apply -f kubernetes/backend/deployment.yaml
+          
+          kubectl patch deployment backend -n ${{ env.NAMESPACE }} -p '{"spec":{"template":{"spec":{"containers":[{"name":"backend","imagePullPolicy":"Always"}]}}}}'
+          
+          kubectl set image deployment/backend -n ${{ env.NAMESPACE }} \
+            backend=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:${{ steps.deployment_info.outputs.backend_image }}
+          
+          kubectl rollout restart deployment/backend -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
+          
+          echo "✅ Backend deployment complete!"
+
+  # ============================================
+  # DEPLOY FRONTEND (Self-Hosted Runner)
+  # ============================================
+  deploy-frontend:
+    needs: [detect-changes, build-frontend]
+    if: |
+      needs.build-frontend.result == 'success' &&
+      needs.detect-changes.outputs.deploy_enabled == 'true' &&
+      (needs.detect-changes.outputs.build_frontend == 'true' ||
+       contains(github.event.inputs.mode, 'full-ci') ||
+       github.event.inputs.mode == 'build-frontend-only' ||
+       github.event.inputs.mode == 'build-both')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Verify cluster connection
+        run: kubectl get nodes
+
+      - name: Set deployment info
+        id: deployment_info
+        run: |
+          FRONTEND_TAG="${{ needs.build-frontend.outputs.frontend_tag }}"
+          if [[ -z "$FRONTEND_TAG" ]] || [[ "$FRONTEND_TAG" == "null" ]]; then
+            FRONTEND_TAG="latest"
+          fi
+          echo "frontend_image=${FRONTEND_TAG}" >> $GITHUB_OUTPUT
+          echo "Using frontend image: ${FRONTEND_TAG}"
+
+      - name: Remove old frontend images from nodes
+        if: github.event.inputs.force_pull == 'true' || github.event_name == 'push'
+        run: |
+          echo "🗑️ Removing old Amer Portal frontend images from cluster nodes..."
+          NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
+          for NODE in $NODES; do
+            ssh -o StrictHostKeyChecking=no $NODE "sudo crictl images | grep 'amer-portal-frontend' | awk '{print \$3}' | xargs -r sudo crictl rmi" 2>/dev/null || echo "⚠️ Could not clean images on $NODE"
+          done
+          echo "✅ Frontend images cleaned"
+
+      - name: Deploy Frontend
+        run: |
+          echo "🚀 Deploying frontend..."
+          
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl apply -f kubernetes/frontend/service.yaml 2>/dev/null || true
+          kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml 2>/dev/null || true
+          kubectl apply -f kubernetes/frontend/deployment.yaml
+          
+          kubectl patch deployment frontend -n ${{ env.NAMESPACE }} -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"Always"}]}}}}'
+          
+          kubectl set image deployment/frontend -n ${{ env.NAMESPACE }} \
+            frontend=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${{ steps.deployment_info.outputs.frontend_image }}
+          
+          kubectl rollout restart deployment/frontend -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=120s
+          
+          echo "✅ Frontend deployment complete!"
+
+  # ============================================
+  # MANUAL DEPLOYMENT OPTIONS
+  # ============================================
+  manual-full-deploy:
+    runs-on: self-hosted
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_type == 'full-deploy'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Full Deploy
+        run: |
+          echo "🚀 Performing full deployment..."
+          
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl apply -f kubernetes/configmaps.yaml 2>/dev/null || true
+          kubectl apply -f kubernetes/secrets.yaml 2>/dev/null || true
+          
+          kubectl apply -f kubernetes/postgres/pv.yaml 2>/dev/null || true
+          kubectl apply -f kubernetes/postgres/pvc.yaml 2>/dev/null || true
+          kubectl apply -f kubernetes/postgres/deployment.yaml 2>/dev/null || true
+          kubectl apply -f kubernetes/postgres/service.yaml 2>/dev/null || true
+          
+          kubectl wait --for=condition=ready pod -l app=postgres -n ${{ env.NAMESPACE }} --timeout=120s 2>/dev/null || true
+          
+          kubectl apply -f kubernetes/backend/deployment.yaml
+          kubectl apply -f kubernetes/backend/service.yaml
+          kubectl patch deployment backend -n ${{ env.NAMESPACE }} -p '{"spec":{"template":{"spec":{"containers":[{"name":"backend","imagePullPolicy":"Always"}]}}}}'
+          
+          BACKEND_IMG="${{ github.event.inputs.backend_image }}"
+          if [ "$BACKEND_IMG" != "latest" ] && [ "$BACKEND_IMG" != "" ] && [ "$BACKEND_IMG" != "null" ]; then
+            kubectl set image deployment/backend -n ${{ env.NAMESPACE }} \
+              backend=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:${BACKEND_IMG}
+          fi
+          
+          kubectl wait --for=condition=ready pod -l app=backend -n ${{ env.NAMESPACE }} --timeout=120s
+          
+          kubectl apply -f kubernetes/frontend/deployment.yaml
+          kubectl apply -f kubernetes/frontend/service.yaml
+          kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml
+          kubectl patch deployment frontend -n ${{ env.NAMESPACE }} -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"Always"}]}}}}'
+          
+          FRONTEND_IMG="${{ github.event.inputs.frontend_image }}"
+          if [ "$FRONTEND_IMG" != "latest" ] && [ "$FRONTEND_IMG" != "" ] && [ "$FRONTEND_IMG" != "null" ]; then
+            kubectl set image deployment/frontend -n ${{ env.NAMESPACE }} \
+              frontend=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${FRONTEND_IMG}
+          fi
+          
+          kubectl wait --for=condition=ready pod -l app=frontend -n ${{ env.NAMESPACE }} --timeout=120s
+          kubectl apply -f kubernetes/ingress.yaml 2>/dev/null || true
+          
+          echo "✅ Full deployment complete!"
+
+  manual-restart-backend:
+    runs-on: self-hosted
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_type == 'restart-backend'
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Restart Backend
+        run: |
+          echo "🔄 Restarting backend..."
+          if [ "${{ github.event.inputs.force_pull }}" == "true" ]; then
+            NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
+            for NODE in $NODES; do
+              ssh -o StrictHostKeyChecking=no $NODE "sudo crictl images | grep 'amer-portal-backend' | awk '{print \$3}' | xargs -r sudo crictl rmi" 2>/dev/null || true
+            done
+          fi
+          kubectl rollout restart deployment/backend -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
+          echo "✅ Backend restarted!"
+
+  manual-restart-frontend:
+    runs-on: self-hosted
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_type == 'restart-frontend'
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Restart Frontend
+        run: |
+          echo "🔄 Restarting frontend..."
+          if [ "${{ github.event.inputs.force_pull }}" == "true" ]; then
+            NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
+            for NODE in $NODES; do
+              ssh -o StrictHostKeyChecking=no $NODE "sudo crictl images | grep 'amer-portal-frontend' | awk '{print \$3}' | xargs -r sudo crictl rmi" 2>/dev/null || true
+            done
+          fi
+          kubectl rollout restart deployment/frontend -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=120s
+          echo "✅ Frontend restarted!"
+
+  manual-restart-all:
+    runs-on: self-hosted
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_type == 'restart-all'
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Restart All
+        run: |
+          echo "🔄 Restarting all deployments..."
+          if [ "${{ github.event.inputs.force_pull }}" == "true" ]; then
+            NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
+            for NODE in $NODES; do
+              ssh -o StrictHostKeyChecking=no $NODE "sudo crictl images | grep 'amer-portal' | awk '{print \$3}' | xargs -r sudo crictl rmi" 2>/dev/null || true
+            done
+          fi
+          kubectl rollout restart deployment -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
+          kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=120s
+          echo "✅ All deployments restarted!"
+
+  # ============================================
+  # CI SUMMARY
+  # ============================================
+  ci-summary:
+    needs: [detect-changes, test-backend, test-frontend, test-backend-artifact, test-frontend-artifact, build-backend, build-frontend]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Print CI Summary
+        run: |
+          echo "========================================="
+          echo "📊 CI Summary"
+          echo "========================================="
+          echo ""
+          echo "Mode: ${{ needs.detect-changes.outputs.mode }}"
+          echo "Deploy Enabled: ${{ needs.detect-changes.outputs.deploy_enabled }}"
+          echo ""
+          echo "Backend selected: ${{ needs.detect-changes.outputs.backend }}"
+          echo "Frontend selected: ${{ needs.detect-changes.outputs.frontend }}"
+          echo ""
+          echo "Code Test Results:"
+          echo "  Backend code tests: ${{ needs.test-backend.result }}"
+          echo "  Frontend code tests: ${{ needs.test-frontend.result }}"
+          echo ""
+          echo "Artifact Test Results:"
+          echo "  Backend artifact tests: ${{ needs.test-backend-artifact.result }}"
+          echo "  Frontend artifact tests: ${{ needs.test-frontend-artifact.result }}"
+          echo ""
+          echo "Build & Push Results:"
+          echo "  Backend build: ${{ needs.build-backend.result }}"
+          echo "  Frontend build: ${{ needs.build-frontend.result }}"
+          echo ""
+          echo "Backend Image Tag: ${{ needs.build-backend.outputs.backend_tag }}"
+          echo "Frontend Image Tag: ${{ needs.build-frontend.outputs.frontend_tag }}"
+          echo ""
+          echo "========================================="
+
+  # ============================================
+  # DEPLOYMENT VERIFICATION & SUMMARY
+  # ============================================
+  deploy-summary:
+    needs: [deploy-backend, deploy-frontend, manual-full-deploy, manual-restart-backend, manual-restart-frontend, manual-restart-all]
+    runs-on: self-hosted
+    if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Deployment Summary
+        run: |
+          echo ""
+          echo "========================================="
+          echo "🎉 CI/CD Pipeline Complete!"
+          echo "========================================="
+          echo ""
+          echo "Trigger: ${{ github.event_name }}"
+          
+          if [ "${{ github.event_name }}" == "push" ]; then
+            echo "Type: Auto CI/CD from code push"
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "Type: Manual trigger"
+            echo "Mode: ${{ github.event.inputs.mode }}"
+            echo "Deploy Type: ${{ github.event.inputs.deploy_type }}"
+          fi
+          
+          echo ""
+          echo "📦 Build Status:"
+          echo "  Backend built: ${{ needs.deploy-backend.result == 'success' || 'skipped' }}"
+          echo "  Frontend built: ${{ needs.deploy-frontend.result == 'success' || 'skipped' }}"
+          echo ""
+          echo "🚀 Deployment Status:"
+          echo "  Backend deployed: ${{ needs.deploy-backend.result == 'success' || 'not deployed' }}"
+          echo "  Frontend deployed: ${{ needs.deploy-frontend.result == 'success' || 'not deployed' }}"
+          echo ""
+          
+          echo "🏥 Current Cluster Status:"
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          echo ""
+          kubectl get svc -n ${{ env.NAMESPACE }}
+          echo ""
+          
+          echo "🌐 Access URLs:"
+          echo "   https://amer-portal.cc.cd"
+          echo "   https://api.amer-portal.cc.cd/api/v1/health"
+          echo ""
+          echo "========================================="
+
+      - name: Save build info
+        if: always()
+        run: |
+          mkdir -p build-info
+          echo "backend_built=${{ needs.deploy-backend.result == 'success' }}" > build-info/build.txt
+          echo "frontend_built=${{ needs.deploy-frontend.result == 'success' }}" >> build-info/build.txt
+          echo "backend_tag=${{ needs.build-backend.outputs.backend_tag }}" >> build-info/build.txt
+          echo "frontend_tag=${{ needs.build-frontend.outputs.frontend_tag }}" >> build-info/build.txt
+          echo "ci_run_id=${{ github.run_id }}" >> build-info/build.txt
+          echo "ci_run_number=${{ github.run_number }}" >> build-info/build.txt
+
+      - name: Upload build info
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info
+          path: build-info/
