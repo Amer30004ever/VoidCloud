@@ -144,12 +144,26 @@ export class CloudBillingController {
 @ApiTags('Cloud / Webhooks')
 @Controller('cloud/webhooks')
 export class CloudWebhooksController {
-  constructor(private billing: CloudBillingService) {}
+  constructor(
+    private billing: CloudBillingService,
+    private stripe: StripeService,
+    private fawry: FawryService,
+  ) {}
 
   @Public()
   @Post('stripe')
-  stripe(@Body() body: any) {
-    // Phase 2: verify Stripe signature
+  @HttpCode(200)
+  async stripe(@Req() req: RawBodyRequest<any>, @Headers('stripe-signature') sig: string, @Body() body: any) {
+    if (this.stripe.isLive()) {
+      if (!sig || !req.rawBody) throw new BadRequestException('Missing signature/body');
+      const event = this.stripe.verifyWebhook(req.rawBody, sig);
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object as any;
+        const invoiceId = session?.metadata?.invoiceId;
+        if (invoiceId) await this.billing.confirmPayment(invoiceId);
+      }
+      return { received: true };
+    }
     if (body?.type === 'checkout.session.completed' && body?.data?.invoiceId) {
       return this.billing.confirmPayment(body.data.invoiceId);
     }
@@ -158,21 +172,59 @@ export class CloudWebhooksController {
 
   @Public()
   @Post('fawry')
-  fawry(@Body() body: any) {
-    if (body?.invoiceId && body?.status === 'PAID') {
-      return this.billing.confirmPayment(body.invoiceId);
+  @HttpCode(200)
+  async fawry(@Body() body: any, @Headers('x-fawry-signature') sig?: string) {
+    if (process.env.FAWRY_SECURITY_KEY && !this.fawry.verifyWebhook(body, sig)) {
+      throw new BadRequestException('Invalid signature');
+    }
+    const invoiceId = body?.merchantRefNumber?.replace(/^amercloud_/, '') || body?.invoiceId;
+    if (invoiceId && (body?.orderStatus === 'PAID' || body?.status === 'PAID')) {
+      return this.billing.confirmPayment(invoiceId);
     }
     return { received: true };
   }
 
   @Public()
   @Post('instapay')
+  @HttpCode(200)
   instapay(@Body() body: any) {
-    if (body?.invoiceId && body?.status === 'PAID') {
-      return this.billing.confirmPayment(body.invoiceId);
+    const invoiceId = body?.reference_id?.replace(/^AMP_/, '') || body?.invoiceId;
+    if (invoiceId && (body?.status === 'PAID' || body?.status === 'success')) {
+      return this.billing.confirmPayment(invoiceId);
     }
     return { received: true };
   }
+}
+
+@ApiTags('Cloud / 2FA')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/auth/2fa')
+export class CloudTwoFactorController {
+  constructor(private tfa: TwoFactorService) {}
+  @Post('enable')  enable(@Req() req: AuthedRequest) { return this.tfa.beginEnable(req.user.id, req.user.email); }
+  @Post('verify')  verify(@Req() req: AuthedRequest, @Body() b: { token: string }) { return this.tfa.verifyAndActivate(req.user.id, b.token); }
+  @Post('disable') disable(@Req() req: AuthedRequest) { return this.tfa.disable(req.user.id); }
+}
+
+@ApiTags('Cloud / Backups')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/deployments/:id/backups')
+export class CloudBackupController {
+  constructor(private backups: CloudBackupService, private deployments: CloudDeploymentsService) {}
+  @Get()
+  async list(@Req() req: AuthedRequest, @Param('id') id: string) {
+    await this.deployments.get(req.user.id, id);
+    return this.backups.list(id);
+  }
+  @Post()
+  async create(@Req() req: AuthedRequest, @Param('id') id: string) {
+    await this.deployments.get(req.user.id, id);
+    return this.backups.backup(id);
+  }
+  @Post('restore/:backupId')
+  restore(@Param('backupId') backupId: string) { return this.backups.restore(backupId); }
 }
 
 @ApiTags('Cloud / Admin')
@@ -185,7 +237,14 @@ export class CloudAdminController {
     private admin: CloudAdminService,
     private plans: CloudPlansService,
     private billing: CloudBillingService,
+    private audit: CloudAuditService,
   ) {}
+
+  @Get('audit-logs')
+  auditLogs(@Query('targetId') targetId?: string, @Query('action') action?: string) {
+    return this.audit.list({ targetId, action });
+  }
+
 
   @Get('stats') stats() { return this.admin.stats(); }
 
