@@ -20,7 +20,13 @@ export interface DeploymentInput {
 
 @Injectable()
 export class CloudDeploymentsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(CloudDeploymentsService.name);
+  constructor(
+    private prisma: PrismaService,
+    private k8s: KubernetesService,
+    private prom: PrometheusService,
+    private email: CloudEmailService,
+  ) {}
 
   list(userId: string) {
     return this.prisma.cloudDeployment.findMany({
