@@ -1,7 +1,9 @@
 import {
-  Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards, ForbiddenException,
+  Body, Controller, Delete, Get, Param, Post, Put, Query, Req, Res, UseGuards, Headers,
+  ForbiddenException, BadRequestException, HttpCode, RawBodyRequest,
 } from '@nestjs/common';
 import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
@@ -10,6 +12,13 @@ import { CloudPlansService } from './cloud-plans.service';
 import { CloudDeploymentsService } from './cloud-deployments.service';
 import { CloudBillingService } from './cloud-billing.service';
 import { CloudAdminService } from './cloud-admin.service';
+import { StripeService } from './billing/stripe.service';
+import { FawryService } from './billing/fawry.service';
+import { InstapayService } from './billing/instapay.service';
+import { TwoFactorService } from './auth/two-factor.service';
+import { CloudAuditService } from './audit/cloud-audit.service';
+import { CloudBackupService } from './backup/cloud-backup.service';
+import { CloudEmailService } from './notifications/email.service';
 
 interface AuthedRequest { user: { id: string; role: Role; email: string } }
 
@@ -74,15 +83,21 @@ export class CloudDeploymentsController {
   }
 
   @Get(':id/logs')
-  logs(@Req() req: AuthedRequest, @Param('id') id: string) {
-    // Phase 2: real k8s log stream
-    const sample = [
-      'INFO  starting application…',
-      'INFO  connected to database',
-      'INFO  http server listening on :3000',
-      'INFO  ready',
-    ];
-    return { deploymentId: id, lines: sample };
+  async logs(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.deployments.tailLogs(req.user.id, id);
+  }
+
+  @Get(':id/logs/stream')
+  async logsStream(@Req() req: AuthedRequest, @Param('id') id: string, @Res() res: Response) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+    const stop = await this.deployments.streamLogs(req.user.id, id, (line) => {
+      res.write(`data: ${JSON.stringify({ line })}\n\n`);
+    });
+    const hb = setInterval(() => res.write(': ping\n\n'), 25000);
+    req.on?.('close' as any, () => { clearInterval(hb); stop(); });
   }
 }
 
