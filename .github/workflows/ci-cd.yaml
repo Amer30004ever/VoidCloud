@@ -68,6 +68,8 @@ jobs:
     outputs:
       backend: ${{ steps.changes.outputs.backend }}
       frontend: ${{ steps.changes.outputs.frontend }}
+      build_backend: ${{ steps.changes.outputs.build_backend }}
+      build_frontend: ${{ steps.changes.outputs.build_frontend }}
       mode: ${{ steps.changes.outputs.mode }}
       deploy_enabled: ${{ steps.changes.outputs.deploy_enabled }}
       backend_tag: ${{ steps.changes.outputs.backend_tag }}
@@ -83,6 +85,8 @@ jobs:
         run: |
           echo "backend=false" >> $GITHUB_OUTPUT
           echo "frontend=false" >> $GITHUB_OUTPUT
+          echo "build_backend=false" >> $GITHUB_OUTPUT
+          echo "build_frontend=false" >> $GITHUB_OUTPUT
           
           MODE="${{ github.event.inputs.mode }}"
           DEPLOY_ENABLED="${{ github.event.inputs.deploy_enabled }}"
@@ -92,21 +96,23 @@ jobs:
             DEPLOY_ENABLED="true"
           fi
           
+          echo "✅ Mode: ${MODE}"
+          
           # For manual triggers, respect the mode
           if [[ "$MODE" == "test-backend-only" ]] || [[ "$MODE" == "build-backend-only" ]] || [[ "$MODE" == "full-ci-backend" ]]; then
             echo "backend=true" >> $GITHUB_OUTPUT
-            echo "✅ Manual: Backend selected"
+            echo "✅ Backend selected"
           fi
           
           if [[ "$MODE" == "test-frontend-only" ]] || [[ "$MODE" == "build-frontend-only" ]] || [[ "$MODE" == "full-ci-frontend" ]]; then
             echo "frontend=true" >> $GITHUB_OUTPUT
-            echo "✅ Manual: Frontend selected"
+            echo "✅ Frontend selected"
           fi
           
           if [[ "$MODE" == "test-both" ]] || [[ "$MODE" == "build-both" ]] || [[ "$MODE" == "full-ci-both" ]]; then
             echo "backend=true" >> $GITHUB_OUTPUT
             echo "frontend=true" >> $GITHUB_OUTPUT
-            echo "✅ Manual: Both selected"
+            echo "✅ Both selected"
           fi
           
           # For auto mode, detect changes from git
@@ -121,19 +127,32 @@ jobs:
             fi
           fi
           
-          # Determine if we should build (for push events or build/full-ci modes)
+          # Determine if we should build for full-ci and build modes
           SHOULD_BUILD_BACKEND="false"
           SHOULD_BUILD_FRONTEND="false"
           
-          if [[ "$MODE" == "build-backend-only" ]] || [[ "$MODE" == "build-both" ]] || [[ "$MODE" == "full-ci-backend" ]] || [[ "$MODE" == "full-ci-both" ]]; then
-            SHOULD_BUILD_BACKEND="true"
+          # For manual workflow_dispatch
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            case "$MODE" in
+              "build-backend-only"|"full-ci-backend")
+                SHOULD_BUILD_BACKEND="true"
+                ;;
+              "build-frontend-only"|"full-ci-frontend")
+                SHOULD_BUILD_FRONTEND="true"
+                ;;
+              "build-both"|"full-ci-both")
+                SHOULD_BUILD_BACKEND="true"
+                SHOULD_BUILD_FRONTEND="true"
+                ;;
+              "auto")
+                # For auto, build what changed
+                SHOULD_BUILD_BACKEND="${{ steps.changes.outputs.backend }}"
+                SHOULD_BUILD_FRONTEND="${{ steps.changes.outputs.frontend }}"
+                ;;
+            esac
           fi
           
-          if [[ "$MODE" == "build-frontend-only" ]] || [[ "$MODE" == "build-both" ]] || [[ "$MODE" == "full-ci-frontend" ]] || [[ "$MODE" == "full-ci-both" ]]; then
-            SHOULD_BUILD_FRONTEND="true"
-          fi
-          
-          # For push events, build what changed
+          # For push/pull_request events, build what changed
           if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "pull_request" ]]; then
             SHOULD_BUILD_BACKEND="${{ steps.changes.outputs.backend }}"
             SHOULD_BUILD_FRONTEND="${{ steps.changes.outputs.frontend }}"
@@ -143,6 +162,13 @@ jobs:
           echo "build_frontend=${SHOULD_BUILD_FRONTEND}" >> $GITHUB_OUTPUT
           echo "deploy_enabled=${DEPLOY_ENABLED}" >> $GITHUB_OUTPUT
           echo "mode=${MODE}" >> $GITHUB_OUTPUT
+          
+          echo "📊 Summary:"
+          echo "  backend: ${{ steps.changes.outputs.backend }}"
+          echo "  frontend: ${{ steps.changes.outputs.frontend }}"
+          echo "  build_backend: ${SHOULD_BUILD_BACKEND}"
+          echo "  build_frontend: ${SHOULD_BUILD_FRONTEND}"
+          echo "  deploy_enabled: ${DEPLOY_ENABLED}"
           
           # Get image tags from inputs
           echo "backend_tag=${{ github.event.inputs.backend_image }}" >> $GITHUB_OUTPUT
@@ -251,8 +277,7 @@ jobs:
     needs: [detect-changes, test-backend]
     if: |
       needs.detect-changes.outputs.backend == 'true' && 
-      (needs.detect-changes.outputs.build_backend == 'true' ||
-       contains(github.event.inputs.mode, 'full-ci'))
+      needs.detect-changes.outputs.build_backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -344,8 +369,7 @@ jobs:
     needs: [detect-changes, test-frontend]
     if: |
       needs.detect-changes.outputs.frontend == 'true' && 
-      (needs.detect-changes.outputs.build_frontend == 'true' ||
-       contains(github.event.inputs.mode, 'full-ci'))
+      needs.detect-changes.outputs.build_frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -373,7 +397,6 @@ jobs:
   build-backend:
     needs: [detect-changes, test-backend, test-backend-artifact]
     if: |
-      (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.build_backend == 'true') ||
       needs.detect-changes.outputs.build_backend == 'true'
     runs-on: ubuntu-latest
     outputs:
@@ -415,7 +438,6 @@ jobs:
   build-frontend:
     needs: [detect-changes, test-frontend, test-frontend-artifact]
     if: |
-      (needs.detect-changes.outputs.frontend == 'true' && needs.detect-changes.outputs.build_frontend == 'true') ||
       needs.detect-changes.outputs.build_frontend == 'true'
     runs-on: ubuntu-latest
     outputs:
@@ -759,6 +781,10 @@ jobs:
           echo "Mode: ${{ needs.detect-changes.outputs.mode }}"
           echo "Deploy Enabled: ${{ needs.detect-changes.outputs.deploy_enabled }}"
           echo ""
+          echo "Build Flags from detect-changes:"
+          echo "  build_backend: ${{ needs.detect-changes.outputs.build_backend }}"
+          echo "  build_frontend: ${{ needs.detect-changes.outputs.build_frontend }}"
+          echo ""
           echo "Backend selected: ${{ needs.detect-changes.outputs.backend }}"
           echo "Frontend selected: ${{ needs.detect-changes.outputs.frontend }}"
           echo ""
@@ -778,6 +804,34 @@ jobs:
           echo "Frontend Image Tag: ${{ needs.build-frontend.outputs.frontend_tag }}"
           echo ""
           echo "========================================="
+          
+          # Exit with error if build was expected but skipped
+          if [[ "${{ needs.detect-changes.outputs.build_backend }}" == "true" ]] && [[ "${{ needs.build-backend.result }}" == "skipped" ]]; then
+            echo "❌ ERROR: Backend build was expected but got skipped!"
+            exit 1
+          fi
+          
+          if [[ "${{ needs.detect-changes.outputs.build_frontend }}" == "true" ]] && [[ "${{ needs.build-frontend.result }}" == "skipped" ]]; then
+            echo "❌ ERROR: Frontend build was expected but got skipped!"
+            exit 1
+          fi
+
+      - name: Save build info
+        if: always()
+        run: |
+          mkdir -p build-info
+          echo "backend_built=${{ needs.build-backend.result == 'success' }}" > build-info/build.txt
+          echo "frontend_built=${{ needs.build-frontend.result == 'success' }}" >> build-info/build.txt
+          echo "backend_tag=${{ needs.build-backend.outputs.backend_tag }}" >> build-info/build.txt
+          echo "frontend_tag=${{ needs.build-frontend.outputs.frontend_tag }}" >> build-info/build.txt
+          echo "ci_run_id=${{ github.run_id }}" >> build-info/build.txt
+          echo "ci_run_number=${{ github.run_number }}" >> build-info/build.txt
+
+      - name: Upload build info
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info
+          path: build-info/
 
   # ============================================
   # DEPLOYMENT VERIFICATION & SUMMARY
