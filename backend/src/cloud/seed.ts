@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
 const PLANS = [
   {
@@ -41,16 +41,31 @@ const PLANS = [
 ];
 
 export async function seedCloud() {
-  for (const p of PLANS) {
-    await prisma.cloudPlan.upsert({
-      where: { slug: p.slug },
-      update: {},
-      create: { ...p, features: p.features as any },
-    });
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    console.warn('[cloud-seed] DATABASE_URL not set, skipping');
+    return;
   }
-  console.log(`[cloud-seed] ensured ${PLANS.length} plans`);
+  const pool = new Pool({ connectionString });
+  const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
+  try {
+    for (const p of PLANS) {
+      await prisma.cloudPlan.upsert({
+        where: { slug: p.slug },
+        update: {},
+        create: { ...p, features: p.features as any },
+      });
+    }
+    console.log(`[cloud-seed] ensured ${PLANS.length} plans`);
+  } finally {
+    await prisma.$disconnect();
+    await pool.end();
+  }
 }
 
 if (require.main === module) {
-  seedCloud().finally(() => prisma.$disconnect());
+  seedCloud().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
 }
