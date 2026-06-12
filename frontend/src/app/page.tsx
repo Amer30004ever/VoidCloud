@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
+import { Integrations } from "@/components/landing/Integrations";
 import { ProblemSolution } from "@/components/landing/ProblemSolution";
 import { Features } from "@/components/landing/Features";
-import { Pricing } from "@/components/landing/Pricing";
 import { HowItWorks } from "@/components/landing/HowItWorks";
+import { UseCases } from "@/components/landing/UseCases";
+import { Pricing } from "@/components/landing/Pricing";
 import { Stats } from "@/components/landing/Stats";
 import { Testimonials } from "@/components/landing/Testimonials";
+import { ComparisonTable } from "@/components/landing/ComparisonTable";
 import { FAQ } from "@/components/landing/FAQ";
 import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
@@ -24,6 +27,16 @@ export const metadata: Metadata = {
     "deploy apps",
     "devops platform",
   ],
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      {
+        url:
+          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%81%3C/text%3E%3C/svg%3E",
+        type: "image/svg+xml",
+      },
+    ],
+  },
   alternates: { canonical: "https://amer-portal.cc.cd" },
   openGraph: {
     title: "AmerCloud | Egyptian Kubernetes Hosting",
@@ -56,12 +69,15 @@ export default function LandingPage() {
         <Navbar />
         <main>
           <Hero />
+          <Integrations />
           <ProblemSolution />
           <Features />
           <HowItWorks />
+          <UseCases />
           <Pricing />
           <Stats />
           <Testimonials />
+          <ComparisonTable />
           <FAQ />
           <CTASection />
         </main>

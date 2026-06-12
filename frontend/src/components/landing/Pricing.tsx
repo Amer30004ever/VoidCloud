@@ -13,6 +13,7 @@ type Plan = {
   href: string;
   popular?: boolean;
   outline?: boolean;
+  trialNote?: string;
 };
 
 const plans: Plan[] = [
@@ -31,6 +32,7 @@ const plans: Plan[] = [
     cta: "Start Trial →",
     href: "/amercloud/register",
     outline: true,
+    trialNote: "After 7 days, deployments pause until upgrade. No auto-charge.",
   },
   {
     name: "Starter",
@@ -81,7 +83,7 @@ const plans: Plan[] = [
       "Team members (5)",
     ],
     cta: "Contact Sales →",
-    href: "mailto:sales@amercloud.dev",
+    href: "mailto:nova-cloud-2026@outlook.com?subject=Business%20Plan%20Inquiry",
   },
 ];
 
@@ -91,6 +93,9 @@ export function Pricing() {
   return (
     <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
       <div className="mb-10 text-center">
+        <span className="mb-4 inline-block rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300">
+          🔥 Limited beta pricing — lock in discount
+        </span>
         <h2 className="text-3xl font-bold md:text-4xl">Simple, Transparent Pricing</h2>
         <p className="mt-3 text-white/60">USD or EGP. Cancel anytime.</p>
 
@@ -112,6 +117,9 @@ export function Pricing() {
             Yearly <span className="ml-1 text-xs text-emerald-500">-20%</span>
           </button>
         </div>
+        <p className="mt-3 text-xs text-white/50">
+          🔒 14-day money-back guarantee on annual plans
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -163,9 +171,18 @@ export function Pricing() {
               >
                 {p.cta}
               </Link>
+              {p.trialNote && (
+                <p className="mt-3 text-[11px] leading-snug text-white/40">{p.trialNote}</p>
+              )}
             </div>
           );
         })}
+      </div>
+
+      <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-white/60">
+        <span>✓ No setup fees</span>
+        <span>✓ No bandwidth overage</span>
+        <span>✓ No hidden costs</span>
       </div>
     </section>
   );
