@@ -26,6 +26,10 @@ on:
           - full-ci-frontend        # Complete CI + Deploy frontend
           - full-ci-both            # Complete CI + Deploy both
           - full-ci-all             # Complete CI + Deploy backend, frontend, and postgres
+          - apply-manifests         # kubectl apply all k8s manifests (no build)
+          - validate-secrets        # Run Validate-Secrets equivalent + annotate
+          - reset-postgres          # DESTRUCTIVE: wipe postgres PVC/PV + reinit
+          - k8s-full-reset          # reset-postgres -> apply -> validate -> redeploy
       deploy_enabled:
         description: 'Enable auto-deploy after build'
         required: false
