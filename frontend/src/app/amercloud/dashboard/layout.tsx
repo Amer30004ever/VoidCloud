@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import api from "@/lib/api";
 
 const NAV = [
   { href: "/amercloud/dashboard", label: "Dashboard", icon: "🏠" },
@@ -11,7 +12,6 @@ const NAV = [
   { href: "/amercloud/dashboard/billing/invoices", label: "Invoices", icon: "🧾" },
   { href: "/amercloud/dashboard/settings", label: "Settings", icon: "⚙️" },
   { href: "/amercloud/dashboard/settings/api-keys", label: "API Keys", icon: "🔑" },
-  { href: "/amercloud/dashboard/settings/team", label: "Team", icon: "👥" },
 ];
 
 const ADMIN_NAV = [
@@ -26,11 +26,16 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const [lang, setLang] = useState<"en" | "ar">("en");
+  const [role, setRole] = useState<string | null>(null);
   const isAdminArea = pathname.startsWith("/amercloud/admin");
 
   useEffect(() => {
-    const t = typeof window !== "undefined" && localStorage.getItem("amer_portal_token");
-    if (!t) router.replace("/amercloud/login");
+    const t = typeof window !== "undefined" && (localStorage.getItem("amer_portal_token") || sessionStorage.getItem("amer_portal_token"));
+    if (!t) {
+      router.replace("/amercloud/login");
+      return;
+    }
+    api.get("/auth/me").then((r) => setRole(r.data?.role ?? null)).catch(() => setRole(null));
   }, [router]);
 
   useEffect(() => {
@@ -43,6 +48,8 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     router.push("/amercloud/login");
   }
 
+  const isAdmin = role === "ADMIN";
+
   return (
     <div className="flex min-h-screen bg-slate-950 text-white">
       <aside
@@ -51,7 +58,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
         }`}
       >
         <div className="flex items-center justify-between p-4">
-          <Link href="/amercloud" className={`flex items-center gap-2 font-bold ${open ? "" : "hidden"}`}>
+          <Link href="/amercloud/dashboard" className={`flex items-center gap-2 font-bold ${open ? "" : "hidden"}`}>
             <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">☁</span>
             AmerCloud
           </Link>
@@ -72,14 +79,18 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
               {open && <span>{it.label}</span>}
             </Link>
           ))}
-          <div className="my-3 border-t border-white/5" />
-          <Link
-            href={isAdminArea ? "/amercloud/dashboard" : "/amercloud/admin"}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-white"
-          >
-            <span>{isAdminArea ? "←" : "🛡️"}</span>
-            {open && <span>{isAdminArea ? "Back to user" : "Admin panel"}</span>}
-          </Link>
+          {isAdmin && (
+            <>
+              <div className="my-3 border-t border-white/5" />
+              <Link
+                href={isAdminArea ? "/amercloud/dashboard" : "/amercloud/admin"}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-white"
+              >
+                <span>{isAdminArea ? "←" : "🛡️"}</span>
+                {open && <span>{isAdminArea ? "Back to user" : "Admin Panel"}</span>}
+              </Link>
+            </>
+          )}
         </nav>
         <div className="border-t border-white/5 p-3">
           <button onClick={logout} className="w-full rounded-lg px-3 py-2 text-left text-sm text-white/60 hover:bg-white/5 hover:text-white">
