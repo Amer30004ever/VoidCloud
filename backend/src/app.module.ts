@@ -23,6 +23,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { PipelinesModule } from './pipelines/pipelines.module';
 import { NotesModule } from './notes/notes.module';
+import { CloudModule } from './cloud/cloud.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { AppController } from './app.controller';
@@ -59,6 +60,7 @@ import { AppController } from './app.controller';
     MetricsModule,
     PipelinesModule,
     NotesModule,
+    CloudModule,
   ],
   controllers: [AppController],
   providers: [

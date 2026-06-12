@@ -13,8 +13,8 @@ spec:
       labels:
         app: backend
     spec:
-      imagePullSecrets:
-        - name: dockerhub-secret
+      # imagePullSecrets removed — images are public on Docker Hub.
+      # Re-add this block only if you push to a private registry.
       containers:
         - name: backend
           image: amer30004ever/amer-portal-backend:latest  # Will be updated by script

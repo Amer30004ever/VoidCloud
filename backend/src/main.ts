@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { seedCloud } from './cloud/seed';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -77,6 +78,7 @@ async function bootstrap() {
   // ──────────────────────────────────────────────────────────────────────────
 
   const port = process.env.PORT ?? 3001;
+  try { await seedCloud(); } catch (e) { logger.warn(`Cloud seed skipped: ${(e as Error).message}`); }
   await app.listen(port);
   logger.log(`🚀 MaVoid CRM API running on http://localhost:${port}/api/v1`);
   logger.log(`📖 Swagger docs available at http://localhost:${port}/api/docs`);
