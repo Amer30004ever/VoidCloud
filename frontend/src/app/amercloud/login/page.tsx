@@ -25,7 +25,15 @@ function LoginInner() {
         if (remember) localStorage.setItem("amer_portal_token", token);
         else sessionStorage.setItem("amer_portal_token", token);
       }
-      router.push(params.get("redirect") || "/amercloud/dashboard");
+      const role = data.user?.role;
+      const redirect = params.get("redirect");
+      if (redirect) {
+        router.push(redirect);
+      } else if (role === "ADMIN") {
+        router.push("/amercloud/admin/dashboard");
+      } else {
+        router.push("/amercloud/user/dashboard");
+      }
     } catch (e: unknown) {
       const status = (e as { response?: { status?: number; data?: { message?: string } } }).response?.status;
       const message = (e as { response?: { data?: { message?: string } } }).response?.data?.message;
