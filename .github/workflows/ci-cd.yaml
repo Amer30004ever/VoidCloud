@@ -1103,3 +1103,95 @@ jobs:
         with:
           name: build-info
           path: build-info/
+  # ============================================
+  # K8S OPS — apply manifests / validate secrets / reset postgres
+  # ============================================
+  apply-manifests:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      (github.event.inputs.mode == 'apply-manifests' ||
+       github.event.inputs.mode == 'k8s-full-reset')
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-kubectl@v4
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+      - name: Apply k8s manifests
+        run: |
+          set -e
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f kubernetes/configmaps.yaml
+          kubectl apply -f kubernetes/secrets.yaml
+          kubectl apply -f kubernetes/postgres/pv.yaml
+          kubectl apply -f kubernetes/postgres/pvc.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f kubernetes/postgres/deployment.yaml
+          kubectl apply -f kubernetes/postgres/service.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f kubernetes/backend/rbac.yaml -n ${{ env.NAMESPACE }} 2>/dev/null || true
+          kubectl apply -f kubernetes/backend/deployment.yaml
+          kubectl apply -f kubernetes/backend/service.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f kubernetes/frontend/deployment.yaml
+          kubectl apply -f kubernetes/frontend/service.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f kubernetes/ingress.yaml -n ${{ env.NAMESPACE }} 2>/dev/null || true
+
+  validate-secrets:
+    needs: [apply-manifests]
+    if: >-
+      always() && github.event_name == 'workflow_dispatch' &&
+      (github.event.inputs.mode == 'validate-secrets' ||
+       github.event.inputs.mode == 'apply-manifests' ||
+       github.event.inputs.mode == 'k8s-full-reset')
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-kubectl@v4
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+      - name: Validate & annotate secrets
+        run: bash kubernetes/validate-secrets.sh --namespace ${{ env.NAMESPACE }} --annotate
+
+  reset-postgres:
+    needs: [validate-secrets]
+    if: >-
+      always() && github.event_name == 'workflow_dispatch' &&
+      (github.event.inputs.mode == 'reset-postgres' ||
+       github.event.inputs.mode == 'k8s-full-reset')
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-kubectl@v4
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+      - name: Reset postgres (wipe PVC + data + reinit)
+        env:
+          PG_DATA_NODE: ${{ vars.PG_DATA_NODE || 'workernode01' }}
+          PG_DATA_PATH: ${{ vars.PG_DATA_PATH || '/mnt/homelab/volumes/amer-portal/postgres' }}
+        run: bash kubernetes/reset-postgres.sh --namespace ${{ env.NAMESPACE }} --node "$PG_DATA_NODE" --path "$PG_DATA_PATH"
+
+  redeploy-after-reset:
+    needs: [reset-postgres]
+    if: >-
+      always() && github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.mode == 'k8s-full-reset'
+    runs-on: self-hosted
+    steps:
+      - uses: azure/setup-kubectl@v4
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+      - name: Restart workloads
+        run: |
+          kubectl -n ${{ env.NAMESPACE }} rollout restart deploy/backend
+          kubectl -n ${{ env.NAMESPACE }} rollout status deploy/backend --timeout=300s
+          kubectl -n ${{ env.NAMESPACE }} rollout restart deploy/frontend 2>/dev/null || true
