@@ -701,10 +701,12 @@ enum CloudSubscriptionStatus {
   TRIALING
   EXPIRED
   SUSPENDED
+  PENDING_PAYMENT
 }
 
 enum CloudDeploymentStatus {
   PENDING
+  PENDING_PAYMENT
   PROVISIONING
   DEPLOYING
   RUNNING
