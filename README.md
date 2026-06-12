@@ -467,6 +467,67 @@ Required secrets: `DOCKER_HUB_USERNAME`, `DOCKER_HUB_TOKEN`, `KUBECONFIG_B64`.
 
 ---
 
+## Operations & Troubleshooting
+
+### "Login failed" / Lost admin credentials
+
+The admin account is seeded by `backend/prisma/seed.ts` from env vars (defaults: `admin@amer.dev` / `AmerDevOps2026!`). To create or **reset** the admin password, run the seed — it upserts the user, so it works for both fresh installs and recovery:
+
+```bash
+cd backend
+# Optional: override the defaults
+export ADMIN_EMAIL=admin@amer.dev
+export ADMIN_PASSWORD='YourNewStrongPassword!'
+export ADMIN_NAME='Amer Admin'
+npm run db:seed
+```
+
+The seed re-hashes the password with bcrypt (cost 10), sets `role=ADMIN`, `isActive=true`, and clears `mustChangePassword`. After it runs, sign in at `/amercloud/login` with the new credentials.
+
+### Self-service password reset (Outlook SMTP)
+
+The forgot/reset flow is wired end-to-end:
+
+- Frontend: `/amercloud/forgot-password` → `/amercloud/reset-password?token=...`
+- Backend: `POST /api/v1/auth/forgot-password` (always returns 200 to prevent email enumeration), `POST /api/v1/auth/reset-password`
+- Tokens: 32-byte CSPRNG, stored as SHA-256 hash, 30-minute TTL, single-use, prior unused tokens auto-invalidated on new request
+- Email: HTML + text via Nodemailer over Outlook SMTP
+
+Required env vars on the backend pod (Kubernetes `amer-portal-secrets`):
+
+```env
+SMTP_HOST=smtp.office365.com
+SMTP_PORT=587
+SMTP_USER=nova-cloud-2026@outlook.com
+SMTP_PASS=<app password from https://account.live.com/proofs/AppPassword>
+EMAIL_FROM="AmerCloud <nova-cloud-2026@outlook.com>"
+FRONTEND_URL=https://amer-portal.cc.cd
+```
+
+Outlook/Office365 requires an **app password** (regular account passwords are blocked for SMTP when MFA is on). Then apply the migration that adds `password_reset_tokens`:
+
+```bash
+cd backend && npx prisma migrate deploy
+```
+
+### Password visibility toggle
+
+All password inputs (`/amercloud/login`, `/register`, `/reset-password`) render an eye icon that toggles between `type="password"` and `type="text"`. Implemented in the shared `Input` component in `frontend/src/app/amercloud/login/page.tsx`. If you don't see it, hard-refresh (Ctrl/Cmd+Shift+R) — the change shipped 2026-06-12.
+
+### Auth API surface
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/v1/auth/register` | public | Create account |
+| POST | `/api/v1/auth/login` | public | Returns `{ access_token, user }` |
+| POST | `/api/v1/auth/forgot-password` | public | Sends reset email; always 200 |
+| POST | `/api/v1/auth/reset-password` | public | Consumes token, sets new password |
+| GET  | `/api/v1/auth/me` | Bearer JWT | Current user profile |
+
+Full Swagger UI at `https://api.amer-portal.cc.cd/api/docs` when the backend is running.
+
+---
+
 ## Contributing
 
 1. Branch from `main`: `git checkout -b feature/<name>`
