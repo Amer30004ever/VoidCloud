@@ -174,7 +174,7 @@ export class KubernetesService {
 
   async deleteNamespace(namespace: string) {
     if (!this.enabled) return;
-    try { await this.core.deleteNamespace({ name: namespace }); } catch {}
+    try { await this.core.deleteNamespace({ name: namespace }); } catch { /* ignore */ }
   }
 
   async getPodLogs(namespace: string, app: string, tailLines = 500): Promise<string> {
