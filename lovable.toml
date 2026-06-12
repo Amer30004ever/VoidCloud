@@ -1,0 +1,11 @@
+# lovable.toml
+[run]
+dev = "cd frontend && npm run dev"
+build = "cd frontend && npm run build"
+install = "cd frontend && npm install"
+
+[build]
+output = "frontend/.next"
+
+[env]
+NEXT_PUBLIC_API_URL = "https://api.amer-portal.cc.cd/api/v1"
