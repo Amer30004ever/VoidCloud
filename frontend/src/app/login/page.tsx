@@ -71,8 +71,13 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password);
       router.replace("/dashboard");
-    } catch {
-      setServerError("Invalid credentials. Please try again.");
+    } catch (error) {
+      const status = (error as { response?: { status?: number } }).response?.status;
+      setServerError(
+        status === 401
+          ? "Invalid credentials. Please try again."
+          : "Portal API is unreachable. Please check backend health and try again.",
+      );
     }
   };
 
