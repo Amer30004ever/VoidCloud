@@ -33,6 +33,10 @@ spec:
         - name: backend
           image: amer30004ever/amer-portal-backend:latest  # Will be updated by script
           imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: smtp-secret
+                optional: true
           env:
             - name: DATABASE_URL
               valueFrom:
@@ -66,31 +70,49 @@ spec:
                 secretKeyRef:
                   name: amer-portal-secrets
                   key: WHATSAPP_ACCESS_TOKEN
+                  optional: true
             - name: WHATSAPP_PHONE_NUMBER_ID
               valueFrom:
                 secretKeyRef:
                   name: amer-portal-secrets
                   key: WHATSAPP_PHONE_NUMBER_ID
+                  optional: true
             - name: WHATSAPP_WABA_ID
               valueFrom:
                 secretKeyRef:
                   name: amer-portal-secrets
                   key: WHATSAPP_WABA_ID
+                  optional: true
             - name: WHATSAPP_VERIFY_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: amer-portal-secrets
                   key: WHATSAPP_VERIFY_TOKEN
+                  optional: true
             - name: WEBHOOK_SECRET
               valueFrom:
                 secretKeyRef:
                   name: amer-portal-secrets
                   key: WEBHOOK_SECRET
+                  optional: true
             - name: NODE_ENV
               valueFrom:
                 configMapKeyRef:
                   name: amer-portal-config
                   key: NODE_ENV
+                  optional: true
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: amer-portal-config
+                  key: FRONTEND_URL
+                  optional: true
+            - name: CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: amer-portal-config
+                  key: CORS_ORIGINS
+                  optional: true
           ports:
             - containerPort: 3001
           resources:
