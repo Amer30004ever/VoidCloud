@@ -84,8 +84,8 @@ export const cloudApi = {
   },
   billing: {
     current: async () => (await api.get("/cloud/billing/current")).data,
-    subscribe: async (planId: string, provider: "stripe" | "fawry" | "instapay" | "cash") =>
-      (await api.post("/cloud/billing/subscribe", { planId, provider })).data,
+    subscribe: async (body: { planId: string; provider: "stripe" | "fawry" | "instapay" | "cash"; customerPhone?: string; payerInstapayId?: string }) =>
+      (await api.post("/cloud/billing/subscribe", body)).data,
     cancel: async () => (await api.post("/cloud/billing/cancel")).data,
     invoices: async () => (await api.get<CloudInvoice[]>("/cloud/billing/invoices")).data,
     invoice: async (id: string) => (await api.get<CloudInvoice>(`/cloud/billing/invoices/${id}`)).data,
@@ -116,6 +116,8 @@ export const cloudApi = {
       (await api.post("/cloud/admin/billing/refund", { invoiceId, partial })).data,
     confirm: async (invoiceId: string) =>
       (await api.post("/cloud/admin/billing/confirm", { invoiceId })).data,
+    rejectInvoice: async (invoiceId: string, reason: string) =>
+      (await api.post("/cloud/admin/billing/reject", { invoiceId, reason })).data,
     broadcast: async (body: { title: string; body: string; severity?: string; audience?: string }) =>
       (await api.post("/cloud/admin/announcements", body)).data,
     announcements: async () => (await api.get("/cloud/admin/announcements")).data,
