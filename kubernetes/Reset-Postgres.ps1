@@ -27,6 +27,21 @@ function Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "    [OK] $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "    [!]  $msg" -ForegroundColor Yellow }
 
+# Apply the checked-in hardened postgres manifest first. If the cluster is still
+# running the old manifest, pg_hba.conf will keep using scram-sha-256 and this
+# reset can look successful while backend auth still fails.
+Step "Applying hardened postgres manifest..."
+$postgresDeployment = Join-Path $scriptPath "postgres/deployment.yaml"
+$manifest = Get-Content $postgresDeployment -Raw
+foreach ($required in @("PGDATA", "init-pgdata", "secret-revision", "POSTGRES_INITDB_ARGS")) {
+  if ($manifest -notmatch [Regex]::Escape($required)) {
+    Warn "postgres/deployment.yaml is stale; missing '$required'. Pull the latest repo changes before resetting."
+    exit 1
+  }
+}
+kubectl apply -f $postgresDeployment -n $Namespace | Out-Null
+Ok "Postgres deployment manifest applied."
+
 # --- 0. sanity: secret must exist and have a password -----------------------
 Step "Validating amer-portal-secrets..."
 $pwB64 = kubectl -n $Namespace get secret amer-portal-secrets -o jsonpath='{.data.POSTGRES_PASSWORD}' 2>$null
@@ -35,6 +50,10 @@ if (-not $pwB64) {
   exit 1
 }
 $pw = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($pwB64))
+$user = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(
+  (kubectl -n $Namespace get secret amer-portal-secrets -o jsonpath='{.data.POSTGRES_USER}')))
+$db = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(
+  (kubectl -n $Namespace get secret amer-portal-secrets -o jsonpath='{.data.POSTGRES_DB}')))
 $dbUrl = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(
   (kubectl -n $Namespace get secret amer-portal-secrets -o jsonpath='{.data.DATABASE_URL}')))
 if ($dbUrl -notmatch [Regex]::Escape(":$pw@")) {
@@ -64,7 +83,7 @@ if ($SkipNodeWipe) {
   Step "Wiping data directory on node '$DataNode'..."
   Write-Host ""
   Write-Host "  SSH to the node and run:" -ForegroundColor Yellow
-  Write-Host "    ssh $DataNode 'sudo rm -rf $DataPath/* $DataPath/.* 2>/dev/null; ls -la $DataPath'" -ForegroundColor Gray
+  Write-Host "    ssh $DataNode 'sudo find $DataPath -mindepth 1 -maxdepth 1 -exec rm -rf {} +; sudo install -d -m 700 -o 999 -g 999 $DataPath; ls -la $DataPath'" -ForegroundColor Gray
   Write-Host ""
   Read-Host "Press Enter once the directory is EMPTY (no pgdata, no lost+found)"
 }
@@ -80,10 +99,17 @@ Step "Starting postgres (will run initdb with the secret's password)..."
 kubectl -n $Namespace scale deploy/postgres --replicas=1 | Out-Null
 kubectl -n $Namespace rollout status deploy/postgres --timeout=180s
 
+$livePgData = kubectl -n $Namespace get deploy/postgres -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="PGDATA")].value}'
+if ($livePgData -ne "/var/lib/postgresql/data/pgdata") {
+  Warn "Live postgres deployment is still stale; PGDATA is '$livePgData'. Re-apply postgres/deployment.yaml and rerun."
+  exit 1
+}
+Ok "Live postgres deployment uses PGDATA subdirectory."
+
 # --- 6. verify authentication actually works --------------------------------
 Step "Verifying password auth from inside the pod..."
 $pgPod = kubectl -n $Namespace get pod -l app=postgres -o jsonpath='{.items[0].metadata.name}'
-$check = kubectl -n $Namespace exec $pgPod -- sh -c "PGPASSWORD='$pw' psql -h 127.0.0.1 -U postgres -d amer_portal -c 'SELECT 1' 2>&1"
+$check = kubectl -n $Namespace exec $pgPod -- sh -c "PGPASSWORD='$pw' psql -h 127.0.0.1 -U '$user' -d '$db' -c 'SELECT 1' 2>&1"
 if ($LASTEXITCODE -ne 0) {
   Warn "Auth check FAILED. Output:"
   Write-Host $check -ForegroundColor Red

@@ -81,7 +81,7 @@ Write-Host "Creating secrets.yaml file..." -ForegroundColor Blue
 $secretsFile = Join-Path $scriptPath "secrets.yaml"
 
 # Generate JWT secret if not provided
-$jwtSecret = if ($env:JWT_SECRET) { $env:JWT_SECET } else { [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((New-Guid).ToString())) }
+$jwtSecret = if ($env:JWT_SECRET) { $env:JWT_SECRET } else { [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((New-Guid).ToString())) }
 
 $secretsYamlContent = @"
 apiVersion: v1
@@ -106,6 +106,17 @@ stringData:
   WHATSAPP_WABA_ID: ""
   WHATSAPP_VERIFY_TOKEN: ""
   WEBHOOK_SECRET: ""
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: $Namespace
+type: Opaque
+stringData:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: amer_portal
 "@
 
 $secretsYamlContent | Out-File -FilePath $secretsFile -Encoding utf8
@@ -192,6 +203,12 @@ if (Test-Path $secretsFile) {
     Write-Host "  Secrets applied from secrets.yaml" -ForegroundColor Green
 }
 
+$secretValidator = Join-Path $scriptPath "Validate-Secrets.ps1"
+if (Test-Path $secretValidator) {
+    & $secretValidator -Namespace $Namespace
+    if ($LASTEXITCODE -ne 0) { exit 1 }
+}
+
 # Apply Docker Hub secret if exists
 $dockerhubSecretFile = Join-Path $scriptPath "dockerhub-secret.yaml"
 if (Test-Path $dockerhubSecretFile) {
@@ -228,6 +245,11 @@ $deploymentFile = Join-Path $postgresPath "deployment.yaml"
 if (Test-Path $deploymentFile) { 
     kubectl apply -f $deploymentFile -n $Namespace
     Write-Host "  Deployment applied" -ForegroundColor Green
+}
+
+if (Test-Path $secretValidator) {
+    & $secretValidator -Namespace $Namespace -Annotate
+    if ($LASTEXITCODE -ne 0) { exit 1 }
 }
 
 $serviceFile = Join-Path $postgresPath "service.yaml"
