@@ -1,5 +1,9 @@
 name: Deploy to Kubernetes
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false   # never cancel a deploy that is actually running
+
 on:
   workflow_dispatch:
     inputs:
