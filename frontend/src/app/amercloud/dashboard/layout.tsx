@@ -6,19 +6,22 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
 const NAV = [
-  { href: "/amercloud/dashboard", label: "Dashboard", icon: "🏠" },
+  { href: "/amercloud/user/dashboard", label: "Dashboard", icon: "🏠" },
   { href: "/amercloud/dashboard/deployments", label: "Deployments", icon: "🚀" },
   { href: "/amercloud/dashboard/billing", label: "Billing", icon: "💳" },
-  { href: "/amercloud/dashboard/billing/invoices", label: "Invoices", icon: "🧾" },
   { href: "/amercloud/dashboard/settings", label: "Settings", icon: "⚙️" },
   { href: "/amercloud/dashboard/settings/api-keys", label: "API Keys", icon: "🔑" },
 ];
 
 const ADMIN_NAV = [
-  { href: "/amercloud/admin", label: "Overview", icon: "📊" },
+  { href: "/amercloud/admin/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/amercloud/admin/users", label: "Users", icon: "👤" },
   { href: "/amercloud/admin/plans", label: "Plans", icon: "💎" },
-  { href: "/amercloud/admin/billing", label: "Transactions", icon: "💰" },
+  { href: "/amercloud/dashboard/deployments", label: "Deployments", icon: "🚀" },
+  { href: "/amercloud/admin/billing", label: "Billing", icon: "💰" },
+  { href: "/amercloud/dashboard/settings", label: "Settings", icon: "⚙️" },
+  { href: "/amercloud/dashboard/settings/api-keys", label: "API Keys", icon: "🔑" },
+  { href: "/amercloud/dashboard/settings/team", label: "Team", icon: "👥" },
 ];
 
 export default function CloudDashboardLayout({ children }: { children: React.ReactNode }) {
