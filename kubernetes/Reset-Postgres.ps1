@@ -99,9 +99,11 @@ Step "Starting postgres (will run initdb with the secret's password)..."
 kubectl -n $Namespace scale deploy/postgres --replicas=1 | Out-Null
 kubectl -n $Namespace rollout status deploy/postgres --timeout=180s
 
-$livePgData = kubectl -n $Namespace get deploy/postgres -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="PGDATA")].value}'
-if ($livePgData -ne "/var/lib/postgresql/data/pgdata") {
-  Warn "Live postgres deployment is still stale; PGDATA is '$livePgData'. Re-apply postgres/deployment.yaml and rerun."
+# Use yaml output + string match; PowerShell mangles the jsonpath quoting
+# enough that kubectl sees `@.name==PGDATA` (unquoted) and errors out.
+$liveYaml = kubectl -n $Namespace get deploy/postgres -o yaml | Out-String
+if ($liveYaml -notmatch 'value:\s*/var/lib/postgresql/data/pgdata') {
+  Warn "Live postgres deployment is still stale; PGDATA subdir not set. Re-apply postgres/deployment.yaml and rerun."
   exit 1
 }
 Ok "Live postgres deployment uses PGDATA subdirectory."

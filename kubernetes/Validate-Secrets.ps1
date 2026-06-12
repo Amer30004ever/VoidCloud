@@ -75,14 +75,30 @@ Ok "Secret checksum: $($hash.Substring(0, 12))"
 
 if ($Annotate) {
   Step "Patching deployment annotations with secret checksum..."
-  $patch = @{ spec = @{ template = @{ metadata = @{ annotations = @{ "secret-checksum" = $hash } } } } } | ConvertTo-Json -Depth 10 -Compress
-  foreach ($deployment in @("postgres", "backend")) {
-    $exists = kubectl -n $Namespace get deployment $deployment --ignore-not-found 2>$null
-    if ($exists) {
-      kubectl -n $Namespace patch deployment $deployment --type merge -p $patch | Out-Null
-      Ok "Annotated deployment/$deployment"
-    } else {
-      Warn "deployment/$deployment does not exist yet; skipping annotation"
+  $patchObject = @{ spec = @{ template = @{ metadata = @{ annotations = @{ "secret-checksum" = $hash } } } } }
+  $patchJson = $patchObject | ConvertTo-Json -Depth 10 -Compress
+  $patchFile = New-TemporaryFile
+  try {
+    # Write WITHOUT BOM so kubectl can parse the JSON. PowerShell's native-arg
+    # quoting otherwise mangles inline JSON, producing "invalid character 's'
+    # looking for beginning of object key string".
+    [System.IO.File]::WriteAllText($patchFile.FullName, $patchJson, (New-Object System.Text.UTF8Encoding $false))
+    foreach ($deployment in @("postgres", "backend")) {
+      $exists = kubectl -n $Namespace get deployment $deployment --ignore-not-found 2>$null
+      if ($exists) {
+        kubectl -n $Namespace patch deployment $deployment --type merge --patch-file $patchFile.FullName | Out-Null
+        if ($LASTEXITCODE -eq 0) { Ok "Annotated deployment/$deployment" }
+        else { Warn "kubectl patch failed for deployment/$deployment (exit $LASTEXITCODE)" }
+      } else {
+        Warn "deployment/$deployment does not exist yet; skipping annotation"
+      }
     }
+  } finally {
+    Remove-Item $patchFile.FullName -Force -ErrorAction SilentlyContinue
   }
 }
+
+# Always exit clean so callers (deploy-only.ps1) don't bail on transient kubectl noise.
+$global:LASTEXITCODE = 0
+exit 0
+
