@@ -90,7 +90,7 @@ export const cloudApi = {
     invoices: async () => (await api.get<CloudInvoice[]>("/cloud/billing/invoices")).data,
     invoice: async (id: string) => (await api.get<CloudInvoice>(`/cloud/billing/invoices/${id}`)).data,
     paymentMethods: async () => (await api.get("/cloud/billing/payment-methods")).data,
-    addPaymentMethod: async (body: any) => (await api.post("/cloud/billing/payment-methods", body)).data,
+    addPaymentMethod: async (body: Record<string, unknown>) => (await api.post("/cloud/billing/payment-methods", body)).data,
     removePaymentMethod: async (id: string) => api.delete(`/cloud/billing/payment-methods/${id}`),
   },
   admin: {
