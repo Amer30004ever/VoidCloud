@@ -1125,7 +1125,7 @@ jobs:
           set -e
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
           kubectl apply -f kubernetes/configmaps.yaml
-          kubectl apply -f kubernetes/secrets.yaml
+          kubectl apply -f kubernetes/secrets.yaml 2>/dev/null || echo "kubernetes/secrets.yaml not present; keeping existing cluster secrets"
           kubectl apply -f kubernetes/postgres/pv.yaml
           kubectl apply -f kubernetes/postgres/pvc.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f kubernetes/postgres/deployment.yaml
@@ -1136,6 +1136,7 @@ jobs:
           kubectl apply -f kubernetes/frontend/deployment.yaml
           kubectl apply -f kubernetes/frontend/service.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f kubernetes/ingress.yaml -n ${{ env.NAMESPACE }} 2>/dev/null || true
+          kubectl -n ${{ env.NAMESPACE }} rollout status deploy/backend --timeout=300s
 
   validate-secrets:
     needs: [apply-manifests]
