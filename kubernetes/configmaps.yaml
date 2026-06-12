@@ -8,4 +8,6 @@ data:
   BACKEND_PORT: "3001"
   FRONTEND_PORT: "3000"
   API_URL: http://backend:3001/api/v1
-  NEXT_PUBLIC_API_URL: https://amer.homelab.com/api/v1
+  FRONTEND_URL: https://amer-portal.cc.cd
+  NEXT_PUBLIC_API_URL: https://api.amer-portal.cc.cd/api/v1
+  CORS_ORIGINS: https://amer-portal.cc.cd,https://www.amer-portal.cc.cd
