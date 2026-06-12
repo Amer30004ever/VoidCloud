@@ -21,23 +21,42 @@ async function bootstrap() {
     }),
   );
 
-  // CORS - Allow multiple origins for development
-  const allowedOrigins = [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-	'https://amer-portal.cc.cd',
-	'https://api.amer-portal.cc.cd',
-  ].filter(Boolean);
+  // CORS - Allow configured origins + sensible defaults
+  const envOrigins = (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  const allowedOrigins = Array.from(
+    new Set(
+      [
+        process.env.FRONTEND_URL || 'http://localhost:3000',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+        'https://amer-portal.cc.cd',
+        'https://www.amer-portal.cc.cd',
+        'https://api.amer-portal.cc.cd',
+        ...envOrigins,
+      ].filter(Boolean),
+    ),
+  );
+
+  // Also allow any *.amer-portal.cc.cd subdomain (preview / staging)
+  const allowedOriginRegexes = [/^https:\/\/([a-z0-9-]+\.)*amer-portal\.cc\.cd$/i];
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl)
+      // Allow requests with no origin (curl, server-to-server, mobile)
       if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+
+      const allowed =
+        allowedOrigins.includes(origin) ||
+        allowedOriginRegexes.some((r) => r.test(origin)) ||
+        process.env.NODE_ENV !== 'production';
+
+      if (allowed) {
         callback(null, true);
       } else {
         logger.warn(`Blocked CORS request from origin: ${origin}`);
