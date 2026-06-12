@@ -21,9 +21,11 @@ on:
           - build-backend-only      # Test + Build + Push backend image + Deploy
           - build-frontend-only     # Test + Build + Push frontend image + Deploy
           - build-both              # Test + Build + Push both images + Deploy both
+          - build-postgres          # Build + Push PostgreSQL image only
           - full-ci-backend         # Complete CI + Deploy backend
           - full-ci-frontend        # Complete CI + Deploy frontend
           - full-ci-both            # Complete CI + Deploy both
+          - full-ci-all             # Complete CI + Deploy backend, frontend, and postgres
       deploy_enabled:
         description: 'Enable auto-deploy after build'
         required: false
@@ -39,6 +41,11 @@ on:
         required: false
         type: string
         default: 'latest'
+      postgres_image:
+        description: 'PostgreSQL image tag for manual deploy (optional)'
+        required: false
+        type: string
+        default: 'latest'
       force_pull:
         description: 'Force pull new images on deploy'
         required: false
@@ -48,6 +55,7 @@ on:
 env:
   DOCKER_HUB_USERNAME: amer30004ever
   DOCKER_HUB_REPO: amer-portal
+  POSTGRES_IMAGE_NAME: amer30004ever/amer-portal-postgres
   NAMESPACE: amer-portal
 
 jobs:
@@ -59,12 +67,15 @@ jobs:
     outputs:
       backend: ${{ steps.changes.outputs.backend }}
       frontend: ${{ steps.changes.outputs.frontend }}
+      postgres: ${{ steps.changes.outputs.postgres }}
       build_backend: ${{ steps.changes.outputs.build_backend }}
       build_frontend: ${{ steps.changes.outputs.build_frontend }}
+      build_postgres: ${{ steps.changes.outputs.build_postgres }}
       mode: ${{ steps.changes.outputs.mode }}
       deploy_enabled: ${{ steps.changes.outputs.deploy_enabled }}
       backend_tag: ${{ steps.changes.outputs.backend_tag }}
       frontend_tag: ${{ steps.changes.outputs.frontend_tag }}
+      postgres_tag: ${{ steps.changes.outputs.postgres_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -76,8 +87,10 @@ jobs:
         run: |
           echo "backend=false" >> $GITHUB_OUTPUT
           echo "frontend=false" >> $GITHUB_OUTPUT
+          echo "postgres=false" >> $GITHUB_OUTPUT
           echo "build_backend=false" >> $GITHUB_OUTPUT
           echo "build_frontend=false" >> $GITHUB_OUTPUT
+          echo "build_postgres=false" >> $GITHUB_OUTPUT
           
           MODE="${{ github.event.inputs.mode }}"
           DEPLOY_ENABLED="${{ github.event.inputs.deploy_enabled }}"
@@ -90,20 +103,25 @@ jobs:
           echo "✅ Mode: ${MODE}"
           
           # For manual triggers, respect the mode
-          if [[ "$MODE" == "test-backend-only" ]] || [[ "$MODE" == "build-backend-only" ]] || [[ "$MODE" == "full-ci-backend" ]]; then
+          if [[ "$MODE" == "test-backend-only" ]] || [[ "$MODE" == "build-backend-only" ]] || [[ "$MODE" == "full-ci-backend" ]] || [[ "$MODE" == "full-ci-all" ]]; then
             echo "backend=true" >> $GITHUB_OUTPUT
             echo "✅ Backend selected"
           fi
           
-          if [[ "$MODE" == "test-frontend-only" ]] || [[ "$MODE" == "build-frontend-only" ]] || [[ "$MODE" == "full-ci-frontend" ]]; then
+          if [[ "$MODE" == "test-frontend-only" ]] || [[ "$MODE" == "build-frontend-only" ]] || [[ "$MODE" == "full-ci-frontend" ]] || [[ "$MODE" == "full-ci-all" ]]; then
             echo "frontend=true" >> $GITHUB_OUTPUT
             echo "✅ Frontend selected"
           fi
           
-          if [[ "$MODE" == "test-both" ]] || [[ "$MODE" == "build-both" ]] || [[ "$MODE" == "full-ci-both" ]]; then
+          if [[ "$MODE" == "test-both" ]] || [[ "$MODE" == "build-both" ]] || [[ "$MODE" == "full-ci-both" ]] || [[ "$MODE" == "full-ci-all" ]]; then
             echo "backend=true" >> $GITHUB_OUTPUT
             echo "frontend=true" >> $GITHUB_OUTPUT
             echo "✅ Both selected"
+          fi
+          
+          if [[ "$MODE" == "build-postgres" ]] || [[ "$MODE" == "full-ci-all" ]]; then
+            echo "postgres=true" >> $GITHUB_OUTPUT
+            echo "✅ PostgreSQL selected"
           fi
           
           # For auto mode, detect changes from git
@@ -116,11 +134,16 @@ jobs:
               echo "frontend=true" >> $GITHUB_OUTPUT
               echo "✅ Frontend changes detected"
             fi
+            if git diff --name-only HEAD~1 HEAD | grep -q "^kubernetes/postgres/"; then
+              echo "postgres=true" >> $GITHUB_OUTPUT
+              echo "✅ PostgreSQL changes detected"
+            fi
           fi
           
           # Determine if we should build for full-ci and build modes
           SHOULD_BUILD_BACKEND="false"
           SHOULD_BUILD_FRONTEND="false"
+          SHOULD_BUILD_POSTGRES="false"
           
           # For manual workflow_dispatch
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
@@ -135,10 +158,19 @@ jobs:
                 SHOULD_BUILD_BACKEND="true"
                 SHOULD_BUILD_FRONTEND="true"
                 ;;
+              "build-postgres")
+                SHOULD_BUILD_POSTGRES="true"
+                ;;
+              "full-ci-all")
+                SHOULD_BUILD_BACKEND="true"
+                SHOULD_BUILD_FRONTEND="true"
+                SHOULD_BUILD_POSTGRES="true"
+                ;;
               "auto")
                 # For auto, build what changed
                 SHOULD_BUILD_BACKEND="${{ steps.changes.outputs.backend }}"
                 SHOULD_BUILD_FRONTEND="${{ steps.changes.outputs.frontend }}"
+                SHOULD_BUILD_POSTGRES="${{ steps.changes.outputs.postgres }}"
                 ;;
             esac
           fi
@@ -147,23 +179,80 @@ jobs:
           if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "pull_request" ]]; then
             SHOULD_BUILD_BACKEND="${{ steps.changes.outputs.backend }}"
             SHOULD_BUILD_FRONTEND="${{ steps.changes.outputs.frontend }}"
+            SHOULD_BUILD_POSTGRES="${{ steps.changes.outputs.postgres }}"
           fi
           
           echo "build_backend=${SHOULD_BUILD_BACKEND}" >> $GITHUB_OUTPUT
           echo "build_frontend=${SHOULD_BUILD_FRONTEND}" >> $GITHUB_OUTPUT
+          echo "build_postgres=${SHOULD_BUILD_POSTGRES}" >> $GITHUB_OUTPUT
           echo "deploy_enabled=${DEPLOY_ENABLED}" >> $GITHUB_OUTPUT
           echo "mode=${MODE}" >> $GITHUB_OUTPUT
           
           echo "📊 Summary:"
           echo "  backend: ${{ steps.changes.outputs.backend }}"
           echo "  frontend: ${{ steps.changes.outputs.frontend }}"
+          echo "  postgres: ${{ steps.changes.outputs.postgres }}"
           echo "  build_backend: ${SHOULD_BUILD_BACKEND}"
           echo "  build_frontend: ${SHOULD_BUILD_FRONTEND}"
+          echo "  build_postgres: ${SHOULD_BUILD_POSTGRES}"
           echo "  deploy_enabled: ${DEPLOY_ENABLED}"
           
           # Get image tags from inputs
           echo "backend_tag=${{ github.event.inputs.backend_image }}" >> $GITHUB_OUTPUT
           echo "frontend_tag=${{ github.event.inputs.frontend_image }}" >> $GITHUB_OUTPUT
+          echo "postgres_tag=${{ github.event.inputs.postgres_image }}" >> $GITHUB_OUTPUT
+
+  # ============================================
+  # BUILD POSTGRES IMAGE
+  # ============================================
+  build-postgres:
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.build_postgres == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      postgres_tag: ${{ steps.build.outputs.TIMESTAMP }}
+      postgres_built: ${{ steps.build.outputs.BUILT }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build PostgreSQL image
+        id: build
+        run: |
+          cd kubernetes/postgres/build_image
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          
+          # Verify Dockerfile exists
+          if [ ! -f "./postgres/Dockerfile" ]; then
+            echo "❌ Dockerfile not found at kubernetes/postgres/build_image/postgres/Dockerfile"
+            exit 1
+          fi
+          
+          # Build with both tags
+          docker build -t ${{ env.POSTGRES_IMAGE_NAME }}:latest ./postgres
+          docker build -t ${{ env.POSTGRES_IMAGE_NAME }}:${TIMESTAMP} ./postgres
+          
+          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "BUILT=true" >> $GITHUB_OUTPUT
+          echo "✅ PostgreSQL image built successfully with tags: latest, ${TIMESTAMP}"
+
+      - name: Push PostgreSQL image
+        run: |
+          docker push ${{ env.POSTGRES_IMAGE_NAME }}:latest
+          docker push ${{ env.POSTGRES_IMAGE_NAME }}:${{ steps.build.outputs.TIMESTAMP }}
+          echo "✅ PostgreSQL images pushed to Docker Hub"
+
+      - name: Verify image
+        run: |
+          docker images | grep ${{ env.POSTGRES_IMAGE_NAME }}
+          echo "PostgreSQL image tags: latest, ${{ steps.build.outputs.TIMESTAMP }}"
 
   # ============================================
   # BACKEND TESTS
@@ -465,17 +554,97 @@ jobs:
           docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${{ steps.build.outputs.TIMESTAMP }}
 
   # ============================================
+  # DEPLOY POSTGRES (Self-Hosted Runner)
+  # ============================================
+  deploy-postgres:
+    needs: [detect-changes, build-postgres]
+    if: |
+      needs.build-postgres.result == 'success' &&
+      needs.detect-changes.outputs.deploy_enabled == 'true' &&
+      (needs.detect-changes.outputs.build_postgres == 'true' ||
+       github.event.inputs.mode == 'build-postgres' ||
+       github.event.inputs.mode == 'full-ci-all')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Verify cluster connection
+        run: kubectl get nodes
+
+      - name: Set deployment info
+        id: deployment_info
+        run: |
+          POSTGRES_TAG="${{ needs.build-postgres.outputs.postgres_tag }}"
+          if [[ -z "$POSTGRES_TAG" ]] || [[ "$POSTGRES_TAG" == "null" ]]; then
+            POSTGRES_TAG="latest"
+          fi
+          echo "postgres_image=${POSTGRES_TAG}" >> $GITHUB_OUTPUT
+          echo "Using PostgreSQL image: ${POSTGRES_TAG}"
+
+      - name: Remove old postgres images from nodes
+        if: github.event.inputs.force_pull == 'true' || github.event_name == 'push'
+        run: |
+          echo "🗑️ Removing old PostgreSQL images from cluster nodes..."
+          NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
+          for NODE in $NODES; do
+            ssh -o StrictHostKeyChecking=no $NODE "sudo crictl images | grep 'amer-portal-postgres' | awk '{print \$3}' | xargs -r sudo crictl rmi" 2>/dev/null || echo "⚠️ Could not clean images on $NODE"
+          done
+          echo "✅ PostgreSQL images cleaned"
+
+      - name: Deploy PostgreSQL
+        run: |
+          echo "🐘 Deploying PostgreSQL..."
+          
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Apply PostgreSQL manifests
+          kubectl apply -f kubernetes/postgres/pv.yaml 2>/dev/null || true
+          kubectl apply -f kubernetes/postgres/pvc.yaml 2>/dev/null || true
+          kubectl apply -f kubernetes/postgres/deployment.yaml 2>/dev/null || true
+          kubectl apply -f kubernetes/postgres/service.yaml 2>/dev/null || true
+          
+          # Update image if specific tag provided
+          POSTGRES_IMG="${{ steps.deployment_info.outputs.postgres_image }}"
+          if [ "$POSTGRES_IMG" != "latest" ] && [ "$POSTGRES_IMG" != "" ] && [ "$POSTGRES_IMG" != "null" ]; then
+            echo "🔧 Updating PostgreSQL image to: $POSTGRES_IMG"
+            kubectl set image deployment/postgres -n ${{ env.NAMESPACE }} \
+              postgres=${{ env.POSTGRES_IMAGE_NAME }}:${POSTGRES_IMG}
+          fi
+          
+          # Ensure imagePullPolicy is Always
+          kubectl patch deployment postgres -n ${{ env.NAMESPACE }} -p '{"spec":{"template":{"spec":{"containers":[{"name":"postgres","imagePullPolicy":"Always"}]}}}}' 2>/dev/null || true
+          
+          # Restart and wait for readiness
+          kubectl rollout restart deployment/postgres -n ${{ env.NAMESPACE }} 2>/dev/null || true
+          kubectl rollout status deployment/postgres -n ${{ env.NAMESPACE }} --timeout=120s 2>/dev/null || echo "⚠️ PostgreSQL rollout status check skipped (may not exist yet)"
+          
+          echo "✅ PostgreSQL deployment complete!"
+
+  # ============================================
   # DEPLOY BACKEND (Self-Hosted Runner)
   # ============================================
   deploy-backend:
-    needs: [detect-changes, build-backend]
+    needs: [detect-changes, build-backend, deploy-postgres]
     if: |
       needs.build-backend.result == 'success' &&
       needs.detect-changes.outputs.deploy_enabled == 'true' &&
       (needs.detect-changes.outputs.build_backend == 'true' ||
        contains(github.event.inputs.mode, 'full-ci') ||
        github.event.inputs.mode == 'build-backend-only' ||
-       github.event.inputs.mode == 'build-both')
+       github.event.inputs.mode == 'build-both' ||
+       github.event.inputs.mode == 'full-ci-all')
     runs-on: self-hosted
     steps:
       - name: Checkout code
@@ -545,7 +714,8 @@ jobs:
       (needs.detect-changes.outputs.build_frontend == 'true' ||
        contains(github.event.inputs.mode, 'full-ci') ||
        github.event.inputs.mode == 'build-frontend-only' ||
-       github.event.inputs.mode == 'build-both')
+       github.event.inputs.mode == 'build-both' ||
+       github.event.inputs.mode == 'full-ci-all')
     runs-on: self-hosted
     steps:
       - name: Checkout code
@@ -635,10 +805,19 @@ jobs:
           kubectl apply -f kubernetes/configmaps.yaml 2>/dev/null || true
           kubectl apply -f kubernetes/secrets.yaml 2>/dev/null || true
           
-          kubectl apply -f kubernetes/postgres/pv.yaml 2>/dev/null || true
-          kubectl apply -f kubernetes/postgres/pvc.yaml 2>/dev/null || true
-          kubectl apply -f kubernetes/postgres/deployment.yaml 2>/dev/null || true
-          kubectl apply -f kubernetes/postgres/service.yaml 2>/dev/null || true
+          # Deploy PostgreSQL with custom image if specified
+          POSTGRES_IMG="${{ github.event.inputs.postgres_image }}"
+          if [ -f "kubernetes/postgres/deployment.yaml" ]; then
+            kubectl apply -f kubernetes/postgres/pv.yaml 2>/dev/null || true
+            kubectl apply -f kubernetes/postgres/pvc.yaml 2>/dev/null || true
+            kubectl apply -f kubernetes/postgres/deployment.yaml 2>/dev/null || true
+            kubectl apply -f kubernetes/postgres/service.yaml 2>/dev/null || true
+            
+            if [ "$POSTGRES_IMG" != "latest" ] && [ "$POSTGRES_IMG" != "" ] && [ "$POSTGRES_IMG" != "null" ]; then
+              kubectl set image deployment/postgres -n ${{ env.NAMESPACE }} \
+                postgres=${{ env.POSTGRES_IMAGE_NAME }}:${POSTGRES_IMG} 2>/dev/null || true
+            fi
+          fi
           
           kubectl wait --for=condition=ready pod -l app=postgres -n ${{ env.NAMESPACE }} --timeout=120s 2>/dev/null || true
           
@@ -751,6 +930,7 @@ jobs:
             done
           fi
           kubectl rollout restart deployment -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/postgres -n ${{ env.NAMESPACE }} --timeout=120s 2>/dev/null || true
           kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
           kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=120s
           echo "✅ All deployments restarted!"
@@ -759,7 +939,7 @@ jobs:
   # CI SUMMARY
   # ============================================
   ci-summary:
-    needs: [detect-changes, test-backend, test-frontend, test-backend-artifact, test-frontend-artifact, build-backend, build-frontend]
+    needs: [detect-changes, test-backend, test-frontend, test-backend-artifact, test-frontend-artifact, build-backend, build-frontend, build-postgres]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -775,9 +955,11 @@ jobs:
           echo "Build Flags from detect-changes:"
           echo "  build_backend: ${{ needs.detect-changes.outputs.build_backend }}"
           echo "  build_frontend: ${{ needs.detect-changes.outputs.build_frontend }}"
+          echo "  build_postgres: ${{ needs.detect-changes.outputs.build_postgres }}"
           echo ""
           echo "Backend selected: ${{ needs.detect-changes.outputs.backend }}"
           echo "Frontend selected: ${{ needs.detect-changes.outputs.frontend }}"
+          echo "PostgreSQL selected: ${{ needs.detect-changes.outputs.postgres }}"
           echo ""
           echo "Code Test Results:"
           echo "  Backend code tests: ${{ needs.test-backend.result }}"
@@ -790,9 +972,12 @@ jobs:
           echo "Build & Push Results:"
           echo "  Backend build: ${{ needs.build-backend.result }}"
           echo "  Frontend build: ${{ needs.build-frontend.result }}"
+          echo "  PostgreSQL build: ${{ needs.build-postgres.result }}"
           echo ""
-          echo "Backend Image Tag: ${{ needs.build-backend.outputs.backend_tag }}"
-          echo "Frontend Image Tag: ${{ needs.build-frontend.outputs.frontend_tag }}"
+          echo "Image Tags:"
+          echo "  Backend Image Tag: ${{ needs.build-backend.outputs.backend_tag }}"
+          echo "  Frontend Image Tag: ${{ needs.build-frontend.outputs.frontend_tag }}"
+          echo "  PostgreSQL Image Tag: ${{ needs.build-postgres.outputs.postgres_tag }}"
           echo ""
           echo "========================================="
           
@@ -806,6 +991,11 @@ jobs:
             echo "❌ ERROR: Frontend build was expected but got skipped!"
             exit 1
           fi
+          
+          if [[ "${{ needs.detect-changes.outputs.build_postgres }}" == "true" ]] && [[ "${{ needs.build-postgres.result }}" == "skipped" ]]; then
+            echo "❌ ERROR: PostgreSQL build was expected but got skipped!"
+            exit 1
+          fi
 
       - name: Save build info
         if: always()
@@ -813,8 +1003,10 @@ jobs:
           mkdir -p build-info
           echo "backend_built=${{ needs.build-backend.result == 'success' }}" > build-info/build.txt
           echo "frontend_built=${{ needs.build-frontend.result == 'success' }}" >> build-info/build.txt
+          echo "postgres_built=${{ needs.build-postgres.result == 'success' }}" >> build-info/build.txt
           echo "backend_tag=${{ needs.build-backend.outputs.backend_tag }}" >> build-info/build.txt
           echo "frontend_tag=${{ needs.build-frontend.outputs.frontend_tag }}" >> build-info/build.txt
+          echo "postgres_tag=${{ needs.build-postgres.outputs.postgres_tag }}" >> build-info/build.txt
           echo "ci_run_id=${{ github.run_id }}" >> build-info/build.txt
           echo "ci_run_number=${{ github.run_number }}" >> build-info/build.txt
 
@@ -828,7 +1020,7 @@ jobs:
   # DEPLOYMENT VERIFICATION & SUMMARY
   # ============================================
   deploy-summary:
-    needs: [deploy-backend, deploy-frontend, manual-full-deploy, manual-restart-backend, manual-restart-frontend, manual-restart-all]
+    needs: [deploy-postgres, deploy-backend, deploy-frontend, manual-full-deploy, manual-restart-backend, manual-restart-frontend, manual-restart-all]
     runs-on: self-hosted
     if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     steps:
@@ -862,10 +1054,12 @@ jobs:
           
           echo ""
           echo "📦 Build Status:"
+          echo "  PostgreSQL built: ${{ needs.deploy-postgres.result == 'success' || 'skipped' }}"
           echo "  Backend built: ${{ needs.deploy-backend.result == 'success' || 'skipped' }}"
           echo "  Frontend built: ${{ needs.deploy-frontend.result == 'success' || 'skipped' }}"
           echo ""
           echo "🚀 Deployment Status:"
+          echo "  PostgreSQL deployed: ${{ needs.deploy-postgres.result == 'success' || 'not deployed' }}"
           echo "  Backend deployed: ${{ needs.deploy-backend.result == 'success' || 'not deployed' }}"
           echo "  Frontend deployed: ${{ needs.deploy-frontend.result == 'success' || 'not deployed' }}"
           echo ""
@@ -880,14 +1074,19 @@ jobs:
           echo "   https://amer-portal.cc.cd"
           echo "   https://api.amer-portal.cc.cd/api/v1/health"
           echo ""
+          echo "🐘 PostgreSQL:"
+          echo "   Service: postgres.${{ env.NAMESPACE }}.svc.cluster.local:5432"
+          echo ""
           echo "========================================="
 
       - name: Save build info
         if: always()
         run: |
           mkdir -p build-info
-          echo "backend_built=${{ needs.deploy-backend.result == 'success' }}" > build-info/build.txt
-          echo "frontend_built=${{ needs.deploy-frontend.result == 'success' }}" >> build-info/build.txt
+          echo "postgres_deployed=${{ needs.deploy-postgres.result == 'success' }}" > build-info/build.txt
+          echo "backend_deployed=${{ needs.deploy-backend.result == 'success' }}" >> build-info/build.txt
+          echo "frontend_deployed=${{ needs.deploy-frontend.result == 'success' }}" >> build-info/build.txt
+          echo "postgres_tag=${{ needs.build-postgres.outputs.postgres_tag }}" >> build-info/build.txt
           echo "backend_tag=${{ needs.build-backend.outputs.backend_tag }}" >> build-info/build.txt
           echo "frontend_tag=${{ needs.build-frontend.outputs.frontend_tag }}" >> build-info/build.txt
           echo "ci_run_id=${{ github.run_id }}" >> build-info/build.txt
