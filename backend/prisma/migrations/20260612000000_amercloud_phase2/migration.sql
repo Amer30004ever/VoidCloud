@@ -19,8 +19,15 @@ CREATE TABLE IF NOT EXISTS "CloudBackup" (
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS "CloudBackup_deploymentId_idx" ON "CloudBackup"("deploymentId");
-GRANT SELECT, INSERT, UPDATE, DELETE ON "CloudBackup" TO authenticated;
-GRANT ALL ON "CloudBackup" TO service_role;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    GRANT SELECT, INSERT, UPDATE, DELETE ON "CloudBackup" TO authenticated;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT ALL ON "CloudBackup" TO service_role;
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS "CloudAuditLog" (
   "id" TEXT PRIMARY KEY,
@@ -34,5 +41,12 @@ CREATE TABLE IF NOT EXISTS "CloudAuditLog" (
 );
 CREATE INDEX IF NOT EXISTS "CloudAuditLog_adminId_idx" ON "CloudAuditLog"("adminId");
 CREATE INDEX IF NOT EXISTS "CloudAuditLog_targetId_idx" ON "CloudAuditLog"("targetId");
-GRANT SELECT, INSERT, UPDATE, DELETE ON "CloudAuditLog" TO authenticated;
-GRANT ALL ON "CloudAuditLog" TO service_role;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    GRANT SELECT, INSERT, UPDATE, DELETE ON "CloudAuditLog" TO authenticated;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT ALL ON "CloudAuditLog" TO service_role;
+  END IF;
+END $$;
