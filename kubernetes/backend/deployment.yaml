@@ -18,6 +18,7 @@ spec:
     spec:
       # imagePullSecrets removed — images are public on Docker Hub.
       # Re-add this block only if you push to a private registry.
+      serviceAccountName: amer-portal-backend
       initContainers:
         - name: prisma-migrate
           image: amer30004ever/amer-portal-backend:latest  # Will be updated by script
