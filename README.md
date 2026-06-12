@@ -1,19 +1,48 @@
 # Amer DevOps Portal
 
-Full-stack DevOps control plane: Kubernetes operations, CI/CD pipelines, monitoring, security, learning hub, and team collaboration — built with **NestJS**, **Next.js**, **PostgreSQL**, and **Prisma**.
+A self-hosted, full-stack **DevOps control plane** and **personal productivity hub** — combining Kubernetes operations, CI/CD pipelines, monitoring, security, learning, team collaboration, and 50+ productivity tools into a single web application.
 
-| Surface | URL (local) | URL (production) |
-|---------|-------------|------------------|
-| Web UI | http://localhost:3000 | https://amer-portal.cc.cd |
-| API | http://localhost:3001/api/v1 | https://api.amer-portal.cc.cd/api/v1 |
-| Swagger | http://localhost:3001/api/docs | https://api.amer-portal.cc.cd/api/docs |
-| Health | http://localhost:3001/api/v1/health | https://api.amer-portal.cc.cd/api/v1/health |
+Built with **NestJS 11**, **Next.js 16**, **PostgreSQL 15**, **Prisma 7**, and deployed on **Kubernetes** behind a **Cloudflare Tunnel**.
 
 ---
 
-## Quick start (Docker)
+## Table of Contents
 
-**Requirements:** Docker 24+, Docker Compose v2, 4 GB RAM free.
+1. [Surfaces & URLs](#surfaces--urls)
+2. [Quick Start (Docker)](#quick-start-docker)
+3. [Repository Layout](#repository-layout)
+4. [Tech Stack](#tech-stack)
+5. [Architecture](#architecture)
+6. [Backend (NestJS API)](#backend-nestjs-api)
+7. [Frontend (Next.js App)](#frontend-nextjs-app)
+8. [Database (PostgreSQL + Prisma)](#database-postgresql--prisma)
+9. [Authentication & Security](#authentication--security)
+10. [Real-Time (WebSockets)](#real-time-websockets)
+11. [Integrations](#integrations)
+12. [Environment Variables](#environment-variables)
+13. [Local Development](#local-development)
+14. [Production Deployment (K8s + Cloudflare)](#production-deployment-k8s--cloudflare)
+15. [CI/CD](#cicd)
+16. [Documentation Index](#documentation-index)
+
+---
+
+## Surfaces & URLs
+
+| Surface       | Local                                   | Production                                |
+|---------------|-----------------------------------------|-------------------------------------------|
+| Web UI        | http://localhost:3000                   | https://amer-portal.cc.cd                 |
+| REST API      | http://localhost:3001/api/v1            | https://api.amer-portal.cc.cd/api/v1      |
+| Swagger Docs  | http://localhost:3001/api/docs          | https://api.amer-portal.cc.cd/api/docs    |
+| Health Check  | http://localhost:3001/api/v1/health     | https://api.amer-portal.cc.cd/api/v1/health |
+| WebSocket     | ws://localhost:3001                     | wss://api.amer-portal.cc.cd               |
+| WhatsApp Hook | http://localhost:3001/api/v1/webhook    | https://api.amer-portal.cc.cd/api/v1/webhook |
+
+---
+
+## Quick Start (Docker)
+
+**Requirements:** Docker 24+, Docker Compose v2, 4 GB free RAM.
 
 ```bash
 git clone https://github.com/Amer30004ever/Amer-Devops-Poral.git
@@ -23,125 +52,342 @@ docker compose up -d --build
 
 Open http://localhost:3000 and sign in:
 
-| Field | Default (dev) |
-|-------|----------------|
-| Email | `admin@amer.dev` |
+| Field    | Default          |
+|----------|------------------|
+| Email    | `admin@amer.dev` |
 | Password | `AmerDevOps2026!` |
 
-Override admin credentials with `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_NAME` in `.env` or `docker-compose.yaml`.
+Override with `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` env vars.
 
-**Reset database** (fresh Prisma migrations + seed):
+**Reset everything (DB + volumes):**
 
 ```bash
-docker compose down -v
-docker compose up -d --build
+docker compose down -v && docker compose up -d --build
 ```
 
 ---
 
-## Repository layout
+## Repository Layout
 
 ```
 Amer-Devops-Poral/
-├── backend/          NestJS API, Prisma, WebSockets
-├── frontend/         Next.js App Router UI
-├── docs/             Feature specs, architecture, roadmap
-├── kubernetes/       Production K8s manifests & deploy scripts
-├── docker-compose.yaml
-└── .env.example
+├── backend/                NestJS API (REST + WebSocket + Prisma)
+│   ├── src/
+│   │   ├── auth/           JWT login, roles, password reset
+│   │   ├── alerts/         Cluster alert rules & evaluation
+│   │   ├── automation/     Scripts, workflow templates
+│   │   ├── cluster/        Kubernetes cluster info
+│   │   ├── collaboration/  Channels, chat, knowledge base, code reviews
+│   │   ├── dashboard/      Aggregated stats for home page
+│   │   ├── documentation/  Docs, categories, tags, versions, collaborators
+│   │   ├── github/         GitHub repos, branches, workflows
+│   │   ├── infrastructure/ Namespaces, deployments, services, configmaps
+│   │   ├── integrations/   3rd-party connectors
+│   │   ├── kubernetes/     K8s client wrapper
+│   │   ├── learning/       Jobs, paths, certs, CVs, books, conferences
+│   │   ├── logs/           Pod logs (REST + SSE stream)
+│   │   ├── metrics/        Prometheus-style metrics
+│   │   ├── notes/          Markdown notes + tags + pin + search
+│   │   ├── pipelines/      CI/CD pipeline history & rollback
+│   │   ├── platform/       Observability links, GitOps, topology
+│   │   ├── projects/       Project registry
+│   │   ├── prisma/         Prisma module/service
+│   │   ├── security/       Vulnerability scans, encrypted secrets
+│   │   ├── settings/       Users, roles, API keys, audit log, backups
+│   │   ├── stats/          Live counters via WebSocket
+│   │   └── webhook/        WhatsApp + GitHub inbound webhooks
+│   └── prisma/             schema.prisma (42 models) + migrations + seed
+├── frontend/               Next.js 16 (App Router)
+│   └── src/app/            53+ route pages (see Frontend section)
+├── kubernetes/             Production manifests
+│   ├── backend/            Backend deployment + service
+│   ├── frontend/           Frontend deployment + service
+│   ├── postgres/           StatefulSet + PVC
+│   ├── cert-manager/       TLS automation
+│   ├── ingress.yaml        Traefik ingress
+│   ├── ingress-tls.yaml    HTTPS ingress
+│   ├── traefik-middlewares.yaml
+│   ├── namespace.yaml
+│   ├── configmaps.yaml
+│   ├── cloudflare-tunnel-config.yaml
+│   └── *.ps1 / *.sh        Build/deploy automation
+├── docs/                   Architecture, roadmap, feature specs
+├── .github/workflows/      ci.yaml, ci-cd.yaml, deploy.yaml
+├── docker-compose.yaml     Local dev stack
+├── docker-compose.prod.yaml  Production compose (alternative to K8s)
+└── setup.sh                Bootstrap script
 ```
 
-| Document | Description |
-|----------|-------------|
-| [docs/README.md](docs/README.md) | Documentation index |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design & data flow |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Planned features & tech debt |
-| [backend/README.md](backend/README.md) | API development guide |
-| [frontend/README.md](frontend/README.md) | UI development guide |
-| [backend/prisma/README.md](backend/prisma/README.md) | Database migrations & seed |
-| [kubernetes/README.md](kubernetes/README.md) | Production deployment (K8s + Cloudflare) |
-| [docs/dashboard-feature-specification.md](docs/dashboard-feature-specification.md) | UI/UX feature specification |
+---
+
+## Tech Stack
+
+| Layer            | Technology                                                              |
+|------------------|-------------------------------------------------------------------------|
+| Frontend         | Next.js 16, React 19, TypeScript, Tailwind CSS, Socket.IO client        |
+| Backend          | NestJS 11, Express, Passport JWT, Socket.IO, Class Validator            |
+| ORM              | Prisma 7 (Migrate + Client + Seed)                                      |
+| Database         | PostgreSQL 15                                                           |
+| Auth             | JWT (HS256), bcrypt password hashing, role-based guards                 |
+| Real-time        | Socket.IO (cluster stats, chat, logs, alerts), Server-Sent Events       |
+| Container        | Docker (multi-stage), Docker Compose                                    |
+| Orchestration    | Kubernetes (Deployments, StatefulSet, Services, Ingress, ConfigMaps)    |
+| TLS / Cert Mgmt  | cert-manager + Let's Encrypt                                            |
+| Public Access    | Cloudflare Tunnel (zero-trust ingress, no open ports)                   |
+| Reverse Proxy    | Traefik (in-cluster ingress controller)                                 |
+| CI/CD            | GitHub Actions → Docker Hub → kubectl rollout                           |
+| Integrations     | Kubernetes API, GitHub REST API, WhatsApp Cloud API, Prometheus         |
 
 ---
 
-## Tech stack
+## Architecture
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | Next.js 16, React, TypeScript, Tailwind |
-| Backend | NestJS 11, Passport JWT, Socket.IO |
-| Database | PostgreSQL 15, Prisma 7 |
-| Infra | Docker Compose (local), Kubernetes (prod) |
-| Integrations | Kubernetes client, GitHub API, WhatsApp webhooks |
+```
+                 ┌─────────────────────┐
+   Internet ───► │  Cloudflare Tunnel  │  (zero open ports)
+                 └──────────┬──────────┘
+                            │
+                  ┌─────────▼──────────┐
+                  │  Traefik Ingress   │  (TLS via cert-manager)
+                  └─────┬──────────┬───┘
+                        │          │
+        ┌───────────────▼─┐   ┌────▼──────────────┐
+        │ Frontend (Next) │   │ Backend (NestJS)  │
+        │  port 3000      │   │  port 3001        │
+        └─────────────────┘   └────┬─────┬────────┘
+                                   │     │
+                  ┌────────────────▼┐   ┌▼────────────┐
+                  │ PostgreSQL 15   │   │ Kubernetes  │
+                  │  (Prisma)       │   │  API server │
+                  └─────────────────┘   └─────────────┘
+                                        ┌─────────────┐
+                                        │ GitHub API  │
+                                        ├─────────────┤
+                                        │ WhatsApp    │
+                                        └─────────────┘
+```
+
+Full design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
-## Database setup
+## Backend (NestJS API)
 
-Schema is managed by **Prisma Migrate**. On container start the backend runs:
+**Base URL:** `/api/v1` · **Total endpoints:** ~238 across 20 modules · **Swagger:** `/api/docs`
 
-1. `prisma migrate deploy`
-2. `prisma db seed` (admin user)
-3. `node dist/main.js`
+### Modules & route prefixes
 
-Local without Docker:
+| Module            | Prefix              | Responsibility |
+|-------------------|---------------------|----------------|
+| `auth`            | `/auth`             | Login, profile, password reset, JWT issuance |
+| `alerts`          | `/alerts`           | Alert rules, triggered alerts, ack/resolve |
+| `automation`      | `/automation`       | Reusable scripts, workflow templates |
+| `cluster`         | `/cluster`          | Cluster info, version, nodes, capacity |
+| `collaboration`   | `/collaboration`    | Channels, chat messages, knowledge articles, code reviews, calendar |
+| `dashboard`       | `/dashboard`        | Aggregated home-page metrics |
+| `documentation`   | `/documentation`    | Docs, categories, tags, versioning, collaborators |
+| `github`          | `/github`           | Repo list, branches, workflow runs, dispatch |
+| `infrastructure`  | `/infrastructure`   | Namespaces, deployments, pods, services, configmaps, secrets |
+| `integrations`    | `/integrations`     | Connector registry (Slack, Jira, etc.) |
+| `learning`        | `/learning`         | Saved jobs, paths, modules, certs, CVs, books, conferences, blog |
+| `logs`            | `/logs`             | Pod log query, SSE stream, search |
+| `notes`           | `/notes`            | Markdown notes CRUD + tags + pin + full-text search |
+| `pipelines`       | `/pipelines`        | Deployment history, rollback, manual trigger |
+| `platform`        | `/platform`         | Observability targets, GitOps state, topology |
+| `projects`        | `/projects`         | Project registry |
+| `security`        | `/security`         | Vulnerability scans, encrypted app secrets |
+| `settings`        | `/settings`         | Users, roles, API keys, audit log, backups |
+| `stats`           | `/stats`            | Live counters (WebSocket-backed) |
+| `webhook`         | `/webhook`          | WhatsApp + GitHub inbound webhooks (signature-verified) |
+
+### Common endpoints (examples)
+
+```http
+POST   /api/v1/auth/login              { email, password } → { token, user }
+GET    /api/v1/auth/profile            (Bearer JWT)        → User
+POST   /api/v1/auth/change-password
+GET    /api/v1/dashboard               → aggregated stats
+GET    /api/v1/cluster/info            → cluster version, node count
+GET    /api/v1/infrastructure/namespaces
+GET    /api/v1/infrastructure/deployments?namespace=default
+GET    /api/v1/logs/pods/:name?namespace=default&tail=200
+GET    /api/v1/logs/pods/:name/stream  (Server-Sent Events)
+GET    /api/v1/notes?tag=ops&pinned=true
+POST   /api/v1/notes                   { title, content, tags[], pinned }
+GET    /api/v1/github/repos
+POST   /api/v1/pipelines/:id/rollback
+POST   /api/v1/webhook/whatsapp        (verify-token query)
+GET    /api/v1/health                  → { status: "ok" }
+```
+
+Generate the full live list at `/api/docs` (Swagger UI).
+
+---
+
+## Frontend (Next.js App)
+
+**Framework:** Next.js 16 App Router · **Pages:** 53+ top-level routes
+
+### Operations & infrastructure
+`/dashboard` · `/cluster` · `/infrastructure` · `/deployments` · `/monitoring` · `/logs` · `/pipelines` · `/automation` · `/github` · `/projects` · `/integrations` · `/platform`
+
+### Reliability & SRE
+`/incidents` · `/oncall` · `/runbooks` · `/uptime` · `/sla` · `/ssl-monitor` · `/dns` · `/backups` · `/disaster-recovery` · `/status` · `/inventory` · `/lab-environments` · `/cost`
+
+### Security
+`/security` · `/security/audit-log` · `/security/sbom`
+
+### Productivity (personal "second brain")
+`/notes` · `/bookmarks` · `/snippets` · `/calendar` · `/timeline` · `/pomodoro` · `/favorites` · `/prompts` · `/inbox` · `/notifications`
+
+### Learning & Career
+`/learning` · `/flashcards` · `/quizzes` · `/glossary` · `/interview-prep` · `/job-tracker` · `/skills-matrix` · `/cv-studio` · `/portfolio`
+
+### Collaboration & content
+`/collaboration` · `/team` · `/documentation` · `/announcements` · `/changelog`
+
+### Account
+`/login` · `/settings`
+
+### Global UI features
+- **Command Palette** (`Cmd/Ctrl+K`) — jump to any page / run any action
+- **Keyboard Shortcuts** (`?` to open) — Vim-style `g + key` navigation
+- **PWA manifest** — installable, dark theme by default
+- **Toast notifications** + real-time updates via Socket.IO
+- **Favorites & pinning** across all sections (localStorage)
+
+---
+
+## Database (PostgreSQL + Prisma)
+
+**Engine:** PostgreSQL 15 · **ORM:** Prisma 7 · **Models:** 42
+
+### Schema groups
+
+| Group            | Models |
+|------------------|--------|
+| Identity & audit | `User`, `ApiKey`, `AuditLog`, `AppSecret`, `ClusterConfig` |
+| Messaging        | `Conversation`, `Message`, `WhatsappContact`, `WebhookLog`, `Webhook` |
+| Cluster ops      | `AlertRule`, `Alert`, `DeploymentHistory`, `Project` |
+| Documentation    | `Document`, `DocumentCategory`, `DocumentTag`, `DocumentVersion`, `DocumentCollaborator` |
+| Learning         | `SavedJob`, `LearningPath`, `LearningModule`, `LearningResource`, `PathEnrollment`, `PathProgress`, `Certification`, `CertificationTracker`, `CV`, `CVSection`, `CVTemplate`, `Conference`, `ConferenceInterest`, `Book`, `BookTracker`, `BlogPost` |
+| Automation       | `Script`, `WorkflowTemplate` |
+| Collaboration    | `Channel`, `KnowledgeArticle`, `CodeReview`, `CalendarEvent` |
+| Personal         | `Note` |
+
+### Lifecycle on container start
+
+1. `prisma migrate deploy` — apply pending migrations
+2. `prisma db seed` — create admin user from env vars
+3. `node dist/main.js` — boot the NestJS server
+
+### Manual commands
 
 ```bash
 cd backend
-cp ../.env.example ../.env   # edit DATABASE_URL as needed
-npm install
-npm run db:setup
-npm run start:dev
+npx prisma migrate dev --name <change>   # create + apply a new migration
+npx prisma studio                         # open visual DB browser
+npx prisma generate                       # regenerate client after schema edits
+npm run db:setup                          # migrate + seed (local non-Docker)
 ```
 
-See [backend/prisma/README.md](backend/prisma/README.md) for details.
+See [backend/prisma/README.md](backend/prisma/README.md) for the full migration playbook.
 
 ---
 
-## Environment variables
+## Authentication & Security
 
-Copy `.env.example` to `.env` at the repo root. Key variables:
-
-| Variable | Purpose |
-|----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_SECRET` | Auth token signing (min 32 chars in prod) |
-| `NEXT_PUBLIC_API_URL` | Frontend → API base (**must include** `/api/v1`) |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Seed admin user |
-| `FRONTEND_URL` / `BACKEND_URL` | CORS & redirect URLs |
-
-Full list: [.env.example](.env.example)
+- **JWT** issued at `POST /api/v1/auth/login`, signed with `JWT_SECRET` (HS256), default TTL `7d`.
+- Send on subsequent requests: `Authorization: Bearer <token>`.
+- **Passwords** hashed with bcrypt (cost 10).
+- **Role-based access** via NestJS guards: `USER`, `ADMIN`, `AGENT`.
+- **Forced password change** flag (`mustChangePassword`) for seeded/new accounts.
+- **Webhook signatures** verified with `WEBHOOK_SECRET` (HMAC-SHA256, timing-safe compare).
+- **App secrets** stored encrypted at rest in the `AppSecret` table.
+- **Audit log** records every privileged settings change (`AuditLog` model).
+- **API keys** (`ApiKey`) for machine-to-machine access, scoped & revocable.
 
 ---
 
-## Main features
+## Real-Time (WebSockets)
 
-- **Dashboard** — cluster metrics, live WebSocket stats, recent activity
-- **Projects & pipelines** — GitHub workflows, deployment history, rollback
-- **Infrastructure** — namespaces, deployments, services, configmaps, secrets
-- **Logs & monitoring** — pod logs, search, SSE stream, alerts
-- **Security** — vulnerability scans, encrypted app secrets
-- **Settings** — users, roles, API keys, audit logs, backups
-- **Platform** — observability links, GitOps status, topology, capacity (API)
-- **Learning hub** — jobs, certifications, CV studio, books, conferences
-- **Collaboration** — channels, chat WebSocket, knowledge base, calendar
+The backend runs a Socket.IO gateway on the same port as the REST API (`3001`).
+
+| Namespace / Event       | Payload                          | Used by                  |
+|-------------------------|----------------------------------|--------------------------|
+| `stats:update`          | `{ cpu, mem, pods, deploys }`    | `/dashboard`             |
+| `alert:new`             | `Alert`                          | `/incidents`, `/alerts`  |
+| `chat:message`          | `Message`                        | `/collaboration`         |
+| `log:line`              | `{ pod, line, ts }`              | `/logs` (SSE alternative)|
+
+Frontend client config in `frontend/src/lib/socket-auth.ts` (auto-attaches Bearer token via auth handshake).
 
 ---
 
-## Development commands
+## Integrations
+
+| Service         | Purpose                                     | Env vars |
+|-----------------|---------------------------------------------|----------|
+| Kubernetes API  | Cluster/namespace/deployment management     | `KUBECONFIG`, `K8S_INSECURE_SKIP_TLS_VERIFY` |
+| GitHub REST API | Repo list, branches, workflow dispatch      | `GITHUB_TOKEN` |
+| WhatsApp Cloud  | Inbound messages → conversations            | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_WABA_ID`, `WHATSAPP_VERIFY_TOKEN` |
+| Prometheus      | Metrics scraping (optional)                 | `PROMETHEUS_URL` |
+| Docker Hub      | CI image push target                        | `DOCKER_HUB_USERNAME`, `DOCKER_HUB_REPO` |
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env` at the repo root.
+
+| Variable                       | Required | Purpose |
+|--------------------------------|----------|---------|
+| `DATABASE_URL`                 | Yes      | PostgreSQL connection string |
+| `POSTGRES_USER` / `_PASSWORD` / `_DB` | Yes | Used by the compose Postgres service |
+| `JWT_SECRET`                   | Yes      | Token signing key (≥32 chars in prod) |
+| `JWT_EXPIRES_IN`               | No       | Default `7d` |
+| `NEXT_PUBLIC_API_URL`          | Yes      | Frontend → API base. **Must include `/api/v1`** |
+| `FRONTEND_URL` / `BACKEND_URL` | Yes      | CORS + redirect URLs |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | No | Seed admin |
+| `WHATSAPP_*`                   | Optional | WhatsApp Cloud API credentials |
+| `WEBHOOK_SECRET`               | Optional | Inbound webhook HMAC verification |
+| `GITHUB_TOKEN`                 | Optional | GitHub REST API access |
+| `K8S_INSECURE_SKIP_TLS_VERIFY` | Dev only | Skip K8s API TLS verification |
+| `NODE_ENV`                     | Yes      | `development` \| `production` |
+
+Full reference: [.env.example](.env.example).
+
+---
+
+## Local Development
+
+### Full stack via Docker (recommended)
 
 ```bash
-# Full stack (Docker)
 docker compose up -d --build
 docker compose logs -f backend
+```
 
-# Backend only (local)
-cd backend && npm run start:dev
+### Backend only
 
-# Frontend only (local)
-cd frontend && npm run dev
+```bash
+cd backend
+npm install
+npm run db:setup       # migrate + seed
+npm run start:dev      # watch mode on :3001
+```
 
-# API smoke test
+### Frontend only
+
+```bash
+cd frontend
+npm install
+npm run dev            # :3000
+```
+
+### Smoke tests
+
+```bash
 curl http://localhost:3001/api/v1/health
 curl -X POST http://localhost:3001/api/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -150,23 +396,86 @@ curl -X POST http://localhost:3001/api/v1/auth/login \
 
 ---
 
-## Production deployment
+## Production Deployment (K8s + Cloudflare)
 
-Production runs on Kubernetes with Cloudflare Tunnel for public HTTPS access. See [kubernetes/README.md](kubernetes/README.md) for the full guide.
+The cluster runs **on Proxmox + k3s/Talos** (your choice), exposed to the internet through a **Cloudflare Tunnel** so no inbound ports are opened.
 
-CI/CD workflows: [.github/workflows/README.md](.github/workflows/README.md)
+### Layers
+
+1. **Namespace:** `amer-portal` (`kubernetes/namespace.yaml`)
+2. **Database:** Postgres `StatefulSet` + `PersistentVolumeClaim` (`kubernetes/postgres/`)
+3. **Backend:** `Deployment` + `Service` (`kubernetes/backend/`)
+4. **Frontend:** `Deployment` + `Service` (`kubernetes/frontend/`)
+5. **Ingress:** Traefik (`ingress.yaml` HTTP, `ingress-tls.yaml` HTTPS) with custom middlewares (`traefik-middlewares.yaml`)
+6. **TLS:** cert-manager + Let's Encrypt (`kubernetes/cert-manager/`)
+7. **Public access:** `cloudflared` DaemonSet using `cloudflare-tunnel-config.yaml`
+
+### Deploy
+
+```bash
+# From repo root
+./kubernetes/build-and-deploy.ps1            # Windows
+./kubernetes/build-only.sh && ./kubernetes/push-only.sh   # Linux
+kubectl apply -f kubernetes/
+kubectl -n amer-portal rollout status deploy/backend
+kubectl -n amer-portal rollout status deploy/frontend
+```
+
+### Cloudflare Tunnel
+
+- Tunnel config: `kubernetes/cloudflare-tunnel-config.yaml`
+- Hostname routing:
+  - `amer-portal.cc.cd` → `frontend:3000`
+  - `api.amer-portal.cc.cd` → `backend:3001`
+- Setup script: `kubernetes/setup-tunnel-fresh-final.ps1`
+- Linux guide: `kubernetes/cloudflare-linux.md`
+
+Full deploy guide: [kubernetes/README.md](kubernetes/README.md).
+
+---
+
+## CI/CD
+
+GitHub Actions workflows live in `.github/workflows/`:
+
+| Workflow      | Trigger              | What it does |
+|---------------|----------------------|--------------|
+| `ci.yaml`     | PR + push            | Lint, typecheck (`tsc --noEmit`), unit tests, build backend & frontend |
+| `ci-cd.yaml`  | push to `main`       | Build multi-arch Docker images, push to Docker Hub |
+| `deploy.yaml` | manual / tag         | `kubectl rollout restart` against the cluster |
+
+Required secrets: `DOCKER_HUB_USERNAME`, `DOCKER_HUB_TOKEN`, `KUBECONFIG_B64`.
+
+---
+
+## Documentation Index
+
+| Document | Description |
+|----------|-------------|
+| [docs/README.md](docs/README.md) | Documentation hub |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design & data flow |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Planned features & tech debt |
+| [docs/dashboard-feature-specification.md](docs/dashboard-feature-specification.md) | UI/UX spec for the dashboard |
+| [backend/README.md](backend/README.md) | API development guide |
+| [backend/prisma/README.md](backend/prisma/README.md) | Migrations & seed |
+| [frontend/README.md](frontend/README.md) | UI development guide |
+| [kubernetes/README.md](kubernetes/README.md) | Production deployment guide |
+| [kubernetes/users-management.md](kubernetes/users-management.md) | Cluster RBAC notes |
+| [.github/workflows/README.md](.github/workflows/README.md) | CI/CD reference |
+| [runner-cmd.md](runner-cmd.md) | Self-hosted runner commands |
+| [migration.txt](migration.txt) | Migration notes |
 
 ---
 
 ## Contributing
 
-1. Create a feature branch from `main`
-2. Run lint/build in `backend` and `frontend`
+1. Branch from `main`: `git checkout -b feature/<name>`
+2. Run lint + build in `backend/` and `frontend/`
 3. Add or update docs under `docs/` when behavior changes
-4. Open a pull request with a clear test plan
+4. Open a PR with a clear test plan and screenshots for UI changes
 
 ---
 
 ## License
 
-Private / internal use — see repository owner for terms.
+Private / internal — see repository owner for terms.
