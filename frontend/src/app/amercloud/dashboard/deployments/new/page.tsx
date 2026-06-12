@@ -8,7 +8,7 @@ export default function NewDeploymentPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    name: "", type: "DOCKER_IMAGE" as const, source: "",
+    name: "", type: "DOCKER_IMAGE" as "DOCKER_IMAGE" | "GITHUB" | "DOCKER_COMPOSE", source: "",
     cpu: 0.25, memory: 512, storage: 1024, replicas: 1,
     customDomains: [] as string[], envVars: {} as Record<string, string>, healthCheck: "/",
   });
