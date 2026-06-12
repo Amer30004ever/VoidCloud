@@ -25,6 +25,7 @@ import {
 } from './cloud.controllers';
 
 @Module({
+  imports: [AuthModule],
   controllers: [
     CloudPlansController,
     CloudDeploymentsController,
