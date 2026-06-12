@@ -2,7 +2,7 @@ name: Deploy to Kubernetes
 
 concurrency:
   group: deploy-${{ github.ref }}
-  cancel-in-progress: false   # never cancel a deploy that is actually running
+  cancel-in-progress: true
 
 on:
   workflow_dispatch:
@@ -41,7 +41,7 @@ on:
     workflows: ["CI - Test & Build"]
     types:
       - completed
-    branches: [feature/devops-portal-features]
+    branches: [main]
 
 permissions:
   actions: read
@@ -59,7 +59,7 @@ jobs:
   auto-deploy-backend:
     runs-on: self-hosted
     if: |
-      (github.event_name == 'workflow_run') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
       (github.event_name == 'workflow_dispatch' && (github.event.inputs.deploy_type == 'rollout-backend' || github.event.inputs.deploy_type == 'rollout-all'))
     steps:
       - name: Checkout code
@@ -151,7 +151,7 @@ jobs:
   auto-deploy-frontend:
     runs-on: self-hosted
     if: |
-      (github.event_name == 'workflow_run') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
       (github.event_name == 'workflow_dispatch' && (github.event.inputs.deploy_type == 'rollout-frontend' || github.event.inputs.deploy_type == 'rollout-all'))
     steps:
       - name: Checkout code
