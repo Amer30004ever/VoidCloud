@@ -112,8 +112,8 @@ export class CloudBillingController {
   current(@Req() req: AuthedRequest) { return this.billing.currentSubscription(req.user.id); }
 
   @Post('subscribe')
-  subscribe(@Req() req: AuthedRequest, @Body() body: { planId: string; provider: 'stripe'|'fawry'|'instapay'|'cash' }) {
-    return this.billing.subscribe(req.user.id, body.planId, body.provider);
+  subscribe(@Req() req: AuthedRequest, @Body() body: { planId: string; provider: 'stripe'|'fawry'|'instapay'|'cash'; customerPhone?: string; payerInstapayId?: string }) {
+    return this.billing.subscribe(req.user.id, body);
   }
 
   @Post('cancel')
@@ -283,6 +283,10 @@ export class CloudAdminController {
   @Post('billing/confirm')
   confirm(@Body() body: { invoiceId: string }) {
     return this.billing.confirmPayment(body.invoiceId);
+  }
+  @Post('billing/reject')
+  reject(@Body() body: { invoiceId: string; reason: string }) {
+    return this.billing.rejectPayment(body.invoiceId, body.reason ?? 'Rejected by admin');
   }
 
   @Get('announcements') announcements() { return this.admin.announcements(); }

@@ -54,11 +54,11 @@ export class CloudDeploymentsService {
 
     const limits = this.effectiveLimits(user);
     const count = await this.prisma.cloudDeployment.count({
-      where: { userId, status: { not: 'DELETED' } },
+      where: { userId, status: { notIn: ['DELETED', 'TERMINATED', 'FAILED'] } },
     });
     if (count >= limits.deploymentLimit) {
       throw new BadRequestException(
-        `Plan limit reached (${limits.deploymentLimit} deployments). Upgrade your plan.`,
+        `Plan limit reached (${limits.deploymentLimit} VPS instances). Upgrade your plan.`,
       );
     }
     if ((input.cpu ?? 0.25) > limits.cpuLimit)
@@ -69,6 +69,9 @@ export class CloudDeploymentsService {
       throw new BadRequestException(`Storage exceeds plan limit (${limits.storageLimit}MB)`);
     if ((input.customDomains?.length ?? 0) > limits.customDomainLimit)
       throw new BadRequestException(`Domain count exceeds plan limit (${limits.customDomainLimit})`);
+
+    // Payment gating: if user is awaiting cash approval, queue the VPS — DO NOT provision.
+    const isPaymentPending = user.subscriptionStatus === 'PENDING_PAYMENT';
 
     const deployment = await this.prisma.cloudDeployment.create({
       data: {
@@ -86,10 +89,21 @@ export class CloudDeploymentsService {
         customDomains: input.customDomains ?? [],
         envVars: (input.envVars ?? {}) as any,
         healthCheck: input.healthCheck,
-        status: 'PROVISIONING',
-        statusMessage: 'Provisioning VPS container…',
+        status: isPaymentPending ? 'PENDING_PAYMENT' : 'PROVISIONING',
+        statusMessage: isPaymentPending
+          ? 'Awaiting admin approval of your cash payment.'
+          : 'Provisioning VPS container…',
       },
     });
+
+    if (isPaymentPending) {
+      this.logger.log(`VPS ${deployment.id} queued: user awaiting cash payment approval.`);
+      return {
+        ...deployment,
+        pendingApproval: true,
+        message: 'Your VPS will be provisioned automatically once your cash payment is approved by an admin.',
+      };
+    }
 
     // Stub Proxmox provisioning — returns plaintext root password ONCE.
     const prov = await this.proxmox.createContainer({
