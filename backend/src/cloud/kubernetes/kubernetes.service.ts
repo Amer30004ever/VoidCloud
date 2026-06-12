@@ -200,6 +200,6 @@ export class KubernetesService {
       chunk.toString('utf8').split(/\r?\n/).filter(Boolean).forEach(onLine);
     });
     const req: any = await (log as any).log(namespace, pod.metadata.name, '', stream, { follow: true, tailLines: 100 });
-    return () => { try { req?.abort?.(); stream.destroy(); } catch {} };
+    return () => { try { req?.abort?.(); stream.destroy(); } catch { /* ignore */ } };
   }
 }
