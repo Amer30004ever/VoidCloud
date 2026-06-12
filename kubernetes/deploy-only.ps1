@@ -192,6 +192,12 @@ if (Test-Path $secretsFile) {
     Write-Host "  Secrets applied from secrets.yaml" -ForegroundColor Green
 }
 
+$secretValidator = Join-Path $scriptPath "Validate-Secrets.ps1"
+if (Test-Path $secretValidator) {
+    & $secretValidator -Namespace $Namespace
+    if ($LASTEXITCODE -ne 0) { exit 1 }
+}
+
 # Apply Docker Hub secret if exists
 $dockerhubSecretFile = Join-Path $scriptPath "dockerhub-secret.yaml"
 if (Test-Path $dockerhubSecretFile) {
@@ -228,6 +234,11 @@ $deploymentFile = Join-Path $postgresPath "deployment.yaml"
 if (Test-Path $deploymentFile) { 
     kubectl apply -f $deploymentFile -n $Namespace
     Write-Host "  Deployment applied" -ForegroundColor Green
+}
+
+if (Test-Path $secretValidator) {
+    & $secretValidator -Namespace $Namespace -Annotate
+    if ($LASTEXITCODE -ne 0) { exit 1 }
 }
 
 $serviceFile = Join-Path $postgresPath "service.yaml"
