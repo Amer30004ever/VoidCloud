@@ -1,0 +1,239 @@
+# GitLab CI mirror of .github/workflows/ci-cd.yaml
+# Build/push to Docker Hub on shared runners; deploy/k8s-ops on a self-hosted
+# runner tagged `homelab` that has kubectl + a kubeconfig at $KUBECONFIG.
+#
+# Required CI/CD variables (Settings > CI/CD > Variables):
+#   DOCKER_HUB_USERNAME       (protected, masked)
+#   DOCKER_HUB_TOKEN          (protected, masked)
+#   KUBECONFIG_B64            (protected, masked) — base64 kubeconfig
+#   PG_DATA_NODE              (optional, default: workernode01)
+#   PG_DATA_PATH              (optional, default: /mnt/homelab/volumes/amer-portal/postgres)
+#
+# Manual jobs (run from CI > Pipelines > Run pipeline, set MODE variable):
+#   MODE=auto                 (default) — detect changes, build + deploy
+#   MODE=apply-manifests      kubectl apply all k8s manifests
+#   MODE=validate-secrets     validate + annotate secrets
+#   MODE=reset-postgres       DESTRUCTIVE postgres reset
+#   MODE=k8s-full-reset       reset-postgres -> apply -> validate -> redeploy
+
+variables:
+  DOCKER_HUB_REPO: amer-portal
+  POSTGRES_IMAGE_NAME: ${DOCKER_HUB_USERNAME}/amer-portal-postgres
+  NAMESPACE: amer-portal
+  MODE:
+    value: "auto"
+    description: "auto | apply-manifests | validate-secrets | reset-postgres | k8s-full-reset | build-backend | build-frontend | build-both"
+
+stages:
+  - detect
+  - test
+  - build
+  - deploy
+  - k8s-ops
+
+# ---------- detect changes ----------
+detect-changes:
+  stage: detect
+  image: alpine:3.19
+  before_script: [apk add --no-cache git]
+  script:
+    - |
+      BACKEND=false; FRONTEND=false; POSTGRES=false
+      if [ "$CI_PIPELINE_SOURCE" = "push" ]; then
+        git fetch --depth=2 origin "$CI_COMMIT_REF_NAME" || true
+        DIFF=$(git diff --name-only HEAD~1 HEAD || true)
+        echo "$DIFF" | grep -q '^backend/'             && BACKEND=true   || true
+        echo "$DIFF" | grep -q '^frontend/'            && FRONTEND=true  || true
+        echo "$DIFF" | grep -q '^kubernetes/postgres/' && POSTGRES=true  || true
+      fi
+      case "$MODE" in
+        build-backend)  BACKEND=true ;;
+        build-frontend) FRONTEND=true ;;
+        build-both)     BACKEND=true; FRONTEND=true ;;
+      esac
+      echo "BUILD_BACKEND=$BACKEND"   > detect.env
+      echo "BUILD_FRONTEND=$FRONTEND" >> detect.env
+      echo "BUILD_POSTGRES=$POSTGRES" >> detect.env
+      cat detect.env
+  artifacts:
+    reports:
+      dotenv: detect.env
+
+# ---------- backend tests ----------
+test-backend:
+  stage: test
+  image: node:20
+  needs: [detect-changes]
+  rules: [{ if: '$BUILD_BACKEND == "true"' }]
+  services:
+    - name: postgres:15-alpine
+      alias: postgres
+      variables:
+        POSTGRES_USER: test_user
+        POSTGRES_PASSWORD: test_password
+        POSTGRES_DB: test_db
+  variables:
+    DATABASE_URL: postgresql://test_user:test_password@postgres:5432/test_db
+    JWT_SECRET: test_secret_key_for_ci_only
+    NODE_ENV: test
+  script:
+    - cd backend
+    - npm ci
+    - npm run lint
+    - npx prisma generate
+    - npx prisma migrate deploy
+    - npm test
+    - npm run build
+
+# ---------- frontend tests ----------
+test-frontend:
+  stage: test
+  image: node:20
+  needs: [detect-changes]
+  rules: [{ if: '$BUILD_FRONTEND == "true"' }]
+  variables:
+    NEXT_PUBLIC_API_URL: https://api.amer-portal.cc.cd/api/v1
+  script:
+    - cd frontend
+    - npm ci
+    - npm run lint
+    - npx tsc --noEmit
+    - npm run build
+    - npm test -- --watchAll=false --passWithNoTests
+
+# ---------- build & push images ----------
+.docker-build: &docker-build
+  image: docker:24
+  services: [docker:24-dind]
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - echo "$DOCKER_HUB_TOKEN" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
+
+build-backend:
+  <<: *docker-build
+  stage: build
+  needs: [detect-changes, test-backend]
+  rules: [{ if: '$BUILD_BACKEND == "true"' }]
+  script:
+    - cd backend
+    - TAG=$(date +%Y%m%d-%H%M%S)
+    - docker build -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:latest -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:$TAG .
+    - docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:latest
+    - docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:$TAG
+    - echo "BACKEND_TAG=$TAG" >> build.env
+  artifacts: { reports: { dotenv: build.env } }
+
+build-frontend:
+  <<: *docker-build
+  stage: build
+  needs: [detect-changes, test-frontend]
+  rules: [{ if: '$BUILD_FRONTEND == "true"' }]
+  script:
+    - cd frontend
+    - TAG=$(date +%Y%m%d-%H%M%S)
+    - docker build -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:latest -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:$TAG .
+    - docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:latest
+    - docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:$TAG
+    - echo "FRONTEND_TAG=$TAG" >> build.env
+  artifacts: { reports: { dotenv: build.env } }
+
+build-postgres:
+  <<: *docker-build
+  stage: build
+  needs: [detect-changes]
+  rules: [{ if: '$BUILD_POSTGRES == "true"' }]
+  script:
+    - cd kubernetes/postgres/build_image
+    - TAG=$(date +%Y%m%d-%H%M%S)
+    - docker build -t $POSTGRES_IMAGE_NAME:latest -t $POSTGRES_IMAGE_NAME:$TAG ./postgres
+    - docker push $POSTGRES_IMAGE_NAME:latest
+    - docker push $POSTGRES_IMAGE_NAME:$TAG
+
+# ---------- deploy on self-hosted homelab runner ----------
+.k8s-runner: &k8s-runner
+  tags: [homelab]
+  image: bitnami/kubectl:latest
+  before_script:
+    - mkdir -p $HOME/.kube
+    - echo "$KUBECONFIG_B64" | base64 -d > $HOME/.kube/config
+    - chmod 600 $HOME/.kube/config
+
+deploy-backend:
+  <<: *k8s-runner
+  stage: deploy
+  needs: [build-backend]
+  rules: [{ if: '$BUILD_BACKEND == "true"' }]
+  script:
+    - kubectl apply -f kubernetes/backend/deployment.yaml
+    - kubectl apply -f kubernetes/backend/service.yaml -n $NAMESPACE
+    - kubectl set image deployment/backend -n $NAMESPACE backend=$DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:${BACKEND_TAG:-latest}
+    - kubectl rollout restart deployment/backend -n $NAMESPACE
+    - kubectl rollout status  deployment/backend -n $NAMESPACE --timeout=300s
+
+deploy-frontend:
+  <<: *k8s-runner
+  stage: deploy
+  needs: [build-frontend]
+  rules: [{ if: '$BUILD_FRONTEND == "true"' }]
+  script:
+    - kubectl apply -f kubernetes/frontend/deployment.yaml
+    - kubectl apply -f kubernetes/frontend/service.yaml -n $NAMESPACE
+    - kubectl set image deployment/frontend -n $NAMESPACE frontend=$DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:${FRONTEND_TAG:-latest}
+    - kubectl rollout restart deployment/frontend -n $NAMESPACE
+    - kubectl rollout status  deployment/frontend -n $NAMESPACE --timeout=300s
+
+# ---------- k8s ops (manual) ----------
+apply-manifests:
+  <<: *k8s-runner
+  stage: k8s-ops
+  rules:
+    - if: '$MODE == "apply-manifests" || $MODE == "k8s-full-reset"'
+  script:
+    - kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl apply -f kubernetes/configmaps.yaml
+    - kubectl apply -f kubernetes/secrets.yaml
+    - kubectl apply -f kubernetes/postgres/pv.yaml
+    - kubectl apply -f kubernetes/postgres/pvc.yaml -n $NAMESPACE
+    - kubectl apply -f kubernetes/postgres/deployment.yaml
+    - kubectl apply -f kubernetes/postgres/service.yaml -n $NAMESPACE
+    - kubectl apply -f kubernetes/backend/rbac.yaml -n $NAMESPACE || true
+    - kubectl apply -f kubernetes/backend/deployment.yaml
+    - kubectl apply -f kubernetes/backend/service.yaml -n $NAMESPACE
+    - kubectl apply -f kubernetes/frontend/deployment.yaml
+    - kubectl apply -f kubernetes/frontend/service.yaml -n $NAMESPACE
+    - kubectl apply -f kubernetes/ingress.yaml -n $NAMESPACE || true
+
+validate-secrets:
+  <<: *k8s-runner
+  stage: k8s-ops
+  needs: []
+  rules:
+    - if: '$MODE == "validate-secrets" || $MODE == "apply-manifests" || $MODE == "k8s-full-reset"'
+  script:
+    - bash kubernetes/validate-secrets.sh --namespace $NAMESPACE --annotate
+
+reset-postgres:
+  <<: *k8s-runner
+  stage: k8s-ops
+  needs: [validate-secrets]
+  rules:
+    - if: '$MODE == "reset-postgres" || $MODE == "k8s-full-reset"'
+      when: manual
+      allow_failure: false
+  script:
+    - bash kubernetes/reset-postgres.sh
+        --namespace $NAMESPACE
+        --node "${PG_DATA_NODE:-workernode01}"
+        --path "${PG_DATA_PATH:-/mnt/homelab/volumes/amer-portal/postgres}"
+
+redeploy-after-reset:
+  <<: *k8s-runner
+  stage: k8s-ops
+  needs: [reset-postgres]
+  rules:
+    - if: '$MODE == "k8s-full-reset"'
+  script:
+    - kubectl -n $NAMESPACE rollout restart deploy/backend
+    - kubectl -n $NAMESPACE rollout status  deploy/backend --timeout=300s
+    - kubectl -n $NAMESPACE rollout restart deploy/frontend || true
