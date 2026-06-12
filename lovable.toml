@@ -1,7 +1,7 @@
 # lovable.toml
 [run]
-dev = "npm --prefix frontend run dev -- --hostname 0.0.0.0"
-build = "npm --prefix frontend run build"
+dev = "node frontend/node_modules/next/dist/bin/next dev frontend --hostname 0.0.0.0"
+build = "node frontend/node_modules/next/dist/bin/next build frontend"
 install = "npm --prefix frontend install"
 
 [build]
