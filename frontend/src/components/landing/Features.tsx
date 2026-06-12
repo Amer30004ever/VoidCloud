@@ -7,7 +7,8 @@ const features = [
   {
     icon: "💳",
     title: "Egyptian Payments",
-    desc: "Pay with Fawry, InstaPay, Vodafone Cash, or international cards via Stripe. All in EGP or USD.",
+    desc: "Local payment methods built in — no international card needed.",
+    badges: ["Fawry", "InstaPay", "Vodafone Cash", "Stripe"],
   },
   {
     icon: "📊",
@@ -47,6 +48,18 @@ export function Features() {
             <div className="mb-3 text-3xl">{f.icon}</div>
             <h3 className="mb-2 font-semibold">{f.title}</h3>
             <p className="text-sm text-white/60">{f.desc}</p>
+            {f.badges && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {f.badges.map((b) => (
+                  <span
+                    key={b}
+                    className="rounded-md border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-xs text-cyan-300"
+                  >
+                    {b}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -8,7 +8,7 @@ const navLinks = [
   { href: "#pricing", label: "Pricing" },
   { href: "/amercloud/dashboard/deployments", label: "Deployments" },
   { href: "/docs", label: "Docs" },
-  { href: "mailto:support@amercloud.dev", label: "Support" },
+  { href: "mailto:nova-cloud-2026@outlook.com", label: "Support" },
 ];
 
 export function Navbar() {
@@ -37,6 +37,10 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
+          <span className="hidden items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-xs text-emerald-300 lg:inline-flex">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+            Live
+          </span>
           <Link
             href="/amercloud/login"
             className="rounded-lg px-4 py-2 text-sm text-white/80 hover:text-white"
