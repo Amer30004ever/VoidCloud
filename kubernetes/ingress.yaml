@@ -4,29 +4,19 @@ metadata:
   name: amer-portal-ingress
   namespace: amer-portal
   annotations:
-    # Traefik annotations
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.middlewares: traefik-security-headers@kubernetescrd
-    
-    # Optional: Rate limiting
-    traefik.ingress.kubernetes.io/router.middlewares: "traefik-rate-limit@kubernetescrd"
-    
-    # CORS if needed
-    traefik.ingress.kubernetes.io/service-cors-headers: |
-      Access-Control-Allow-Origin: https://amer.portal.com
-      Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS
-      Access-Control-Allow-Headers: Content-Type,Authorization
+    # Chain BOTH middlewares (YAML does not allow duplicate keys — comma-separate them)
+    traefik.ingress.kubernetes.io/router.middlewares: "traefik-security-headers@kubernetescrd,traefik-rate-limit@kubernetescrd"
 spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - amer.portal.com
-        - api.amer.portal.com
+        - amer.homelab.com
+        - api.amer.homelab.com
       secretName: amer-portal-tls
   rules:
-    # Frontend rule
-    - host: amer.portal.com
+    - host: amer.homelab.com
       http:
         paths:
           - path: /
@@ -36,19 +26,10 @@ spec:
                 name: frontend
                 port:
                   number: 3000
-    
-    # Backend API rule
-    - host: api.amer.portal.com
+    - host: api.amer.homelab.com
       http:
         paths:
           - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: backend
-                port:
-                  number: 3001
-          - path: /api/docs
             pathType: Prefix
             backend:
               service:

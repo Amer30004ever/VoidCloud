@@ -13,8 +13,7 @@ spec:
       labels:
         app: frontend
     spec:
-      imagePullSecrets:
-        - name: dockerhub-secret
+      # imagePullSecrets removed — images are public on Docker Hub.
       containers:
         - name: frontend
           image: amer30004ever/amer-portal-frontend:latest  # Will be updated

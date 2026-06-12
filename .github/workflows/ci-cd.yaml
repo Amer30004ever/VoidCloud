@@ -1,5 +1,10 @@
 name: CI/CD - Test, Build & Deploy
 
+# Auto-cancel older queued/running runs on the same ref so the queue can never pile up.
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
     inputs:
