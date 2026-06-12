@@ -636,15 +636,16 @@ jobs:
   # DEPLOY BACKEND (Self-Hosted Runner)
   # ============================================
   deploy-backend:
-    needs: [detect-changes, build-backend, deploy-postgres]
+    needs: [detect-changes, build-backend]
     if: |
       needs.build-backend.result == 'success' &&
       needs.detect-changes.outputs.deploy_enabled == 'true' &&
-      (needs.detect-changes.outputs.build_backend == 'true' ||
-       contains(github.event.inputs.mode, 'full-ci') ||
+      (github.event.inputs.mode == 'full-ci-backend' ||
+       github.event.inputs.mode == 'full-ci-both' ||
+       github.event.inputs.mode == 'full-ci-all' ||
        github.event.inputs.mode == 'build-backend-only' ||
        github.event.inputs.mode == 'build-both' ||
-       github.event.inputs.mode == 'full-ci-all')
+       needs.detect-changes.outputs.build_backend == 'true')
     runs-on: self-hosted
     steps:
       - name: Checkout code
@@ -711,11 +712,12 @@ jobs:
     if: |
       needs.build-frontend.result == 'success' &&
       needs.detect-changes.outputs.deploy_enabled == 'true' &&
-      (needs.detect-changes.outputs.build_frontend == 'true' ||
-       contains(github.event.inputs.mode, 'full-ci') ||
+      (github.event.inputs.mode == 'full-ci-frontend' ||
+       github.event.inputs.mode == 'full-ci-both' ||
+       github.event.inputs.mode == 'full-ci-all' ||
        github.event.inputs.mode == 'build-frontend-only' ||
        github.event.inputs.mode == 'build-both' ||
-       github.event.inputs.mode == 'full-ci-all')
+       needs.detect-changes.outputs.build_frontend == 'true')
     runs-on: self-hosted
     steps:
       - name: Checkout code
