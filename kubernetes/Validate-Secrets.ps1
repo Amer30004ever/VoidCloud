@@ -75,14 +75,26 @@ Ok "Secret checksum: $($hash.Substring(0, 12))"
 
 if ($Annotate) {
   Step "Patching deployment annotations with secret checksum..."
+  # PowerShell strips embedded double quotes when passing args to native
+  # commands, which corrupts `-p '{json}'` and produces
+  # "error decoding patch: invalid character 's' ...". Use --patch-file.
   $patch = @{ spec = @{ template = @{ metadata = @{ annotations = @{ "secret-checksum" = $hash } } } } } | ConvertTo-Json -Depth 10 -Compress
-  foreach ($deployment in @("postgres", "backend")) {
-    $exists = kubectl -n $Namespace get deployment $deployment --ignore-not-found 2>$null
-    if ($exists) {
-      kubectl -n $Namespace patch deployment $deployment --type merge -p $patch | Out-Null
-      Ok "Annotated deployment/$deployment"
-    } else {
-      Warn "deployment/$deployment does not exist yet; skipping annotation"
+  $patchFile = New-TemporaryFile
+  try {
+    [System.IO.File]::WriteAllText($patchFile.FullName, $patch, [System.Text.UTF8Encoding]::new($false))
+    foreach ($deployment in @("postgres", "backend")) {
+      $exists = kubectl -n $Namespace get deployment $deployment --ignore-not-found 2>$null
+      if ($exists) {
+        kubectl -n $Namespace patch deployment $deployment --type merge --patch-file $patchFile.FullName | Out-Null
+        if ($LASTEXITCODE -eq 0) { Ok "Annotated deployment/$deployment" }
+        else { Warn "Failed to annotate deployment/$deployment (kubectl exit $LASTEXITCODE); continuing" }
+      } else {
+        Warn "deployment/$deployment does not exist yet; skipping annotation"
+      }
     }
+  } finally {
+    Remove-Item $patchFile.FullName -ErrorAction SilentlyContinue
   }
+  # Annotation is best-effort; never abort a calling pipeline.
+  $global:LASTEXITCODE = 0
 }
