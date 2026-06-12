@@ -5,6 +5,7 @@ import { CloudBillingService } from './cloud-billing.service';
 import { CloudAdminService } from './cloud-admin.service';
 import { KubernetesService } from './kubernetes/kubernetes.service';
 import { PrometheusService } from './metrics/prometheus.service';
+import { ProxmoxService } from './proxmox/proxmox.service';
 import { StripeService } from './billing/stripe.service';
 import { FawryService } from './billing/fawry.service';
 import { InstapayService } from './billing/instapay.service';
@@ -34,7 +35,7 @@ import {
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
-    KubernetesService, PrometheusService,
+    KubernetesService, PrometheusService, ProxmoxService,
     StripeService, FawryService, InstapayService,
     CloudEmailService, TwoFactorService, CloudAuditService, CloudBackupService,
   ],

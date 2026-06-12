@@ -7,7 +7,7 @@ import api from "@/lib/api";
 
 const NAV = [
   { href: "/amercloud/user/dashboard", label: "Dashboard", icon: "🏠" },
-  { href: "/amercloud/dashboard/deployments", label: "Deployments", icon: "🚀" },
+  { href: "/amercloud/dashboard/deployments", label: "VPS Instances", icon: "🖥️" },
   { href: "/amercloud/dashboard/billing", label: "Billing", icon: "💳" },
   { href: "/amercloud/dashboard/settings", label: "Settings", icon: "⚙️" },
   { href: "/amercloud/dashboard/settings/api-keys", label: "API Keys", icon: "🔑" },
@@ -17,7 +17,7 @@ const ADMIN_NAV = [
   { href: "/amercloud/admin/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/amercloud/admin/users", label: "Users", icon: "👤" },
   { href: "/amercloud/admin/plans", label: "Plans", icon: "💎" },
-  { href: "/amercloud/dashboard/deployments", label: "Deployments", icon: "🚀" },
+  { href: "/amercloud/dashboard/deployments", label: "VPS Instances", icon: "🖥️" },
   { href: "/amercloud/admin/billing", label: "Billing", icon: "💰" },
   { href: "/amercloud/dashboard/settings", label: "Settings", icon: "⚙️" },
   { href: "/amercloud/dashboard/settings/api-keys", label: "API Keys", icon: "🔑" },

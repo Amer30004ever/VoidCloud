@@ -705,11 +705,14 @@ enum CloudSubscriptionStatus {
 
 enum CloudDeploymentStatus {
   PENDING
+  PROVISIONING
   DEPLOYING
   RUNNING
   STOPPED
+  SUSPENDED
   FAILED
   DELETED
+  TERMINATED
 }
 
 enum CloudDeploymentType {
@@ -745,6 +748,7 @@ model CloudPlan {
   memoryLimit        Int      @default(512)
   storageLimit       Int      @default(1024)
   deploymentLimit    Int      @default(1)
+  vpsLimit           Int      @default(1)
   customDomainLimit  Int      @default(0)
   apiRequestLimit    Int      @default(10000)
   teamMemberLimit    Int      @default(1)
@@ -767,6 +771,7 @@ model CloudDeployment {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name          String
   status        CloudDeploymentStatus @default(PENDING)
+  statusMessage String?
   type          CloudDeploymentType   @default(DOCKER_IMAGE)
   source        String
   namespace     String   @unique
@@ -779,6 +784,15 @@ model CloudDeployment {
   envVars       Json?
   healthCheck   String?
   webhookUrl    String?
+  // VPS-specific fields (stubbed Proxmox provisioning)
+  hostname         String?
+  ipv4Address      String?
+  rootPasswordHash String?
+  proxmoxVMID      Int?
+  proxmoxNode      String?
+  provisionedAt    DateTime?
+  suspendedAt      DateTime?
+  terminatedAt     DateTime?
   lastDeployedAt DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

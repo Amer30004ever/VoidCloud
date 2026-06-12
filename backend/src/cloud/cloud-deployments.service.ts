@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomNamespace, randomSubdomain } from './cloud-plans.service';
 import { KubernetesService } from './kubernetes/kubernetes.service';
 import { PrometheusService } from './metrics/prometheus.service';
+import { ProxmoxService } from './proxmox/proxmox.service';
 import { CloudEmailService } from './notifications/email.service';
 
 export interface DeploymentInput {
@@ -25,6 +27,7 @@ export class CloudDeploymentsService {
     private prisma: PrismaService,
     private k8s: KubernetesService,
     private prom: PrometheusService,
+    private proxmox: ProxmoxService,
     private email: CloudEmailService,
   ) {}
 
@@ -75,6 +78,7 @@ export class CloudDeploymentsService {
         source: input.source,
         namespace: randomNamespace(userId),
         subdomain: randomSubdomain(input.name),
+        hostname: input.name.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
         cpu: input.cpu ?? 0.25,
         memory: input.memory ?? 512,
         storage: input.storage ?? 1024,
@@ -82,13 +86,47 @@ export class CloudDeploymentsService {
         customDomains: input.customDomains ?? [],
         envVars: (input.envVars ?? {}) as any,
         healthCheck: input.healthCheck,
-        status: 'PENDING',
+        status: 'PROVISIONING',
+        statusMessage: 'Provisioning VPS container…',
       },
     });
+
+    // Stub Proxmox provisioning — returns plaintext root password ONCE.
+    const prov = await this.proxmox.createContainer({
+      hostname: deployment.hostname ?? deployment.name,
+      cpuCores: deployment.cpu,
+      ramMB: deployment.memory,
+      storageGB: Math.ceil(deployment.storage / 1024),
+    });
+    const rootPasswordHash = await bcrypt.hash(prov.rootPassword, 10);
+    await this.prisma.cloudDeployment.update({
+      where: { id: deployment.id },
+      data: {
+        status: 'RUNNING',
+        statusMessage: null,
+        ipv4Address: prov.ipv4Address,
+        proxmoxVMID: prov.vmid,
+        proxmoxNode: prov.node,
+        rootPasswordHash,
+        provisionedAt: new Date(),
+        lastDeployedAt: new Date(),
+      },
+    });
+
+    // Best-effort legacy k8s provisioning (kept for backward compat, fire-and-forget)
     this.provision(deployment.id, user.email).catch((e) =>
-      this.logger.error(`provision failed for ${deployment.id}: ${e.message}`),
+      this.logger.warn(`legacy k8s provision skipped for ${deployment.id}: ${e.message}`),
     );
-    return deployment;
+
+    return {
+      ...deployment,
+      status: 'RUNNING',
+      ipv4Address: prov.ipv4Address,
+      proxmoxVMID: prov.vmid,
+      proxmoxNode: prov.node,
+      // Surfaced ONCE — never returned by list/get endpoints.
+      rootPassword: prov.rootPassword,
+    };
   }
 
   private k8sName(name: string) { return name.toLowerCase().replace(/[^a-z0-9-]/g, '-'); }
