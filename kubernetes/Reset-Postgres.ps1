@@ -50,6 +50,10 @@ if (-not $pwB64) {
   exit 1
 }
 $pw = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($pwB64))
+$user = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(
+  (kubectl -n $Namespace get secret amer-portal-secrets -o jsonpath='{.data.POSTGRES_USER}')))
+$db = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(
+  (kubectl -n $Namespace get secret amer-portal-secrets -o jsonpath='{.data.POSTGRES_DB}')))
 $dbUrl = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(
   (kubectl -n $Namespace get secret amer-portal-secrets -o jsonpath='{.data.DATABASE_URL}')))
 if ($dbUrl -notmatch [Regex]::Escape(":$pw@")) {
@@ -105,7 +109,7 @@ Ok "Live postgres deployment uses PGDATA subdirectory."
 # --- 6. verify authentication actually works --------------------------------
 Step "Verifying password auth from inside the pod..."
 $pgPod = kubectl -n $Namespace get pod -l app=postgres -o jsonpath='{.items[0].metadata.name}'
-$check = kubectl -n $Namespace exec $pgPod -- sh -c "PGPASSWORD='$pw' psql -h 127.0.0.1 -U postgres -d amer_portal -c 'SELECT 1' 2>&1"
+$check = kubectl -n $Namespace exec $pgPod -- sh -c "PGPASSWORD='$pw' psql -h 127.0.0.1 -U '$user' -d '$db' -c 'SELECT 1' 2>&1"
 if ($LASTEXITCODE -ne 0) {
   Warn "Auth check FAILED. Output:"
   Write-Host $check -ForegroundColor Red
