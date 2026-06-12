@@ -705,11 +705,14 @@ enum CloudSubscriptionStatus {
 
 enum CloudDeploymentStatus {
   PENDING
+  PROVISIONING
   DEPLOYING
   RUNNING
   STOPPED
+  SUSPENDED
   FAILED
   DELETED
+  TERMINATED
 }
 
 enum CloudDeploymentType {
