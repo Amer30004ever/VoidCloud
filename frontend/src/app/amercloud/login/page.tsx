@@ -26,8 +26,10 @@ function LoginInner() {
         else sessionStorage.setItem("amer_portal_token", token);
       }
       router.push(params.get("redirect") || "/amercloud/dashboard");
-    } catch (e: any) {
-      setErr(e.response?.data?.message ?? "Login failed");
+    } catch (e: unknown) {
+      const status = (e as { response?: { status?: number; data?: { message?: string } } }).response?.status;
+      const message = (e as { response?: { data?: { message?: string } } }).response?.data?.message;
+      setErr(status === 401 ? (message ?? "Invalid credentials. Please try again.") : "Portal API is unreachable. Please check backend health and try again.");
     } finally { setBusy(false); }
   }
 

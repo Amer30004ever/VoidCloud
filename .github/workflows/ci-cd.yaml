@@ -1135,8 +1135,10 @@ jobs:
           kubectl apply -f kubernetes/backend/service.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f kubernetes/frontend/deployment.yaml
           kubectl apply -f kubernetes/frontend/service.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f kubernetes/cloudflare-tunnel-config.yaml
           kubectl apply -f kubernetes/ingress.yaml -n ${{ env.NAMESPACE }} 2>/dev/null || true
           kubectl -n ${{ env.NAMESPACE }} rollout status deploy/backend --timeout=300s
+          kubectl -n ${{ env.NAMESPACE }} rollout status deploy/cloudflare-tunnel --timeout=120s
 
   validate-secrets:
     needs: [apply-manifests]
