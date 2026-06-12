@@ -12,13 +12,11 @@ function ResetPasswordInner() {
   const token = params.get("token") || "";
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [err, setErr] = useState("");
+  const [err, setErr] = useState(
+    token ? "" : "Missing or invalid reset link. Request a new one below.",
+  );
   const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (!token) setErr("Missing or invalid reset link. Request a new one below.");
-  }, [token]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
