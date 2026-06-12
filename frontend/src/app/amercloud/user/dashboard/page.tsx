@@ -21,7 +21,7 @@ export default function UserDashboard() {
     <div className="space-y-6">
       <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 p-8 backdrop-blur-xl">
         <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
-        <p className="mt-2 text-white/60">Manage your deployments, plan, and usage from one place.</p>
+        <p className="mt-2 text-white/60">Manage your VPS instances, plan, and usage from one place.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -32,25 +32,25 @@ export default function UserDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <QuickAction href="/amercloud/dashboard/deployments/new" icon="🚀" title="New Deployment" desc="Deploy from GitHub or Docker" />
+        <QuickAction href="/amercloud/dashboard/deployments/new" icon="🖥️" title="New VPS" desc="Provision a Proxmox container" />
         <QuickAction href="/amercloud/dashboard/billing/invoices" icon="🧾" title="View Invoices" desc="Download past invoices" />
         <QuickAction href="/amercloud/dashboard/billing" icon="⬆️" title="Upgrade Plan" desc="Need more resources?" />
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Your deployments</h2>
+          <h2 className="text-lg font-semibold">Your VPS instances</h2>
           <Link href="/amercloud/dashboard/deployments" className="text-xs text-cyan-300 hover:underline">View all →</Link>
         </div>
         {deployments.length === 0 ? (
-          <p className="py-12 text-center text-white/50">No deployments yet. Create your first to get started.</p>
+          <p className="py-12 text-center text-white/50">No VPS instances yet. Provision your first to get started.</p>
         ) : (
           <div className="divide-y divide-white/5">
-            {deployments.slice(0, 5).map((d) => (
+            {deployments.slice(0, 5).map((d: any) => (
               <Link key={d.id} href={`/amercloud/dashboard/deployments/${d.id}`} className="flex items-center justify-between py-3 hover:bg-white/5">
                 <div>
                   <div className="font-medium">{d.name}</div>
-                  <div className="text-xs text-white/50">{d.subdomain ? `${d.subdomain}.amercloud.cc.cd` : d.namespace}</div>
+                  <div className="text-xs text-white/50">{d.ipv4Address ?? d.hostname ?? d.namespace}</div>
                 </div>
                 <StatusBadge status={d.status} />
               </Link>
@@ -104,10 +104,13 @@ function QuickAction({ href, icon, title, desc }: { href: string; icon: string; 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     RUNNING: "bg-green-500/20 text-green-300 border-green-500/30",
+    PROVISIONING: "bg-blue-500/20 text-blue-300 border-blue-500/30",
     DEPLOYING: "bg-blue-500/20 text-blue-300 border-blue-500/30",
     PENDING: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
     STOPPED: "bg-gray-500/20 text-gray-300 border-gray-500/30",
+    SUSPENDED: "bg-orange-500/20 text-orange-300 border-orange-500/30",
     FAILED: "bg-red-500/20 text-red-300 border-red-500/30",
+    TERMINATED: "bg-gray-500/10 text-gray-400 border-gray-500/20",
     DELETED: "bg-gray-500/10 text-gray-400 border-gray-500/20",
   };
   return <span className={`rounded-full border px-2 py-0.5 text-xs ${colors[status] ?? colors.PENDING}`}>{status}</span>;
