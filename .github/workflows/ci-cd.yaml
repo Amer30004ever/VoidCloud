@@ -45,20 +45,6 @@ on:
         type: boolean
         default: true
 
-  pull_request:
-    branches: [main, feature/devops-portal-features]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - '.github/workflows/combined-ci-cd.yaml'
-
-  push:
-    branches: [main, feature/devops-portal-features]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - '.github/workflows/combined-ci-cd.yaml'
-
 env:
   DOCKER_HUB_USERNAME: amer30004ever
   DOCKER_HUB_REPO: amer-portal
