@@ -445,6 +445,7 @@ export class CloudAdminController {
 
 
   @Get('stats') stats() { return this.admin.stats(); }
+  @Get('stats/real') realStats() { return this.admin.realStats(); }
 
   @Get('users')
   users(@Query('q') q?: string, @Query('planId') planId?: string, @Query('status') status?: string) {
