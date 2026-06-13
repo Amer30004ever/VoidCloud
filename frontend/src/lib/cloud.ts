@@ -12,6 +12,7 @@ export interface CloudPlan {
   memoryLimit: number;
   storageLimit: number;
   deploymentLimit: number;
+  vpsLimit?: number;
   customDomainLimit: number;
   apiRequestLimit: number;
   teamMemberLimit: number;
