@@ -22,6 +22,7 @@ import { ActivityService } from './audit/activity.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import { BackupServiceV2 } from './backup/backup-v2.service';
 import { SSHKeyService } from './ssh/ssh-key.service';
+import { VPSResizeService } from './vps/vps-resize.service';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
 
