@@ -258,6 +258,7 @@ export class CloudAdminController {
     private audit: CloudAuditService,
     private tfa: TwoFactorService,
     private mailer: MailerService,
+    private deployments: CloudDeploymentsService,
   ) {}
 
   @Get('smtp/status') smtpStatus() { return this.mailer.status(); }
