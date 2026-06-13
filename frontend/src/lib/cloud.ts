@@ -459,3 +459,24 @@ export const cloudMigration = {
   adminDrain: async (sourceNode: string, targetNode: string) =>
     (await api.post(`/admin/cloud/migration/drain`, { sourceNode, targetNode })).data,
 };
+
+export interface ReferralStats {
+  code: string;
+  clicks: number;
+  signups: number;
+  conversions: number;
+  earnings: { pending: number; paid: number; total: number };
+  history: { date: string; event: string; amount: number }[];
+  config: { commissionType: string; commissionValue: number; payoutMinimum: number; cookieDays: number };
+}
+export interface ReferralPayoutMethod { type: 'FAWRY' | 'INSTAPAY' | 'BANK'; destination: string }
+export interface ReferralPayout { id: string; amount: number; currency: string; method: string; destination: string; status: string; createdAt: string }
+export const cloudReferral = {
+  code: async (): Promise<{ code: string }> => (await api.get('/cloud/referral/code')).data,
+  stats: async (): Promise<ReferralStats> => (await api.get('/cloud/referral/stats')).data,
+  getPayoutMethod: async (): Promise<ReferralPayoutMethod | null> => (await api.get('/cloud/referral/payout-method')).data,
+  setPayoutMethod: async (m: ReferralPayoutMethod): Promise<ReferralPayoutMethod> => (await api.post('/cloud/referral/payout-method', m)).data,
+  payouts: async (): Promise<ReferralPayout[]> => (await api.get('/cloud/referral/payouts')).data,
+  requestPayout: async (amount: number, method: string): Promise<ReferralPayout> =>
+    (await api.post('/cloud/referral/payout', { amount, method })).data,
+};
