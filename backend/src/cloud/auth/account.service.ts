@@ -95,4 +95,68 @@ export class CloudAccountService {
     }
     return { ok: true };
   }
+
+  async getProfile(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!u) throw new UnauthorizedException();
+    return {
+      id: u.id, email: u.email, name: u.name, phone: u.phone ?? '',
+      emailVerified: u.emailVerified, twoFactorEnabled: u.twoFactorEnabled,
+      avatar: u.avatar ?? null, createdAt: u.createdAt,
+    };
+  }
+
+  async updateProfile(userId: string, data: { displayName?: string; phone?: string | null }) {
+    const patch: { name?: string; phone?: string | null } = {};
+    if (typeof data.displayName === 'string') {
+      const name = data.displayName.trim();
+      if (name.length < 1 || name.length > 80) throw new BadRequestException('Name must be 1-80 chars');
+      patch.name = name;
+    }
+    if (data.phone !== undefined) {
+      const phone = (data.phone ?? '').trim();
+      if (phone && !/^01[0-9]{9}$/.test(phone)) {
+        throw new BadRequestException('Phone must be Egyptian format: 01XXXXXXXXX');
+      }
+      patch.phone = phone || null;
+    }
+    const updated = await this.prisma.user.update({ where: { id: userId }, data: patch });
+    return { ok: true, user: { id: updated.id, name: updated.name, phone: updated.phone } };
+  }
+
+  async deleteAccount(userId: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+    if (!(await bcrypt.compare(password || '', user.password))) {
+      throw new UnauthorizedException('Password is incorrect');
+    }
+    // Cascade via Prisma onDelete where configured; otherwise best-effort cleanup.
+    await this.prisma.user.delete({ where: { id: userId } });
+    return { ok: true };
+  }
+
+  private readonly defaultPrefs = {
+    vpsAlerts: true,
+    usageAlerts: true,
+    trialReminders: true,
+    paymentAlerts: true,
+    securityAlerts: true,
+  };
+
+  async getNotificationPreferences(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!u) throw new UnauthorizedException();
+    const stored = (u.notificationPrefs as Record<string, boolean> | null) ?? {};
+    return { ...this.defaultPrefs, ...stored };
+  }
+
+  async updateNotificationPreferences(userId: string, prefs: Partial<Record<keyof typeof this.defaultPrefs, boolean>>) {
+    const current = await this.getNotificationPreferences(userId);
+    const next: Record<string, boolean> = { ...current };
+    for (const k of Object.keys(this.defaultPrefs) as Array<keyof typeof this.defaultPrefs>) {
+      if (typeof prefs[k] === 'boolean') next[k] = prefs[k] as boolean;
+    }
+    await this.prisma.user.update({ where: { id: userId }, data: { notificationPrefs: next } });
+    return next;
+  }
 }
