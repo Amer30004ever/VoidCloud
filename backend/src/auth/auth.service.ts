@@ -86,6 +86,19 @@ export class AuthService {
         isActive: true,
       },
     });
+
+    // Fire-and-forget welcome email — don't block registration on email transport.
+    try {
+      const { welcomeEmail } = await import('../mailer/templates/welcome');
+      const frontend = (process.env.FRONTEND_URL || 'https://amer-portal.cc.cd').replace(/\/$/, '');
+      const { html, text } = welcomeEmail(user.name, `${frontend}/amercloud/dashboard`);
+      this.mailer.send(user.email, 'Welcome to AmerCloud 🚀', html, text).catch((e) =>
+        this.logger.warn(`welcome email failed for ${user.email}: ${e?.message ?? e}`),
+      );
+    } catch (e: any) {
+      this.logger.warn(`welcome email skipped: ${e?.message ?? e}`);
+    }
+
     const { password: _, ...result } = user;
     return result;
   }

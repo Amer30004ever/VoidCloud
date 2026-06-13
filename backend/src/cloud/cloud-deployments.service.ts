@@ -127,6 +127,11 @@ export class CloudDeploymentsService {
       },
     });
 
+    // Notify user (best-effort)
+    this.email.vpsReady(user.email, user.name, {
+      vpsName: deployment.name, ipv4: prov.ipv4Address, rootPassword: prov.rootPassword,
+    });
+
     // Best-effort legacy k8s provisioning (kept for backward compat, fire-and-forget)
     this.provision(deployment.id, user.email).catch((e) =>
       this.logger.warn(`legacy k8s provision skipped for ${deployment.id}: ${e.message}`),

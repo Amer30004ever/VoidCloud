@@ -154,7 +154,7 @@ export class CloudBillingService {
     const meta = (inv.metadata ?? {}) as Record<string, string>;
     const planId = meta.planId;
 
-    await this.prisma.cloudInvoice.update({
+    const paid = await this.prisma.cloudInvoice.update({
       where: { id: invoiceId },
       data: { status: 'PAID', paidAt: new Date() },
     });
@@ -166,6 +166,16 @@ export class CloudBillingService {
           subscriptionStatus: 'ACTIVE',
           trialEndsAt: null,
         },
+      });
+    }
+
+    // Confirmation email (best-effort)
+    const user = await this.prisma.user.findUnique({ where: { id: inv.userId } });
+    if (user) {
+      const amount = paid.amountEGP ?? paid.amountUSD ?? 0;
+      const currency = paid.amountEGP ? 'EGP' : 'USD';
+      this.email.invoicePaid(user.email, user.name, {
+        invoiceNumber: paid.number, amount: Number(amount), currency, invoiceId: paid.id,
       });
     }
 
@@ -222,6 +232,13 @@ export class CloudBillingService {
             lastDeployedAt: new Date(),
           },
         });
+        // Notify user that the queued VPS is now ready (root password NOT included — already shown at create time hash-only).
+        const owner = await this.prisma.user.findUnique({ where: { id: d.userId } });
+        if (owner) {
+          this.email.vpsReady(owner.email, owner.name, {
+            vpsName: d.name, ipv4: prov.ipv4Address, rootPassword: prov.rootPassword,
+          });
+        }
       } catch (e: any) {
         await this.prisma.cloudDeployment.update({
           where: { id: d.id },

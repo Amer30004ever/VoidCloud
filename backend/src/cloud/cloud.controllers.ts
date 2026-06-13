@@ -19,6 +19,7 @@ import { TwoFactorService } from './auth/two-factor.service';
 import { CloudAuditService } from './audit/cloud-audit.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import { CloudEmailService } from './notifications/email.service';
+import { MailerService } from '../mailer/mailer.service';
 
 interface AuthedRequest { user: { id: string; role: Role; email: string } }
 
@@ -244,7 +245,15 @@ export class CloudAdminController {
     private billing: CloudBillingService,
     private audit: CloudAuditService,
     private tfa: TwoFactorService,
+    private mailer: MailerService,
   ) {}
+
+  @Get('smtp/status') smtpStatus() { return this.mailer.status(); }
+  @Post('smtp/verify') smtpVerify() { return this.mailer.verify(); }
+  @Post('smtp/test')
+  smtpTest(@Req() req: AuthedRequest, @Body() b: { to?: string }) {
+    return this.mailer.sendTest((b?.to || req.user.email).trim());
+  }
 
   @Get('audit-logs')
   auditLogs(@Query('targetId') targetId?: string, @Query('action') action?: string) {
