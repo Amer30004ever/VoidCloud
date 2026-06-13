@@ -151,26 +151,33 @@ export class ProxmoxService {
 
   // ---------------- IP pool ----------------
 
-  /** Take the next free IP from the configured pool. */
+  /** Take the next free IP from the configured pool. Concurrency-safe within process. */
   private async allocateIp(): Promise<string> {
-    // Best-effort: list existing CTs on node, find used IPs, advance counter past them.
+    const used = new Set<number>(Array.from(this.inFlightIps).map((ip) => Number(ip.split('.')[3])));
     try {
-      const list = await this.pveRequest<any[]>('GET', `/nodes/${this.node}/lxc`);
-      const usedOctets = new Set<number>();
-      for (const ct of list ?? []) {
-        try {
-          const cfg = await this.pveRequest<any>('GET', `/nodes/${this.node}/lxc/${ct.vmid}/config`);
-          const ip = String(cfg.net0 ?? '').match(/ip=([\d.]+)/)?.[1];
-          if (ip?.startsWith(this.ipBase + '.')) usedOctets.add(Number(ip.split('.')[3]));
-        } catch { /* ignore */ }
+      // Scan every configured node — IPs are pool-wide, not per-node.
+      for (const node of this.nodes) {
+        const list = await this.pveRequest<any[]>('GET', `/nodes/${node}/lxc`).catch(() => []);
+        for (const ct of list ?? []) {
+          try {
+            const cfg = await this.pveRequest<any>('GET', `/nodes/${node}/lxc/${ct.vmid}/config`);
+            const ip = String(cfg.net0 ?? '').match(/ip=([\d.]+)/)?.[1];
+            if (ip?.startsWith(this.ipBase + '.')) used.add(Number(ip.split('.')[3]));
+          } catch {
+            /* ignore */
+          }
+        }
       }
-      while (usedOctets.has(this.nextHostOctet)) this.nextHostOctet++;
     } catch (e: any) {
       this.logger.warn(`IP allocation fallback (could not list CTs): ${e.message}`);
     }
+    while (used.has(this.nextHostOctet)) this.nextHostOctet++;
     if (this.nextHostOctet > 254) throw new ServiceUnavailableException('IP pool exhausted');
-    return `${this.ipBase}.${this.nextHostOctet++}`;
+    const ip = `${this.ipBase}.${this.nextHostOctet++}`;
+    this.inFlightIps.add(ip);
+    return ip;
   }
+
 
   // ---------------- Public API ----------------
 
