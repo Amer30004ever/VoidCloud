@@ -66,9 +66,34 @@ export interface CloudUsage {
   used: { cpu: number; memory: number; storage: number; deployments: number; apiRequests: number };
 }
 
+export interface VpsUsage {
+  status: "running" | "stopped" | "paused" | "unknown";
+  cpuPercent: number;
+  ramPercent: number;
+  diskPercent: number;
+  uptime: number;
+  networkRx: number;
+  networkTx: number;
+  memUsedMB: number;
+  memTotalMB: number;
+  diskUsedGB: number;
+  diskTotalGB: number;
+}
+
+export interface OsTemplate {
+  id: string;
+  label: string;
+  proxmoxId: number;
+  description: string;
+  hasDocker: boolean;
+}
+
 export const cloudApi = {
   plans: {
     list: async () => (await api.get<CloudPlan[]>("/cloud/plans")).data,
+  },
+  templates: {
+    list: async () => (await api.get<OsTemplate[]>("/cloud/templates")).data,
   },
   deployments: {
     list: async () => (await api.get<CloudDeployment[]>("/cloud/deployments")).data,
@@ -86,8 +111,9 @@ export const cloudApi = {
     resize: async (id: string, body: { cpu?: number; memory?: number; storage?: number }) =>
       (await api.put(`/cloud/deployments/${id}/resize`, body)).data,
     metrics: async (id: string) => (await api.get(`/cloud/deployments/${id}/metrics`)).data,
-    logs: async (id: string) => (await api.get(`/cloud/deployments/${id}/logs`)).data,
     usage: async () => (await api.get<CloudUsage>("/cloud/deployments/usage/me")).data,
+    usageOne: async (id: string) => (await api.get<VpsUsage>(`/cloud/deployments/${id}/usage`)).data,
+    logs: async (id: string) => (await api.get(`/cloud/deployments/${id}/logs`)).data,
   },
   billing: {
     current: async () => (await api.get("/cloud/billing/current")).data,
