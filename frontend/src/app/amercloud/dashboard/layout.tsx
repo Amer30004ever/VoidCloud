@@ -19,6 +19,7 @@ const ADMIN_NAV = [
   { href: "/amercloud/admin/plans", label: "Plans", icon: "💎" },
   { href: "/amercloud/dashboard/deployments", label: "VPS Instances", icon: "🖥️" },
   { href: "/amercloud/admin/billing", label: "Billing", icon: "💰" },
+  { href: "/amercloud/admin/transactions", label: "Transactions", icon: "🧾" },
   { href: "/amercloud/dashboard/settings", label: "Settings", icon: "⚙️" },
   { href: "/amercloud/dashboard/settings/api-keys", label: "API Keys", icon: "🔑" },
   { href: "/amercloud/dashboard/settings/team", label: "Team", icon: "👥" },

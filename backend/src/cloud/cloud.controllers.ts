@@ -251,6 +251,16 @@ export class CloudAdminController {
   users(@Query('q') q?: string, @Query('planId') planId?: string, @Query('status') status?: string) {
     return this.admin.listUsers(q, planId, status);
   }
+  @Post('users')
+  createUser(@Body() body: { email: string; name: string; password: string; role?: Role; planId?: string | null }) {
+    return this.admin.createUser(body);
+  }
+  @Delete('users/:id')
+  deleteUser(@Param('id') id: string) { return this.admin.deleteUser(id); }
+  @Post('users/:id/reset-password')
+  resetPw(@Param('id') id: string) { return this.admin.resetUserPassword(id); }
+  @Post('users/:id/impersonate')
+  impersonate(@Param('id') id: string) { return this.admin.impersonate(id); }
   @Put('users/:id/plan')
   setPlan(@Param('id') id: string, @Body() body: { planId: string | null }) {
     return this.admin.setUserPlan(id, body.planId);
@@ -276,6 +286,13 @@ export class CloudAdminController {
   @Delete('plans/:id') planDelete(@Param('id') id: string) { return this.plans.remove(id); }
 
   @Get('billing/transactions') transactions() { return this.admin.transactions(); }
+  @Get('billing/transactions.csv')
+  async transactionsCsv(@Res() res: Response) {
+    const csv = await this.admin.transactionsCSV();
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="amercloud-transactions-${new Date().toISOString().slice(0,10)}.csv"`);
+    res.send(csv);
+  }
   @Post('billing/refund')
   refund(@Body() body: { invoiceId: string; partial?: number }) {
     return this.admin.refund(body.invoiceId, body.partial);

@@ -31,9 +31,10 @@ export default function AdminPlansPage() {
               <div><div className="text-xl font-bold">{p.name}</div><div className="text-xs text-white/50">{p.slug} {p.isActive ? "· active" : "· inactive"}</div></div>
               <div className="text-right"><div className="text-2xl font-bold">${p.priceUSD}</div><div className="text-xs text-white/50">{p.priceEGP} EGP</div></div>
             </div>
-            <div className="mt-3 text-xs text-white/60">{p.cpuLimit} CPU · {p.memoryLimit}MB · {p.deploymentLimit} deploys · {p.customDomainLimit} domains</div>
+            <div className="mt-3 text-xs text-white/60">{p.cpuLimit} CPU · {p.memoryLimit}MB · {p.storageLimit}MB · {p.vpsLimit ?? p.deploymentLimit} VPS · {p.customDomainLimit} domains</div>
             <div className="mt-4 flex gap-2">
               <button onClick={() => setEdit(p)} className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-sm">Edit</button>
+              <button onClick={async () => { await cloudApi.admin.updatePlan(p.id, { isActive: !p.isActive }); load(); }} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">{p.isActive ? "Disable" : "Enable"}</button>
               <button onClick={() => del(p.id)} className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">Delete</button>
             </div>
           </div>
@@ -53,6 +54,7 @@ export default function AdminPlansPage() {
               <F label="Memory MB"><input type="number" className={inp} value={edit.memoryLimit ?? 512} onChange={(e) => setEdit({ ...edit, memoryLimit: +e.target.value })} /></F>
               <F label="Storage MB"><input type="number" className={inp} value={edit.storageLimit ?? 1024} onChange={(e) => setEdit({ ...edit, storageLimit: +e.target.value })} /></F>
               <F label="Deployments"><input type="number" className={inp} value={edit.deploymentLimit ?? 1} onChange={(e) => setEdit({ ...edit, deploymentLimit: +e.target.value })} /></F>
+              <F label="VPS limit"><input type="number" className={inp} value={edit.vpsLimit ?? 1} onChange={(e) => setEdit({ ...edit, vpsLimit: +e.target.value })} /></F>
               <F label="Custom domains"><input type="number" className={inp} value={edit.customDomainLimit ?? 0} onChange={(e) => setEdit({ ...edit, customDomainLimit: +e.target.value })} /></F>
               <F label="API requests/mo"><input type="number" className={inp} value={edit.apiRequestLimit ?? 10000} onChange={(e) => setEdit({ ...edit, apiRequestLimit: +e.target.value })} /></F>
               <F label="Trial days"><input type="number" className={inp} value={edit.trialDays ?? 0} onChange={(e) => setEdit({ ...edit, trialDays: +e.target.value })} /></F>
