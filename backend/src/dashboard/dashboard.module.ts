@@ -8,5 +8,7 @@ import { KubernetesModule } from '../kubernetes/kubernetes.module';
   imports: [StatsModule, KubernetesModule],
   controllers: [DashboardController],
   providers: [DashboardService],
+  exports: [DashboardService],
 })
+
 export class DashboardModule {}
