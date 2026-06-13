@@ -32,7 +32,7 @@ export default function UserDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <QuickAction href="/amercloud/dashboard/deployments/new" icon="🖥️" title="New VPS" desc="Provision a Proxmox container" />
+        <QuickAction href="/amercloud/dashboard/vps/new" icon="🖥️" title="New VPS" desc="Provision a Proxmox container" />
         <QuickAction href="/amercloud/dashboard/billing/invoices" icon="🧾" title="View Invoices" desc="Download past invoices" />
         <QuickAction href="/amercloud/dashboard/billing" icon="⬆️" title="Upgrade Plan" desc="Need more resources?" />
       </div>
@@ -40,20 +40,14 @@ export default function UserDashboard() {
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Your VPS instances</h2>
-          <Link href="/amercloud/dashboard/deployments" className="text-xs text-cyan-300 hover:underline">View all →</Link>
+          <Link href="/amercloud/dashboard/vps" className="text-xs text-cyan-300 hover:underline">View all →</Link>
         </div>
         {deployments.length === 0 ? (
           <p className="py-12 text-center text-white/50">No VPS instances yet. Provision your first to get started.</p>
         ) : (
-          <div className="divide-y divide-white/5">
-            {deployments.slice(0, 5).map((d: any) => (
-              <Link key={d.id} href={`/amercloud/dashboard/deployments/${d.id}`} className="flex items-center justify-between py-3 hover:bg-white/5">
-                <div>
-                  <div className="font-medium">{d.name}</div>
-                  <div className="text-xs text-white/50">{d.ipv4Address ?? d.hostname ?? d.namespace}</div>
-                </div>
-                <StatusBadge status={d.status} />
-              </Link>
+          <div className="grid gap-3 md:grid-cols-2">
+            {deployments.slice(0, 6).map((d) => (
+              <VpsCard key={d.id} d={d as VpsCardProps["d"]} trialEndsAt={me?.trialEndsAt ?? null} />
             ))}
           </div>
         )}
@@ -114,4 +108,41 @@ function StatusBadge({ status }: { status: string }) {
     DELETED: "bg-gray-500/10 text-gray-400 border-gray-500/20",
   };
   return <span className={`rounded-full border px-2 py-0.5 text-xs ${colors[status] ?? colors.PENDING}`}>{status}</span>;
+}
+
+type VpsCardProps = { d: CloudDeployment & { ipv4Address?: string }; trialEndsAt: string | null };
+function VpsCard({ d, trialEndsAt }: VpsCardProps) {
+  const [u, setU] = useState<{ cpuPercent: number; ramPercent: number; diskPercent: number } | null>(null);
+  useEffect(() => { cloudApi.deployments.usageOne(d.id).then(setU).catch(() => {}); }, [d.id]);
+  const trialDays = trialEndsAt ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
+  return (
+    <Link href={`/amercloud/dashboard/vps/${d.id}`} className="block rounded-xl border border-white/10 bg-white/5 p-4 hover:border-cyan-400/30 hover:bg-white/10">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="font-semibold">{d.name}</div>
+          <div className="font-mono text-xs text-cyan-300 mt-0.5">{d.ipv4Address ?? "no IP"}</div>
+        </div>
+        <StatusBadge status={d.status} />
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+        <Metric label="CPU" pct={u?.cpuPercent ?? 0} />
+        <Metric label="RAM" pct={u?.ramPercent ?? 0} />
+        <Metric label="Disk" pct={u?.diskPercent ?? 0} />
+      </div>
+      {trialDays !== null && (
+        <div className="mt-3 text-[11px] text-amber-300">⏳ Trial: {trialDays} day{trialDays === 1 ? "" : "s"} left</div>
+      )}
+    </Link>
+  );
+}
+function Metric({ label, pct }: { label: string; pct: number }) {
+  const color = pct > 90 ? "from-red-500 to-orange-500" : pct > 70 ? "from-yellow-400 to-orange-500" : "from-cyan-400 to-fuchsia-500";
+  return (
+    <div>
+      <div className="flex justify-between text-white/50"><span>{label}</span><span>{pct.toFixed(0)}%</span></div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div className={`h-full bg-gradient-to-r ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
+      </div>
+    </div>
+  );
 }

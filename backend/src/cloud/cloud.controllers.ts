@@ -42,6 +42,22 @@ export class CloudPlansController {
   get(@Param('id') id: string) { return this.plans.get(id); }
 }
 
+@ApiTags('Cloud / Templates')
+@Controller('cloud/templates')
+export class CloudTemplatesController {
+  @Public()
+  @Get()
+  list() {
+    // OS templates available for new VPS instances. Keep in sync with
+    // backend/src/cloud/proxmox/template-manifest.ts.
+    return [
+      { id: 'debian-12', label: 'Debian 12', proxmoxId: 9101, description: 'Lightweight VPS for starter plans', hasDocker: false },
+      { id: 'ubuntu-22.04', label: 'Ubuntu 22.04', proxmoxId: 9102, description: 'Full-featured VPS with Docker preinstalled', hasDocker: true },
+      { id: 'alpine', label: 'Alpine Linux', proxmoxId: 9100, description: 'Ultra-lightweight for free tier', hasDocker: false },
+    ];
+  }
+}
+
 @ApiTags('Cloud / Deployments')
 @ApiSecurity('bearer')
 @UseGuards(JwtAuthGuard)
@@ -95,6 +111,11 @@ export class CloudDeploymentsController {
   @Get(':id/metrics')
   metrics(@Req() req: AuthedRequest, @Param('id') id: string) {
     return this.deployments.metrics(req.user.id, id);
+  }
+
+  @Get(':id/usage')
+  usageOne(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.deployments.vpsUsage(req.user.id, id);
   }
 
   @Get(':id/logs')
