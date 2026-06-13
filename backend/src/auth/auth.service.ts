@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, ConflictException, BadRequestExcepti
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
+import * as speakeasy from 'speakeasy';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -30,8 +31,33 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+    const user = await this.prisma.user.findUnique({ where: { email: loginDto.email } });
+    if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // 2FA challenge
+    if (user.twoFactorEnabled && user.twoFactorSecret) {
+      const token = (loginDto.twoFactorToken ?? '').trim();
+      if (!token) {
+        return { requires2FA: true, userId: user.id };
+      }
+      const totpOk = speakeasy.totp.verify({ secret: user.twoFactorSecret, encoding: 'base32', token, window: 1 });
+      let ok = totpOk;
+      if (!ok && user.recoveryCodes?.length) {
+        for (const hash of user.recoveryCodes) {
+          if (await bcrypt.compare(token, hash)) {
+            ok = true;
+            await this.prisma.user.update({
+              where: { id: user.id },
+              data: { recoveryCodes: user.recoveryCodes.filter((c) => c !== hash) },
+            });
+            break;
+          }
+        }
+      }
+      if (!ok) throw new UnauthorizedException('Invalid 2FA code');
+    }
 
     const payload = { email: user.email, sub: user.id, role: user.role };
     return {

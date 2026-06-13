@@ -201,9 +201,15 @@ export class CloudWebhooksController {
 @Controller('cloud/auth/2fa')
 export class CloudTwoFactorController {
   constructor(private tfa: TwoFactorService) {}
+  @Get('status') status(@Req() req: AuthedRequest) { return this.tfa.status(req.user.id); }
   @Post('enable')  enable(@Req() req: AuthedRequest) { return this.tfa.beginEnable(req.user.id, req.user.email); }
   @Post('verify')  verify(@Req() req: AuthedRequest, @Body() b: { token: string }) { return this.tfa.verifyAndActivate(req.user.id, b.token); }
-  @Post('disable') disable(@Req() req: AuthedRequest) { return this.tfa.disable(req.user.id); }
+  @Post('recovery-codes/regenerate')
+  regen(@Req() req: AuthedRequest) { return this.tfa.regenerateRecoveryCodes(req.user.id); }
+  @Post('disable')
+  disable(@Req() req: AuthedRequest, @Body() b: { password?: string; recoveryCode?: string }) {
+    return this.tfa.disableWithProof(req.user.id, b.password, b.recoveryCode);
+  }
 }
 
 @ApiTags('Cloud / Backups')
@@ -237,6 +243,7 @@ export class CloudAdminController {
     private plans: CloudPlansService,
     private billing: CloudBillingService,
     private audit: CloudAuditService,
+    private tfa: TwoFactorService,
   ) {}
 
   @Get('audit-logs')
@@ -259,6 +266,8 @@ export class CloudAdminController {
   deleteUser(@Param('id') id: string) { return this.admin.deleteUser(id); }
   @Post('users/:id/reset-password')
   resetPw(@Param('id') id: string) { return this.admin.resetUserPassword(id); }
+  @Post('users/:id/reset-2fa')
+  reset2fa(@Param('id') id: string) { return this.tfa.adminReset(id); }
   @Post('users/:id/impersonate')
   impersonate(@Param('id') id: string) { return this.admin.impersonate(id); }
   @Put('users/:id/plan')

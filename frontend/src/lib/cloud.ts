@@ -101,6 +101,7 @@ export const cloudApi = {
       (await api.post("/cloud/admin/users", body)).data,
     deleteUser: async (id: string) => api.delete(`/cloud/admin/users/${id}`),
     resetPassword: async (id: string) => (await api.post(`/cloud/admin/users/${id}/reset-password`)).data,
+    reset2FA: async (id: string) => (await api.post(`/cloud/admin/users/${id}/reset-2fa`)).data,
     impersonate: async (id: string) =>
       (await api.post<{ access_token: string; user: { id: string; email: string; name: string; role: string } }>(`/cloud/admin/users/${id}/impersonate`)).data,
     setPlan: async (id: string, planId: string | null) =>
@@ -157,9 +158,12 @@ export function streamDeploymentLogs(
 }
 
 export const cloudTwoFactor = {
-  enable: async () => (await api.post("/cloud/auth/2fa/enable")).data,
-  verify: async (token: string) => (await api.post("/cloud/auth/2fa/verify", { token })).data,
-  disable: async () => (await api.post("/cloud/auth/2fa/disable")).data,
+  status: async () => (await api.get<{ enabled: boolean; recoveryCodesRemaining: number }>("/cloud/auth/2fa/status")).data,
+  enable: async () => (await api.post<{ otpauthUrl: string; base32: string; qrCode: string }>("/cloud/auth/2fa/enable")).data,
+  verify: async (token: string) => (await api.post<{ enabled: boolean; recoveryCodes: string[] }>("/cloud/auth/2fa/verify", { token })).data,
+  regenerate: async () => (await api.post<{ recoveryCodes: string[] }>("/cloud/auth/2fa/recovery-codes/regenerate")).data,
+  disable: async (body: { password?: string; recoveryCode?: string }) =>
+    (await api.post("/cloud/auth/2fa/disable", body)).data,
 };
 
 export const cloudBackups = {
