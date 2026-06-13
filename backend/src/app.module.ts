@@ -51,6 +51,8 @@ import { AppController } from './app.controller';
     
     // New modules
     ClusterModule,
+    AdminClusterModule,
+
     GithubModule,
     DocumentationModule,
     LearningModule,
