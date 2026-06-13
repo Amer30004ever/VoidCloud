@@ -542,8 +542,86 @@ export class CloudFirewallController {
   @Post('vps/:id/firewall/reset')
   reset(@Req() req: AuthedRequest, @Param('id') id: string) {
     return this.fw.resetToDefault(id, req.user.id);
+}
+
+
+@ApiTags('Cloud / Organizations')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/orgs')
+export class CloudOrganizationController {
+  constructor(private orgs: OrganizationService) {}
+
+  @Get()
+  list(@Req() req: AuthedRequest) { return this.orgs.listForUser(req.user.id); }
+
+  @Post()
+  create(@Req() req: AuthedRequest, @Body() body: { name: string }) {
+    return this.orgs.create(req.user.id, body?.name);
+  }
+
+  @Get('invitations')
+  myInvitations(@Req() req: AuthedRequest) { return this.orgs.listMyInvitations(req.user.id); }
+
+  @Post('invitations/:id/accept')
+  accept(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.orgs.acceptInvitation(id, req.user.id);
+  }
+
+  @Delete('invitations/:id')
+  revoke(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.orgs.revokeInvitation(id, req.user.id);
+  }
+
+  @Get(':id')
+  get(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.orgs.get(id, req.user.id);
+  }
+
+  @Put(':id')
+  update(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { name?: string; avatar?: string | null }) {
+    return this.orgs.update(id, req.user.id, body);
+  }
+
+  @Delete(':id')
+  remove(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.orgs.remove(id, req.user.id);
+  }
+
+  @Get(':id/members')
+  members(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.orgs.listMembers(id, req.user.id);
+  }
+
+  @Post(':id/members/invite')
+  invite(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { email: string; role?: OrgRole }) {
+    return this.orgs.invite(id, req.user.id, body?.email, (body?.role ?? 'MEMBER') as OrgRole);
+  }
+
+  @Delete(':id/members/:userId')
+  removeMember(@Req() req: AuthedRequest, @Param('id') id: string, @Param('userId') userId: string) {
+    return this.orgs.removeMember(id, req.user.id, userId);
+  }
+
+  @Put(':id/members/:userId/role')
+  setRole(@Req() req: AuthedRequest, @Param('id') id: string, @Param('userId') userId: string, @Body() body: { role: OrgRole }) {
+    return this.orgs.updateMemberRole(id, req.user.id, userId, body.role);
   }
 }
+
+@ApiTags('Cloud / VPS Transfer')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/vps')
+export class CloudVpsTransferController {
+  constructor(private orgs: OrganizationService) {}
+  @Post(':id/transfer')
+  transfer(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { organizationId: string | null }) {
+    return this.orgs.transferVps(id, req.user.id, body?.organizationId ?? null);
+  }
+}
+
+
 
 
 
