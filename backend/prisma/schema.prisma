@@ -1094,3 +1094,18 @@ model DNSRecord {
 
   @@index([domainId])
 }
+
+model UsageMetric {
+  id         String   @id @default(cuid())
+  userId     String
+  vpsId      String
+  vps        CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  metricType String
+  value      Float
+  unit       String
+  recordedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([vpsId])
+  @@index([recordedAt])
+}
