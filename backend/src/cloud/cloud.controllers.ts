@@ -1017,3 +1017,56 @@ export class CloudWebhookController {
     return this.webhooks.listDeliveries(req.user.id, id, Number(limit) || 50);
   }
 }
+
+import { VPSMigrationService } from './vps/vps-migration.service';
+
+@ApiTags('Cloud / VPS Migration')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud')
+export class CloudVpsMigrationController {
+  constructor(private mig: VPSMigrationService) {}
+
+  @Get('vps/:id/migration/targets')
+  targets(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.mig.getAvailableTargets(id, req.user.id);
+  }
+
+  @Post('vps/:id/migration')
+  start(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { targetNode: string; targetStorage?: string; scheduledFor?: string }) {
+    if (body?.scheduledFor) {
+      return this.mig.scheduleMigration(id, req.user.id, body.targetNode, new Date(body.scheduledFor));
+    }
+    return this.mig.migrateVPS(id, req.user.id, body?.targetNode, body?.targetStorage);
+  }
+
+  @Get('migration/:id/status')
+  status(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.mig.getMigrationStatus(id, req.user.id);
+  }
+
+  @Delete('migration/:id/cancel')
+  cancel(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.mig.cancelMigration(id, req.user.id);
+  }
+
+  @Get('vps/:id/migration/history')
+  history(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.mig.getMigrationHistory(id, req.user.id);
+  }
+}
+
+@ApiTags('Admin / VPS Migration')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('admin/cloud/migration')
+export class AdminVpsMigrationController {
+  constructor(private mig: VPSMigrationService) {}
+
+  @Post('drain')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  drain(@Req() req: AuthedRequest, @Body() body: { sourceNode: string; targetNode: string }) {
+    if (!body?.sourceNode || !body?.targetNode) throw new BadRequestException('sourceNode and targetNode required');
+    return this.mig.drainNode(body.sourceNode, body.targetNode, req.user.id);
+  }
+}
