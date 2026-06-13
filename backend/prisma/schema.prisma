@@ -1060,3 +1060,37 @@ model OrganizationInvitation {
   @@unique([organizationId, email])
   @@index([email])
 }
+
+model Domain {
+  id           String    @id @default(cuid())
+  vpsId        String
+  vps          CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain       String    @unique
+  autoSSL      Boolean   @default(false)
+  sslIssuedAt  DateTime?
+  sslExpiresAt DateTime?
+  verifiedAt   DateTime?
+  verifyToken  String
+  createdAt    DateTime  @default(now())
+
+  dnsRecords   DNSRecord[]
+
+  @@index([vpsId])
+  @@index([domain])
+}
+
+model DNSRecord {
+  id        String   @id @default(cuid())
+  domainId  String
+  domain    Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  type      String
+  name      String
+  value     String
+  ttl       Int      @default(3600)
+  priority  Int?
+  createdAt DateTime @default(now())
+
+  @@index([domainId])
+}
