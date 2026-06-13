@@ -251,6 +251,16 @@ export class CloudAdminController {
   users(@Query('q') q?: string, @Query('planId') planId?: string, @Query('status') status?: string) {
     return this.admin.listUsers(q, planId, status);
   }
+  @Post('users')
+  createUser(@Body() body: { email: string; name: string; password: string; role?: Role; planId?: string | null }) {
+    return this.admin.createUser(body);
+  }
+  @Delete('users/:id')
+  deleteUser(@Param('id') id: string) { return this.admin.deleteUser(id); }
+  @Post('users/:id/reset-password')
+  resetPw(@Param('id') id: string) { return this.admin.resetUserPassword(id); }
+  @Post('users/:id/impersonate')
+  impersonate(@Param('id') id: string) { return this.admin.impersonate(id); }
   @Put('users/:id/plan')
   setPlan(@Param('id') id: string, @Body() body: { planId: string | null }) {
     return this.admin.setUserPlan(id, body.planId);
