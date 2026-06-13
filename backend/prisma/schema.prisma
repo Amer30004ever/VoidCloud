@@ -121,6 +121,7 @@ model User {
   cloudPaymentMethods CloudPaymentMethod[]
   vpsAlertRules       VpsAlertRule[] @relation("UserVpsAlertRules")
   sshKeys             SSHKey[]
+  firewallRules       FirewallRule[]
 
 
   // Password reset
