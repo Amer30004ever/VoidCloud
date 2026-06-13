@@ -944,3 +944,33 @@ export class CloudAdminController {
     return this.admin.broadcast(body.title, body.body, body.severity, body.audience);
   }
 }
+
+import { RateLimitService } from './rate-limit/rate-limit.service';
+
+@ApiTags('Cloud / Rate Limits')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/rate-limits')
+export class CloudRateLimitController {
+  constructor(private rl: RateLimitService) {}
+
+  @Get()
+  current(@Req() req: AuthedRequest) {
+    return this.rl.getUserRateLimits(req.user.id);
+  }
+
+  @Get('history')
+  history(@Req() req: AuthedRequest, @Query('days') days?: string) {
+    return this.rl.getUsageHistory(req.user.id, Math.max(1, Math.min(90, Number(days) || 7)));
+  }
+
+  @Get('alert')
+  getAlert(@Req() req: AuthedRequest) {
+    return this.rl.getAlertThresholds(req.user.id);
+  }
+
+  @Post('alert')
+  setAlert(@Req() req: AuthedRequest, @Body() body: { threshold: number; enabled: boolean }) {
+    return this.rl.setAlertThreshold(req.user.id, Number(body?.threshold ?? 80), Boolean(body?.enabled));
+  }
+}
