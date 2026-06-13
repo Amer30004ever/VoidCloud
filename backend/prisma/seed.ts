@@ -37,24 +37,34 @@ async function main() {
       passwordHash = await bcrypt.hash(plainPassword, 10);
     }
 
-    await prisma.user.upsert({
-      where: { email: ADMIN_EMAIL },
-      update: {
-        ...(passwordHash ? { password: passwordHash } : {}),
-        name: ADMIN_NAME,
-        role: Role.ADMIN,
-        isActive: true,
-        mustChangePassword: false,
-      },
-      create: {
-        email: ADMIN_EMAIL,
-        name: ADMIN_NAME,
-        password: passwordHash!,
-        role: Role.ADMIN,
-        isActive: true,
-        mustChangePassword: false,
-      },
-    });
+    if (existing) {
+      await prisma.user.update({
+        where: { email: ADMIN_EMAIL },
+        data: {
+          ...(passwordHash ? { password: passwordHash } : {}),
+          name: ADMIN_NAME,
+          role: Role.ADMIN,
+          isActive: true,
+          mustChangePassword: false,
+        },
+      });
+    } else {
+      if (!passwordHash) {
+        // Safety net — shouldn't happen because we generate above when !existing
+        plainPassword = generateSecurePassword();
+        passwordHash = await bcrypt.hash(plainPassword, 10);
+      }
+      await prisma.user.create({
+        data: {
+          email: ADMIN_EMAIL,
+          name: ADMIN_NAME,
+          password: passwordHash,
+          role: Role.ADMIN,
+          isActive: true,
+          mustChangePassword: false,
+        },
+      });
+    }
 
     if (plainPassword && !process.env.ADMIN_PASSWORD) {
       console.log('==============================================================');
