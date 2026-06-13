@@ -27,7 +27,10 @@ export class ChatGateway implements OnGatewayConnection {
   }
 
   @SubscribeMessage('joinChannel')
-  handleJoin(@ConnectedSocket() client: Socket, @MessageBody() data: { channelId: string }) {
+  handleJoin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { channelId: string },
+  ) {
     client.join(data.channelId);
     return { joined: data.channelId };
   }
@@ -35,7 +38,8 @@ export class ChatGateway implements OnGatewayConnection {
   @SubscribeMessage('sendMessage')
   async handleMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { channelId: string; content: string; userId?: string },
+    @MessageBody()
+    data: { channelId: string; content: string; userId?: string },
   ) {
     const result = await this.collaborationService.sendMessage({
       channelId: data.channelId,

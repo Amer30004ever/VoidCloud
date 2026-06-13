@@ -25,13 +25,21 @@ export class RegisterDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiPropertyOptional({ example: '+201012345678', description: 'Egyptian phone format' })
+  @ApiPropertyOptional({
+    example: '+201012345678',
+    description: 'Egyptian phone format',
+  })
   @IsOptional()
   @IsString()
-  @Matches(/^(\+?20)?1[0-2,5]\d{8}$/, { message: 'Invalid Egyptian phone number' })
+  @Matches(/^(\+?20)?1[0-2,5]\d{8}$/, {
+    message: 'Invalid Egyptian phone number',
+  })
   phone?: string;
 
-  @ApiPropertyOptional({ example: 'free', description: 'Plan slug to subscribe to' })
+  @ApiPropertyOptional({
+    example: 'free',
+    description: 'Plan slug to subscribe to',
+  })
   @IsOptional()
   @IsString()
   planSlug?: string;

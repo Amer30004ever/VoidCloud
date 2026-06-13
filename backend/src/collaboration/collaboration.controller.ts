@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Logger,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiSecurity } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CollaborationService } from './collaboration.service';
@@ -19,7 +30,10 @@ export class CollaborationController {
     @Query('channelId') channelId?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.collaborationService.getMessages(channelId, limit ? parseInt(limit) : undefined);
+    return this.collaborationService.getMessages(
+      channelId,
+      limit ? parseInt(limit) : undefined,
+    );
   }
 
   @Post('messages')

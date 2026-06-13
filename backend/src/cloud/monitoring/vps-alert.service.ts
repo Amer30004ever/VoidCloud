@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CloudDeploymentsService } from '../cloud-deployments.service';
 import { VpsAlertType, VpsAlertOperator } from '@prisma/client';
@@ -27,9 +33,14 @@ export class VpsAlertService implements OnModuleInit {
   onModuleInit() {
     // Lightweight periodic checker (every 5 minutes). Skip if disabled via env.
     if (process.env.VPS_ALERT_CHECKS_DISABLED === '1') return;
-    this.timer = setInterval(() => {
-      this.runChecks().catch((e) => this.logger.warn(`alert check failed: ${e.message}`));
-    }, 5 * 60 * 1000);
+    this.timer = setInterval(
+      () => {
+        this.runChecks().catch((e) =>
+          this.logger.warn(`alert check failed: ${e.message}`),
+        );
+      },
+      5 * 60 * 1000,
+    );
   }
 
   // ---------- CRUD ----------
@@ -71,9 +82,16 @@ export class VpsAlertService implements OnModuleInit {
     });
   }
 
-  async updateRule(userId: string, ruleId: string, dto: Partial<CreateAlertRuleDto>) {
-    const rule = await this.prisma.vpsAlertRule.findUnique({ where: { id: ruleId } });
-    if (!rule || rule.userId !== userId) throw new NotFoundException('Alert rule not found');
+  async updateRule(
+    userId: string,
+    ruleId: string,
+    dto: Partial<CreateAlertRuleDto>,
+  ) {
+    const rule = await this.prisma.vpsAlertRule.findUnique({
+      where: { id: ruleId },
+    });
+    if (!rule || rule.userId !== userId)
+      throw new NotFoundException('Alert rule not found');
     return this.prisma.vpsAlertRule.update({
       where: { id: ruleId },
       data: {
@@ -89,8 +107,11 @@ export class VpsAlertService implements OnModuleInit {
   }
 
   async deleteRule(userId: string, ruleId: string) {
-    const rule = await this.prisma.vpsAlertRule.findUnique({ where: { id: ruleId } });
-    if (!rule || rule.userId !== userId) throw new NotFoundException('Alert rule not found');
+    const rule = await this.prisma.vpsAlertRule.findUnique({
+      where: { id: ruleId },
+    });
+    if (!rule || rule.userId !== userId)
+      throw new NotFoundException('Alert rule not found');
     await this.prisma.vpsAlertRule.delete({ where: { id: ruleId } });
     return { ok: true };
   }
@@ -126,7 +147,15 @@ export class VpsAlertService implements OnModuleInit {
     return { checked: rules.length, triggered };
   }
 
-  private async evaluateRule(rule: { id: string; userId: string; vpsId: string | null; type: VpsAlertType; operator: VpsAlertOperator; threshold: number; cooldown: number }) {
+  private async evaluateRule(rule: {
+    id: string;
+    userId: string;
+    vpsId: string | null;
+    type: VpsAlertType;
+    operator: VpsAlertOperator;
+    threshold: number;
+    cooldown: number;
+  }) {
     if (!rule.vpsId) return false;
     const metrics = await this.currentMetrics(rule.userId, rule.vpsId);
     const value = metrics[rule.type] ?? 0;
@@ -141,7 +170,13 @@ export class VpsAlertService implements OnModuleInit {
 
     const message = `${rule.type} ${this.opSymbol(rule.operator)} ${rule.threshold} (current: ${value.toFixed(1)})`;
     await this.prisma.vpsAlertNotification.create({
-      data: { alertRuleId: rule.id, vpsId: rule.vpsId, value, message, status: 'TRIGGERED' },
+      data: {
+        alertRuleId: rule.id,
+        vpsId: rule.vpsId,
+        value,
+        message,
+        status: 'TRIGGERED',
+      },
     });
     await this.prisma.vpsAlertRule.update({
       where: { id: rule.id },
@@ -150,11 +185,18 @@ export class VpsAlertService implements OnModuleInit {
     return true;
   }
 
-  private compare(value: number, op: VpsAlertOperator, threshold: number): boolean {
+  private compare(
+    value: number,
+    op: VpsAlertOperator,
+    threshold: number,
+  ): boolean {
     switch (op) {
-      case 'GREATER_THAN': return value > threshold;
-      case 'LESS_THAN': return value < threshold;
-      case 'EQUALS': return Math.abs(value - threshold) < 0.1;
+      case 'GREATER_THAN':
+        return value > threshold;
+      case 'LESS_THAN':
+        return value < threshold;
+      case 'EQUALS':
+        return Math.abs(value - threshold) < 0.1;
     }
   }
 
@@ -163,7 +205,9 @@ export class VpsAlertService implements OnModuleInit {
   }
 
   private async assertOwnsVps(userId: string, vpsId: string) {
-    const vps = await this.prisma.cloudDeployment.findUnique({ where: { id: vpsId } });
+    const vps = await this.prisma.cloudDeployment.findUnique({
+      where: { id: vpsId },
+    });
     if (!vps) throw new NotFoundException('VPS not found');
     if (vps.userId !== userId) throw new ForbiddenException();
   }

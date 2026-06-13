@@ -181,7 +181,13 @@ export class SecurityService {
     return { secrets };
   }
 
-  async createAppSecret(data: { name: string; value: string; namespace?: string; userId: string; expiresAt?: string }) {
+  async createAppSecret(data: {
+    name: string;
+    value: string;
+    namespace?: string;
+    userId: string;
+    expiresAt?: string;
+  }) {
     const secret = await this.prisma.appSecret.create({
       data: {
         name: data.name,
@@ -190,13 +196,21 @@ export class SecurityService {
         userId: data.userId,
         expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
       },
-      select: { id: true, name: true, namespace: true, expiresAt: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        namespace: true,
+        expiresAt: true,
+        createdAt: true,
+      },
     });
     return { success: true, secret };
   }
 
   async revealAppSecret(id: string, userId: string) {
-    const secret = await this.prisma.appSecret.findFirst({ where: { id, userId } });
+    const secret = await this.prisma.appSecret.findFirst({
+      where: { id, userId },
+    });
     if (!secret) throw new NotFoundException('Secret not found');
     return { value: decryptSecret(secret.encryptedValue) };
   }

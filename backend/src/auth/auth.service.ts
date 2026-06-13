@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
@@ -31,7 +37,9 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: loginDto.email } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: loginDto.email },
+    });
     if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -42,7 +50,12 @@ export class AuthService {
       if (!token) {
         return { requires2FA: true, userId: user.id };
       }
-      const totpOk = speakeasy.totp.verify({ secret: user.twoFactorSecret, encoding: 'base32', token, window: 1 });
+      const totpOk = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: 'base32',
+        token,
+        window: 1,
+      });
       let ok = totpOk;
       if (!ok && user.recoveryCodes?.length) {
         for (const hash of user.recoveryCodes) {
@@ -50,7 +63,9 @@ export class AuthService {
             ok = true;
             await this.prisma.user.update({
               where: { id: user.id },
-              data: { recoveryCodes: user.recoveryCodes.filter((c) => c !== hash) },
+              data: {
+                recoveryCodes: user.recoveryCodes.filter((c) => c !== hash),
+              },
             });
             break;
           }
@@ -74,8 +89,11 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     const email = registerDto.email.toLowerCase().trim();
-    const existingUser = await this.prisma.user.findUnique({ where: { email } });
-    if (existingUser) throw new ConflictException('Email is already registered');
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUser)
+      throw new ConflictException('Email is already registered');
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 12);
 
@@ -84,11 +102,15 @@ export class AuthService {
     let trialEndsAt: Date | undefined;
     let subscriptionStatus: any = 'TRIALING';
     if (registerDto.planSlug) {
-      const plan = await this.prisma.cloudPlan.findUnique({ where: { slug: registerDto.planSlug } });
+      const plan = await this.prisma.cloudPlan.findUnique({
+        where: { slug: registerDto.planSlug },
+      });
       if (plan && plan.isActive) {
         cloudPlanId = plan.id;
         if (plan.trialDays > 0) {
-          trialEndsAt = new Date(Date.now() + plan.trialDays * 24 * 60 * 60 * 1000);
+          trialEndsAt = new Date(
+            Date.now() + plan.trialDays * 24 * 60 * 60 * 1000,
+          );
           subscriptionStatus = 'TRIALING';
         } else if (plan.priceUSD === 0 && plan.priceEGP === 0) {
           subscriptionStatus = 'ACTIVE';
@@ -99,7 +121,10 @@ export class AuthService {
     }
 
     const rawVerifyToken = crypto.randomBytes(32).toString('hex');
-    const verifyTokenHash = crypto.createHash('sha256').update(rawVerifyToken).digest('hex');
+    const verifyTokenHash = crypto
+      .createHash('sha256')
+      .update(rawVerifyToken)
+      .digest('hex');
     const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const user = await this.prisma.user.create({
@@ -119,20 +144,31 @@ export class AuthService {
       },
     });
 
-    const frontend = (process.env.FRONTEND_URL || 'https://amer-portal.cc.cd').replace(/\/$/, '');
+    const frontend = (
+      process.env.FRONTEND_URL || 'https://amer-portal.cc.cd'
+    ).replace(/\/$/, '');
     const verifyUrl = `${frontend}/amercloud/verify-email?token=${rawVerifyToken}`;
 
     try {
       const { welcomeEmail } = await import('../mailer/templates/welcome');
-      const { verifyEmailTemplate } = await import('../mailer/templates/verify-email');
+      const { verifyEmailTemplate } =
+        await import('../mailer/templates/verify-email');
       const w = welcomeEmail(user.name, `${frontend}/amercloud/dashboard`);
       const v = verifyEmailTemplate(user.name, verifyUrl);
-      this.mailer.send(user.email, 'Welcome to AmerCloud 🚀', w.html, w.text).catch((e) =>
-        this.logger.warn(`welcome email failed for ${user.email}: ${e?.message ?? e}`),
-      );
-      this.mailer.send(user.email, 'Verify your AmerCloud email', v.html, v.text).catch((e) =>
-        this.logger.warn(`verify email failed for ${user.email}: ${e?.message ?? e}`),
-      );
+      this.mailer
+        .send(user.email, 'Welcome to AmerCloud 🚀', w.html, w.text)
+        .catch((e) =>
+          this.logger.warn(
+            `welcome email failed for ${user.email}: ${e?.message ?? e}`,
+          ),
+        );
+      this.mailer
+        .send(user.email, 'Verify your AmerCloud email', v.html, v.text)
+        .catch((e) =>
+          this.logger.warn(
+            `verify email failed for ${user.email}: ${e?.message ?? e}`,
+          ),
+        );
     } catch (e: any) {
       this.logger.warn(`registration emails skipped: ${e?.message ?? e}`);
     }
@@ -142,25 +178,43 @@ export class AuthService {
   }
 
   async verifyEmail(token: string): Promise<{ ok: true }> {
-    if (!token || token.length < 20) throw new BadRequestException('Invalid token');
+    if (!token || token.length < 20)
+      throw new BadRequestException('Invalid token');
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const user = await this.prisma.user.findUnique({ where: { emailVerifyTokenHash: tokenHash } });
-    if (!user || !user.emailVerifyExpires || user.emailVerifyExpires < new Date()) {
-      throw new BadRequestException('Verification link is invalid or has expired');
+    const user = await this.prisma.user.findUnique({
+      where: { emailVerifyTokenHash: tokenHash },
+    });
+    if (
+      !user ||
+      !user.emailVerifyExpires ||
+      user.emailVerifyExpires < new Date()
+    ) {
+      throw new BadRequestException(
+        'Verification link is invalid or has expired',
+      );
     }
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { emailVerified: true, emailVerifyTokenHash: null, emailVerifyExpires: null },
+      data: {
+        emailVerified: true,
+        emailVerifyTokenHash: null,
+        emailVerifyExpires: null,
+      },
     });
     return { ok: true };
   }
 
   async resendVerification(email: string): Promise<{ ok: true }> {
-    const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
     if (!user || user.emailVerified) return { ok: true };
 
     const rawToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(rawToken)
+      .digest('hex');
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await this.prisma.user.update({
@@ -168,25 +222,40 @@ export class AuthService {
       data: { emailVerifyTokenHash: tokenHash, emailVerifyExpires: expires },
     });
 
-    const frontend = (process.env.FRONTEND_URL || 'https://amer-portal.cc.cd').replace(/\/$/, '');
+    const frontend = (
+      process.env.FRONTEND_URL || 'https://amer-portal.cc.cd'
+    ).replace(/\/$/, '');
     const verifyUrl = `${frontend}/amercloud/verify-email?token=${rawToken}`;
     try {
-      const { verifyEmailTemplate } = await import('../mailer/templates/verify-email');
+      const { verifyEmailTemplate } =
+        await import('../mailer/templates/verify-email');
       const { html, text } = verifyEmailTemplate(user.name, verifyUrl);
-      await this.mailer.send(user.email, 'Verify your AmerCloud email', html, text);
+      await this.mailer.send(
+        user.email,
+        'Verify your AmerCloud email',
+        html,
+        text,
+      );
     } catch (e: any) {
-      this.logger.warn(`resend verify failed for ${user.email}: ${e?.message ?? e}`);
+      this.logger.warn(
+        `resend verify failed for ${user.email}: ${e?.message ?? e}`,
+      );
     }
     return { ok: true };
   }
-
 
   async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
-        id: true, email: true, name: true, role: true, isActive: true,
-        mustChangePassword: true, createdAt: true, updatedAt: true,
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        isActive: true,
+        mustChangePassword: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
     if (!user) throw new UnauthorizedException('User not found');
@@ -199,7 +268,9 @@ export class AuthService {
    * which emails are registered.
    */
   async forgotPassword(email: string): Promise<{ ok: true }> {
-    const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
     if (!user) {
       this.logger.log(`forgot-password requested for unknown email=${email}`);
       return { ok: true };
@@ -212,21 +283,37 @@ export class AuthService {
     });
 
     const rawToken = crypto.randomBytes(32).toString('hex'); // 64 chars
-    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(rawToken)
+      .digest('hex');
     const expiresAt = new Date(Date.now() + RESET_TTL_MINUTES * 60 * 1000);
 
     await this.prisma.passwordResetToken.create({
       data: { userId: user.id, tokenHash, expiresAt },
     });
 
-    const frontend = (process.env.FRONTEND_URL || 'https://amer-portal.cc.cd').replace(/\/$/, '');
+    const frontend = (
+      process.env.FRONTEND_URL || 'https://amer-portal.cc.cd'
+    ).replace(/\/$/, '');
     const resetUrl = `${frontend}/amercloud/reset-password?token=${rawToken}`;
-    const { html, text } = passwordResetEmail(user.name, resetUrl, RESET_TTL_MINUTES);
+    const { html, text } = passwordResetEmail(
+      user.name,
+      resetUrl,
+      RESET_TTL_MINUTES,
+    );
 
     try {
-      await this.mailer.send(user.email, 'Reset your AmerCloud password', html, text);
+      await this.mailer.send(
+        user.email,
+        'Reset your AmerCloud password',
+        html,
+        text,
+      );
     } catch (e: any) {
-      this.logger.error(`Failed to send reset email to ${user.email}: ${e?.message ?? e}`);
+      this.logger.error(
+        `Failed to send reset email to ${user.email}: ${e?.message ?? e}`,
+      );
       // Still return ok — don't leak transport state to caller.
     }
     return { ok: true };
@@ -235,14 +322,20 @@ export class AuthService {
   /**
    * Consume a one-time reset token and set a new password.
    */
-  async resetPassword(token: string, newPassword: string): Promise<{ ok: true }> {
-    if (!token || token.length < 20) throw new BadRequestException('Invalid token');
+  async resetPassword(
+    token: string,
+    newPassword: string,
+  ): Promise<{ ok: true }> {
+    if (!token || token.length < 20)
+      throw new BadRequestException('Invalid token');
     if (!newPassword || newPassword.length < 8) {
       throw new BadRequestException('Password must be at least 8 characters');
     }
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const record = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash } });
+    const record = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+    });
     if (!record || record.usedAt || record.expiresAt < new Date()) {
       throw new BadRequestException('Reset link is invalid or has expired');
     }

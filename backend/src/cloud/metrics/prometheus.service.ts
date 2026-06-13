@@ -4,11 +4,15 @@ import axios from 'axios';
 @Injectable()
 export class PrometheusService {
   private readonly logger = new Logger(PrometheusService.name);
-  private readonly url = process.env.PROMETHEUS_URL || 'http://prometheus.monitoring:9090';
+  private readonly url =
+    process.env.PROMETHEUS_URL || 'http://prometheus.monitoring:9090';
 
   private async query(q: string): Promise<number> {
     try {
-      const res = await axios.get(`${this.url}/api/v1/query`, { params: { query: q }, timeout: 4000 });
+      const res = await axios.get(`${this.url}/api/v1/query`, {
+        params: { query: q },
+        timeout: 4000,
+      });
       const v = res.data?.data?.result?.[0]?.value?.[1];
       return v ? parseFloat(v) : 0;
     } catch (e: any) {
@@ -22,8 +26,12 @@ export class PrometheusService {
     const [cpu, memory, rx, tx] = await Promise.all([
       this.query(`sum(rate(container_cpu_usage_seconds_total{${labels}}[5m]))`),
       this.query(`sum(container_memory_working_set_bytes{${labels}})`),
-      this.query(`sum(rate(container_network_receive_bytes_total{${labels}}[5m]))`),
-      this.query(`sum(rate(container_network_transmit_bytes_total{${labels}}[5m]))`),
+      this.query(
+        `sum(rate(container_network_receive_bytes_total{${labels}}[5m]))`,
+      ),
+      this.query(
+        `sum(rate(container_network_transmit_bytes_total{${labels}}[5m]))`,
+      ),
     ]);
     return {
       cpu,
@@ -39,7 +47,8 @@ export class PrometheusService {
     const q = `sum(rate(container_cpu_usage_seconds_total{namespace="${namespace}",pod=~"${name}.*"}[5m]))`;
     try {
       const res = await axios.get(`${this.url}/api/v1/query_range`, {
-        params: { query: q, start, end, step: '300' }, timeout: 6000,
+        params: { query: q, start, end, step: '300' },
+        timeout: 6000,
       });
       return res.data?.data?.result?.[0]?.values ?? [];
     } catch {

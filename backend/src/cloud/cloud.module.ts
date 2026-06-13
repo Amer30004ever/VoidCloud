@@ -43,13 +43,20 @@ import {
   CloudOrganizationController,
   CloudVpsTransferController,
 } from './cloud.controllers';
-import { CloudImageController, CloudDomainController, CloudAnalyticsController, CloudRateLimitController, CloudWebhookController, CloudVpsMigrationController, AdminVpsMigrationController, CloudReferralController } from './cloud.controllers';
+import {
+  CloudImageController,
+  CloudDomainController,
+  CloudAnalyticsController,
+  CloudRateLimitController,
+  CloudWebhookController,
+  CloudVpsMigrationController,
+  AdminVpsMigrationController,
+  CloudReferralController,
+} from './cloud.controllers';
 import { RateLimitService } from './rate-limit/rate-limit.service';
 import { WebhookService } from './webhook/webhook.service';
 import { VPSMigrationService } from './vps/vps-migration.service';
 import { ReferralService } from './referral/referral.service';
-
-
 
 @Module({
   imports: [AuthModule],
@@ -79,14 +86,45 @@ import { ReferralService } from './referral/referral.service';
     CloudReferralController,
   ],
   providers: [
-    CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
-    KubernetesService, PrometheusService, ProxmoxService,
-    StripeService, FawryService, InstapayService,
-    CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
-    SSHKeyService, VPSResizeService, FirewallService, OrganizationService,
-    VpsTerminalGateway, VpsAlertService, ImageService, DNSService, AnalyticsService,
-    RateLimitService, WebhookService, VPSMigrationService, ReferralService,
+    CloudPlansService,
+    CloudDeploymentsService,
+    CloudBillingService,
+    CloudAdminService,
+    KubernetesService,
+    PrometheusService,
+    ProxmoxService,
+    StripeService,
+    FawryService,
+    InstapayService,
+    CloudEmailService,
+    TwoFactorService,
+    CloudAccountService,
+    CloudAuditService,
+    ActivityService,
+    CloudBackupService,
+    BackupServiceV2,
+    SSHKeyService,
+    VPSResizeService,
+    FirewallService,
+    OrganizationService,
+    VpsTerminalGateway,
+    VpsAlertService,
+    ImageService,
+    DNSService,
+    AnalyticsService,
+    RateLimitService,
+    WebhookService,
+    VPSMigrationService,
+    ReferralService,
   ],
-  exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService, WebhookService, ReferralService],
+  exports: [
+    CloudPlansService,
+    CloudDeploymentsService,
+    CloudBillingService,
+    CloudEmailService,
+    TwoFactorService,
+    WebhookService,
+    ReferralService,
+  ],
 })
 export class CloudModule {}

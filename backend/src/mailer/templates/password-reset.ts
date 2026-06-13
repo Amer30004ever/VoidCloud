@@ -1,4 +1,8 @@
-export function passwordResetEmail(name: string, resetUrl: string, expiresInMinutes: number) {
+export function passwordResetEmail(
+  name: string,
+  resetUrl: string,
+  expiresInMinutes: number,
+) {
   const safeName = (name || 'there').replace(/[<>]/g, '');
   const html = `<!doctype html>
 <html><body style="margin:0;background:#0a0a0a;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#e5e7eb">

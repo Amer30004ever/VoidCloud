@@ -15,8 +15,11 @@ export class LearningService {
   async getJobs(source?: string, keyword?: string, location?: string) {
     try {
       const search = keyword?.trim().toLowerCase();
-      const response = await fetch('https://remotive.com/api/remote-jobs?category=devops');
-      if (!response.ok) throw new Error(`Remotive API failed: ${response.status}`);
+      const response = await fetch(
+        'https://remotive.com/api/remote-jobs?category=devops',
+      );
+      if (!response.ok)
+        throw new Error(`Remotive API failed: ${response.status}`);
       const payload = await response.json();
       let jobs = (payload.jobs ?? []).map((job: any) => ({
         id: String(job.id),
@@ -33,11 +36,15 @@ export class LearningService {
 
       if (search) {
         jobs = jobs.filter((job: any) =>
-          `${job.title} ${job.company} ${job.description}`.toLowerCase().includes(search),
+          `${job.title} ${job.company} ${job.description}`
+            .toLowerCase()
+            .includes(search),
         );
       }
       if (location) {
-        jobs = jobs.filter((job: any) => job.location.toLowerCase().includes(location.toLowerCase()));
+        jobs = jobs.filter((job: any) =>
+          job.location.toLowerCase().includes(location.toLowerCase()),
+        );
       }
       if (source) {
         jobs = jobs.filter((job: any) => job.source === source);
@@ -111,7 +118,7 @@ export class LearningService {
     try {
       // This would integrate with news APIs (Hacker News, Reddit, tech blogs)
       this.logger.log('Fetching news - requires news API integration');
-      
+
       const news = [
         {
           id: '1',
@@ -145,7 +152,7 @@ export class LearningService {
   async getLearningPaths(category?: string) {
     try {
       const where = category ? { category } : {};
-      
+
       const paths = await this.prisma.learningPath.findMany({
         where,
         include: {
@@ -264,7 +271,7 @@ export class LearningService {
   async getCertifications(provider?: string) {
     try {
       const where = provider ? { provider } : {};
-      
+
       const certifications = await this.prisma.certification.findMany({
         where,
         orderBy: { title: 'asc' },
@@ -305,7 +312,9 @@ export class LearningService {
         },
       });
 
-      this.logger.log(`Created certification tracker for user ${trackerData.userId}`);
+      this.logger.log(
+        `Created certification tracker for user ${trackerData.userId}`,
+      );
       return { tracker };
     } catch (error) {
       this.logger.error(`Error tracking certification: ${error.message}`);
@@ -325,7 +334,9 @@ export class LearningService {
 
       return { trackers };
     } catch (error) {
-      this.logger.error(`Error fetching certification tracker: ${error.message}`);
+      this.logger.error(
+        `Error fetching certification tracker: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -344,7 +355,9 @@ export class LearningService {
       this.logger.log(`Updated certification tracker ${id}`);
       return { tracker };
     } catch (error) {
-      this.logger.error(`Error updating certification tracker: ${error.message}`);
+      this.logger.error(
+        `Error updating certification tracker: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -461,7 +474,9 @@ export class LearningService {
   async getATSScore(id: string, jobDescription?: string) {
     try {
       // This would integrate with AI/ATS scoring service
-      this.logger.log(`Getting ATS score for CV ${id} - requires AI integration`);
+      this.logger.log(
+        `Getting ATS score for CV ${id} - requires AI integration`,
+      );
       return { score: 0, suggestions: [] };
     } catch (error) {
       this.logger.error(`Error getting ATS score: ${error.message}`);
@@ -473,7 +488,10 @@ export class LearningService {
     try {
       // This would integrate with AI optimization service
       this.logger.log(`Optimizing CV ${id} - requires AI integration`);
-      return { success: false, message: 'AI optimization integration required' };
+      return {
+        success: false,
+        message: 'AI optimization integration required',
+      };
     } catch (error) {
       this.logger.error(`Error optimizing CV: ${error.message}`);
       throw error;
@@ -491,7 +509,7 @@ export class LearningService {
       }
 
       this.logger.log(`Exporting CV ${id} to ${format}`);
-      
+
       return {
         format,
         content: cv.content,
@@ -506,7 +524,7 @@ export class LearningService {
   async getCVTemplates(category?: string) {
     try {
       const where = category ? { category } : {};
-      
+
       const templates = await this.prisma.cVTemplate.findMany({
         where,
         orderBy: { name: 'asc' },
@@ -522,7 +540,9 @@ export class LearningService {
   async importGitHubProjects(id: string, username: string) {
     try {
       // This would integrate with GitHub API
-      this.logger.log(`Importing GitHub projects for CV ${id} - requires GitHub API integration`);
+      this.logger.log(
+        `Importing GitHub projects for CV ${id} - requires GitHub API integration`,
+      );
       return { success: false, message: 'GitHub API integration required' };
     } catch (error) {
       this.logger.error(`Error importing GitHub projects: ${error.message}`);
@@ -534,7 +554,7 @@ export class LearningService {
   async getConferences(year?: string) {
     try {
       const where = year ? { year: parseInt(year) } : {};
-      
+
       const conferences = await this.prisma.conference.findMany({
         where,
         orderBy: { startDate: 'asc' },
@@ -559,7 +579,9 @@ export class LearningService {
       this.logger.log(`Registered interest for conference ${id}`);
       return { interest };
     } catch (error) {
-      this.logger.error(`Error registering conference interest: ${error.message}`);
+      this.logger.error(
+        `Error registering conference interest: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -568,7 +590,7 @@ export class LearningService {
   async getBooks(category?: string) {
     try {
       const where = category ? { category } : {};
-      
+
       const books = await this.prisma.book.findMany({
         where,
         orderBy: { title: 'asc' },
@@ -638,7 +660,7 @@ export class LearningService {
   async getBlogPosts(category?: string) {
     try {
       const where = category ? { category } : {};
-      
+
       const posts = await this.prisma.blogPost.findMany({
         where,
         include: {

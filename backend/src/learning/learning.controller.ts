@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiOkResponse, ApiConsumes } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { LearningService } from './learning.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
@@ -54,7 +70,11 @@ export class LearningController {
     @Query('category') category?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.learningService.getNews(source, category, limit ? parseInt(limit) : 20);
+    return this.learningService.getNews(
+      source,
+      category,
+      limit ? parseInt(limit) : 20,
+    );
   }
 
   @Get('news/:id')
@@ -78,13 +98,19 @@ export class LearningController {
 
   @Post('paths/:id/enroll')
   @ApiOperation({ summary: 'Enroll in learning path' })
-  async enrollInPath(@Param('id') id: string, @Body() enrollmentData: { userId: string }) {
+  async enrollInPath(
+    @Param('id') id: string,
+    @Body() enrollmentData: { userId: string },
+  ) {
     return this.learningService.enrollInPath(id, enrollmentData.userId);
   }
 
   @Get('paths/:id/progress/:userId')
   @ApiOperation({ summary: 'Get learning path progress' })
-  async getPathProgress(@Param('id') id: string, @Param('userId') userId: string) {
+  async getPathProgress(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
     return this.learningService.getPathProgress(id, userId);
   }
 
@@ -125,7 +151,10 @@ export class LearningController {
 
   @Put('certifications/tracker/:id')
   @ApiOperation({ summary: 'Update certification tracker' })
-  async updateCertificationTracker(@Param('id') id: string, @Body() updateData: any) {
+  async updateCertificationTracker(
+    @Param('id') id: string,
+    @Body() updateData: any,
+  ) {
     return this.learningService.updateCertificationTracker(id, updateData);
   }
 
@@ -174,13 +203,19 @@ export class LearningController {
 
   @Post('cv/:id/optimize')
   @ApiOperation({ summary: 'AI-optimize CV for job description' })
-  async optimizeCV(@Param('id') id: string, @Body() optimizationData: { jobDescription: string }) {
+  async optimizeCV(
+    @Param('id') id: string,
+    @Body() optimizationData: { jobDescription: string },
+  ) {
     return this.learningService.optimizeCV(id, optimizationData.jobDescription);
   }
 
   @Post('cv/:id/export')
   @ApiOperation({ summary: 'Export CV to different format' })
-  async exportCV(@Param('id') id: string, @Body() exportData: { format: 'pdf' | 'docx' | 'markdown' | 'html' }) {
+  async exportCV(
+    @Param('id') id: string,
+    @Body() exportData: { format: 'pdf' | 'docx' | 'markdown' | 'html' },
+  ) {
     return this.learningService.exportCV(id, exportData.format);
   }
 
@@ -192,7 +227,10 @@ export class LearningController {
 
   @Post('cv/:id/github-import')
   @ApiOperation({ summary: 'Import GitHub projects to CV' })
-  async importGitHubProjects(@Param('id') id: string, @Body() githubData: { username: string }) {
+  async importGitHubProjects(
+    @Param('id') id: string,
+    @Body() githubData: { username: string },
+  ) {
     return this.learningService.importGitHubProjects(id, githubData.username);
   }
 
@@ -205,7 +243,10 @@ export class LearningController {
 
   @Post('conferences/:id/register')
   @ApiOperation({ summary: 'Register interest in conference' })
-  async registerConferenceInterest(@Param('id') id: string, @Body() userData: { userId: string }) {
+  async registerConferenceInterest(
+    @Param('id') id: string,
+    @Body() userData: { userId: string },
+  ) {
     return this.learningService.registerConferenceInterest(id, userData.userId);
   }
 

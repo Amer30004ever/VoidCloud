@@ -42,7 +42,10 @@ export class SettingsController {
   @Post('users')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Create user with password options' })
-  async createUser(@Body() dto: CreateUserDto, @CurrentUser() user: { id: string }) {
+  async createUser(
+    @Body() dto: CreateUserDto,
+    @CurrentUser() user: { id: string },
+  ) {
     return this.settingsService.createUser(dto, user.id);
   }
 
@@ -77,14 +80,20 @@ export class SettingsController {
 
   @Post('users/change-password')
   @ApiOperation({ summary: 'Change own password' })
-  async changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: { id: string }) {
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @CurrentUser() user: { id: string },
+  ) {
     return this.settingsService.changePassword(user.id, dto);
   }
 
   @Delete('users/:id')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Delete user' })
-  async deleteUser(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+  async deleteUser(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
     return this.settingsService.deleteUser(id, user.id);
   }
 
@@ -97,14 +106,24 @@ export class SettingsController {
   @Post('roles')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Create role' })
-  async createRole(@Body() roleData: { name: string; description: string; permissions: string[] }) {
+  async createRole(
+    @Body()
+    roleData: {
+      name: string;
+      description: string;
+      permissions: string[];
+    },
+  ) {
     return this.settingsService.createRole(roleData);
   }
 
   @Put('roles/:id')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Update role' })
-  async updateRole(@Param('id') id: string, @Body() roleData: Record<string, unknown>) {
+  async updateRole(
+    @Param('id') id: string,
+    @Body() roleData: Record<string, unknown>,
+  ) {
     return this.settingsService.updateRole(id, roleData);
   }
 
@@ -116,13 +135,18 @@ export class SettingsController {
 
   @Post('api-keys')
   @ApiOperation({ summary: 'Generate API key' })
-  async generateApiKey(@Body() keyData: { name: string; userId: string; expiresAt?: string }) {
+  async generateApiKey(
+    @Body() keyData: { name: string; userId: string; expiresAt?: string },
+  ) {
     return this.settingsService.generateApiKey(keyData);
   }
 
   @Delete('api-keys/:id')
   @ApiOperation({ summary: 'Delete API key' })
-  async deleteApiKey(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+  async deleteApiKey(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
     return this.settingsService.deleteApiKey(id, user.id);
   }
 
@@ -130,7 +154,9 @@ export class SettingsController {
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Get audit logs' })
   async getAuditLogs(@Query('limit') limit?: string) {
-    return this.settingsService.getAuditLogs(limit ? parseInt(limit) : undefined);
+    return this.settingsService.getAuditLogs(
+      limit ? parseInt(limit) : undefined,
+    );
   }
 
   @Get('notifications/:userId')
@@ -141,7 +167,10 @@ export class SettingsController {
 
   @Put('notifications/:userId')
   @ApiOperation({ summary: 'Update notification settings' })
-  async updateNotificationSettings(@Param('userId') userId: string, @Body() settings: unknown) {
+  async updateNotificationSettings(
+    @Param('userId') userId: string,
+    @Body() settings: unknown,
+  ) {
     return this.settingsService.updateNotificationSettings(userId, settings);
   }
 
@@ -153,7 +182,10 @@ export class SettingsController {
 
   @Put('theme/:userId')
   @ApiOperation({ summary: 'Update theme settings' })
-  async updateThemeSettings(@Param('userId') userId: string, @Body() settings: unknown) {
+  async updateThemeSettings(
+    @Param('userId') userId: string,
+    @Body() settings: unknown,
+  ) {
     return this.settingsService.updateThemeSettings(userId, settings);
   }
 

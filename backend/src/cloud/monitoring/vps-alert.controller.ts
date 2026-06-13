@@ -1,10 +1,23 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { VpsAlertService, CreateAlertRuleDto } from './vps-alert.service';
 import { Role } from '@prisma/client';
 
-interface AuthedRequest { user: { id: string; role: Role; email: string } }
+interface AuthedRequest {
+  user: { id: string; role: Role; email: string };
+}
 
 @ApiTags('Cloud / Alerts')
 @ApiSecurity('bearer')
@@ -25,7 +38,11 @@ export class VpsAlertController {
   }
 
   @Put(':id')
-  update(@Req() req: AuthedRequest, @Param('id') id: string, @Body() dto: Partial<CreateAlertRuleDto>) {
+  update(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateAlertRuleDto>,
+  ) {
     return this.alerts.updateRule(req.user.id, id, dto);
   }
 

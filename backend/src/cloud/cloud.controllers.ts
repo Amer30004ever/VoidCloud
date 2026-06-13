@@ -1,6 +1,20 @@
 import {
-  Body, Controller, Delete, Get, Param, Post, Put, Query, Req, Res, UseGuards, Headers,
-  ForbiddenException, BadRequestException, HttpCode, RawBodyRequest,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+  Headers,
+  ForbiddenException,
+  BadRequestException,
+  HttpCode,
+  RawBodyRequest,
 } from '@nestjs/common';
 import { ApiTags, ApiSecurity } from '@nestjs/swagger';
 import { Response } from 'express';
@@ -23,7 +37,10 @@ import { CloudBackupService } from './backup/cloud-backup.service';
 import { BackupServiceV2 } from './backup/backup-v2.service';
 import { SSHKeyService } from './ssh/ssh-key.service';
 import { VPSResizeService } from './vps/vps-resize.service';
-import { FirewallService, type FirewallRuleInput } from './firewall/firewall.service';
+import {
+  FirewallService,
+  type FirewallRuleInput,
+} from './firewall/firewall.service';
 import { OrganizationService } from './organization/organization.service';
 import { ImageService } from './images/image.service';
 import { DNSService, type CreateDNSRecordDto } from './dns/dns.service';
@@ -32,9 +49,15 @@ import type { OrgRole } from '@prisma/client';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
 
-
-
-interface AuthedRequest { user: { id: string; role: Role; email: string; impersonatedBy?: string; impersonatorEmail?: string } }
+interface AuthedRequest {
+  user: {
+    id: string;
+    role: Role;
+    email: string;
+    impersonatedBy?: string;
+    impersonatorEmail?: string;
+  };
+}
 
 const ADMIN_ROLES = [Role.ADMIN, Role.SUPER_ADMIN] as const;
 
@@ -47,7 +70,6 @@ function extractUA(req: any): string | undefined {
   return req?.headers?.['user-agent'] || undefined;
 }
 
-
 @ApiTags('Cloud / Plans')
 @Controller('cloud/plans')
 export class CloudPlansController {
@@ -55,12 +77,16 @@ export class CloudPlansController {
 
   @Public()
   @Get()
-  list() { return this.plans.list(true); }
+  list() {
+    return this.plans.list(true);
+  }
 
   @ApiSecurity('bearer')
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  get(@Param('id') id: string) { return this.plans.get(id); }
+  get(@Param('id') id: string) {
+    return this.plans.get(id);
+  }
 }
 
 @ApiTags('Cloud / Templates')
@@ -72,9 +98,27 @@ export class CloudTemplatesController {
     // OS templates available for new VPS instances. Keep in sync with
     // backend/src/cloud/proxmox/template-manifest.ts.
     return [
-      { id: 'debian-12', label: 'Debian 12', proxmoxId: 9101, description: 'Lightweight VPS for starter plans', hasDocker: false },
-      { id: 'ubuntu-22.04', label: 'Ubuntu 22.04', proxmoxId: 9102, description: 'Full-featured VPS with Docker preinstalled', hasDocker: true },
-      { id: 'alpine', label: 'Alpine Linux', proxmoxId: 9100, description: 'Ultra-lightweight for free tier', hasDocker: false },
+      {
+        id: 'debian-12',
+        label: 'Debian 12',
+        proxmoxId: 9101,
+        description: 'Lightweight VPS for starter plans',
+        hasDocker: false,
+      },
+      {
+        id: 'ubuntu-22.04',
+        label: 'Ubuntu 22.04',
+        proxmoxId: 9102,
+        description: 'Full-featured VPS with Docker preinstalled',
+        hasDocker: true,
+      },
+      {
+        id: 'alpine',
+        label: 'Alpine Linux',
+        proxmoxId: 9100,
+        description: 'Ultra-lightweight for free tier',
+        hasDocker: false,
+      },
     ];
   }
 }
@@ -87,7 +131,9 @@ export class CloudDeploymentsController {
   constructor(private deployments: CloudDeploymentsService) {}
 
   @Get()
-  list(@Req() req: AuthedRequest) { return this.deployments.list(req.user.id); }
+  list(@Req() req: AuthedRequest) {
+    return this.deployments.list(req.user.id);
+  }
 
   @Post()
   create(@Req() req: AuthedRequest, @Body() body: any) {
@@ -95,7 +141,9 @@ export class CloudDeploymentsController {
   }
 
   @Get('usage/me')
-  usage(@Req() req: AuthedRequest) { return this.deployments.usage(req.user.id); }
+  usage(@Req() req: AuthedRequest) {
+    return this.deployments.usage(req.user.id);
+  }
 
   @Get(':id')
   get(@Req() req: AuthedRequest, @Param('id') id: string) {
@@ -103,7 +151,11 @@ export class CloudDeploymentsController {
   }
 
   @Put(':id')
-  update(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: any) {
+  update(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: any,
+  ) {
     return this.deployments.update(req.user.id, id, body);
   }
 
@@ -117,15 +169,27 @@ export class CloudDeploymentsController {
     return this.deployments.restart(req.user.id, id);
   }
   @Post(':id/start')
-  start(@Req() req: AuthedRequest, @Param('id') id: string) { return this.deployments.start(req.user.id, id); }
+  start(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.deployments.start(req.user.id, id);
+  }
   @Post(':id/stop')
-  stop(@Req() req: AuthedRequest, @Param('id') id: string) { return this.deployments.stop(req.user.id, id); }
+  stop(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.deployments.stop(req.user.id, id);
+  }
   @Post(':id/reinstall')
-  reinstall(@Req() req: AuthedRequest, @Param('id') id: string) { return this.deployments.reinstall(req.user.id, id); }
+  reinstall(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.deployments.reinstall(req.user.id, id);
+  }
   @Post(':id/reset-root-password')
-  resetRootPw(@Req() req: AuthedRequest, @Param('id') id: string) { return this.deployments.resetRootPassword(req.user.id, id); }
+  resetRootPw(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.deployments.resetRootPassword(req.user.id, id);
+  }
   @Put(':id/resize')
-  resize(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { cpu?: number; memory?: number; storage?: number }) {
+  resize(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { cpu?: number; memory?: number; storage?: number },
+  ) {
     return this.deployments.resize(req.user.id, id, body);
   }
 
@@ -145,7 +209,11 @@ export class CloudDeploymentsController {
   }
 
   @Get(':id/logs/stream')
-  async logsStream(@Req() req: any, @Param('id') id: string, @Res() res: Response) {
+  async logsStream(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -154,7 +222,10 @@ export class CloudDeploymentsController {
       res.write(`data: ${JSON.stringify({ line })}\n\n`);
     });
     const hb = setInterval(() => res.write(': ping\n\n'), 25000);
-    req.on('close', () => { clearInterval(hb); stop(); });
+    req.on('close', () => {
+      clearInterval(hb);
+      stop();
+    });
   }
 }
 
@@ -166,18 +237,33 @@ export class CloudBillingController {
   constructor(private billing: CloudBillingService) {}
 
   @Get('current')
-  current(@Req() req: AuthedRequest) { return this.billing.currentSubscription(req.user.id); }
+  current(@Req() req: AuthedRequest) {
+    return this.billing.currentSubscription(req.user.id);
+  }
 
   @Post('subscribe')
-  subscribe(@Req() req: AuthedRequest, @Body() body: { planId: string; provider: 'stripe'|'fawry'|'instapay'|'cash'; customerPhone?: string; payerInstapayId?: string }) {
+  subscribe(
+    @Req() req: AuthedRequest,
+    @Body()
+    body: {
+      planId: string;
+      provider: 'stripe' | 'fawry' | 'instapay' | 'cash';
+      customerPhone?: string;
+      payerInstapayId?: string;
+    },
+  ) {
     return this.billing.subscribe(req.user.id, body);
   }
 
   @Post('cancel')
-  cancel(@Req() req: AuthedRequest) { return this.billing.cancel(req.user.id); }
+  cancel(@Req() req: AuthedRequest) {
+    return this.billing.cancel(req.user.id);
+  }
 
   @Get('invoices')
-  invoices(@Req() req: AuthedRequest) { return this.billing.invoices(req.user.id); }
+  invoices(@Req() req: AuthedRequest) {
+    return this.billing.invoices(req.user.id);
+  }
 
   @Get('invoices/:id')
   invoice(@Req() req: AuthedRequest, @Param('id') id: string) {
@@ -185,11 +271,19 @@ export class CloudBillingController {
   }
 
   @Get('payment-methods')
-  pmList(@Req() req: AuthedRequest) { return this.billing.paymentMethods(req.user.id); }
+  pmList(@Req() req: AuthedRequest) {
+    return this.billing.paymentMethods(req.user.id);
+  }
 
   @Post('payment-methods')
   pmAdd(@Req() req: AuthedRequest, @Body() body: any) {
-    return this.billing.addPaymentMethod(req.user.id, body.type, body.providerId, body.label, body.last4);
+    return this.billing.addPaymentMethod(
+      req.user.id,
+      body.type,
+      body.providerId,
+      body.label,
+      body.last4,
+    );
   }
 
   @Delete('payment-methods/:id')
@@ -210,9 +304,14 @@ export class CloudWebhooksController {
   @Public()
   @Post('stripe')
   @HttpCode(200)
-  async stripe(@Req() req: RawBodyRequest<any>, @Headers('stripe-signature') sig: string, @Body() body: any) {
+  async stripe(
+    @Req() req: RawBodyRequest<any>,
+    @Headers('stripe-signature') sig: string,
+    @Body() body: any,
+  ) {
     if (this.stripeSvc.isLive()) {
-      if (!sig || !req.rawBody) throw new BadRequestException('Missing signature/body');
+      if (!sig || !req.rawBody)
+        throw new BadRequestException('Missing signature/body');
       const event = this.stripeSvc.verifyWebhook(req.rawBody, sig);
       if (event.type === 'checkout.session.completed') {
         const invoiceId = event.data.object?.metadata?.invoiceId;
@@ -230,11 +329,18 @@ export class CloudWebhooksController {
   @Post('fawry')
   @HttpCode(200)
   async fawry(@Body() body: any, @Headers('x-fawry-signature') sig?: string) {
-    if (process.env.FAWRY_SECURITY_KEY && !this.fawrySvc.verifyWebhook(body, sig)) {
+    if (
+      process.env.FAWRY_SECURITY_KEY &&
+      !this.fawrySvc.verifyWebhook(body, sig)
+    ) {
       throw new BadRequestException('Invalid signature');
     }
-    const invoiceId = body?.merchantRefNumber?.replace(/^amercloud_/, '') || body?.invoiceId;
-    if (invoiceId && (body?.orderStatus === 'PAID' || body?.status === 'PAID')) {
+    const invoiceId =
+      body?.merchantRefNumber?.replace(/^amercloud_/, '') || body?.invoiceId;
+    if (
+      invoiceId &&
+      (body?.orderStatus === 'PAID' || body?.status === 'PAID')
+    ) {
       return this.billing.confirmPayment(invoiceId);
     }
     return { received: true };
@@ -244,7 +350,8 @@ export class CloudWebhooksController {
   @Post('instapay')
   @HttpCode(200)
   instapay(@Body() body: any) {
-    const invoiceId = body?.reference_id?.replace(/^AMP_/, '') || body?.invoiceId;
+    const invoiceId =
+      body?.reference_id?.replace(/^AMP_/, '') || body?.invoiceId;
     if (invoiceId && (body?.status === 'PAID' || body?.status === 'success')) {
       return this.billing.confirmPayment(invoiceId);
     }
@@ -258,13 +365,27 @@ export class CloudWebhooksController {
 @Controller('cloud/auth/2fa')
 export class CloudTwoFactorController {
   constructor(private tfa: TwoFactorService) {}
-  @Get('status') status(@Req() req: AuthedRequest) { return this.tfa.status(req.user.id); }
-  @Post('enable')  enable(@Req() req: AuthedRequest) { return this.tfa.beginEnable(req.user.id, req.user.email); }
-  @Post('verify')  verify(@Req() req: AuthedRequest, @Body() b: { token: string }) { return this.tfa.verifyAndActivate(req.user.id, b.token); }
+  @Get('status') status(@Req() req: AuthedRequest) {
+    return this.tfa.status(req.user.id);
+  }
+  @Post('enable') enable(@Req() req: AuthedRequest) {
+    return this.tfa.beginEnable(req.user.id, req.user.email);
+  }
+  @Post('verify') verify(
+    @Req() req: AuthedRequest,
+    @Body() b: { token: string },
+  ) {
+    return this.tfa.verifyAndActivate(req.user.id, b.token);
+  }
   @Post('recovery-codes/regenerate')
-  regen(@Req() req: AuthedRequest) { return this.tfa.regenerateRecoveryCodes(req.user.id); }
+  regen(@Req() req: AuthedRequest) {
+    return this.tfa.regenerateRecoveryCodes(req.user.id);
+  }
   @Post('disable')
-  disable(@Req() req: AuthedRequest, @Body() b: { password?: string; recoveryCode?: string }) {
+  disable(
+    @Req() req: AuthedRequest,
+    @Body() b: { password?: string; recoveryCode?: string },
+  ) {
     return this.tfa.disableWithProof(req.user.id, b.password, b.recoveryCode);
   }
 }
@@ -272,7 +393,10 @@ export class CloudTwoFactorController {
 @ApiTags('Cloud / Account')
 @Controller('cloud/account')
 export class CloudAccountController {
-  constructor(private account: CloudAccountService, private activity: ActivityService) {}
+  constructor(
+    private account: CloudAccountService,
+    private activity: ActivityService,
+  ) {}
 
   @ApiSecurity('bearer')
   @UseGuards(JwtAuthGuard)
@@ -292,8 +416,15 @@ export class CloudAccountController {
   @UseGuards(JwtAuthGuard)
   @Post('email/request-change')
   @HttpCode(200)
-  requestEmail(@Req() req: AuthedRequest, @Body() b: { currentPassword: string; newEmail: string }) {
-    return this.account.requestEmailChange(req.user.id, b.currentPassword, b.newEmail);
+  requestEmail(
+    @Req() req: AuthedRequest,
+    @Body() b: { currentPassword: string; newEmail: string },
+  ) {
+    return this.account.requestEmailChange(
+      req.user.id,
+      b.currentPassword,
+      b.newEmail,
+    );
   }
 
   @Public()
@@ -307,19 +438,31 @@ export class CloudAccountController {
   @UseGuards(JwtAuthGuard)
   @Post('password/change')
   @HttpCode(200)
-  changePassword(@Req() req: AuthedRequest, @Body() b: { currentPassword: string; newPassword: string }) {
-    return this.account.changePassword(req.user.id, b.currentPassword, b.newPassword);
+  changePassword(
+    @Req() req: AuthedRequest,
+    @Body() b: { currentPassword: string; newPassword: string },
+  ) {
+    return this.account.changePassword(
+      req.user.id,
+      b.currentPassword,
+      b.newPassword,
+    );
   }
 
   @ApiSecurity('bearer')
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@Req() req: AuthedRequest) { return this.account.getProfile(req.user.id); }
+  getProfile(@Req() req: AuthedRequest) {
+    return this.account.getProfile(req.user.id);
+  }
 
   @ApiSecurity('bearer')
   @UseGuards(JwtAuthGuard)
   @Put('profile')
-  updateProfile(@Req() req: AuthedRequest, @Body() b: { displayName?: string; phone?: string | null }) {
+  updateProfile(
+    @Req() req: AuthedRequest,
+    @Body() b: { displayName?: string; phone?: string | null },
+  ) {
     return this.account.updateProfile(req.user.id, b);
   }
 
@@ -334,7 +477,9 @@ export class CloudAccountController {
   @ApiSecurity('bearer')
   @UseGuards(JwtAuthGuard)
   @Get('notifications/preferences')
-  getNotifPrefs(@Req() req: AuthedRequest) { return this.account.getNotificationPreferences(req.user.id); }
+  getNotifPrefs(@Req() req: AuthedRequest) {
+    return this.account.getNotificationPreferences(req.user.id);
+  }
 
   @ApiSecurity('bearer')
   @UseGuards(JwtAuthGuard)
@@ -343,7 +488,6 @@ export class CloudAccountController {
     return this.account.updateNotificationPreferences(req.user.id, b);
   }
 }
-
 
 @ApiTags('Cloud / Backups')
 @ApiSecurity('bearer')
@@ -364,26 +508,50 @@ export class CloudBackupController {
   }
 
   @Post('vps/:id/backups')
-  async create(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { name?: string }) {
+  async create(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { name?: string },
+  ) {
     return this.backupsV2.createBackup(id, req.user.id, body?.name);
   }
 
   @Post('vps/:id/backups/manual')
-  async createManual(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { name?: string }) {
+  async createManual(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { name?: string },
+  ) {
     return this.backupsV2.createBackup(id, req.user.id, body?.name);
   }
 
   @Get('vps/:id/backup-schedule')
   async getSchedule(@Req() req: AuthedRequest, @Param('id') id: string) {
     await this.deployments.get(req.user.id, id);
-    return (await this.backupsV2.getSchedule(id)) ?? { vpsId: id, enabled: false, frequency: 'DAILY', retention: 7, hour: 2 };
+    return (
+      (await this.backupsV2.getSchedule(id)) ?? {
+        vpsId: id,
+        enabled: false,
+        frequency: 'DAILY',
+        retention: 7,
+        hour: 2,
+      }
+    );
   }
 
   @Put('vps/:id/backup-schedule')
   async updateSchedule(
     @Req() req: AuthedRequest,
     @Param('id') id: string,
-    @Body() body: { enabled?: boolean; frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY'; retention?: number; hour?: number; dayOfWeek?: number; dayOfMonth?: number },
+    @Body()
+    body: {
+      enabled?: boolean;
+      frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+      retention?: number;
+      hour?: number;
+      dayOfWeek?: number;
+      dayOfMonth?: number;
+    },
   ) {
     return this.backupsV2.updateSchedule(id, req.user.id, body);
   }
@@ -404,7 +572,11 @@ export class CloudBackupController {
   }
 
   @Post('backups/:id/restore')
-  restore(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { targetVpsId?: string }) {
+  restore(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { targetVpsId?: string },
+  ) {
     return this.backupsV2.restoreBackup(id, req.user.id, body?.targetVpsId);
   }
 
@@ -429,11 +601,13 @@ export class CloudBackupController {
     return this.backupsV2.createBackup(id, req.user.id);
   }
   @Post('deployments/:id/backups/restore/:backupId')
-  legacyRestore(@Req() req: AuthedRequest, @Param('backupId') backupId: string) {
+  legacyRestore(
+    @Req() req: AuthedRequest,
+    @Param('backupId') backupId: string,
+  ) {
     return this.backupsV2.restoreBackup(backupId, req.user.id);
   }
 }
-
 
 @ApiTags('Cloud / SSH Keys')
 @ApiSecurity('bearer')
@@ -443,10 +617,15 @@ export class CloudSshKeyController {
   constructor(private ssh: SSHKeyService) {}
 
   @Get('ssh-keys')
-  list(@Req() req: AuthedRequest) { return this.ssh.listKeys(req.user.id); }
+  list(@Req() req: AuthedRequest) {
+    return this.ssh.listKeys(req.user.id);
+  }
 
   @Post('ssh-keys')
-  add(@Req() req: AuthedRequest, @Body() body: { name: string; publicKey: string }) {
+  add(
+    @Req() req: AuthedRequest,
+    @Body() body: { name: string; publicKey: string },
+  ) {
     return this.ssh.addKey(req.user.id, body?.name, body?.publicKey);
   }
 
@@ -461,16 +640,23 @@ export class CloudSshKeyController {
   }
 
   @Post('vps/:id/ssh-keys/:keyId')
-  attach(@Req() req: AuthedRequest, @Param('id') id: string, @Param('keyId') keyId: string) {
+  attach(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Param('keyId') keyId: string,
+  ) {
     return this.ssh.addKeyToVPS(keyId, id, req.user.id);
   }
 
   @Delete('vps/:id/ssh-keys/:keyId')
-  detach(@Req() req: AuthedRequest, @Param('id') id: string, @Param('keyId') keyId: string) {
+  detach(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Param('keyId') keyId: string,
+  ) {
     return this.ssh.removeKeyFromVPS(keyId, id, req.user.id);
   }
 }
-
 
 @ApiTags('Cloud / VPS Resize')
 @ApiSecurity('bearer')
@@ -485,7 +671,11 @@ export class CloudVpsResizeController {
   }
 
   @Get(':id/resize/price')
-  price(@Req() req: AuthedRequest, @Param('id') id: string, @Query('newPlanId') newPlanId: string) {
+  price(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Query('newPlanId') newPlanId: string,
+  ) {
     if (!newPlanId) throw new BadRequestException('newPlanId required');
     return this.resize.calculateProratedPrice(id, req.user.id, newPlanId);
   }
@@ -496,11 +686,19 @@ export class CloudVpsResizeController {
   }
 
   @Post(':id/resize')
-  doResize(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { newPlanId: string; confirmPrice: boolean }) {
-    return this.resize.resizeVPS(id, body?.newPlanId, req.user.id, !!body?.confirmPrice);
+  doResize(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { newPlanId: string; confirmPrice: boolean },
+  ) {
+    return this.resize.resizeVPS(
+      id,
+      body?.newPlanId,
+      req.user.id,
+      !!body?.confirmPrice,
+    );
   }
 }
-
 
 @ApiTags('Cloud / Firewall')
 @ApiSecurity('bearer')
@@ -515,15 +713,25 @@ export class CloudFirewallController {
   }
 
   @Get('vps/:id/firewall/defaults')
-  defaults() { return this.fw.getDefaultRules(); }
+  defaults() {
+    return this.fw.getDefaultRules();
+  }
 
   @Post('vps/:id/firewall')
-  create(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: FirewallRuleInput) {
+  create(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: FirewallRuleInput,
+  ) {
     return this.fw.createRule(id, req.user.id, body);
   }
 
   @Put('firewall/:id')
-  update(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: Partial<FirewallRuleInput>) {
+  update(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: Partial<FirewallRuleInput>,
+  ) {
     return this.fw.updateRule(id, req.user.id, body);
   }
 
@@ -538,15 +746,19 @@ export class CloudFirewallController {
   }
 
   @Post('vps/:id/firewall/reorder')
-  reorder(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { ruleIds: string[] }) {
+  reorder(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { ruleIds: string[] },
+  ) {
     return this.fw.reorderRules(id, req.user.id, body?.ruleIds ?? []);
   }
 
   @Post('vps/:id/firewall/reset')
   reset(@Req() req: AuthedRequest, @Param('id') id: string) {
     return this.fw.resetToDefault(id, req.user.id);
+  }
 }
-
 
 @ApiTags('Cloud / Organizations')
 @ApiSecurity('bearer')
@@ -556,7 +768,9 @@ export class CloudOrganizationController {
   constructor(private orgs: OrganizationService) {}
 
   @Get()
-  list(@Req() req: AuthedRequest) { return this.orgs.listForUser(req.user.id); }
+  list(@Req() req: AuthedRequest) {
+    return this.orgs.listForUser(req.user.id);
+  }
 
   @Post()
   create(@Req() req: AuthedRequest, @Body() body: { name: string }) {
@@ -564,7 +778,9 @@ export class CloudOrganizationController {
   }
 
   @Get('invitations')
-  myInvitations(@Req() req: AuthedRequest) { return this.orgs.listMyInvitations(req.user.id); }
+  myInvitations(@Req() req: AuthedRequest) {
+    return this.orgs.listMyInvitations(req.user.id);
+  }
 
   @Post('invitations/:id/accept')
   accept(@Req() req: AuthedRequest, @Param('id') id: string) {
@@ -582,7 +798,11 @@ export class CloudOrganizationController {
   }
 
   @Put(':id')
-  update(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { name?: string; avatar?: string | null }) {
+  update(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { name?: string; avatar?: string | null },
+  ) {
     return this.orgs.update(id, req.user.id, body);
   }
 
@@ -597,17 +817,35 @@ export class CloudOrganizationController {
   }
 
   @Post(':id/members/invite')
-  invite(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { email: string; role?: OrgRole }) {
-    return this.orgs.invite(id, req.user.id, body?.email, (body?.role ?? 'MEMBER') as OrgRole);
+  invite(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { email: string; role?: OrgRole },
+  ) {
+    return this.orgs.invite(
+      id,
+      req.user.id,
+      body?.email,
+      (body?.role ?? 'MEMBER') as OrgRole,
+    );
   }
 
   @Delete(':id/members/:userId')
-  removeMember(@Req() req: AuthedRequest, @Param('id') id: string, @Param('userId') userId: string) {
+  removeMember(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
     return this.orgs.removeMember(id, req.user.id, userId);
   }
 
   @Put(':id/members/:userId/role')
-  setRole(@Req() req: AuthedRequest, @Param('id') id: string, @Param('userId') userId: string, @Body() body: { role: OrgRole }) {
+  setRole(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() body: { role: OrgRole },
+  ) {
     return this.orgs.updateMemberRole(id, req.user.id, userId, body.role);
   }
 }
@@ -619,10 +857,14 @@ export class CloudOrganizationController {
 export class CloudVpsTransferController {
   constructor(private orgs: OrganizationService) {}
   @Post(':id/transfer')
-  transfer(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { organizationId: string | null }) {
+  transfer(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { organizationId: string | null },
+  ) {
     return this.orgs.transferVps(id, req.user.id, body?.organizationId ?? null);
+  }
 }
-
 
 @ApiTags('Cloud / Images')
 @ApiSecurity('bearer')
@@ -632,19 +874,47 @@ export class CloudImageController {
   constructor(private images: ImageService) {}
 
   @Get('images')
-  list(@Req() req: AuthedRequest) { return this.images.listUserImages(req.user.id); }
+  list(@Req() req: AuthedRequest) {
+    return this.images.listUserImages(req.user.id);
+  }
 
   @Get('marketplace')
-  marketplace() { return this.images.listMarketplaceImages(); }
+  marketplace() {
+    return this.images.listMarketplaceImages();
+  }
 
   @Post('images/snapshot/:vpsId')
-  snapshot(@Req() req: AuthedRequest, @Param('vpsId') vpsId: string, @Body() body: { name: string; description?: string }) {
-    return this.images.createSnapshot(vpsId, req.user.id, body?.name, body?.description);
+  snapshot(
+    @Req() req: AuthedRequest,
+    @Param('vpsId') vpsId: string,
+    @Body() body: { name: string; description?: string },
+  ) {
+    return this.images.createSnapshot(
+      vpsId,
+      req.user.id,
+      body?.name,
+      body?.description,
+    );
   }
 
   @Post('images/upload')
-  upload(@Req() req: AuthedRequest, @Body() body: { name: string; sizeMB: number; storageUrl: string; description?: string }) {
-    return this.images.createFromUpload(req.user.id, body?.name, body?.sizeMB, body?.storageUrl, body?.description);
+  upload(
+    @Req() req: AuthedRequest,
+    @Body()
+    body: {
+      name: string;
+      sizeMB: number;
+      storageUrl: string;
+      description?: string;
+    },
+  ) {
+    return this.images.createFromUpload(
+      req.user.id,
+      body?.name,
+      body?.sizeMB,
+      body?.storageUrl,
+      body?.description,
+    );
   }
 
   @Delete('images/:id')
@@ -653,26 +923,42 @@ export class CloudImageController {
   }
 
   @Post('images/:id/deploy')
-  deploy(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { vpsName: string }) {
+  deploy(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { vpsName: string },
+  ) {
     return this.images.deployFromImage(id, req.user.id, body?.vpsName);
   }
 
   @Post('marketplace/:id/deploy')
-  deployFromMarketplace(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { vpsName: string }) {
+  deployFromMarketplace(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { vpsName: string },
+  ) {
     return this.images.deployFromImage(id, req.user.id, body?.vpsName);
   }
 
   @Post('images/:id/share')
-  share(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { email: string }) {
+  share(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { email: string },
+  ) {
     if (!body?.email) throw new BadRequestException('email required');
     return this.images.shareImage(id, req.user.id, body.email);
   }
 
   @Post('images/:id/publish')
-  publish(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { isPublic: boolean }) {
+  publish(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { isPublic: boolean },
+  ) {
     return this.images.makePublic(id, req.user.id, !!body?.isPublic);
+  }
 }
-
 
 @ApiTags('Cloud / Domains')
 @ApiSecurity('bearer')
@@ -687,7 +973,11 @@ export class CloudDomainController {
   }
 
   @Post('vps/:id/domains')
-  add(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { domain: string; autoSSL?: boolean }) {
+  add(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { domain: string; autoSSL?: boolean },
+  ) {
     return this.dns.addDomain(id, req.user.id, body?.domain, !!body?.autoSSL);
   }
 
@@ -717,15 +1007,19 @@ export class CloudDomainController {
   }
 
   @Post('domains/:id/dns')
-  addRecord(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: CreateDNSRecordDto) {
+  addRecord(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: CreateDNSRecordDto,
+  ) {
     return this.dns.addDNSRecord(id, req.user.id, body);
   }
 
   @Delete('dns/:id')
   removeRecord(@Req() req: AuthedRequest, @Param('id') id: string) {
     return this.dns.deleteDNSRecord(id, req.user.id);
+  }
 }
-
 
 @ApiTags('Cloud / Analytics')
 @ApiSecurity('bearer')
@@ -735,43 +1029,45 @@ export class CloudAnalyticsController {
   constructor(private analytics: AnalyticsService) {}
 
   @Get('vps/:id/usage')
-  usage(@Req() req: AuthedRequest, @Param('id') id: string, @Query('hours') hours?: string) {
-    return this.analytics.getVPSUsage(id, req.user.id, hours ? Math.max(1, Math.min(720, parseInt(hours, 10))) : 24);
+  usage(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Query('hours') hours?: string,
+  ) {
+    return this.analytics.getVPSUsage(
+      id,
+      req.user.id,
+      hours ? Math.max(1, Math.min(720, parseInt(hours, 10))) : 24,
+    );
   }
 
   @Get('costs')
   costs(@Req() req: AuthedRequest, @Query('months') months?: string) {
-    return this.analytics.getCostBreakdown(req.user.id, months ? Math.max(1, Math.min(12, parseInt(months, 10))) : 3);
+    return this.analytics.getCostBreakdown(
+      req.user.id,
+      months ? Math.max(1, Math.min(12, parseInt(months, 10))) : 3,
+    );
   }
 
   @Get('trends')
   trends(@Req() req: AuthedRequest, @Query('days') days?: string) {
-    return this.analytics.getResourceTrends(req.user.id, days ? Math.max(1, Math.min(365, parseInt(days, 10))) : 30);
+    return this.analytics.getResourceTrends(
+      req.user.id,
+      days ? Math.max(1, Math.min(365, parseInt(days, 10))) : 30,
+    );
   }
 
   @Get('export/csv')
   async exportCsv(@Req() req: AuthedRequest, @Res() res: Response) {
     const csv = await this.analytics.exportCSV(req.user.id);
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="amercloud-analytics-${Date.now()}.csv"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="amercloud-analytics-${Date.now()}.csv"`,
+    );
     res.send(csv);
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 @ApiTags('Cloud / Admin')
 @ApiSecurity('bearer')
@@ -801,7 +1097,11 @@ export class CloudAdminController {
     @Query('limit') limit?: string,
   ) {
     return this.activity.listAll({
-      userId, action, from, to, ipAddress,
+      userId,
+      action,
+      from,
+      to,
+      ipAddress,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 100,
     });
@@ -817,21 +1117,31 @@ export class CloudAdminController {
   ) {
     const csv = await this.activity.exportCsv({ userId, action, from, to });
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="amercloud-activity-${new Date().toISOString().slice(0,10)}.csv"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="amercloud-activity-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
     res.send(csv);
   }
 
   @Put('users/:id/role')
   @Roles(Role.SUPER_ADMIN)
-  async changeRole(@Req() req: any, @Param('id') id: string, @Body() body: { role: Role }) {
+  async changeRole(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: { role: Role },
+  ) {
     if (!['USER', 'ADMIN', 'SUPER_ADMIN'].includes(body.role)) {
       throw new BadRequestException('Invalid role');
     }
     const result = await this.admin.changeRole(req.user.id, id, body.role);
     await this.activity.log({
-      userId: id, adminId: req.user.id, action: 'ROLE_CHANGE',
+      userId: id,
+      adminId: req.user.id,
+      action: 'ROLE_CHANGE',
       details: { from: result.previousRole, to: result.role },
-      ipAddress: extractIp(req), userAgent: extractUA(req),
+      ipAddress: extractIp(req),
+      userAgent: extractUA(req),
     });
     return result;
   }
@@ -841,54 +1151,89 @@ export class CloudAdminController {
   async stopImpersonate(@Req() req: any) {
     if (req.user.impersonatedBy) {
       await this.activity.log({
-        userId: req.user.id, adminId: req.user.impersonatedBy, action: 'IMPERSONATE_END',
-        ipAddress: extractIp(req), userAgent: extractUA(req),
+        userId: req.user.id,
+        adminId: req.user.impersonatedBy,
+        action: 'IMPERSONATE_END',
+        ipAddress: extractIp(req),
+        userAgent: extractUA(req),
       });
     }
     return { ok: true };
   }
 
-  @Get('smtp/status') smtpStatus() { return this.mailer.status(); }
-  @Post('smtp/verify') smtpVerify() { return this.mailer.verify(); }
+  @Get('smtp/status') smtpStatus() {
+    return this.mailer.status();
+  }
+  @Post('smtp/verify') smtpVerify() {
+    return this.mailer.verify();
+  }
   @Post('smtp/test')
   smtpTest(@Req() req: AuthedRequest, @Body() b: { to?: string }) {
     return this.mailer.sendTest((b?.to || req.user.email).trim());
   }
 
   @Get('audit-logs')
-  auditLogs(@Query('targetId') targetId?: string, @Query('action') action?: string) {
+  auditLogs(
+    @Query('targetId') targetId?: string,
+    @Query('action') action?: string,
+  ) {
     return this.audit.list({ targetId, action });
   }
 
-
-  @Get('stats') stats() { return this.admin.stats(); }
-  @Get('stats/real') realStats() { return this.admin.realStats(); }
+  @Get('stats') stats() {
+    return this.admin.stats();
+  }
+  @Get('stats/real') realStats() {
+    return this.admin.realStats();
+  }
 
   @Get('users')
-  users(@Query('q') q?: string, @Query('planId') planId?: string, @Query('status') status?: string) {
+  users(
+    @Query('q') q?: string,
+    @Query('planId') planId?: string,
+    @Query('status') status?: string,
+  ) {
     return this.admin.listUsers(q, planId, status);
   }
   @Post('users')
-  createUser(@Body() body: { email: string; name: string; password: string; role?: Role; planId?: string | null }) {
+  createUser(
+    @Body()
+    body: {
+      email: string;
+      name: string;
+      password: string;
+      role?: Role;
+      planId?: string | null;
+    },
+  ) {
     return this.admin.createUser(body);
   }
   @Delete('users/:id')
-  deleteUser(@Param('id') id: string) { return this.admin.deleteUser(id); }
+  deleteUser(@Param('id') id: string) {
+    return this.admin.deleteUser(id);
+  }
   @Post('users/:id/reset-password')
-  resetPw(@Param('id') id: string) { return this.admin.resetUserPassword(id); }
+  resetPw(@Param('id') id: string) {
+    return this.admin.resetUserPassword(id);
+  }
   @Post('reset-admin-password')
   @Roles(Role.SUPER_ADMIN)
   resetAdminPassword(@Body() body: { newPassword: string; email?: string }) {
     return this.admin.resetAdminPassword(body.newPassword, body.email);
   }
   @Post('users/:id/reset-2fa')
-  reset2fa(@Param('id') id: string) { return this.tfa.adminReset(id); }
+  reset2fa(@Param('id') id: string) {
+    return this.tfa.adminReset(id);
+  }
   @Post('users/:id/impersonate')
   async impersonate(@Req() req: any, @Param('id') id: string) {
     const result = await this.admin.impersonate(req.user.id, id);
     await this.activity.log({
-      userId: id, adminId: req.user.id, action: 'IMPERSONATE_START',
-      ipAddress: extractIp(req), userAgent: extractUA(req),
+      userId: id,
+      adminId: req.user.id,
+      action: 'IMPERSONATE_START',
+      ipAddress: extractIp(req),
+      userAgent: extractUA(req),
     });
     return result;
   }
@@ -901,7 +1246,9 @@ export class CloudAdminController {
     return this.admin.suspend(id, body.reason ?? 'Manual suspension');
   }
   @Put('users/:id/activate')
-  activate(@Param('id') id: string) { return this.admin.activate(id); }
+  activate(@Param('id') id: string) {
+    return this.admin.activate(id);
+  }
   @Put('users/:id/override-limits')
   override(@Param('id') id: string, @Body() body: Record<string, number>) {
     return this.admin.overrideLimits(id, body);
@@ -911,17 +1258,30 @@ export class CloudAdminController {
     return this.admin.extendTrial(id, body.days ?? 7);
   }
 
-  @Get('plans') plansList() { return this.plans.list(false); }
-  @Post('plans') planCreate(@Body() body: any) { return this.plans.create(body); }
-  @Put('plans/:id') planUpdate(@Param('id') id: string, @Body() body: any) { return this.plans.update(id, body); }
-  @Delete('plans/:id') planDelete(@Param('id') id: string) { return this.plans.remove(id); }
+  @Get('plans') plansList() {
+    return this.plans.list(false);
+  }
+  @Post('plans') planCreate(@Body() body: any) {
+    return this.plans.create(body);
+  }
+  @Put('plans/:id') planUpdate(@Param('id') id: string, @Body() body: any) {
+    return this.plans.update(id, body);
+  }
+  @Delete('plans/:id') planDelete(@Param('id') id: string) {
+    return this.plans.remove(id);
+  }
 
-  @Get('billing/transactions') transactions() { return this.admin.transactions(); }
+  @Get('billing/transactions') transactions() {
+    return this.admin.transactions();
+  }
   @Get('billing/transactions.csv')
   async transactionsCsv(@Res() res: Response) {
     const csv = await this.admin.transactionsCSV();
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="amercloud-transactions-${new Date().toISOString().slice(0,10)}.csv"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="amercloud-transactions-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
     res.send(csv);
   }
   @Post('billing/refund')
@@ -934,14 +1294,34 @@ export class CloudAdminController {
   }
   @Post('billing/reject')
   reject(@Body() body: { invoiceId: string; reason: string }) {
-    return this.billing.rejectPayment(body.invoiceId, body.reason ?? 'Rejected by admin');
+    return this.billing.rejectPayment(
+      body.invoiceId,
+      body.reason ?? 'Rejected by admin',
+    );
   }
 
-  @Get('vps') allVps() { return this.deployments.listAll(); }
-  @Get('announcements') announcements() { return this.admin.announcements(); }
+  @Get('vps') allVps() {
+    return this.deployments.listAll();
+  }
+  @Get('announcements') announcements() {
+    return this.admin.announcements();
+  }
   @Post('announcements')
-  broadcast(@Body() body: { title: string; body: string; severity?: string; audience?: string }) {
-    return this.admin.broadcast(body.title, body.body, body.severity, body.audience);
+  broadcast(
+    @Body()
+    body: {
+      title: string;
+      body: string;
+      severity?: string;
+      audience?: string;
+    },
+  ) {
+    return this.admin.broadcast(
+      body.title,
+      body.body,
+      body.severity,
+      body.audience,
+    );
   }
 }
 
@@ -961,7 +1341,10 @@ export class CloudRateLimitController {
 
   @Get('history')
   history(@Req() req: AuthedRequest, @Query('days') days?: string) {
-    return this.rl.getUsageHistory(req.user.id, Math.max(1, Math.min(90, Number(days) || 7)));
+    return this.rl.getUsageHistory(
+      req.user.id,
+      Math.max(1, Math.min(90, Number(days) || 7)),
+    );
   }
 
   @Get('alert')
@@ -970,12 +1353,23 @@ export class CloudRateLimitController {
   }
 
   @Post('alert')
-  setAlert(@Req() req: AuthedRequest, @Body() body: { threshold: number; enabled: boolean }) {
-    return this.rl.setAlertThreshold(req.user.id, Number(body?.threshold ?? 80), Boolean(body?.enabled));
+  setAlert(
+    @Req() req: AuthedRequest,
+    @Body() body: { threshold: number; enabled: boolean },
+  ) {
+    return this.rl.setAlertThreshold(
+      req.user.id,
+      Number(body?.threshold ?? 80),
+      Boolean(body?.enabled),
+    );
   }
 }
 
-import { WebhookService, type CreateWebhookDto, type UpdateWebhookDto } from './webhook/webhook.service';
+import {
+  WebhookService,
+  type CreateWebhookDto,
+  type UpdateWebhookDto,
+} from './webhook/webhook.service';
 
 @ApiTags('Cloud / Webhooks')
 @ApiSecurity('bearer')
@@ -985,21 +1379,35 @@ export class CloudWebhookController {
   constructor(private webhooks: WebhookService) {}
 
   @Get('events')
-  events() { return this.webhooks.listEventTypes(); }
+  events() {
+    return this.webhooks.listEventTypes();
+  }
 
   @Get()
-  list(@Req() req: AuthedRequest) { return this.webhooks.listEndpoints(req.user.id); }
+  list(@Req() req: AuthedRequest) {
+    return this.webhooks.listEndpoints(req.user.id);
+  }
 
   @Post()
   async create(@Req() req: AuthedRequest, @Body() body: CreateWebhookDto) {
-    try { return await this.webhooks.createEndpoint(req.user.id, body); }
-    catch (e) { throw new BadRequestException((e as Error).message); }
+    try {
+      return await this.webhooks.createEndpoint(req.user.id, body);
+    } catch (e) {
+      throw new BadRequestException((e as Error).message);
+    }
   }
 
   @Put(':id')
-  async update(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: UpdateWebhookDto) {
-    try { return await this.webhooks.updateEndpoint(req.user.id, id, body); }
-    catch (e) { throw new BadRequestException((e as Error).message); }
+  async update(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: UpdateWebhookDto,
+  ) {
+    try {
+      return await this.webhooks.updateEndpoint(req.user.id, id, body);
+    } catch (e) {
+      throw new BadRequestException((e as Error).message);
+    }
   }
 
   @Delete(':id')
@@ -1013,7 +1421,11 @@ export class CloudWebhookController {
   }
 
   @Get(':id/deliveries')
-  deliveries(@Req() req: AuthedRequest, @Param('id') id: string, @Query('limit') limit?: string) {
+  deliveries(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Query('limit') limit?: string,
+  ) {
     return this.webhooks.listDeliveries(req.user.id, id, Number(limit) || 50);
   }
 }
@@ -1033,11 +1445,26 @@ export class CloudVpsMigrationController {
   }
 
   @Post('vps/:id/migration')
-  start(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { targetNode: string; targetStorage?: string; scheduledFor?: string }) {
+  start(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body()
+    body: { targetNode: string; targetStorage?: string; scheduledFor?: string },
+  ) {
     if (body?.scheduledFor) {
-      return this.mig.scheduleMigration(id, req.user.id, body.targetNode, new Date(body.scheduledFor));
+      return this.mig.scheduleMigration(
+        id,
+        req.user.id,
+        body.targetNode,
+        new Date(body.scheduledFor),
+      );
     }
-    return this.mig.migrateVPS(id, req.user.id, body?.targetNode, body?.targetStorage);
+    return this.mig.migrateVPS(
+      id,
+      req.user.id,
+      body?.targetNode,
+      body?.targetStorage,
+    );
   }
 
   @Get('migration/:id/status')
@@ -1065,13 +1492,20 @@ export class AdminVpsMigrationController {
 
   @Post('drain')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  drain(@Req() req: AuthedRequest, @Body() body: { sourceNode: string; targetNode: string }) {
-    if (!body?.sourceNode || !body?.targetNode) throw new BadRequestException('sourceNode and targetNode required');
+  drain(
+    @Req() req: AuthedRequest,
+    @Body() body: { sourceNode: string; targetNode: string },
+  ) {
+    if (!body?.sourceNode || !body?.targetNode)
+      throw new BadRequestException('sourceNode and targetNode required');
     return this.mig.drainNode(body.sourceNode, body.targetNode, req.user.id);
   }
 }
 
-import { ReferralService, type PayoutMethod } from './referral/referral.service';
+import {
+  ReferralService,
+  type PayoutMethod,
+} from './referral/referral.service';
 
 @ApiTags('Cloud / Referral')
 @ApiSecurity('bearer')
@@ -1106,12 +1540,21 @@ export class CloudReferralController {
   }
 
   @Post('payout')
-  payout(@Req() req: AuthedRequest, @Body() body: { amount: number; method: string }) {
-    return this.referral.requestPayout(req.user.id, Number(body?.amount ?? 0), String(body?.method ?? ''));
+  payout(
+    @Req() req: AuthedRequest,
+    @Body() body: { amount: number; method: string },
+  ) {
+    return this.referral.requestPayout(
+      req.user.id,
+      Number(body?.amount ?? 0),
+      String(body?.method ?? ''),
+    );
   }
 
   @Post('claim')
   claim(@Req() req: AuthedRequest, @Body() body: { code: string }) {
-    return this.referral.processReferral(req.user.id, String(body?.code ?? '')).then(() => ({ ok: true }));
+    return this.referral
+      .processReferral(req.user.id, String(body?.code ?? ''))
+      .then(() => ({ ok: true }));
   }
 }

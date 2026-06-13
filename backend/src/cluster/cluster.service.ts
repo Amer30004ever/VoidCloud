@@ -11,22 +11,26 @@ export class ClusterService {
     try {
       this.kubernetesService.ensureConnected();
       const nodes = await this.kubernetesService.coreV1Api.listNode();
-      
+
       const nodeDetails = await Promise.all(
         nodes.items.map(async (node) => {
           const nodeName = node.metadata?.name;
-          const pods = await this.kubernetesService.coreV1Api.listPodForAllNamespaces({
-            fieldSelector: `spec.nodeName=${nodeName}`,
-          });
+          const pods =
+            await this.kubernetesService.coreV1Api.listPodForAllNamespaces({
+              fieldSelector: `spec.nodeName=${nodeName}`,
+            });
 
           const cpuCapacity = node.status?.capacity?.cpu || '0';
           const memoryCapacity = node.status?.capacity?.memory || '0';
-          const storageCapacity = node.status?.capacity?.['ephemeral-storage'] || '0';
+          const storageCapacity =
+            node.status?.capacity?.['ephemeral-storage'] || '0';
 
           return {
             name: nodeName,
             labels: node.metadata?.labels || {},
-            status: node.status?.conditions?.find(c => c.type === 'Ready')?.status || 'Unknown',
+            status:
+              node.status?.conditions?.find((c) => c.type === 'Ready')
+                ?.status || 'Unknown',
             roles: this.getNodeRoles(node),
             cpu: {
               capacity: cpuCapacity,
@@ -34,21 +38,25 @@ export class ClusterService {
             },
             memory: {
               capacity: this.parseMemory(memoryCapacity),
-              allocatable: this.parseMemory(node.status?.allocatable?.memory || '0'),
+              allocatable: this.parseMemory(
+                node.status?.allocatable?.memory || '0',
+              ),
             },
             storage: {
               capacity: this.parseMemory(storageCapacity),
-              allocatable: this.parseMemory(node.status?.allocatable?.['ephemeral-storage'] || '0'),
+              allocatable: this.parseMemory(
+                node.status?.allocatable?.['ephemeral-storage'] || '0',
+              ),
             },
             podCount: pods.items.length,
-            pods: pods.items.map(pod => ({
+            pods: pods.items.map((pod) => ({
               name: pod.metadata?.name,
               namespace: pod.metadata?.namespace,
               status: pod.status?.phase,
             })),
             createdAt: node.metadata?.creationTimestamp,
           };
-        })
+        }),
       );
 
       return { nodes: nodeDetails };
@@ -61,11 +69,14 @@ export class ClusterService {
   async getNodeDetails(nodeName: string) {
     try {
       this.kubernetesService.ensureConnected();
-      const node = await this.kubernetesService.coreV1Api.readNode({ name: nodeName });
-      
-      const pods = await this.kubernetesService.coreV1Api.listPodForAllNamespaces({
-        fieldSelector: `spec.nodeName=${nodeName}`,
+      const node = await this.kubernetesService.coreV1Api.readNode({
+        name: nodeName,
       });
+
+      const pods =
+        await this.kubernetesService.coreV1Api.listPodForAllNamespaces({
+          fieldSelector: `spec.nodeName=${nodeName}`,
+        });
 
       return {
         name: node.metadata?.name,
@@ -75,11 +86,15 @@ export class ClusterService {
         conditions: node.status?.conditions || [],
         roles: this.getNodeRoles(node),
         podCount: pods.items.length,
-        pods: pods.items.map(pod => ({
+        pods: pods.items.map((pod) => ({
           name: pod.metadata?.name,
           namespace: pod.metadata?.namespace,
           status: pod.status?.phase,
-          restarts: pod.status?.containerStatuses?.reduce((sum, cs) => sum + (cs.restartCount || 0), 0) || 0,
+          restarts:
+            pod.status?.containerStatuses?.reduce(
+              (sum, cs) => sum + (cs.restartCount || 0),
+              0,
+            ) || 0,
         })),
       };
     } catch (error) {
@@ -91,21 +106,29 @@ export class ClusterService {
   async getNodePods(nodeName: string) {
     try {
       this.kubernetesService.ensureConnected();
-      const pods = await this.kubernetesService.coreV1Api.listPodForAllNamespaces({
-        fieldSelector: `spec.nodeName=${nodeName}`,
-      });
+      const pods =
+        await this.kubernetesService.coreV1Api.listPodForAllNamespaces({
+          fieldSelector: `spec.nodeName=${nodeName}`,
+        });
 
       return {
         nodeName,
         podCount: pods.items.length,
-        pods: pods.items.map(pod => ({
+        pods: pods.items.map((pod) => ({
           name: pod.metadata?.name,
           namespace: pod.metadata?.namespace,
           status: pod.status?.phase,
-          ready: pod.status?.containerStatuses?.filter(cs => cs.ready).length || 0,
+          ready:
+            pod.status?.containerStatuses?.filter((cs) => cs.ready).length || 0,
           totalContainers: pod.status?.containerStatuses?.length || 0,
-          restarts: pod.status?.containerStatuses?.reduce((sum, cs) => sum + (cs.restartCount || 0), 0) || 0,
-          age: this.calculateAge(pod.metadata?.creationTimestamp?.toISOString()),
+          restarts:
+            pod.status?.containerStatuses?.reduce(
+              (sum, cs) => sum + (cs.restartCount || 0),
+              0,
+            ) || 0,
+          age: this.calculateAge(
+            pod.metadata?.creationTimestamp?.toISOString(),
+          ),
         })),
       };
     } catch (error) {
@@ -117,10 +140,11 @@ export class ClusterService {
   async getQuotas() {
     try {
       this.kubernetesService.ensureConnected();
-      const quotas = await this.kubernetesService.coreV1Api.listResourceQuotaForAllNamespaces();
+      const quotas =
+        await this.kubernetesService.coreV1Api.listResourceQuotaForAllNamespaces();
 
       return {
-        quotas: quotas.items.map(quota => ({
+        quotas: quotas.items.map((quota) => ({
           name: quota.metadata?.name,
           namespace: quota.metadata?.namespace,
           hard: quota.status?.hard || {},
@@ -155,7 +179,9 @@ export class ClusterService {
         namespace,
         body: quota,
       });
-      this.logger.log(`Created resource quota ${name} in namespace ${namespace}`);
+      this.logger.log(
+        `Created resource quota ${name} in namespace ${namespace}`,
+      );
       return { success: true, message: `Resource quota ${name} created` };
     } catch (error) {
       this.logger.error(`Error setting quota: ${error.message}`);
@@ -166,10 +192,11 @@ export class ClusterService {
   async getNetworkPolicies() {
     try {
       this.kubernetesService.ensureConnected();
-      const policies = await this.kubernetesService.networkingV1Api.listNetworkPolicyForAllNamespaces();
+      const policies =
+        await this.kubernetesService.networkingV1Api.listNetworkPolicyForAllNamespaces();
 
       return {
-        policies: policies.items.map(policy => ({
+        policies: policies.items.map((policy) => ({
           name: policy.metadata?.name,
           namespace: policy.metadata?.namespace,
           podSelector: policy.spec?.podSelector,
@@ -200,11 +227,15 @@ export class ClusterService {
         spec,
       };
 
-      await this.kubernetesService.networkingV1Api.createNamespacedNetworkPolicy({
-        namespace,
-        body: policy,
-      });
-      this.logger.log(`Created network policy ${name} in namespace ${namespace}`);
+      await this.kubernetesService.networkingV1Api.createNamespacedNetworkPolicy(
+        {
+          namespace,
+          body: policy,
+        },
+      );
+      this.logger.log(
+        `Created network policy ${name} in namespace ${namespace}`,
+      );
       return { success: true, message: `Network policy ${name} created` };
     } catch (error) {
       this.logger.error(`Error creating network policy: ${error.message}`);
@@ -215,10 +246,11 @@ export class ClusterService {
   async getStorageClasses() {
     try {
       this.kubernetesService.ensureConnected();
-      const storageClasses = await this.kubernetesService.storageV1Api.listStorageClass();
+      const storageClasses =
+        await this.kubernetesService.storageV1Api.listStorageClass();
 
       return {
-        storageClasses: storageClasses.items.map(sc => ({
+        storageClasses: storageClasses.items.map((sc) => ({
           name: sc.metadata?.name,
           provisioner: sc.provisioner,
           reclaimPolicy: sc.reclaimPolicy,
@@ -240,7 +272,7 @@ export class ClusterService {
       const pvs = await this.kubernetesService.coreV1Api.listPersistentVolume();
 
       return {
-        persistentVolumes: pvs.items.map(pv => ({
+        persistentVolumes: pvs.items.map((pv) => ({
           name: pv.metadata?.name,
           capacity: pv.spec?.capacity || {},
           accessModes: pv.spec?.accessModes || [],
@@ -260,10 +292,11 @@ export class ClusterService {
   async getPersistentVolumeClaims() {
     try {
       this.kubernetesService.ensureConnected();
-      const pvcs = await this.kubernetesService.coreV1Api.listPersistentVolumeClaimForAllNamespaces();
+      const pvcs =
+        await this.kubernetesService.coreV1Api.listPersistentVolumeClaimForAllNamespaces();
 
       return {
-        persistentVolumeClaims: pvcs.items.map(pvc => ({
+        persistentVolumeClaims: pvcs.items.map((pvc) => ({
           name: pvc.metadata?.name,
           namespace: pvc.metadata?.namespace,
           capacity: pvc.spec?.resources?.requests?.storage || '',
@@ -275,7 +308,9 @@ export class ClusterService {
         })),
       };
     } catch (error) {
-      this.logger.error(`Error fetching persistent volume claims: ${error.message}`);
+      this.logger.error(
+        `Error fetching persistent volume claims: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -286,21 +321,24 @@ export class ClusterService {
       let events;
 
       if (namespace) {
-        events = await this.kubernetesService.coreV1Api.listNamespacedEvent({ namespace });
+        events = await this.kubernetesService.coreV1Api.listNamespacedEvent({
+          namespace,
+        });
       } else {
-        events = await this.kubernetesService.coreV1Api.listEventForAllNamespaces();
+        events =
+          await this.kubernetesService.coreV1Api.listEventForAllNamespaces();
       }
 
       let filteredEvents = events.items;
 
       if (type) {
-        filteredEvents = filteredEvents.filter(event => event.type === type);
+        filteredEvents = filteredEvents.filter((event) => event.type === type);
       }
 
       filteredEvents = filteredEvents.slice(0, limit);
 
       return {
-        events: filteredEvents.map(event => ({
+        events: filteredEvents.map((event) => ({
           type: event.type,
           reason: event.reason,
           message: event.message,
@@ -362,7 +400,10 @@ export class ClusterService {
       // These would require using kubectl or implementing the logic manually
       // For now, return a placeholder response
       this.logger.log(`Drain node ${nodeName} - requires kubectl integration`);
-      return { success: false, message: 'Node drain requires kubectl integration' };
+      return {
+        success: false,
+        message: 'Node drain requires kubectl integration',
+      };
     } catch (error) {
       this.logger.error(`Error draining node: ${error.message}`);
       throw error;
@@ -375,8 +416,13 @@ export class ClusterService {
       // Uncordon operation is not directly available in the Kubernetes client API
       // This would require using kubectl or implementing the logic manually
       // For now, return a placeholder response
-      this.logger.log(`Uncordon node ${nodeName} - requires kubectl integration`);
-      return { success: false, message: 'Node uncordon requires kubectl integration' };
+      this.logger.log(
+        `Uncordon node ${nodeName} - requires kubectl integration`,
+      );
+      return {
+        success: false,
+        message: 'Node uncordon requires kubectl integration',
+      };
     } catch (error) {
       this.logger.error(`Error uncordoning node: ${error.message}`);
       throw error;
@@ -391,7 +437,10 @@ export class ClusterService {
     const labels = node.metadata?.labels || {};
     const roles: string[] = [];
 
-    if (labels['node-role.kubernetes.io/master'] || labels['node-role.kubernetes.io/control-plane']) {
+    if (
+      labels['node-role.kubernetes.io/master'] ||
+      labels['node-role.kubernetes.io/control-plane']
+    ) {
       roles.push('master');
     }
     if (labels['node-role.kubernetes.io/worker']) {

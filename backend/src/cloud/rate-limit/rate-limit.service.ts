@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
-interface AlertPrefs { threshold: number; enabled: boolean }
+interface AlertPrefs {
+  threshold: number;
+  enabled: boolean;
+}
 
 const DEFAULT_LIMIT = 1000; // per hour, per user
 const DEFAULT_ALERT: AlertPrefs = { threshold: 80, enabled: false };
@@ -56,7 +59,9 @@ export class RateLimitService {
     const dayMap = new Map<string, number>();
     const epMap = new Map<string, number>();
     for (let i = 0; i < days; i++) {
-      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
       dayMap.set(d, 0);
     }
     for (const r of rows) {
@@ -76,21 +81,34 @@ export class RateLimitService {
   }
 
   async getAlertThresholds(userId: string): Promise<AlertPrefs> {
-    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { notificationPrefs: true } });
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { notificationPrefs: true },
+    });
     const prefs = (u?.notificationPrefs ?? {}) as Record<string, unknown>;
     const rl = (prefs.rateLimitAlert ?? {}) as Partial<AlertPrefs>;
     return {
-      threshold: typeof rl.threshold === 'number' ? rl.threshold : DEFAULT_ALERT.threshold,
-      enabled: typeof rl.enabled === 'boolean' ? rl.enabled : DEFAULT_ALERT.enabled,
+      threshold:
+        typeof rl.threshold === 'number'
+          ? rl.threshold
+          : DEFAULT_ALERT.threshold,
+      enabled:
+        typeof rl.enabled === 'boolean' ? rl.enabled : DEFAULT_ALERT.enabled,
     };
   }
 
   async setAlertThreshold(userId: string, threshold: number, enabled: boolean) {
     const t = Math.max(1, Math.min(100, Math.round(threshold)));
-    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { notificationPrefs: true } });
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { notificationPrefs: true },
+    });
     const prefs = (u?.notificationPrefs ?? {}) as Record<string, unknown>;
     prefs.rateLimitAlert = { threshold: t, enabled };
-    await this.prisma.user.update({ where: { id: userId }, data: { notificationPrefs: prefs as never } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { notificationPrefs: prefs as never },
+    });
     return { threshold: t, enabled };
   }
 }

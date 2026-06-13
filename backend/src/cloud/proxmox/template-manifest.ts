@@ -10,7 +10,15 @@ export const TEMPLATE_MANIFEST = {
     name: 'debian-starter',
     displayName: 'Debian 12',
     description: 'Lightweight VPS for starter plans',
-    packages: ['curl', 'wget', 'git', 'htop', 'nethogs', 'haveged', 'qemu-guest-agent'],
+    packages: [
+      'curl',
+      'wget',
+      'git',
+      'htop',
+      'nethogs',
+      'haveged',
+      'qemu-guest-agent',
+    ],
     hasDocker: false,
     minRam: 512,
     minDisk: 10,
@@ -22,9 +30,17 @@ export const TEMPLATE_MANIFEST = {
     displayName: 'Ubuntu 22.04',
     description: 'Full-featured VPS with Docker',
     packages: [
-      'curl', 'wget', 'git', 'htop', 'nethogs',
-      'docker', 'docker-compose', 'fail2ban', 'ufw',
-      'haveged', 'qemu-guest-agent',
+      'curl',
+      'wget',
+      'git',
+      'htop',
+      'nethogs',
+      'docker',
+      'docker-compose',
+      'fail2ban',
+      'ufw',
+      'haveged',
+      'qemu-guest-agent',
     ],
     hasDocker: true,
     minRam: 1024,
@@ -48,8 +64,10 @@ export type TemplateId = keyof typeof TEMPLATE_MANIFEST;
 
 export function getTemplateForPlan(planSlug?: string | null): TemplateId {
   const slug = (planSlug ?? '').toLowerCase();
-  if (slug === 'free' || slug === 'free-trial' || slug === 'alpine') return 9100;
-  if (slug === 'pro' || slug === 'business' || slug === 'enterprise') return 9102;
+  if (slug === 'free' || slug === 'free-trial' || slug === 'alpine')
+    return 9100;
+  if (slug === 'pro' || slug === 'business' || slug === 'enterprise')
+    return 9102;
   // starter, default, anything else
   return 9101;
 }

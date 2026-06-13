@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Logger,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiSecurity } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { IntegrationsService } from './integrations.service';
@@ -27,8 +38,13 @@ export class IntegrationsController {
 
   @Post('slack/notify')
   @ApiOperation({ summary: 'Send Slack notification' })
-  async sendSlackNotification(@Body() body: { channel: string; message: string }) {
-    return this.integrationsService.sendSlackNotification(body.channel, body.message);
+  async sendSlackNotification(
+    @Body() body: { channel: string; message: string },
+  ) {
+    return this.integrationsService.sendSlackNotification(
+      body.channel,
+      body.message,
+    );
   }
 
   // Webhook Management Endpoints
@@ -74,6 +90,9 @@ export class IntegrationsController {
     @Param('id') webhookId: string,
     @Query('limit') limit?: string,
   ) {
-    return this.integrationsService.getWebhookDeliveryHistory(webhookId, limit ? parseInt(limit) : undefined);
+    return this.integrationsService.getWebhookDeliveryHistory(
+      webhookId,
+      limit ? parseInt(limit) : undefined,
+    );
   }
 }

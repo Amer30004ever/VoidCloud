@@ -4,9 +4,9 @@ import { LogsController } from './logs.controller';
 import { KubernetesModule } from '../kubernetes/kubernetes.module';
 
 @Module({
-    imports: [KubernetesModule],
-    providers: [LogsService],
-    controllers: [LogsController],
-    exports: [LogsService],
+  imports: [KubernetesModule],
+  providers: [LogsService],
+  controllers: [LogsController],
+  exports: [LogsService],
 })
-export class LogsModule { }
+export class LogsModule {}

@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiOkResponse, ApiConsumes } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { DocumentationService } from './documentation.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
@@ -56,13 +72,19 @@ export class DocumentationController {
 
   @Get('documents/:id/versions/:versionId')
   @ApiOperation({ summary: 'Get specific version of document' })
-  async getDocumentVersion(@Param('id') id: string, @Param('versionId') versionId: string) {
+  async getDocumentVersion(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ) {
     return this.documentationService.getDocumentVersion(id, versionId);
   }
 
   @Post('documents/:id/restore/:versionId')
   @ApiOperation({ summary: 'Restore document to specific version' })
-  async restoreDocumentVersion(@Param('id') id: string, @Param('versionId') versionId: string) {
+  async restoreDocumentVersion(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ) {
     return this.documentationService.restoreDocumentVersion(id, versionId);
   }
 
@@ -70,7 +92,10 @@ export class DocumentationController {
   @ApiOperation({ summary: 'Upload document file' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadDocument(@UploadedFile() file: Multer.File, @Body() metadata: any) {
+  async uploadDocument(
+    @UploadedFile() file: Multer.File,
+    @Body() metadata: any,
+  ) {
     return this.documentationService.uploadDocument(file, metadata);
   }
 
@@ -100,13 +125,18 @@ export class DocumentationController {
 
   @Post('search')
   @ApiOperation({ summary: 'Full-text search across documents' })
-  async searchDocuments(@Body() searchData: { query: string; category?: string; tags?: string[] }) {
+  async searchDocuments(
+    @Body() searchData: { query: string; category?: string; tags?: string[] },
+  ) {
     return this.documentationService.searchDocuments(searchData);
   }
 
   @Post('documents/:id/export')
   @ApiOperation({ summary: 'Export document to different format' })
-  async exportDocument(@Param('id') id: string, @Body() exportData: { format: 'pdf' | 'html' | 'markdown' }) {
+  async exportDocument(
+    @Param('id') id: string,
+    @Body() exportData: { format: 'pdf' | 'html' | 'markdown' },
+  ) {
     return this.documentationService.exportDocument(id, exportData.format);
   }
 
@@ -118,13 +148,19 @@ export class DocumentationController {
 
   @Post('documents/:id/collaborators')
   @ApiOperation({ summary: 'Add collaborator to document' })
-  async addCollaborator(@Param('id') id: string, @Body() collaboratorData: any) {
+  async addCollaborator(
+    @Param('id') id: string,
+    @Body() collaboratorData: any,
+  ) {
     return this.documentationService.addCollaborator(id, collaboratorData);
   }
 
   @Delete('documents/:id/collaborators/:userId')
   @ApiOperation({ summary: 'Remove collaborator from document' })
-  async removeCollaborator(@Param('id') id: string, @Param('userId') userId: string) {
+  async removeCollaborator(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
     return this.documentationService.removeCollaborator(id, userId);
   }
 }

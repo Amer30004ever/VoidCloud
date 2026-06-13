@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomNamespace, randomSubdomain } from './cloud-plans.service';
@@ -71,13 +77,21 @@ export class CloudDeploymentsService {
       );
     }
     if ((input.cpu ?? 0.25) > limits.cpuLimit)
-      throw new BadRequestException(`CPU exceeds plan limit (${limits.cpuLimit})`);
+      throw new BadRequestException(
+        `CPU exceeds plan limit (${limits.cpuLimit})`,
+      );
     if ((input.memory ?? 512) > limits.memoryLimit)
-      throw new BadRequestException(`Memory exceeds plan limit (${limits.memoryLimit}MB)`);
+      throw new BadRequestException(
+        `Memory exceeds plan limit (${limits.memoryLimit}MB)`,
+      );
     if ((input.storage ?? 1024) > limits.storageLimit)
-      throw new BadRequestException(`Storage exceeds plan limit (${limits.storageLimit}MB)`);
+      throw new BadRequestException(
+        `Storage exceeds plan limit (${limits.storageLimit}MB)`,
+      );
     if ((input.customDomains?.length ?? 0) > limits.customDomainLimit)
-      throw new BadRequestException(`Domain count exceeds plan limit (${limits.customDomainLimit})`);
+      throw new BadRequestException(
+        `Domain count exceeds plan limit (${limits.customDomainLimit})`,
+      );
 
     // Payment gating: if user is awaiting cash approval, queue the VPS — DO NOT provision.
     const isPaymentPending = user.subscriptionStatus === 'PENDING_PAYMENT';
@@ -106,11 +120,14 @@ export class CloudDeploymentsService {
     });
 
     if (isPaymentPending) {
-      this.logger.log(`VPS ${deployment.id} queued: user awaiting cash payment approval.`);
+      this.logger.log(
+        `VPS ${deployment.id} queued: user awaiting cash payment approval.`,
+      );
       return {
         ...deployment,
         pendingApproval: true,
-        message: 'Your VPS will be provisioned automatically once your cash payment is approved by an admin.',
+        message:
+          'Your VPS will be provisioned automatically once your cash payment is approved by an admin.',
       };
     }
 
@@ -139,12 +156,16 @@ export class CloudDeploymentsService {
 
     // Notify user (best-effort)
     this.email.vpsReady(user.email, user.name, {
-      vpsName: deployment.name, ipv4: prov.ipv4Address, rootPassword: prov.rootPassword,
+      vpsName: deployment.name,
+      ipv4: prov.ipv4Address,
+      rootPassword: prov.rootPassword,
     });
 
     // Best-effort legacy k8s provisioning (kept for backward compat, fire-and-forget)
     this.provision(deployment.id, user.email).catch((e) =>
-      this.logger.warn(`legacy k8s provision skipped for ${deployment.id}: ${e.message}`),
+      this.logger.warn(
+        `legacy k8s provision skipped for ${deployment.id}: ${e.message}`,
+      ),
     );
 
     return {
@@ -158,33 +179,50 @@ export class CloudDeploymentsService {
     };
   }
 
-  private k8sName(name: string) { return name.toLowerCase().replace(/[^a-z0-9-]/g, '-'); }
+  private k8sName(name: string) {
+    return name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  }
 
   private async provision(deploymentId: string, userEmail: string) {
-    const d = await this.prisma.cloudDeployment.findUnique({ where: { id: deploymentId } });
+    const d = await this.prisma.cloudDeployment.findUnique({
+      where: { id: deploymentId },
+    });
     if (!d) return;
-    await this.prisma.cloudDeployment.update({ where: { id: deploymentId }, data: { status: 'DEPLOYING' } });
+    await this.prisma.cloudDeployment.update({
+      where: { id: deploymentId },
+      data: { status: 'DEPLOYING' },
+    });
     try {
       const ns = await this.k8s.createNamespace(d.userId, d.id);
       await this.k8s.applyResourceQuota(ns, {
-        cpu: String(d.cpu), memory: `${d.memory}Mi`, storage: `${d.storage}Mi`,
+        cpu: String(d.cpu),
+        memory: `${d.memory}Mi`,
+        storage: `${d.storage}Mi`,
       });
       const image = d.type === 'DOCKER_IMAGE' ? d.source : d.source;
       const name = this.k8sName(d.name);
       await this.k8s.createOrUpdateDeployment({
-        namespace: ns, name, image,
+        namespace: ns,
+        name,
+        image,
         envVars: (d.envVars as any) ?? {},
-        cpu: String(d.cpu), memory: `${d.memory}Mi`, replicas: d.replicas,
+        cpu: String(d.cpu),
+        memory: `${d.memory}Mi`,
+        replicas: d.replicas,
       });
       await this.k8s.createService(ns, name);
-      if (d.customDomains?.length) await this.k8s.createIngress(ns, name, d.customDomains);
+      if (d.customDomains?.length)
+        await this.k8s.createIngress(ns, name, d.customDomains);
       await this.prisma.cloudDeployment.update({
         where: { id: deploymentId },
         data: { status: 'RUNNING', namespace: ns, lastDeployedAt: new Date() },
       });
     } catch (e: any) {
       this.logger.error(`provision error: ${e.message}`);
-      await this.prisma.cloudDeployment.update({ where: { id: deploymentId }, data: { status: 'FAILED' } });
+      await this.prisma.cloudDeployment.update({
+        where: { id: deploymentId },
+        data: { status: 'FAILED' },
+      });
       this.email.deploymentFailed(userEmail, d.name, e.message);
     }
   }
@@ -194,9 +232,15 @@ export class CloudDeploymentsService {
     return this.prisma.cloudDeployment.update({
       where: { id },
       data: {
-        name: input.name, source: input.source, cpu: input.cpu, memory: input.memory,
-        storage: input.storage, replicas: input.replicas, customDomains: input.customDomains,
-        envVars: input.envVars as any, healthCheck: input.healthCheck,
+        name: input.name,
+        source: input.source,
+        cpu: input.cpu,
+        memory: input.memory,
+        storage: input.storage,
+        replicas: input.replicas,
+        customDomains: input.customDomains,
+        envVars: input.envVars as any,
+        healthCheck: input.healthCheck,
       },
     });
   }
@@ -204,53 +248,86 @@ export class CloudDeploymentsService {
   async remove(userId: string, id: string) {
     const d = await this.get(userId, id);
     if (d.proxmoxVMID) {
-      try { await this.proxmox.destroyContainer(d.proxmoxVMID, d.proxmoxNode ?? undefined); }
-      catch (e: any) { this.logger.warn(`Proxmox destroy failed for vmid=${d.proxmoxVMID}: ${e.message}`); }
+      try {
+        await this.proxmox.destroyContainer(
+          d.proxmoxVMID,
+          d.proxmoxNode ?? undefined,
+        );
+      } catch (e: any) {
+        this.logger.warn(
+          `Proxmox destroy failed for vmid=${d.proxmoxVMID}: ${e.message}`,
+        );
+      }
     }
-    if (d.namespace) await this.k8s.deleteNamespace(d.namespace).catch(() => undefined);
-    return this.prisma.cloudDeployment.update({ where: { id }, data: { status: 'DELETED' } });
+    if (d.namespace)
+      await this.k8s.deleteNamespace(d.namespace).catch(() => undefined);
+    return this.prisma.cloudDeployment.update({
+      where: { id },
+      data: { status: 'DELETED' },
+    });
   }
 
   async restart(userId: string, id: string) {
     const d = await this.get(userId, id);
     if (d.proxmoxVMID) {
-      await this.proxmox.rebootContainer(d.proxmoxVMID, d.proxmoxNode ?? undefined);
+      await this.proxmox.rebootContainer(
+        d.proxmoxVMID,
+        d.proxmoxNode ?? undefined,
+      );
       return this.prisma.cloudDeployment.update({
-        where: { id }, data: { status: 'RUNNING', lastDeployedAt: new Date() },
+        where: { id },
+        data: { status: 'RUNNING', lastDeployedAt: new Date() },
       });
     }
     await this.k8s.restartDeployment(d.namespace, this.k8sName(d.name));
     return this.prisma.cloudDeployment.update({
-      where: { id }, data: { status: 'DEPLOYING', lastDeployedAt: new Date() },
+      where: { id },
+      data: { status: 'DEPLOYING', lastDeployedAt: new Date() },
     });
   }
 
   async start(userId: string, id: string) {
     const d = await this.get(userId, id);
     if (!d.proxmoxVMID) throw new BadRequestException('VPS not provisioned');
-    await this.proxmox.startContainer(d.proxmoxVMID, d.proxmoxNode ?? undefined);
-    return this.prisma.cloudDeployment.update({ where: { id }, data: { status: 'RUNNING' } });
+    await this.proxmox.startContainer(
+      d.proxmoxVMID,
+      d.proxmoxNode ?? undefined,
+    );
+    return this.prisma.cloudDeployment.update({
+      where: { id },
+      data: { status: 'RUNNING' },
+    });
   }
 
   async stop(userId: string, id: string) {
     const d = await this.get(userId, id);
     if (!d.proxmoxVMID) throw new BadRequestException('VPS not provisioned');
     await this.proxmox.stopContainer(d.proxmoxVMID, d.proxmoxNode ?? undefined);
-    return this.prisma.cloudDeployment.update({ where: { id }, data: { status: 'STOPPED' } });
+    return this.prisma.cloudDeployment.update({
+      where: { id },
+      data: { status: 'STOPPED' },
+    });
   }
 
   async reinstall(userId: string, id: string) {
     const d = await this.get(userId, id);
-    if (!d.proxmoxVMID || !d.ipv4Address) throw new BadRequestException('VPS not provisioned');
+    if (!d.proxmoxVMID || !d.ipv4Address)
+      throw new BadRequestException('VPS not provisioned');
     const { rootPassword } = await this.proxmox.reinstallContainer(
       d.proxmoxVMID,
-      { hostname: d.hostname ?? d.name, cpuCores: d.cpu, ramMB: d.memory, storageGB: Math.ceil(d.storage / 1024) },
+      {
+        hostname: d.hostname ?? d.name,
+        cpuCores: d.cpu,
+        ramMB: d.memory,
+        storageGB: Math.ceil(d.storage / 1024),
+      },
       d.ipv4Address,
       d.proxmoxNode ?? undefined,
     );
     const rootPasswordHash = await bcrypt.hash(rootPassword, 10);
     await this.prisma.cloudDeployment.update({
-      where: { id }, data: { rootPasswordHash, status: 'RUNNING', provisionedAt: new Date() },
+      where: { id },
+      data: { rootPasswordHash, status: 'RUNNING', provisionedAt: new Date() },
     });
     return { ok: true, rootPassword };
   }
@@ -258,23 +335,41 @@ export class CloudDeploymentsService {
   async resetRootPassword(userId: string, id: string) {
     const d = await this.get(userId, id);
     if (!d.proxmoxVMID) throw new BadRequestException('VPS not provisioned');
-    const { rootPassword } = await this.proxmox.setRootPassword(d.proxmoxVMID, d.proxmoxNode ?? undefined);
+    const { rootPassword } = await this.proxmox.setRootPassword(
+      d.proxmoxVMID,
+      d.proxmoxNode ?? undefined,
+    );
     const rootPasswordHash = await bcrypt.hash(rootPassword, 10);
-    await this.prisma.cloudDeployment.update({ where: { id }, data: { rootPasswordHash } });
+    await this.prisma.cloudDeployment.update({
+      where: { id },
+      data: { rootPasswordHash },
+    });
     return { ok: true, rootPassword };
   }
 
-  async resize(userId: string, id: string, input: { cpu?: number; memory?: number; storage?: number }) {
+  async resize(
+    userId: string,
+    id: string,
+    input: { cpu?: number; memory?: number; storage?: number },
+  ) {
     const d = await this.get(userId, id);
     if (!d.proxmoxVMID) throw new BadRequestException('VPS not provisioned');
     await this.proxmox.resizeContainer(
       d.proxmoxVMID,
-      { cpuCores: input.cpu, ramMB: input.memory, storageGB: input.storage ? Math.ceil(input.storage / 1024) : undefined },
+      {
+        cpuCores: input.cpu,
+        ramMB: input.memory,
+        storageGB: input.storage ? Math.ceil(input.storage / 1024) : undefined,
+      },
       d.proxmoxNode ?? undefined,
     );
     return this.prisma.cloudDeployment.update({
       where: { id },
-      data: { cpu: input.cpu ?? d.cpu, memory: input.memory ?? d.memory, storage: input.storage ?? d.storage },
+      data: {
+        cpu: input.cpu ?? d.cpu,
+        memory: input.memory ?? d.memory,
+        storage: input.storage ?? d.storage,
+      },
     });
   }
 
@@ -282,7 +377,10 @@ export class CloudDeploymentsService {
     const d = await this.get(userId, id);
     if (d.proxmoxVMID) {
       try {
-        const status = await this.proxmox.getStatus(d.proxmoxVMID, d.proxmoxNode ?? undefined);
+        const status = await this.proxmox.getStatus(
+          d.proxmoxVMID,
+          d.proxmoxNode ?? undefined,
+        );
         return { live: status, range: [] };
       } catch (e: any) {
         this.logger.warn(`Proxmox status failed: ${e.message}`);
@@ -300,9 +398,16 @@ export class CloudDeploymentsService {
     const d = await this.get(userId, id);
     if (d.proxmoxVMID) {
       try {
-        const s = await this.proxmox.getStatus(d.proxmoxVMID, d.proxmoxNode ?? undefined);
-        const ramPercent = s.memTotalMB ? (s.memUsedMB / s.memTotalMB) * 100 : 0;
-        const diskPercent = s.diskTotalGB ? (s.diskUsedGB / s.diskTotalGB) * 100 : 0;
+        const s = await this.proxmox.getStatus(
+          d.proxmoxVMID,
+          d.proxmoxNode ?? undefined,
+        );
+        const ramPercent = s.memTotalMB
+          ? (s.memUsedMB / s.memTotalMB) * 100
+          : 0;
+        const diskPercent = s.diskTotalGB
+          ? (s.diskUsedGB / s.diskTotalGB) * 100
+          : 0;
         return {
           status: s.status,
           cpuPercent: +s.cpuPercent.toFixed(1),
@@ -339,16 +444,23 @@ export class CloudDeploymentsService {
   }
 
   async tailLogs(userId: string, id: string) {
-
     const d = await this.get(userId, id);
     const body = await this.k8s.getPodLogs(d.namespace, this.k8sName(d.name));
     return { lines: (body || '').split(/\r?\n/).filter(Boolean) };
   }
 
-  async streamLogs(userId: string, id: string, onLine: (l: string) => void): Promise<() => void> {
+  async streamLogs(
+    userId: string,
+    id: string,
+    onLine: (l: string) => void,
+  ): Promise<() => void> {
     const d = await this.get(userId, id);
     if (!this.k8s.isEnabled()) {
-      ['INFO  starting application…', 'INFO  http listening on :3000', 'INFO  ready'].forEach(onLine);
+      [
+        'INFO  starting application…',
+        'INFO  http listening on :3000',
+        'INFO  ready',
+      ].forEach(onLine);
       return () => undefined;
     }
     return this.k8s.streamPodLogs(d.namespace, this.k8sName(d.name), onLine);
@@ -375,15 +487,24 @@ export class CloudDeploymentsService {
     return {
       plan: user.cloudPlan,
       limits,
-      used: { ...used, deployments: deployments.length, apiRequests: Math.floor(Math.random() * limits.apiRequestLimit * 0.4) },
+      used: {
+        ...used,
+        deployments: deployments.length,
+        apiRequests: Math.floor(Math.random() * limits.apiRequestLimit * 0.4),
+      },
     };
   }
 
   effectiveLimits(user: any) {
     const override = (user.overrideLimits ?? {}) as Record<string, number>;
     const plan = user.cloudPlan ?? {
-      cpuLimit: 0.25, memoryLimit: 512, storageLimit: 1024,
-      deploymentLimit: 1, customDomainLimit: 0, apiRequestLimit: 10000, teamMemberLimit: 1,
+      cpuLimit: 0.25,
+      memoryLimit: 512,
+      storageLimit: 1024,
+      deploymentLimit: 1,
+      customDomainLimit: 0,
+      apiRequestLimit: 10000,
+      teamMemberLimit: 1,
     };
     return {
       cpuLimit: override.cpuLimit ?? plan.cpuLimit,

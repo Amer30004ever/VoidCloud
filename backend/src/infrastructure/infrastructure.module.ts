@@ -4,9 +4,9 @@ import { InfrastructureController } from './infrastructure.controller';
 import { KubernetesModule } from '../kubernetes/kubernetes.module';
 
 @Module({
-    imports: [KubernetesModule],
-    providers: [InfrastructureService],
-    controllers: [InfrastructureController],
-    exports: [InfrastructureService],
+  imports: [KubernetesModule],
+  providers: [InfrastructureService],
+  controllers: [InfrastructureController],
+  exports: [InfrastructureService],
 })
-export class InfrastructureModule { }
+export class InfrastructureModule {}

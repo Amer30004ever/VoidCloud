@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -10,7 +18,9 @@ import { MailerService } from '../mailer/mailer.service';
 
 const ADMIN_ROLES = [Role.ADMIN, Role.SUPER_ADMIN] as const;
 
-interface AuthedRequest { user: { id: string; role: Role; email: string } }
+interface AuthedRequest {
+  user: { id: string; role: Role; email: string };
+}
 
 /**
  * Admin-only cluster + SMTP diagnostics surface.
@@ -44,7 +54,10 @@ export class AdminClusterController {
   async namespaces(@Query('limit') limit?: string) {
     const data = await this.dashboard.getRunningNamespaces();
     const list = data.namespaces ?? [];
-    const cap = Math.max(1, Math.min(parseInt(limit ?? '0', 10) || list.length, 200));
+    const cap = Math.max(
+      1,
+      Math.min(parseInt(limit ?? '0', 10) || list.length, 200),
+    );
     return {
       total: list.length,
       namespaces: list.slice(0, cap),
@@ -64,7 +77,11 @@ export class AdminClusterController {
       }
       return { total, byPhase };
     } catch (e: any) {
-      return { total: 0, byPhase: {}, error: e?.message ?? 'Kubernetes unavailable' };
+      return {
+        total: 0,
+        byPhase: {},
+        error: e?.message ?? 'Kubernetes unavailable',
+      };
     }
   }
 

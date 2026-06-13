@@ -15,32 +15,48 @@ export class StripeService {
     }
   }
 
-  isLive() { return !!this.stripe; }
+  isLive() {
+    return !!this.stripe;
+  }
 
   async createCheckoutSession(args: {
-    userEmail: string; planName: string; priceUSD: number;
-    invoiceId: string; userId: string; planId: string;
-    successUrl: string; cancelUrl: string;
+    userEmail: string;
+    planName: string;
+    priceUSD: number;
+    invoiceId: string;
+    userId: string;
+    planId: string;
+    successUrl: string;
+    cancelUrl: string;
   }) {
     if (!this.stripe) {
-      return { sessionId: `stub_${args.invoiceId}`, url: `${args.successUrl}?stub=1` };
+      return {
+        sessionId: `stub_${args.invoiceId}`,
+        url: `${args.successUrl}?stub=1`,
+      };
     }
     const session = await this.stripe.checkout.sessions.create({
       customer_email: args.userEmail,
       payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: { name: args.planName },
-          unit_amount: Math.round(args.priceUSD * 100),
-          recurring: { interval: 'month' },
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: { name: args.planName },
+            unit_amount: Math.round(args.priceUSD * 100),
+            recurring: { interval: 'month' },
+          },
+          quantity: 1,
         },
-        quantity: 1,
-      }],
+      ],
       mode: 'subscription',
       success_url: args.successUrl,
       cancel_url: args.cancelUrl,
-      metadata: { userId: args.userId, planId: args.planId, invoiceId: args.invoiceId },
+      metadata: {
+        userId: args.userId,
+        planId: args.planId,
+        invoiceId: args.invoiceId,
+      },
     });
     return { sessionId: session.id, url: session.url };
   }

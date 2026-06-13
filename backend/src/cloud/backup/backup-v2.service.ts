@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BackupType, Prisma } from '@prisma/client';
 
@@ -23,18 +29,26 @@ export class BackupServiceV2 implements OnModuleInit {
     if (process.env.BACKUP_SCHEDULER_DISABLED === '1') return;
     // Check every hour for scheduled backups + retention cleanup
     this.scheduleTimer = setInterval(
-      () => this.processScheduledBackups().catch((e) => this.logger.warn(`scheduled: ${e.message}`)),
+      () =>
+        this.processScheduledBackups().catch((e) =>
+          this.logger.warn(`scheduled: ${e.message}`),
+        ),
       60 * 60 * 1000,
     );
     this.cleanupTimer = setInterval(
-      () => this.cleanupExpiredBackups().catch((e) => this.logger.warn(`cleanup: ${e.message}`)),
+      () =>
+        this.cleanupExpiredBackups().catch((e) =>
+          this.logger.warn(`cleanup: ${e.message}`),
+        ),
       60 * 60 * 1000,
     );
   }
 
   // ---------------- VPS ownership ----------------
   private async assertVpsOwner(vpsId: string, userId: string) {
-    const vps = await this.prisma.cloudDeployment.findUnique({ where: { id: vpsId } });
+    const vps = await this.prisma.cloudDeployment.findUnique({
+      where: { id: vpsId },
+    });
     if (!vps) throw new NotFoundException('VPS not found');
     if (vps.userId !== userId) throw new ForbiddenException();
     return vps;
@@ -51,7 +65,12 @@ export class BackupServiceV2 implements OnModuleInit {
   }
 
   // ---------------- Create / List / Delete / Restore ----------------
-  async createBackup(vpsId: string, userId: string, name?: string, type: BackupType = BackupType.MANUAL) {
+  async createBackup(
+    vpsId: string,
+    userId: string,
+    name?: string,
+    type: BackupType = BackupType.MANUAL,
+  ) {
     await this.assertVpsOwner(vpsId, userId);
     const bucket = process.env.S3_BACKUP_BUCKET || 'amercloud-backups';
     const ts = Date.now();
@@ -60,7 +79,8 @@ export class BackupServiceV2 implements OnModuleInit {
       data: {
         deploymentId: vpsId,
         userId,
-        name: name?.trim() || `backup-${new Date(ts).toISOString().slice(0, 10)}`,
+        name:
+          name?.trim() || `backup-${new Date(ts).toISOString().slice(0, 10)}`,
         type,
         storagePath: path,
         status: 'IN_PROGRESS',
@@ -84,7 +104,10 @@ export class BackupServiceV2 implements OnModuleInit {
       return completed;
     } catch (e: any) {
       this.logger.error(`backup failed: ${e.message}`);
-      return this.prisma.cloudBackup.update({ where: { id: record.id }, data: { status: 'FAILED' } });
+      return this.prisma.cloudBackup.update({
+        where: { id: record.id },
+        data: { status: 'FAILED' },
+      });
     }
   }
 
@@ -95,12 +118,20 @@ export class BackupServiceV2 implements OnModuleInit {
     });
   }
 
-  async listAllForUser(userId: string, opts?: { vpsId?: string; from?: Date; to?: Date }) {
+  async listAllForUser(
+    userId: string,
+    opts?: { vpsId?: string; from?: Date; to?: Date },
+  ) {
     const where: Prisma.CloudBackupWhereInput = {
       deployment: { userId },
       ...(opts?.vpsId ? { deploymentId: opts.vpsId } : {}),
       ...(opts?.from || opts?.to
-        ? { createdAt: { ...(opts.from ? { gte: opts.from } : {}), ...(opts.to ? { lte: opts.to } : {}) } }
+        ? {
+            createdAt: {
+              ...(opts.from ? { gte: opts.from } : {}),
+              ...(opts.to ? { lte: opts.to } : {}),
+            },
+          }
         : {}),
     };
     return this.prisma.cloudBackup.findMany({
@@ -124,7 +155,10 @@ export class BackupServiceV2 implements OnModuleInit {
       select: { id: true },
     });
     const ownedIds = owned.map((o) => o.id);
-    if (ownedIds.length) await this.prisma.cloudBackup.deleteMany({ where: { id: { in: ownedIds } } });
+    if (ownedIds.length)
+      await this.prisma.cloudBackup.deleteMany({
+        where: { id: { in: ownedIds } },
+      });
     return { deleted: ownedIds.length };
   }
 
@@ -132,7 +166,9 @@ export class BackupServiceV2 implements OnModuleInit {
     const b = await this.assertBackupOwner(backupId, userId);
     if (targetVpsId) await this.assertVpsOwner(targetVpsId, userId);
     const restoreTo = targetVpsId ?? b.deploymentId;
-    this.logger.log(`Restoring backup ${backupId} -> VPS ${restoreTo} from ${b.storagePath}`);
+    this.logger.log(
+      `Restoring backup ${backupId} -> VPS ${restoreTo} from ${b.storagePath}`,
+    );
     // TODO: real Proxmox restore
     return { ok: true, restoredTo: restoreTo };
   }
@@ -161,7 +197,9 @@ export class BackupServiceV2 implements OnModuleInit {
 
   // ---------------- Periodic ----------------
   private async enforceRetention(vpsId: string) {
-    const sched = await this.prisma.backupSchedule.findUnique({ where: { vpsId } });
+    const sched = await this.prisma.backupSchedule.findUnique({
+      where: { vpsId },
+    });
     const keep = sched?.retention ?? 14;
     const all = await this.prisma.cloudBackup.findMany({
       where: { deploymentId: vpsId, status: 'COMPLETED' },
@@ -170,8 +208,12 @@ export class BackupServiceV2 implements OnModuleInit {
     });
     const toDelete = all.slice(keep).map((b) => b.id);
     if (toDelete.length) {
-      await this.prisma.cloudBackup.deleteMany({ where: { id: { in: toDelete } } });
-      this.logger.log(`retention: deleted ${toDelete.length} backups for VPS ${vpsId}`);
+      await this.prisma.cloudBackup.deleteMany({
+        where: { id: { in: toDelete } },
+      });
+      this.logger.log(
+        `retention: deleted ${toDelete.length} backups for VPS ${vpsId}`,
+      );
     }
   }
 
@@ -185,18 +227,38 @@ export class BackupServiceV2 implements OnModuleInit {
       if (!this.shouldRun(s, now)) continue;
       try {
         this.logger.log(`scheduled backup for VPS ${s.vpsId}`);
-        await this.createBackup(s.vpsId, s.vps.userId, `auto-${now.toISOString().slice(0, 16)}`, BackupType.SCHEDULED);
-        await this.prisma.backupSchedule.update({ where: { vpsId: s.vpsId }, data: { lastRunAt: now } });
+        await this.createBackup(
+          s.vpsId,
+          s.vps.userId,
+          `auto-${now.toISOString().slice(0, 16)}`,
+          BackupType.SCHEDULED,
+        );
+        await this.prisma.backupSchedule.update({
+          where: { vpsId: s.vpsId },
+          data: { lastRunAt: now },
+        });
       } catch (e: any) {
-        this.logger.warn(`scheduled backup failed for ${s.vpsId}: ${e.message}`);
+        this.logger.warn(
+          `scheduled backup failed for ${s.vpsId}: ${e.message}`,
+        );
       }
     }
   }
 
-  private shouldRun(s: { frequency: string; hour: number | null; dayOfWeek: number | null; dayOfMonth: number | null; lastRunAt: Date | null }, now: Date): boolean {
+  private shouldRun(
+    s: {
+      frequency: string;
+      hour: number | null;
+      dayOfWeek: number | null;
+      dayOfMonth: number | null;
+      lastRunAt: Date | null;
+    },
+    now: Date,
+  ): boolean {
     const hour = s.hour ?? 2;
     if (now.getHours() !== hour) return false;
-    if (s.lastRunAt && now.getTime() - s.lastRunAt.getTime() < 60 * 60 * 1000) return false;
+    if (s.lastRunAt && now.getTime() - s.lastRunAt.getTime() < 60 * 60 * 1000)
+      return false;
     if (s.frequency === 'DAILY') return true;
     if (s.frequency === 'WEEKLY') return now.getDay() === (s.dayOfWeek ?? 0);
     if (s.frequency === 'MONTHLY') return now.getDate() === (s.dayOfMonth ?? 1);

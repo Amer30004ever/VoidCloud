@@ -17,10 +17,30 @@ export class PlatformService {
     const base = process.env.OBSERVABILITY_BASE_URL ?? '';
     return {
       links: [
-        { id: 'prometheus', name: 'Prometheus', url: process.env.PROMETHEUS_URL ?? `${base}/prometheus`, category: 'metrics' },
-        { id: 'grafana', name: 'Grafana', url: process.env.GRAFANA_URL ?? `${base}/grafana`, category: 'dashboards' },
-        { id: 'jaeger', name: 'Jaeger', url: process.env.JAEGER_URL ?? `${base}/jaeger`, category: 'tracing' },
-        { id: 'loki', name: 'Loki', url: process.env.LOKI_URL ?? `${base}/loki`, category: 'logs' },
+        {
+          id: 'prometheus',
+          name: 'Prometheus',
+          url: process.env.PROMETHEUS_URL ?? `${base}/prometheus`,
+          category: 'metrics',
+        },
+        {
+          id: 'grafana',
+          name: 'Grafana',
+          url: process.env.GRAFANA_URL ?? `${base}/grafana`,
+          category: 'dashboards',
+        },
+        {
+          id: 'jaeger',
+          name: 'Jaeger',
+          url: process.env.JAEGER_URL ?? `${base}/jaeger`,
+          category: 'tracing',
+        },
+        {
+          id: 'loki',
+          name: 'Loki',
+          url: process.env.LOKI_URL ?? `${base}/loki`,
+          category: 'logs',
+        },
       ],
     };
   }
@@ -36,7 +56,10 @@ export class PlatformService {
       repository: repo,
       branch,
       provider: process.env.GITOPS_PROVIDER ?? 'github',
-      syncStatus: recent[0]?.status === 'SUCCESS' || recent[0]?.status === 'TRIGGERED' ? 'healthy' : 'pending',
+      syncStatus:
+        recent[0]?.status === 'SUCCESS' || recent[0]?.status === 'TRIGGERED'
+          ? 'healthy'
+          : 'pending',
       lastSyncedAt: recent[0]?.createdAt ?? null,
       recentCommits: recent.map((item) => ({
         id: item.id,
@@ -49,7 +72,9 @@ export class PlatformService {
 
   async forceGitOpsSync(initiatedBy?: string) {
     const repo = process.env.GITOPS_REPO ?? 'Amer30004ever/Amer-Devops-Poral';
-    const [owner, name] = repo.includes('/') ? repo.split('/') : ['Amer30004ever', repo];
+    const [owner, name] = repo.includes('/')
+      ? repo.split('/')
+      : ['Amer30004ever', repo];
     const record = await this.prisma.deploymentHistory.create({
       data: {
         provider: 'gitops',
@@ -77,7 +102,9 @@ export class PlatformService {
       const matchedPods = pods.filter((pod) => {
         if (pod.metadata?.namespace !== namespace) return false;
         const labels = pod.metadata?.labels ?? {};
-        return Object.entries(selector).every(([key, value]) => labels[key] === value);
+        return Object.entries(selector).every(
+          ([key, value]) => labels[key] === value,
+        );
       });
 
       return {
@@ -85,7 +112,9 @@ export class PlatformService {
         type: 'service',
         name,
         namespace,
-        status: matchedPods.some((pod) => pod.status?.phase === 'Running') ? 'healthy' : 'warning',
+        status: matchedPods.some((pod) => pod.status?.phase === 'Running')
+          ? 'healthy'
+          : 'warning',
         pods: matchedPods.map((pod) => ({
           id: `pod:${namespace}/${pod.metadata?.name}`,
           type: 'pod',
@@ -114,7 +143,11 @@ export class PlatformService {
       in7Days: Math.min(100, Math.round(current * 1.08)),
       in30Days: Math.min(100, Math.round(current * 1.25)),
       recommendation:
-        current > 80 ? 'Scale cluster or reduce workloads' : current > 60 ? 'Monitor closely' : 'Capacity healthy',
+        current > 80
+          ? 'Scale cluster or reduce workloads'
+          : current > 60
+            ? 'Monitor closely'
+            : 'Capacity healthy',
     });
 
     return {
@@ -129,11 +162,26 @@ export class PlatformService {
 
   async getHeatmap() {
     const pods = await this.kubernetesService.getPods();
-    const namespaceMap = new Map<string, { namespace: string; pods: number; running: number; failed: number; pending: number }>();
+    const namespaceMap = new Map<
+      string,
+      {
+        namespace: string;
+        pods: number;
+        running: number;
+        failed: number;
+        pending: number;
+      }
+    >();
 
     for (const pod of pods) {
       const namespace = pod.metadata?.namespace ?? 'default';
-      const existing = namespaceMap.get(namespace) ?? { namespace, pods: 0, running: 0, failed: 0, pending: 0 };
+      const existing = namespaceMap.get(namespace) ?? {
+        namespace,
+        pods: 0,
+        running: 0,
+        failed: 0,
+        pending: 0,
+      };
       existing.pods += 1;
       const phase = pod.status?.phase;
       if (phase === 'Running') existing.running += 1;
@@ -146,14 +194,21 @@ export class PlatformService {
       namespaces: Array.from(namespaceMap.values()).map((item) => ({
         ...item,
         intensity: Math.min(100, item.pods * 8 + item.failed * 20),
-        status: item.failed > 0 ? 'critical' : item.pending > 0 ? 'warning' : 'healthy',
+        status:
+          item.failed > 0
+            ? 'critical'
+            : item.pending > 0
+              ? 'warning'
+              : 'healthy',
       })),
       generatedAt: new Date().toISOString(),
     };
   }
 
   async getClusters() {
-    let clusters = await this.prisma.clusterConfig.findMany({ orderBy: { createdAt: 'asc' } });
+    let clusters = await this.prisma.clusterConfig.findMany({
+      orderBy: { createdAt: 'asc' },
+    });
     if (!clusters.length) {
       clusters = [
         {
@@ -170,7 +225,10 @@ export class PlatformService {
         },
       ] as typeof clusters;
     }
-    return { clusters, activeClusterId: clusters.find((c) => c.isDefault)?.id ?? clusters[0]?.id };
+    return {
+      clusters,
+      activeClusterId: clusters.find((c) => c.isDefault)?.id ?? clusters[0]?.id,
+    };
   }
 
   async createCluster(data: {
@@ -182,7 +240,9 @@ export class PlatformService {
     isDefault?: boolean;
   }) {
     if (data.isDefault) {
-      await this.prisma.clusterConfig.updateMany({ data: { isDefault: false } });
+      await this.prisma.clusterConfig.updateMany({
+        data: { isDefault: false },
+      });
     }
     const cluster = await this.prisma.clusterConfig.create({
       data: {
@@ -198,7 +258,9 @@ export class PlatformService {
   }
 
   async activateCluster(id: string) {
-    const cluster = await this.prisma.clusterConfig.findUnique({ where: { id } });
+    const cluster = await this.prisma.clusterConfig.findUnique({
+      where: { id },
+    });
     if (!cluster) throw new NotFoundException('Cluster not found');
     await this.prisma.clusterConfig.updateMany({ data: { isDefault: false } });
     const updated = await this.prisma.clusterConfig.update({

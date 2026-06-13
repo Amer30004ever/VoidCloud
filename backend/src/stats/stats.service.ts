@@ -115,7 +115,8 @@ export class StatsService {
 
   async getRecentDeployments(limit: number = 5) {
     try {
-      const deployments = await this.kubernetesService.getRecentDeployments(limit);
+      const deployments =
+        await this.kubernetesService.getRecentDeployments(limit);
       return { deployments };
     } catch (error) {
       this.logger.error(`Error fetching recent deployments: ${error.message}`);
@@ -136,7 +137,10 @@ export class StatsService {
   async getServiceStatus() {
     try {
       const pods = await this.kubernetesService.getPods();
-      const namespaceMap = new Map<string, { status: string; uptime: string; lastIssue: string }>();
+      const namespaceMap = new Map<
+        string,
+        { status: string; uptime: string; lastIssue: string }
+      >();
 
       // Group pods by namespace
       const podsByNamespace = new Map<string, any[]>();
@@ -153,7 +157,11 @@ export class StatsService {
       // Calculate health for each namespace
       for (const [namespace, namespacePods] of podsByNamespace.entries()) {
         if (namespacePods.length === 0) {
-          namespaceMap.set(namespace, { status: 'Unknown', uptime: 'N/A', lastIssue: 'No pods' });
+          namespaceMap.set(namespace, {
+            status: 'Unknown',
+            uptime: 'N/A',
+            lastIssue: 'No pods',
+          });
           continue;
         }
 
@@ -165,7 +173,11 @@ export class StatsService {
 
         for (const pod of namespacePods) {
           const podStatus = pod.status?.phase;
-          const restarts = pod.status?.containerStatuses?.reduce((sum, cs) => sum + (cs.restartCount || 0), 0) || 0;
+          const restarts =
+            pod.status?.containerStatuses?.reduce(
+              (sum, cs) => sum + (cs.restartCount || 0),
+              0,
+            ) || 0;
           const startTime = pod.status?.startTime;
 
           if (startTime) {
@@ -198,7 +210,12 @@ export class StatsService {
         });
       }
 
-      return { services: Array.from(namespaceMap.entries()).map(([name, data]) => ({ name, ...data })) };
+      return {
+        services: Array.from(namespaceMap.entries()).map(([name, data]) => ({
+          name,
+          ...data,
+        })),
+      };
     } catch (error) {
       this.logger.error(`Error fetching service status: ${error.message}`);
       return { services: [] };
@@ -229,7 +246,8 @@ export class StatsService {
         namespace: pod.metadata?.namespace,
         status: pod.status?.phase ?? 'Unknown',
         restarts: (pod.status?.containerStatuses || []).reduce(
-          (total: number, c: { restartCount?: number }) => total + (c.restartCount ?? 0),
+          (total: number, c: { restartCount?: number }) =>
+            total + (c.restartCount ?? 0),
           0,
         ),
         age: pod.metadata?.creationTimestamp,
@@ -242,7 +260,8 @@ export class StatsService {
 
   async getRecentActivityList() {
     try {
-      const recentDeployments = await this.kubernetesService.getRecentDeployments(10);
+      const recentDeployments =
+        await this.kubernetesService.getRecentDeployments(10);
       return recentDeployments.map((dep) => ({
         type: 'deployment',
         title: `Deployed ${dep.name}`,

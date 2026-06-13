@@ -1,5 +1,12 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { KubeConfig, CoreV1Api, AppsV1Api, CustomObjectsApi, NetworkingV1Api, StorageV1Api } from '@kubernetes/client-node';
+import {
+  KubeConfig,
+  CoreV1Api,
+  AppsV1Api,
+  CustomObjectsApi,
+  NetworkingV1Api,
+  StorageV1Api,
+} from '@kubernetes/client-node';
 
 @Injectable()
 export class KubernetesService implements OnModuleInit {
@@ -15,7 +22,9 @@ export class KubernetesService implements OnModuleInit {
     try {
       await this.initializeKubernetesClient();
     } catch (error) {
-      this.logger.error(`Failed to initialize Kubernetes client: ${error.message}`);
+      this.logger.error(
+        `Failed to initialize Kubernetes client: ${error.message}`,
+      );
       // Don't throw - allow app to start even if K8s is not available
     }
   }
@@ -24,14 +33,18 @@ export class KubernetesService implements OnModuleInit {
     const kubeConfig = new KubeConfig();
 
     // Check if running in Kubernetes (service account token exists)
-    const isInCluster = process.env.KUBERNETES_SERVICE_HOST && process.env.KUBERNETES_SERVICE_PORT;
+    const isInCluster =
+      process.env.KUBERNETES_SERVICE_HOST &&
+      process.env.KUBERNETES_SERVICE_PORT;
 
     if (isInCluster) {
       // When running in Kubernetes, use in-cluster config
       try {
         kubeConfig.loadFromCluster();
         this.applyDevClusterTlsSettings(kubeConfig);
-        this.logger.log('Loaded Kubernetes config from cluster (in-cluster mode)');
+        this.logger.log(
+          'Loaded Kubernetes config from cluster (in-cluster mode)',
+        );
       } catch (error) {
         this.logger.error(`Failed to load in-cluster config: ${error.message}`);
         throw error;
@@ -41,9 +54,13 @@ export class KubernetesService implements OnModuleInit {
       try {
         kubeConfig.loadFromDefault();
         this.applyDevClusterTlsSettings(kubeConfig);
-        this.logger.log('Loaded Kubernetes config from default location (development mode)');
+        this.logger.log(
+          'Loaded Kubernetes config from default location (development mode)',
+        );
       } catch (error) {
-        this.logger.warn('Could not load Kubernetes config from default location');
+        this.logger.warn(
+          'Could not load Kubernetes config from default location',
+        );
         throw error;
       }
     }
@@ -86,8 +103,10 @@ export class KubernetesService implements OnModuleInit {
     try {
       const res = await this.coreV1Api.listNamespace();
       return res.items
-        .map(ns => ns.metadata?.name)
-        .filter(name => name && name !== 'kube-system' && !name.startsWith('kube-'));
+        .map((ns) => ns.metadata?.name)
+        .filter(
+          (name) => name && name !== 'kube-system' && !name.startsWith('kube-'),
+        );
     } catch (error) {
       this.logger.error(`Error fetching namespaces: ${error.message}`);
       throw error;
@@ -124,7 +143,7 @@ export class KubernetesService implements OnModuleInit {
     this.ensureConnected();
     try {
       const pods = await this.getPods();
-      return pods.filter(pod => pod.status?.phase === 'Running').length;
+      return pods.filter((pod) => pod.status?.phase === 'Running').length;
     } catch (error) {
       this.logger.error(`Error counting running pods: ${error.message}`);
       throw error;
@@ -149,8 +168,10 @@ export class KubernetesService implements OnModuleInit {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      return deployments.filter(deployment => {
-        const creationTime = new Date(deployment.metadata?.creationTimestamp || '');
+      return deployments.filter((deployment) => {
+        const creationTime = new Date(
+          deployment.metadata?.creationTimestamp || '',
+        );
         return creationTime >= today;
       }).length;
     } catch (error) {
@@ -225,7 +246,11 @@ export class KubernetesService implements OnModuleInit {
     }
   }
 
-  async patchDeployment(namespace: string, deploymentName: string, patch: any): Promise<any> {
+  async patchDeployment(
+    namespace: string,
+    deploymentName: string,
+    patch: any,
+  ): Promise<any> {
     this.ensureConnected();
     try {
       const res = await this.appsV1Api.patchNamespacedDeployment({
@@ -246,7 +271,7 @@ export class KubernetesService implements OnModuleInit {
     image: string,
     replicas: number = 1,
     port: number = 3000,
-    env: Record<string, string> = {}
+    env: Record<string, string> = {},
   ): Promise<any> {
     this.ensureConnected();
     try {
@@ -304,7 +329,10 @@ export class KubernetesService implements OnModuleInit {
     }
   }
 
-  async deleteDeployment(namespace: string, deploymentName: string): Promise<void> {
+  async deleteDeployment(
+    namespace: string,
+    deploymentName: string,
+  ): Promise<void> {
     this.ensureConnected();
     try {
       await this.appsV1Api.deleteNamespacedDeployment({
@@ -317,7 +345,10 @@ export class KubernetesService implements OnModuleInit {
     }
   }
 
-  async getDeploymentYaml(namespace: string, deploymentName: string): Promise<any> {
+  async getDeploymentYaml(
+    namespace: string,
+    deploymentName: string,
+  ): Promise<any> {
     this.ensureConnected();
     try {
       const deployment = await this.appsV1Api.readNamespacedDeployment({
@@ -331,7 +362,11 @@ export class KubernetesService implements OnModuleInit {
     }
   }
 
-  async updateDeploymentYaml(namespace: string, deploymentName: string, yaml: any): Promise<any> {
+  async updateDeploymentYaml(
+    namespace: string,
+    deploymentName: string,
+    yaml: any,
+  ): Promise<any> {
     this.ensureConnected();
     try {
       const res = await this.appsV1Api.patchNamespacedDeployment({
@@ -349,7 +384,7 @@ export class KubernetesService implements OnModuleInit {
   async updateConfigMap(
     namespace: string,
     configMapName: string,
-    data: Record<string, string>
+    data: Record<string, string>,
   ): Promise<any> {
     this.ensureConnected();
     try {
@@ -386,7 +421,7 @@ export class KubernetesService implements OnModuleInit {
       timestamps?: boolean;
       sinceSeconds?: number;
       container?: string;
-    } = {}
+    } = {},
   ): Promise<string> {
     this.ensureConnected();
     try {
@@ -398,7 +433,8 @@ export class KubernetesService implements OnModuleInit {
       if (options.previous) requestOptions.previous = true;
       if (options.tailLines) requestOptions.tailLines = options.tailLines;
       if (options.timestamps) requestOptions.timestamps = true;
-      if (options.sinceSeconds) requestOptions.sinceSeconds = options.sinceSeconds;
+      if (options.sinceSeconds)
+        requestOptions.sinceSeconds = options.sinceSeconds;
       if (options.container) requestOptions.container = options.container;
 
       const logs = await this.coreV1Api.readNamespacedPodLog(requestOptions);
@@ -429,7 +465,9 @@ export class KubernetesService implements OnModuleInit {
       const pods = await this.getPods();
       const nodes = await this.coreV1Api.listNode();
 
-      this.logger.log(`Fetched ${pods.length} pods and ${nodes.items.length} nodes for cluster metrics`);
+      this.logger.log(
+        `Fetched ${pods.length} pods and ${nodes.items.length} nodes for cluster metrics`,
+      );
 
       // 1) Get live usage from metrics.k8s.io for each node
       const liveUsage = await this.getLiveClusterUsageFromMetricsApi();
@@ -440,14 +478,21 @@ export class KubernetesService implements OnModuleInit {
       for (const node of nodes.items) {
         const nodeName = node.metadata?.name;
         const cpuCapacity = parseFloat(node.status?.capacity?.cpu || '0');
-        const memoryCapacity = this.parseMemory(node.status?.capacity?.memory || '0');
-        const storageCapacity = this.parseMemory(node.status?.capacity?.['ephemeral-storage'] || '0');
+        const memoryCapacity = this.parseMemory(
+          node.status?.capacity?.memory || '0',
+        );
+        const storageCapacity = this.parseMemory(
+          node.status?.capacity?.['ephemeral-storage'] || '0',
+        );
 
         // Get live usage for this node from metrics API
-        const nodeLiveUsage = liveUsage?.nodeUsage?.[nodeName] || { cpu: 0, memory: 0 };
+        const nodeLiveUsage = liveUsage?.nodeUsage?.[nodeName] || {
+          cpu: 0,
+          memory: 0,
+        };
 
         // Calculate estimated usage from pod resource requests for this node
-        const nodePods = pods.filter(p => p.spec?.nodeName === nodeName);
+        const nodePods = pods.filter((p) => p.spec?.nodeName === nodeName);
         let estimatedCpuUsage = 0;
         let estimatedMemoryUsage = 0;
         let estimatedDiskUsage = 0;
@@ -479,15 +524,20 @@ export class KubernetesService implements OnModuleInit {
         const memoryUsage = nodeLiveUsage.memory || estimatedMemoryUsage;
         const diskUsage = estimatedDiskUsage; // Disk usage not available from metrics API
 
-        const cpuUsagePercent = cpuCapacity > 0 ? (cpuUsage / cpuCapacity) * 100 : 0;
-        const memoryUsagePercent = memoryCapacity > 0 ? (memoryUsage / memoryCapacity) * 100 : 0;
-        const diskUsagePercent = storageCapacity > 0 ? (diskUsage / storageCapacity) * 100 : 0;
+        const cpuUsagePercent =
+          cpuCapacity > 0 ? (cpuUsage / cpuCapacity) * 100 : 0;
+        const memoryUsagePercent =
+          memoryCapacity > 0 ? (memoryUsage / memoryCapacity) * 100 : 0;
+        const diskUsagePercent =
+          storageCapacity > 0 ? (diskUsage / storageCapacity) * 100 : 0;
 
         // Determine if this is a master/control plane node
-        const isMaster = nodeName.toLowerCase().includes('master') ||
-                         nodeName.toLowerCase().includes('control') ||
-                         node.metadata?.labels?.['node-role.kubernetes.io/control-plane'] === 'true' ||
-                         node.metadata?.labels?.['node-role.kubernetes.io/master'] === 'true';
+        const isMaster =
+          nodeName.toLowerCase().includes('master') ||
+          nodeName.toLowerCase().includes('control') ||
+          node.metadata?.labels?.['node-role.kubernetes.io/control-plane'] ===
+            'true' ||
+          node.metadata?.labels?.['node-role.kubernetes.io/master'] === 'true';
 
         nodeMetrics.push({
           name: nodeName,
@@ -509,14 +559,20 @@ export class KubernetesService implements OnModuleInit {
           },
           pods: nodePods.length,
           source: {
-            cpu: nodeLiveUsage.cpu ? 'metrics-api' : 'requests-limits-estimation',
-            memory: nodeLiveUsage.memory ? 'metrics-api' : 'requests-limits-estimation',
+            cpu: nodeLiveUsage.cpu
+              ? 'metrics-api'
+              : 'requests-limits-estimation',
+            memory: nodeLiveUsage.memory
+              ? 'metrics-api'
+              : 'requests-limits-estimation',
             disk: 'requests-limits-estimation',
           },
         });
       }
 
-      this.logger.log(`Per-node metrics: ${nodeMetrics.map(n => `${n.name} (${n.role}): CPU ${n.cpu.usagePercent}%, Memory ${n.memory.usagePercent}%`).join(', ')}`);
+      this.logger.log(
+        `Per-node metrics: ${nodeMetrics.map((n) => `${n.name} (${n.role}): CPU ${n.cpu.usagePercent}%, Memory ${n.memory.usagePercent}%`).join(', ')}`,
+      );
 
       return {
         nodes: nodeMetrics,
@@ -568,7 +624,9 @@ export class KubernetesService implements OnModuleInit {
     return parseFloat(memory);
   }
 
-  private async getLiveClusterUsageFromMetricsApi(): Promise<{ nodeUsage: Record<string, { cpu: number; memory: number }> } | null> {
+  private async getLiveClusterUsageFromMetricsApi(): Promise<{
+    nodeUsage: Record<string, { cpu: number; memory: number }>;
+  } | null> {
     try {
       const response = await this.customObjectsApi.listClusterCustomObject({
         group: 'metrics.k8s.io',
@@ -598,12 +656,18 @@ export class KubernetesService implements OnModuleInit {
 
       return { nodeUsage };
     } catch (error) {
-      this.logger.warn(`metrics.k8s.io unavailable, using requests/limits fallback: ${error.message}`);
+      this.logger.warn(
+        `metrics.k8s.io unavailable, using requests/limits fallback: ${error.message}`,
+      );
       return null;
     }
   }
 
-  private extractMetricsItems(response: unknown): Array<{ metadata?: { name?: string }; usage?: { cpu?: string; memory?: string }; containers?: unknown[] }> {
+  private extractMetricsItems(response: unknown): Array<{
+    metadata?: { name?: string };
+    usage?: { cpu?: string; memory?: string };
+    containers?: unknown[];
+  }> {
     if (!response || typeof response !== 'object') {
       return [];
     }
@@ -611,12 +675,20 @@ export class KubernetesService implements OnModuleInit {
     const root = response as { items?: unknown; body?: { items?: unknown } };
     const directItems = root.items;
     if (Array.isArray(directItems)) {
-      return directItems as Array<{ metadata?: { name?: string }; usage?: { cpu?: string; memory?: string }; containers?: unknown[] }>;
+      return directItems as Array<{
+        metadata?: { name?: string };
+        usage?: { cpu?: string; memory?: string };
+        containers?: unknown[];
+      }>;
     }
 
     const bodyItems = root.body?.items;
     if (Array.isArray(bodyItems)) {
-      return bodyItems as Array<{ metadata?: { name?: string }; usage?: { cpu?: string; memory?: string }; containers?: unknown[] }>;
+      return bodyItems as Array<{
+        metadata?: { name?: string };
+        usage?: { cpu?: string; memory?: string };
+        containers?: unknown[];
+      }>;
     }
 
     return [];
@@ -633,7 +705,7 @@ export class KubernetesService implements OnModuleInit {
           return dateB.getTime() - dateA.getTime();
         })
         .slice(0, limit)
-        .map(dep => ({
+        .map((dep) => ({
           name: dep.metadata?.name,
           namespace: dep.metadata?.namespace,
           replicas: dep.spec?.replicas,
@@ -652,17 +724,22 @@ export class KubernetesService implements OnModuleInit {
     try {
       const pods = await this.getPods();
       return pods
-        .filter(pod => {
+        .filter((pod) => {
           const phase = pod.status?.phase;
-          return phase === 'Failed' || phase === 'CrashLoopBackOff' || phase === 'Error';
+          return (
+            phase === 'Failed' ||
+            phase === 'CrashLoopBackOff' ||
+            phase === 'Error'
+          );
         })
-        .map(pod => ({
+        .map((pod) => ({
           name: pod.metadata?.name,
           namespace: pod.metadata?.namespace,
           phase: pod.status?.phase,
           restartCount: pod.status?.containerStatuses?.[0]?.restartCount || 0,
           reason: pod.status?.containerStatuses?.[0]?.state?.terminated?.reason,
-          message: pod.status?.containerStatuses?.[0]?.state?.terminated?.message,
+          message:
+            pod.status?.containerStatuses?.[0]?.state?.terminated?.message,
           createdAt: pod.metadata?.creationTimestamp,
         }));
     } catch (error) {

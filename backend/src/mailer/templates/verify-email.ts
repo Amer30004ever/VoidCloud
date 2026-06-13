@@ -1,4 +1,8 @@
-export function verifyEmailTemplate(name: string, verifyUrl: string, ttlMinutes = 60 * 24) {
+export function verifyEmailTemplate(
+  name: string,
+  verifyUrl: string,
+  ttlMinutes = 60 * 24,
+) {
   const html = `
   <div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#0b1020;padding:32px;color:#e2e8f0">
     <div style="max-width:560px;margin:0 auto;background:#111933;border:1px solid #1f2a4d;border-radius:16px;padding:32px">

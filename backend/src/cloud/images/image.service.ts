@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CloudDeploymentsService } from '../cloud-deployments.service';
 import { randomBytes } from 'crypto';
@@ -13,28 +18,39 @@ export class ImageService {
   ) {}
 
   private async assertVpsOwner(vpsId: string, userId: string) {
-    const vps = await this.prisma.cloudDeployment.findUnique({ where: { id: vpsId } });
+    const vps = await this.prisma.cloudDeployment.findUnique({
+      where: { id: vpsId },
+    });
     if (!vps) throw new NotFoundException('VPS not found');
     if (vps.userId !== userId) throw new ForbiddenException();
     return vps;
   }
 
   private async assertImageAccess(imageId: string, userId: string) {
-    const image = await this.prisma.customImage.findUnique({ where: { id: imageId } });
+    const image = await this.prisma.customImage.findUnique({
+      where: { id: imageId },
+    });
     if (!image) throw new NotFoundException('Image not found');
     if (image.userId === userId || image.isPublic) return image;
-    const share = await this.prisma.customImageShare.findUnique({
-      where: { imageId_userId: { imageId, userId } },
-    }).catch(() => null);
+    const share = await this.prisma.customImageShare
+      .findUnique({
+        where: { imageId_userId: { imageId, userId } },
+      })
+      .catch(() => null);
     if (!share) throw new ForbiddenException();
     return image;
   }
 
-  async createSnapshot(vpsId: string, userId: string, name: string, description?: string) {
+  async createSnapshot(
+    vpsId: string,
+    userId: string,
+    name: string,
+    description?: string,
+  ) {
     if (!name?.trim()) throw new BadRequestException('Name is required');
     const vps = await this.assertVpsOwner(vpsId, userId);
     // TODO: trigger Proxmox snapshot via ProxmoxService
-    const sizeMB = (vps.storage ?? 1024);
+    const sizeMB = vps.storage ?? 1024;
     return this.prisma.customImage.create({
       data: {
         userId,
@@ -48,7 +64,13 @@ export class ImageService {
     });
   }
 
-  async createFromUpload(userId: string, name: string, sizeMB: number, storageUrl: string, description?: string) {
+  async createFromUpload(
+    userId: string,
+    name: string,
+    sizeMB: number,
+    storageUrl: string,
+    description?: string,
+  ) {
     if (!name?.trim()) throw new BadRequestException('Name is required');
     if (!storageUrl) throw new BadRequestException('storageUrl required');
     // TODO: convert to Proxmox template format
@@ -70,10 +92,16 @@ export class ImageService {
       orderBy: { createdAt: 'desc' },
       include: { sourceVps: { select: { id: true, name: true } } },
     });
-    const shared = await this.prisma.customImageShare.findMany({
-      where: { userId },
-      include: { image: { include: { sourceVps: { select: { id: true, name: true } } } } },
-    }).catch(() => []);
+    const shared = await this.prisma.customImageShare
+      .findMany({
+        where: { userId },
+        include: {
+          image: {
+            include: { sourceVps: { select: { id: true, name: true } } },
+          },
+        },
+      })
+      .catch(() => []);
     return [
       ...owned,
       ...shared.map((s: any) => ({ ...s.image, _shared: true })),
@@ -88,7 +116,9 @@ export class ImageService {
   }
 
   async deleteImage(imageId: string, userId: string) {
-    const image = await this.prisma.customImage.findUnique({ where: { id: imageId } });
+    const image = await this.prisma.customImage.findUnique({
+      where: { id: imageId },
+    });
     if (!image) throw new NotFoundException();
     if (image.userId !== userId) throw new ForbiddenException();
     await this.prisma.customImage.delete({ where: { id: imageId } });
@@ -107,12 +137,17 @@ export class ImageService {
   }
 
   async shareImage(imageId: string, userId: string, shareWithEmail: string) {
-    const image = await this.prisma.customImage.findUnique({ where: { id: imageId } });
+    const image = await this.prisma.customImage.findUnique({
+      where: { id: imageId },
+    });
     if (!image) throw new NotFoundException();
     if (image.userId !== userId) throw new ForbiddenException();
-    const target = await this.prisma.user.findUnique({ where: { email: shareWithEmail.toLowerCase().trim() } });
+    const target = await this.prisma.user.findUnique({
+      where: { email: shareWithEmail.toLowerCase().trim() },
+    });
     if (!target) throw new NotFoundException('User not found');
-    if (target.id === userId) throw new BadRequestException('Cannot share with yourself');
+    if (target.id === userId)
+      throw new BadRequestException('Cannot share with yourself');
     await this.prisma.customImageShare.upsert({
       where: { imageId_userId: { imageId, userId: target.id } },
       update: {},
@@ -122,12 +157,21 @@ export class ImageService {
   }
 
   async makePublic(imageId: string, userId: string, isPublic: boolean) {
-    const image = await this.prisma.customImage.findUnique({ where: { id: imageId } });
+    const image = await this.prisma.customImage.findUnique({
+      where: { id: imageId },
+    });
     if (!image) throw new NotFoundException();
     if (image.userId !== userId) throw new ForbiddenException();
     return this.prisma.customImage.update({
       where: { id: imageId },
-      data: { isPublic, type: isPublic ? 'MARKETPLACE' : image.type === 'MARKETPLACE' ? 'CUSTOM' : image.type },
+      data: {
+        isPublic,
+        type: isPublic
+          ? 'MARKETPLACE'
+          : image.type === 'MARKETPLACE'
+            ? 'CUSTOM'
+            : image.type,
+      },
     });
   }
 }

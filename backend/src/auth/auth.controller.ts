@@ -42,7 +42,12 @@ export class AuthController {
     description: 'User registered successfully',
     schema: {
       example: {
-        user: { id: 'uuid', email: 'user@example.com', name: 'John', role: 'AGENT' },
+        user: {
+          id: 'uuid',
+          email: 'user@example.com',
+          name: 'John',
+          role: 'AGENT',
+        },
         token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
       },
     },
@@ -64,7 +69,12 @@ export class AuthController {
     description: 'Login successful — returns JWT token',
     schema: {
       example: {
-        user: { id: 'uuid', email: 'user@example.com', name: 'John', role: 'AGENT' },
+        user: {
+          id: 'uuid',
+          email: 'user@example.com',
+          name: 'John',
+          role: 'AGENT',
+        },
         token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
       },
     },
@@ -118,7 +128,6 @@ export class AuthController {
     return this.authService.resendVerification(body?.email ?? '');
   }
 
-
   /**
    * GET /api/v1/auth/me
    * Return the currently authenticated user
@@ -132,5 +141,3 @@ export class AuthController {
     return this.authService.getMe(user.id);
   }
 }
-
-

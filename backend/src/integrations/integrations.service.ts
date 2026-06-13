@@ -168,7 +168,9 @@ export class IntegrationsService {
 
       return { history: history.slice(0, limit || 10) };
     } catch (error) {
-      this.logger.error(`Error fetching webhook delivery history: ${error.message}`);
+      this.logger.error(
+        `Error fetching webhook delivery history: ${error.message}`,
+      );
       throw error;
     }
   }

@@ -13,7 +13,13 @@ export class ProjectsService {
     return { projects };
   }
 
-  async create(data: { name: string; description?: string; repository?: string; namespace?: string; userId: string }) {
+  async create(data: {
+    name: string;
+    description?: string;
+    repository?: string;
+    namespace?: string;
+    userId: string;
+  }) {
     const project = await this.prisma.project.create({ data });
     return { success: true, project };
   }

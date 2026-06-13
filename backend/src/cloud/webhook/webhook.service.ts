@@ -1,15 +1,30 @@
-import { Injectable, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { createHmac, randomBytes } from 'crypto';
 
 export const WEBHOOK_EVENTS = [
-  'vps.created', 'vps.deleted', 'vps.started', 'vps.stopped', 'vps.restarted',
-  'vps.resized', 'vps.backup.created', 'vps.backup.restored',
-  'subscription.created', 'subscription.cancelled', 'invoice.paid',
-  'domain.added', 'ssl.issued', 'ssl.expiring',
+  'vps.created',
+  'vps.deleted',
+  'vps.started',
+  'vps.stopped',
+  'vps.restarted',
+  'vps.resized',
+  'vps.backup.created',
+  'vps.backup.restored',
+  'subscription.created',
+  'subscription.cancelled',
+  'invoice.paid',
+  'domain.added',
+  'ssl.issued',
+  'ssl.expiring',
 ] as const;
 
-export type WebhookEvent = typeof WEBHOOK_EVENTS[number];
+export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 
 export interface CreateWebhookDto {
   name: string;
@@ -33,8 +48,13 @@ export class WebhookService {
 
   private validateUrl(url: string) {
     let u: URL;
-    try { u = new URL(url); } catch { throw new Error('Invalid URL'); }
-    if (!['http:', 'https:'].includes(u.protocol)) throw new Error('URL must use http(s)');
+    try {
+      u = new URL(url);
+    } catch {
+      throw new Error('Invalid URL');
+    }
+    if (!['http:', 'https:'].includes(u.protocol))
+      throw new Error('URL must use http(s)');
   }
 
   private validateEvents(events: string[]) {
@@ -84,7 +104,9 @@ export class WebhookService {
         ...(data.url !== undefined ? { url: data.url } : {}),
         ...(data.events !== undefined ? { events: data.events } : {}),
         ...(data.enabled !== undefined ? { enabled: data.enabled } : {}),
-        ...(data.regenerateSecret ? { secret: `whsec_${randomBytes(24).toString('hex')}` } : {}),
+        ...(data.regenerateSecret
+          ? { secret: `whsec_${randomBytes(24).toString('hex')}` }
+          : {}),
       },
     });
   }
@@ -113,9 +135,17 @@ export class WebhookService {
   }
 
   /** Fire-and-forget: enqueue async delivery to every matching enabled webhook. */
-  async triggerEvent(eventType: string, payload: unknown, userId?: string): Promise<void> {
+  async triggerEvent(
+    eventType: string,
+    payload: unknown,
+    userId?: string,
+  ): Promise<void> {
     try {
-      const where: { enabled: boolean; userId?: string; events: { has: string } } = {
+      const where: {
+        enabled: boolean;
+        userId?: string;
+        events: { has: string };
+      } = {
         enabled: true,
         events: { has: eventType },
       };
@@ -124,24 +154,41 @@ export class WebhookService {
       for (const h of hooks) {
         // Don't await — schedule but don't block caller
         void this.deliverWithRetry(h.id, eventType, payload).catch((err) => {
-          this.logger.error(`Webhook ${h.id} dispatch failed: ${err?.message ?? err}`);
+          this.logger.error(
+            `Webhook ${h.id} dispatch failed: ${err?.message ?? err}`,
+          );
         });
       }
     } catch (err) {
-      this.logger.error(`triggerEvent(${eventType}) failed: ${(err as Error).message}`);
+      this.logger.error(
+        `triggerEvent(${eventType}) failed: ${(err as Error).message}`,
+      );
     }
   }
 
   private sign(secret: string, body: string, timestamp: number): string {
-    const mac = createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex');
+    const mac = createHmac('sha256', secret)
+      .update(`${timestamp}.${body}`)
+      .digest('hex');
     return `t=${timestamp},v1=${mac}`;
   }
 
-  async deliverWebhook(webhookId: string, eventType: string, payload: unknown, attempt = 1) {
-    const hook = await this.prisma.webhookEndpoint.findUnique({ where: { id: webhookId } });
+  async deliverWebhook(
+    webhookId: string,
+    eventType: string,
+    payload: unknown,
+    attempt = 1,
+  ) {
+    const hook = await this.prisma.webhookEndpoint.findUnique({
+      where: { id: webhookId },
+    });
     if (!hook) throw new NotFoundException('Webhook not found');
 
-    const body = JSON.stringify({ event: eventType, data: payload, deliveredAt: new Date().toISOString() });
+    const body = JSON.stringify({
+      event: eventType,
+      data: payload,
+      deliveredAt: new Date().toISOString(),
+    });
     const ts = Math.floor(Date.now() / 1000);
     const signature = hook.secret ? this.sign(hook.secret, body, ts) : '';
 
@@ -189,12 +236,23 @@ export class WebhookService {
   }
 
   /** Retry with exponential backoff up to MAX_ATTEMPTS. */
-  private async deliverWithRetry(webhookId: string, eventType: string, payload: unknown) {
+  private async deliverWithRetry(
+    webhookId: string,
+    eventType: string,
+    payload: unknown,
+  ) {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      const delivery = await this.deliverWebhook(webhookId, eventType, payload, attempt);
+      const delivery = await this.deliverWebhook(
+        webhookId,
+        eventType,
+        payload,
+        attempt,
+      );
       if (delivery.success) return delivery;
       if (attempt < MAX_ATTEMPTS) {
-        await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1] ?? 16_000));
+        await new Promise((r) =>
+          setTimeout(r, BACKOFF_MS[attempt - 1] ?? 16_000),
+        );
       }
     }
   }

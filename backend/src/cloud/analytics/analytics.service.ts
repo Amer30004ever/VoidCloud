@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PrometheusService } from '../metrics/prometheus.service';
 
@@ -11,7 +15,10 @@ function synthSeries(hours: number, base: number, jitter: number): Series {
   const out: Series = [];
   for (let i = points; i >= 0; i--) {
     const t = new Date(now - i * step);
-    const v = Math.max(0, base + (Math.sin(i / 3) + Math.random() - 0.5) * jitter);
+    const v = Math.max(
+      0,
+      base + (Math.sin(i / 3) + Math.random() - 0.5) * jitter,
+    );
     out.push({ timestamp: t.toISOString(), value: Number(v.toFixed(2)) });
   }
   return out;
@@ -19,10 +26,15 @@ function synthSeries(hours: number, base: number, jitter: number): Series {
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private prisma: PrismaService, private prom: PrometheusService) {}
+  constructor(
+    private prisma: PrismaService,
+    private prom: PrometheusService,
+  ) {}
 
   private async assertVpsOwner(vpsId: string, userId: string) {
-    const vps = await this.prisma.cloudDeployment.findUnique({ where: { id: vpsId } });
+    const vps = await this.prisma.cloudDeployment.findUnique({
+      where: { id: vpsId },
+    });
     if (!vps) throw new NotFoundException('VPS not found');
     if (vps.userId !== userId) throw new ForbiddenException();
     return vps;
@@ -33,7 +45,11 @@ export class AnalyticsService {
     const ns = vps.namespace || 'default';
     const name = vps.hostname || vps.name;
     let cpuRaw: any[] = [];
-    try { cpuRaw = await this.prom.getRange(ns, name, hours); } catch { cpuRaw = []; }
+    try {
+      cpuRaw = await this.prom.getRange(ns, name, hours);
+    } catch {
+      cpuRaw = [];
+    }
     const cpu: Series = cpuRaw.length
       ? cpuRaw.map(([ts, v]: [number, string]) => ({
           timestamp: new Date(ts * 1000).toISOString(),
@@ -42,7 +58,11 @@ export class AnalyticsService {
       : synthSeries(hours, 35, 25);
     return {
       cpu,
-      ram: synthSeries(hours, Math.min(85, ((vps.memory || 512) > 1024 ? 55 : 70)), 18),
+      ram: synthSeries(
+        hours,
+        Math.min(85, (vps.memory || 512) > 1024 ? 55 : 70),
+        18,
+      ),
       disk: synthSeries(hours, 40, 8),
       networkRx: synthSeries(hours, 120, 80),
       networkTx: synthSeries(hours, 90, 60),
@@ -81,7 +101,8 @@ export class AnalyticsService {
     const monthly: Record<string, number> = {};
     for (const inv of invoices) {
       const k = inv.createdAt.toISOString().slice(0, 7);
-      monthly[k] = (monthly[k] || 0) + (inv.amountUSD ?? (inv.amountEGP ?? 0) / 48);
+      monthly[k] =
+        (monthly[k] || 0) + (inv.amountUSD ?? (inv.amountEGP ?? 0) / 48);
     }
     const series = Object.entries(monthly).map(([month, total]) => ({
       month,
@@ -91,7 +112,11 @@ export class AnalyticsService {
     // Simple linear forecast on the last 3 months
     const recent = series.slice(-3).map((s) => s.total);
     const forecast = recent.length
-      ? Number((recent.reduce((s, n) => s + n, 0) / recent.length * 1.05).toFixed(2))
+      ? Number(
+          ((recent.reduce((s, n) => s + n, 0) / recent.length) * 1.05).toFixed(
+            2,
+          ),
+        )
       : 0;
 
     return {
@@ -109,9 +134,12 @@ export class AnalyticsService {
     });
     if (samples.length === 0) {
       // Fallback: average current allocations across active VPS
-      const vpsList = await this.prisma.cloudDeployment.findMany({ where: { userId } });
+      const vpsList = await this.prisma.cloudDeployment.findMany({
+        where: { userId },
+      });
       if (vpsList.length === 0) return { cpu: 0, ram: 0, disk: 0, vpsCount: 0 };
-      const avg = (arr: number[]) => arr.reduce((s, n) => s + n, 0) / arr.length;
+      const avg = (arr: number[]) =>
+        arr.reduce((s, n) => s + n, 0) / arr.length;
       return {
         cpu: Number(avg(vpsList.map((v) => v.cpu)).toFixed(2)),
         ram: Number(avg(vpsList.map((v) => v.memory)).toFixed(0)),
@@ -132,12 +160,16 @@ export class AnalyticsService {
   }
 
   async exportCSV(userId: string) {
-    const { byVPS, monthly, total, forecast } = await this.getCostBreakdown(userId, 12);
+    const { byVPS, monthly, total, forecast } = await this.getCostBreakdown(
+      userId,
+      12,
+    );
     const lines = ['Section,Key,Value'];
     lines.push(`Summary,Total (USD),${total}`);
     lines.push(`Summary,Forecast (USD),${forecast}`);
     for (const m of monthly) lines.push(`Monthly,${m.month},${m.total}`);
-    for (const v of byVPS) lines.push(`PerVPS,${v.vpsName.replace(/,/g, ' ')},${v.cost}`);
+    for (const v of byVPS)
+      lines.push(`PerVPS,${v.vpsName.replace(/,/g, ' ')},${v.cost}`);
     return lines.join('\n');
   }
 }

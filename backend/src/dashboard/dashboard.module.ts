@@ -10,5 +10,4 @@ import { KubernetesModule } from '../kubernetes/kubernetes.module';
   providers: [DashboardService],
   exports: [DashboardService],
 })
-
 export class DashboardModule {}

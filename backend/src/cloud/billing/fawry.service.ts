@@ -3,16 +3,21 @@ import axios from 'axios';
 import * as crypto from 'crypto';
 
 // Vodafone Cash receiving number (also accepted via Fawry network)
-const MERCHANT_VODAFONE_CASH = process.env.VODAFONE_CASH_NUMBER || '01001984255';
+const MERCHANT_VODAFONE_CASH =
+  process.env.VODAFONE_CASH_NUMBER || '01001984255';
 
 @Injectable()
 export class FawryService {
   private readonly logger = new Logger(FawryService.name);
-  private readonly url = process.env.FAWRY_BASE_URL || 'https://www.atfawry.com/api/v2/charge';
+  private readonly url =
+    process.env.FAWRY_BASE_URL || 'https://www.atfawry.com/api/v2/charge';
 
   async createPayment(args: {
-    userEmail: string; userPhone?: string; planName: string;
-    amountEGP: number; invoiceId: string;
+    userEmail: string;
+    userPhone?: string;
+    planName: string;
+    amountEGP: number;
+    invoiceId: string;
   }) {
     const merchant = process.env.FAWRY_MERCHANT_ID;
     const secKey = process.env.FAWRY_SECURITY_KEY;
@@ -20,7 +25,9 @@ export class FawryService {
 
     // SANDBOX MODE: return mock reference + QR data URI so the UI flow works end-to-end.
     if (!merchant || !secKey) {
-      this.logger.warn(`[SANDBOX] Fawry would charge ${args.amountEGP} EGP, ref=${referenceId}`);
+      this.logger.warn(
+        `[SANDBOX] Fawry would charge ${args.amountEGP} EGP, ref=${referenceId}`,
+      );
       return {
         paymentUrl: null,
         referenceId,
@@ -32,7 +39,8 @@ export class FawryService {
     }
 
     const liveRef = `amercloud_${args.invoiceId}`;
-    const signature = crypto.createHash('sha256')
+    const signature = crypto
+      .createHash('sha256')
       .update(`${merchant}${liveRef}${args.amountEGP}${secKey}`)
       .digest('hex');
     const payload = {
@@ -44,12 +52,19 @@ export class FawryService {
       customer: { email: args.userEmail, mobile: args.userPhone ?? '' },
       signature,
     };
-    const res = await axios.post(this.url, payload, { timeout: 8000 }).catch((e) => {
-      this.logger.error(`Fawry error: ${e.message}`);
-      return null;
-    });
+    const res = await axios
+      .post(this.url, payload, { timeout: 8000 })
+      .catch((e) => {
+        this.logger.error(`Fawry error: ${e.message}`);
+        return null;
+      });
     if (!res || res.data?.statusCode !== 200) {
-      return { paymentUrl: null, referenceId: liveRef, qrCode: null, error: res?.data?.statusDescription };
+      return {
+        paymentUrl: null,
+        referenceId: liveRef,
+        qrCode: null,
+        error: res?.data?.statusDescription,
+      };
     }
     return {
       paymentUrl: res.data.paymentUrl,
@@ -67,8 +82,11 @@ export class FawryService {
       <rect x="10" y="10" width="200" height="200" fill="none" stroke="#0f172a" stroke-width="2"/>
       ${Array.from({ length: 18 }, (_, i) =>
         Array.from({ length: 18 }, (_, j) => {
-          const seed = (ref.charCodeAt((i * 18 + j) % ref.length) + i * 3 + j * 7) % 7;
-          return seed < 3 ? `<rect x="${15 + j * 11}" y="${15 + i * 11}" width="10" height="10" fill="#0f172a"/>` : '';
+          const seed =
+            (ref.charCodeAt((i * 18 + j) % ref.length) + i * 3 + j * 7) % 7;
+          return seed < 3
+            ? `<rect x="${15 + j * 11}" y="${15 + i * 11}" width="10" height="10" fill="#0f172a"/>`
+            : '';
         }).join(''),
       ).join('')}
       <rect x="80" y="95" width="60" height="30" fill="#fff"/>
@@ -80,8 +98,11 @@ export class FawryService {
   verifyWebhook(body: any, signature: string | undefined): boolean {
     const secKey = process.env.FAWRY_SECURITY_KEY;
     if (!secKey || !signature) return false;
-    const expected = crypto.createHash('sha256')
-      .update(`${body.merchantRefNumber}${body.fawryRefNumber}${body.paymentAmount}${secKey}`)
+    const expected = crypto
+      .createHash('sha256')
+      .update(
+        `${body.merchantRefNumber}${body.fawryRefNumber}${body.paymentAmount}${secKey}`,
+      )
       .digest('hex');
     return expected === signature;
   }

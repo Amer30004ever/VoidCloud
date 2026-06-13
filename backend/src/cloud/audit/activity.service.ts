@@ -2,13 +2,28 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export type ActivityAction =
-  | 'LOGIN' | 'LOGOUT' | 'LOGIN_FAILED'
-  | 'PASSWORD_CHANGE' | 'EMAIL_CHANGE' | 'PROFILE_UPDATE'
-  | '2FA_ENABLE' | '2FA_DISABLE'
-  | 'VPS_CREATE' | 'VPS_START' | 'VPS_STOP' | 'VPS_RESTART' | 'VPS_DELETE' | 'VPS_UPDATE'
-  | 'ROLE_CHANGE' | 'USER_SUSPEND' | 'USER_ACTIVATE' | 'USER_DELETE'
-  | 'IMPERSONATE_START' | 'IMPERSONATE_END'
-  | 'PAYMENT' | 'REFUND';
+  | 'LOGIN'
+  | 'LOGOUT'
+  | 'LOGIN_FAILED'
+  | 'PASSWORD_CHANGE'
+  | 'EMAIL_CHANGE'
+  | 'PROFILE_UPDATE'
+  | '2FA_ENABLE'
+  | '2FA_DISABLE'
+  | 'VPS_CREATE'
+  | 'VPS_START'
+  | 'VPS_STOP'
+  | 'VPS_RESTART'
+  | 'VPS_DELETE'
+  | 'VPS_UPDATE'
+  | 'ROLE_CHANGE'
+  | 'USER_SUSPEND'
+  | 'USER_ACTIVATE'
+  | 'USER_DELETE'
+  | 'IMPERSONATE_START'
+  | 'IMPERSONATE_END'
+  | 'PAYMENT'
+  | 'REFUND';
 
 export interface LogInput {
   userId: string;
@@ -45,7 +60,10 @@ export class ActivityService {
     }
   }
 
-  async listForUser(userId: string, opts: { page?: number; limit?: number } = {}) {
+  async listForUser(
+    userId: string,
+    opts: { page?: number; limit?: number } = {},
+  ) {
     const page = Math.max(1, opts.page ?? 1);
     const limit = Math.min(200, opts.limit ?? 50);
     const [rows, total] = await Promise.all([
@@ -60,10 +78,17 @@ export class ActivityService {
     return { rows, total, page, limit };
   }
 
-  async listAll(opts: {
-    userId?: string; action?: string; from?: string; to?: string;
-    ipAddress?: string; page?: number; limit?: number;
-  } = {}) {
+  async listAll(
+    opts: {
+      userId?: string;
+      action?: string;
+      from?: string;
+      to?: string;
+      ipAddress?: string;
+      page?: number;
+      limit?: number;
+    } = {},
+  ) {
     const page = Math.max(1, opts.page ?? 1);
     const limit = Math.min(500, opts.limit ?? 100);
     const where: any = {};
@@ -91,26 +116,42 @@ export class ActivityService {
     return { rows, total, page, limit };
   }
 
-  async exportCsv(opts: Parameters<ActivityService['listAll']>[0] = {}): Promise<string> {
+  async exportCsv(
+    opts: Parameters<ActivityService['listAll']>[0] = {},
+  ): Promise<string> {
     const { rows } = await this.listAll({ ...opts, limit: 5000, page: 1 });
-    const header = ['timestamp', 'user_email', 'user_name', 'action', 'status', 'ip_address', 'user_agent', 'admin_email', 'details'];
+    const header = [
+      'timestamp',
+      'user_email',
+      'user_name',
+      'action',
+      'status',
+      'ip_address',
+      'user_agent',
+      'admin_email',
+      'details',
+    ];
     const esc = (v: any) => {
       if (v == null) return '';
       const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
       const e = s.replace(/"/g, '""');
       return /[",\n]/.test(e) ? `"${e}"` : e;
     };
-    const lines = rows.map((r: any) => [
-      r.createdAt.toISOString(),
-      r.user?.email ?? '',
-      r.user?.name ?? '',
-      r.action,
-      r.status,
-      r.ipAddress ?? '',
-      r.userAgent ?? '',
-      r.admin?.email ?? '',
-      r.details ?? '',
-    ].map(esc).join(','));
+    const lines = rows.map((r: any) =>
+      [
+        r.createdAt.toISOString(),
+        r.user?.email ?? '',
+        r.user?.name ?? '',
+        r.action,
+        r.status,
+        r.ipAddress ?? '',
+        r.userAgent ?? '',
+        r.admin?.email ?? '',
+        r.details ?? '',
+      ]
+        .map(esc)
+        .join(','),
+    );
     return [header.join(','), ...lines].join('\n');
   }
 }

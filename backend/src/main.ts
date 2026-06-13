@@ -44,7 +44,9 @@ async function bootstrap() {
   );
 
   // Also allow any *.amer-portal.cc.cd subdomain (preview / staging)
-  const allowedOriginRegexes = [/^https:\/\/([a-z0-9-]+\.)*amer-portal\.cc\.cd$/i];
+  const allowedOriginRegexes = [
+    /^https:\/\/([a-z0-9-]+\.)*amer-portal\.cc\.cd$/i,
+  ];
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -97,7 +99,11 @@ async function bootstrap() {
   // ──────────────────────────────────────────────────────────────────────────
 
   const port = process.env.PORT ?? 3001;
-  try { await seedCloud(); } catch (e) { logger.warn(`Cloud seed skipped: ${(e as Error).message}`); }
+  try {
+    await seedCloud();
+  } catch (e) {
+    logger.warn(`Cloud seed skipped: ${(e as Error).message}`);
+  }
   await app.listen(port);
   logger.log(`🚀 MaVoid CRM API running on http://localhost:${port}/api/v1`);
   logger.log(`📖 Swagger docs available at http://localhost:${port}/api/docs`);

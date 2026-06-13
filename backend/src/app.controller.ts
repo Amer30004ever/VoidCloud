@@ -14,7 +14,10 @@ export class AppController {
    */
   @Public()
   @Get('health')
-  @ApiOperation({ summary: 'Health check', description: 'Returns service and database status.' })
+  @ApiOperation({
+    summary: 'Health check',
+    description: 'Returns service and database status.',
+  })
   @ApiOkResponse({
     description: 'Service is healthy',
     schema: {
@@ -61,4 +64,3 @@ export class AppController {
     }
   }
 }
-

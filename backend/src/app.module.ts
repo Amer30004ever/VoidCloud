@@ -48,7 +48,7 @@ import { AppController } from './app.controller';
     InfrastructureModule,
     LogsModule,
     AlertsModule,
-    
+
     // New modules
     ClusterModule,
     AdminClusterModule,
@@ -76,5 +76,4 @@ import { AppController } from './app.controller';
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
-export class AppModule { }
-
+export class AppModule {}

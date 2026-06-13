@@ -30,7 +30,11 @@ export class MailerService {
         ? `AmerCloud <${process.env.SMTP_USER}>`
         : 'AmerCloud <nova-cloud-2026@outlook.com>');
 
-    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    if (
+      process.env.SMTP_HOST &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASS
+    ) {
       const port = Number(process.env.SMTP_PORT || 587);
       this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
@@ -40,7 +44,9 @@ export class MailerService {
         auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
         tls: { ciphers: 'TLSv1.2' },
       });
-      this.logger.log(`SMTP transport ready (${process.env.SMTP_HOST}:${port})`);
+      this.logger.log(
+        `SMTP transport ready (${process.env.SMTP_HOST}:${port})`,
+      );
     } else if (process.env.RESEND_API_KEY) {
       this.resend = new Resend(process.env.RESEND_API_KEY);
       this.logger.log('Resend transport ready');
@@ -51,7 +57,12 @@ export class MailerService {
     }
   }
 
-  async send(to: string, subject: string, html: string, text?: string): Promise<void> {
+  async send(
+    to: string,
+    subject: string,
+    html: string,
+    text?: string,
+  ): Promise<void> {
     if (this.transporter) {
       try {
         const info = await this.transporter.sendMail({
@@ -61,7 +72,9 @@ export class MailerService {
           html,
           text: text ?? html.replace(/<[^>]+>/g, ''),
         });
-        this.logger.log(`email sent via SMTP to=${to} messageId=${info.messageId}`);
+        this.logger.log(
+          `email sent via SMTP to=${to} messageId=${info.messageId}`,
+        );
         return;
       } catch (e: any) {
         this.logger.error(`SMTP send failed: ${e?.message ?? e}`);
@@ -79,7 +92,9 @@ export class MailerService {
       }
     }
 
-    this.logger.log(`[email/stub] to=${to} subject=${subject}\n${text ?? html}`);
+    this.logger.log(
+      `[email/stub] to=${to} subject=${subject}\n${text ?? html}`,
+    );
   }
 
   /** Returns transport status for admin diagnostics. */
@@ -105,7 +120,11 @@ export class MailerService {
       }
     }
     if (this.resend) return { ok: true, transport: 'resend' };
-    return { ok: false, transport: 'stub', error: 'No SMTP_* or RESEND_API_KEY configured' };
+    return {
+      ok: false,
+      transport: 'stub',
+      error: 'No SMTP_* or RESEND_API_KEY configured',
+    };
   }
 
   /** Send a test email to the admin's own address. */

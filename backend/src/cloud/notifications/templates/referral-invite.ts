@@ -5,7 +5,11 @@ export interface ReferralInviteData {
   discountCode?: string;
 }
 
-export function referralInviteEmail(data: ReferralInviteData): { subject: string; html: string; text: string } {
+export function referralInviteEmail(data: ReferralInviteData): {
+  subject: string;
+  html: string;
+  text: string;
+} {
   const subject = '[AmerCloud] Your friend invited you to try AmerCloud';
   const text = `${data.inviterName} invited you to try AmerCloud.
 
@@ -30,6 +34,14 @@ AmerCloud — Kubernetes hosting built for Egyptian developers.`;
 }
 
 function escapeHtml(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+  return s.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
+        c
+      ]!,
+  );
 }
-function escapeAttr(s: string) { return escapeHtml(s); }
+function escapeAttr(s: string) {
+  return escapeHtml(s);
+}
