@@ -336,8 +336,10 @@ export class CloudDeploymentsService {
       diskUsedGB: 0,
       diskTotalGB: Math.ceil(d.storage / 1024),
     };
+  }
 
   async tailLogs(userId: string, id: string) {
+
     const d = await this.get(userId, id);
     const body = await this.k8s.getPodLogs(d.namespace, this.k8sName(d.name));
     return { lines: (body || '').split(/\r?\n/).filter(Boolean) };

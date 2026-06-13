@@ -17,6 +17,8 @@ import { CloudAuditService } from './audit/cloud-audit.service';
 import { ActivityService } from './audit/activity.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import { VpsTerminalGateway } from './terminal/vps-terminal.gateway';
+import { VpsAlertService } from './monitoring/vps-alert.service';
+import { VpsAlertController } from './monitoring/vps-alert.controller';
 import {
   CloudPlansController,
   CloudTemplatesController,
@@ -28,6 +30,7 @@ import {
   CloudAccountController,
   CloudBackupController,
 } from './cloud.controllers';
+
 
 
 @Module({
@@ -42,15 +45,15 @@ import {
     CloudTwoFactorController,
     CloudAccountController,
     CloudBackupController,
+    VpsAlertController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
     KubernetesService, PrometheusService, ProxmoxService,
     StripeService, FawryService, InstapayService,
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService,
-    VpsTerminalGateway,
+    VpsTerminalGateway, VpsAlertService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
-
 })
 export class CloudModule {}
