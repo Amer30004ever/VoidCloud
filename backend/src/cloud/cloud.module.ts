@@ -18,6 +18,7 @@ import { CloudBackupService } from './backup/cloud-backup.service';
 import { VpsTerminalGateway } from './terminal/vps-terminal.gateway';
 import {
   CloudPlansController,
+  CloudTemplatesController,
   CloudDeploymentsController,
   CloudBillingController,
   CloudWebhooksController,
@@ -32,6 +33,7 @@ import {
   imports: [AuthModule],
   controllers: [
     CloudPlansController,
+    CloudTemplatesController,
     CloudDeploymentsController,
     CloudBillingController,
     CloudWebhooksController,
