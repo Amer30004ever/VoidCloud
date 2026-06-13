@@ -10,6 +10,7 @@ export default function UserDashboard() {
   const [usage, setUsage] = useState<CloudUsage | null>(null);
   const [deployments, setDeployments] = useState<CloudDeployment[]>([]);
   const [me, setMe] = useState<any>(null);
+  const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
     cloudApi.deployments.usage().then(setUsage).catch(() => {});
@@ -17,8 +18,13 @@ export default function UserDashboard() {
     api.get("/auth/me").then((r) => setMe(r.data)).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   const trialDaysLeft = me?.trialEndsAt
-    ? Math.ceil((new Date(me.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(me.trialEndsAt).getTime() - now) / (1000 * 60 * 60 * 24))
     : null;
   const isTrialing = me?.subscriptionStatus === "TRIALING" && trialDaysLeft !== null;
   const trialExpired = isTrialing && trialDaysLeft <= 0;
@@ -54,7 +60,6 @@ export default function UserDashboard() {
         <p className="mt-2 text-white/60">Manage your VPS instances, plan, and usage from one place.</p>
       </div>
 
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <PlanCard usage={usage} />
         <Gauge label="CPU" used={usage?.used.cpu ?? 0} total={usage?.limits.cpuLimit ?? 1} unit="cores" />
@@ -78,7 +83,7 @@ export default function UserDashboard() {
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {deployments.slice(0, 6).map((d) => (
-              <VpsCard key={d.id} d={d as VpsCardProps["d"]} trialEndsAt={me?.trialEndsAt ?? null} />
+              <VpsCard key={d.id} d={d as VpsCardProps["d"]} trialEndsAt={me?.trialEndsAt ?? null} now={now} />
             ))}
           </div>
         )}
@@ -141,11 +146,11 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`rounded-full border px-2 py-0.5 text-xs ${colors[status] ?? colors.PENDING}`}>{status}</span>;
 }
 
-type VpsCardProps = { d: CloudDeployment & { ipv4Address?: string }; trialEndsAt: string | null };
-function VpsCard({ d, trialEndsAt }: VpsCardProps) {
+type VpsCardProps = { d: CloudDeployment & { ipv4Address?: string }; trialEndsAt: string | null; now: number };
+function VpsCard({ d, trialEndsAt, now }: VpsCardProps) {
   const [u, setU] = useState<{ cpuPercent: number; ramPercent: number; diskPercent: number } | null>(null);
   useEffect(() => { cloudApi.deployments.usageOne(d.id).then(setU).catch(() => {}); }, [d.id]);
-  const trialDays = trialEndsAt ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
+  const trialDays = trialEndsAt ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - now) / (1000 * 60 * 60 * 24))) : null;
   return (
     <Link href={`/amercloud/dashboard/vps/${d.id}`} className="block rounded-xl border border-white/10 bg-white/5 p-4 hover:border-cyan-400/30 hover:bg-white/10">
       <div className="flex items-start justify-between gap-2">
@@ -166,6 +171,7 @@ function VpsCard({ d, trialEndsAt }: VpsCardProps) {
     </Link>
   );
 }
+
 function Metric({ label, pct }: { label: string; pct: number }) {
   const color = pct > 90 ? "from-red-500 to-orange-500" : pct > 70 ? "from-yellow-400 to-orange-500" : "from-cyan-400 to-fuchsia-500";
   return (

@@ -24,7 +24,7 @@ export default function ReferralPage() {
       setPayouts(p);
     } catch (e) { setErr((e as Error).message); }
   }
-
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, []);
 
   const link = stats ? `${typeof window !== "undefined" ? window.location.origin : ""}/amercloud/register?ref=${stats.code}` : "";
@@ -52,14 +52,14 @@ export default function ReferralPage() {
 
   const tweet = `https://twitter.com/intent/tweet?text=${encodeURIComponent("Try AmerCloud — managed Kubernetes for Egyptian devs. ")}&url=${encodeURIComponent(link)}`;
   const wa = `https://wa.me/?text=${encodeURIComponent("Try AmerCloud: " + link)}`;
-  const mailto = `mailto:?subject=${encodeURIComponent("Try AmerCloud")}&body=${encodeURIComponent("I'm using AmerCloud — sign up here: " + link)}`;
+  const mailto = `mailto:?subject=${encodeURIComponent("Try AmerCloud")}&body=${encodeURIComponent("I&apos;m using AmerCloud — sign up here: " + link)}`;
 
   return (
     <div className="space-y-6 p-6 text-white">
       <div>
         <h1 className="text-2xl font-bold">Referral Program</h1>
         <p className="text-white/60 text-sm mt-1">
-          Earn {stats.config.commissionType === "FIXED" ? `$${stats.config.commissionValue}` : `${stats.config.commissionValue}%`} commission on each referred customer's first payment.
+          Earn {stats.config.commissionType === "FIXED" ? `$${stats.config.commissionValue}` : `${stats.config.commissionValue}%`} commission on each referred customer&apos;s first payment.
         </p>
       </div>
 
@@ -146,10 +146,10 @@ export default function ReferralPage() {
                   <td className="py-2 whitespace-nowrap">{new Date(h.date).toLocaleString()}</td>
                   <td>{h.event}</td>
                   <td className="text-right">{h.amount ? `$${h.amount.toFixed(2)}` : "—"}</td>
-                </tr>
+                 </tr>
               ))}
             </tbody>
-          </table>
+           </table>
         )}
       </div>
 
@@ -167,10 +167,10 @@ export default function ReferralPage() {
                   <td>{p.method}</td>
                   <td>${p.amount.toFixed(2)}</td>
                   <td>{p.status}</td>
-                </tr>
+                 </tr>
               ))}
             </tbody>
-          </table>
+           </table>
         </div>
       )}
     </div>

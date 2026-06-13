@@ -1,214 +1,184 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import { useEffect, useState } from "react";
-import { cloudWebhooks, type WebhookEndpoint, type WebhookDelivery } from "@/lib/cloud";
+import Link from "next/link";
+import api from "@/lib/api";
+import { cloudApi, CloudDeployment, CloudUsage } from "@/lib/cloud";
 
-const FALLBACK_EVENTS = [
-  "vps.created", "vps.deleted", "vps.started", "vps.stopped", "vps.restarted",
-  "vps.resized", "vps.backup.created", "vps.backup.restored",
-  "subscription.created", "subscription.cancelled", "invoice.paid",
-  "domain.added", "ssl.issued", "ssl.expiring",
-];
+export default function UserDashboard() {
+  const [usage, setUsage] = useState<CloudUsage | null>(null);
+  const [deployments, setDeployments] = useState<CloudDeployment[]>([]);
+  const [me, setMe] = useState<any>(null);
+  const [now, setNow] = useState<number>(() => Date.now());
 
-export function WebhookManager() {
-  const [hooks, setHooks] = useState<WebhookEndpoint[]>([]);
-  const [events, setEvents] = useState<string[]>(FALLBACK_EVENTS);
-  const [name, setName] = useState("");
-  const [url, setUrl] = useState("");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [deliveries, setDeliveries] = useState<Record<string, WebhookDelivery[]>>({});
-  const [showSecret, setShowSecret] = useState<Record<string, boolean>>({});
-
-  async function refresh() {
-    try { setHooks(await cloudWebhooks.list()); } catch { setHooks([]); }
-  }
   useEffect(() => {
-    refresh();
-    cloudWebhooks.events().then((e) => e?.length && setEvents(e)).catch(() => {});
+    cloudApi.deployments.usage().then(setUsage).catch(() => {});
+    cloudApi.deployments.list().then(setDeployments).catch(() => {});
+    api.get("/auth/me").then((r) => setMe(r.data)).catch(() => {});
   }, []);
 
-  function toggleEvent(ev: string) {
-    setSelected((s) => (s.includes(ev) ? s.filter((x) => x !== ev) : [...s, ev]));
-  }
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
-  async function create() {
-    setError(null); setBusy(true);
-    try {
-      await cloudWebhooks.create({ name, url, events: selected });
-      setName(""); setUrl(""); setSelected([]);
-      await refresh();
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? e?.message ?? "Failed to create");
-    }
-    setBusy(false);
-  }
-
-  async function remove(id: string) {
-    if (!confirm("Delete this webhook? Future events will not be delivered.")) return;
-    try { await cloudWebhooks.remove(id); await refresh(); } catch { /* ignore */ }
-  }
-
-  async function toggleEnabled(h: WebhookEndpoint) {
-    try { await cloudWebhooks.update(h.id, { enabled: !h.enabled }); await refresh(); } catch { /* ignore */ }
-  }
-
-  async function regen(id: string) {
-    if (!confirm("Regenerate signing secret? Existing receivers will fail until updated.")) return;
-    try { await cloudWebhooks.update(id, { regenerateSecret: true }); await refresh(); } catch { /* ignore */ }
-  }
-
-  async function test(id: string) {
-    try { await cloudWebhooks.test(id); await openDeliveries(id, true); } catch { /* ignore */ }
-  }
-
-  async function openDeliveries(id: string, force = false) {
-    if (!force && openId === id) { setOpenId(null); return; }
-    setOpenId(id);
-    try { setDeliveries((d) => ({ ...d, [id]: [] }));
-      const list = await cloudWebhooks.deliveries(id, 25);
-      setDeliveries((d) => ({ ...d, [id]: list }));
-    } catch { /* ignore */ }
-  }
+  const trialDaysLeft = me?.trialEndsAt
+    ? Math.ceil((new Date(me.trialEndsAt).getTime() - now) / (1000 * 60 * 60 * 24))
+    : null;
+  const isTrialing = me?.subscriptionStatus === "TRIALING" && trialDaysLeft !== null;
+  const trialExpired = isTrialing && trialDaysLeft <= 0;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="mb-2 text-3xl font-bold">Webhooks</h1>
-        <p className="text-sm text-white/60">
-          Receive real-time HTTP callbacks when events happen in your account. Each delivery is signed with HMAC-SHA256
-          using the endpoint secret — verify the <code className="rounded bg-slate-950/60 px-1 font-mono">X-AmerCloud-Signature</code> header.
-        </p>
+      {isTrialing && (
+        <div
+          className={`rounded-2xl border p-4 backdrop-blur-xl ${
+            trialExpired
+              ? "border-red-500/30 bg-red-500/10 text-red-200"
+              : "border-amber-500/30 bg-amber-500/10 text-amber-200"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-sm">
+              {trialExpired
+                ? "❌ Your trial has expired. Your VPS has been suspended. Upgrade now to resume service."
+                : `⚠️ Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"}. Upgrade to keep your VPS running.`}
+            </div>
+            <Link
+              href="/amercloud/dashboard/billing"
+              className="shrink-0 rounded-lg bg-white/10 px-4 py-2 text-xs font-semibold hover:bg-white/20"
+            >
+              Upgrade plan
+            </Link>
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 p-8 backdrop-blur-xl">
+        <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
+        <p className="mt-2 text-white/60">Manage your VPS instances, plan, and usage from one place.</p>
+      </div>
+
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <PlanCard usage={usage} />
+        <Gauge label="CPU" used={usage?.used.cpu ?? 0} total={usage?.limits.cpuLimit ?? 1} unit="cores" />
+        <Gauge label="Memory" used={usage?.used.memory ?? 0} total={usage?.limits.memoryLimit ?? 1} unit="MB" />
+        <Gauge label="Storage" used={usage?.used.storage ?? 0} total={usage?.limits.storageLimit ?? 1} unit="MB" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <QuickAction href="/amercloud/dashboard/vps/new" icon="🖥️" title="New VPS" desc="Provision a Proxmox container" />
+        <QuickAction href="/amercloud/dashboard/billing/invoices" icon="🧾" title="View Invoices" desc="Download past invoices" />
+        <QuickAction href="/amercloud/dashboard/billing" icon="⬆️" title="Upgrade Plan" desc="Need more resources?" />
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <h2 className="mb-3 font-semibold">Add endpoint</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <input
-            className="rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2"
-            placeholder="Name (e.g. CI pipeline)"
-            value={name} onChange={(e) => setName(e.target.value)}
-          />
-          <input
-            className="rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2"
-            placeholder="https://example.com/webhooks/amercloud"
-            value={url} onChange={(e) => setUrl(e.target.value)}
-          />
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Your VPS instances</h2>
+          <Link href="/amercloud/dashboard/vps" className="text-xs text-cyan-300 hover:underline">View all →</Link>
         </div>
-        <div className="mt-4">
-          <p className="mb-2 text-xs uppercase tracking-wide text-white/40">Subscribe to events</p>
-          <div className="flex flex-wrap gap-2">
-            {events.map((ev) => (
-              <button
-                key={ev}
-                onClick={() => toggleEvent(ev)}
-                className={`rounded-full border px-3 py-1 text-xs ${
-                  selected.includes(ev)
-                    ? "border-cyan-400 bg-cyan-400/10 text-cyan-200"
-                    : "border-white/10 text-white/60 hover:bg-white/5"
-                }`}
-              >
-                {ev}
-              </button>
+        {deployments.length === 0 ? (
+          <p className="py-12 text-center text-white/50">No VPS instances yet. Provision your first to get started.</p>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {deployments.slice(0, 6).map((d) => (
+              <VpsCard key={d.id} d={d as VpsCardProps["d"]} trialEndsAt={me?.trialEndsAt ?? null} now={now} />
             ))}
           </div>
-        </div>
-        {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
-        <button
-          onClick={create}
-          disabled={busy || !name || !url || selected.length === 0}
-          className="mt-4 rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 font-semibold text-slate-950 disabled:opacity-50"
-        >
-          {busy ? "Creating…" : "Create webhook"}
-        </button>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
-        {hooks.length === 0 ? (
-          <p className="p-8 text-center text-white/50">No webhooks yet.</p>
-        ) : (
-          <ul className="divide-y divide-white/5">
-            {hooks.map((h) => (
-              <li key={h.id} className="p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{h.name}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase ${h.enabled ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-white/50"}`}>
-                        {h.enabled ? "Active" : "Disabled"}
-                      </span>
-                    </div>
-                    <p className="mt-1 break-all font-mono text-xs text-white/60">{h.url}</p>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {h.events.map((e) => (
-                        <span key={e} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-white/60">{e}</span>
-                      ))}
-                    </div>
-                    {h.secret && (
-                      <div className="mt-2 flex items-center gap-2 text-xs">
-                        <span className="text-white/40">Secret:</span>
-                        <code className="rounded bg-slate-950/60 px-2 py-0.5 font-mono">
-                          {showSecret[h.id] ? h.secret : "•".repeat(24)}
-                        </code>
-                        <button onClick={() => setShowSecret((s) => ({ ...s, [h.id]: !s[h.id] }))} className="text-cyan-300 hover:underline">
-                          {showSecret[h.id] ? "Hide" : "Show"}
-                        </button>
-                        <button onClick={() => regen(h.id)} className="text-yellow-300 hover:underline">Regenerate</button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 gap-2 text-xs">
-                    <button onClick={() => test(h.id)} className="rounded border border-white/10 px-3 py-1 hover:bg-white/5">Test</button>
-                    <button onClick={() => toggleEnabled(h)} className="rounded border border-white/10 px-3 py-1 hover:bg-white/5">
-                      {h.enabled ? "Disable" : "Enable"}
-                    </button>
-                    <button onClick={() => openDeliveries(h.id)} className="rounded border border-white/10 px-3 py-1 hover:bg-white/5">
-                      {openId === h.id ? "Hide deliveries" : "Deliveries"}
-                    </button>
-                    <button onClick={() => remove(h.id)} className="rounded border border-red-500/30 px-3 py-1 text-red-300 hover:bg-red-500/10">Delete</button>
-                  </div>
-                </div>
-
-                {openId === h.id && (
-                  <div className="mt-4 overflow-hidden rounded-lg border border-white/10 bg-slate-950/40">
-                    <table className="w-full text-xs">
-                      <thead className="bg-white/5 text-left uppercase text-white/40">
-                        <tr>
-                          <th className="p-2">Event</th>
-                          <th className="p-2">Status</th>
-                          <th className="p-2">Attempt</th>
-                          <th className="p-2">When</th>
-                          <th className="p-2">Result</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(deliveries[h.id] ?? []).length === 0 ? (
-                          <tr><td colSpan={5} className="p-4 text-center text-white/40">No deliveries yet.</td></tr>
-                        ) : (
-                          (deliveries[h.id] ?? []).map((d) => (
-                            <tr key={d.id} className="border-t border-white/5">
-                              <td className="p-2 font-mono">{d.eventType}</td>
-                              <td className="p-2">
-                                <span className={`rounded px-2 py-0.5 ${d.success ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
-                                  {d.responseStatus ?? (d.success ? "OK" : "ERR")}
-                                </span>
-                              </td>
-                              <td className="p-2">{d.attempt}</td>
-                              <td className="p-2 text-white/50">{new Date(d.createdAt).toLocaleString()}</td>
-                              <td className="p-2 text-white/60">{d.error ?? (d.responseBody ?? "").slice(0, 80)}</td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
         )}
+      </div>
+    </div>
+  );
+}
+
+function PlanCard({ usage }: { usage: CloudUsage | null }) {
+  return (
+    <div className="rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10 p-5">
+      <div className="text-xs uppercase text-cyan-300">Current plan</div>
+      <div className="mt-1 text-2xl font-bold">{usage?.plan?.name ?? "Free Trial"}</div>
+      <div className="mt-1 text-xs text-white/60">${usage?.plan?.priceUSD ?? 0}/mo · {usage?.plan?.priceEGP ?? 0} EGP</div>
+      <Link href="/amercloud/dashboard/billing" className="mt-3 inline-block text-xs text-cyan-300 hover:underline">Manage →</Link>
+    </div>
+  );
+}
+
+function Gauge({ label, used, total, unit }: { label: string; used: number; total: number; unit: string }) {
+  const pct = Math.min(100, total ? (used / total) * 100 : 0);
+  const color = pct > 90 ? "from-red-500 to-orange-500" : pct > 70 ? "from-yellow-400 to-orange-500" : "from-cyan-400 to-fuchsia-500";
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+      <div className="flex items-baseline justify-between">
+        <div className="text-xs uppercase text-white/60">{label}</div>
+        <div className="text-xs text-white/50">{pct.toFixed(0)}%</div>
+      </div>
+      <div className="mt-2 text-2xl font-bold">{used.toFixed(used < 10 ? 2 : 0)}<span className="ml-1 text-sm text-white/40">{unit}</span></div>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+        <div className={`h-full bg-gradient-to-r ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <div className="mt-1 text-xs text-white/40">of {total} {unit}</div>
+    </div>
+  );
+}
+
+function QuickAction({ href, icon, title, desc }: { href: string; icon: string; title: string; desc: string }) {
+  return (
+    <Link href={href} className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl transition hover:border-cyan-400/30 hover:bg-white/10">
+      <div className="text-2xl">{icon}</div>
+      <div className="mt-2 font-semibold">{title}</div>
+      <div className="text-xs text-white/50">{desc}</div>
+    </Link>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    RUNNING: "bg-green-500/20 text-green-300 border-green-500/30",
+    PROVISIONING: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+    DEPLOYING: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+    PENDING: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+    STOPPED: "bg-gray-500/20 text-gray-300 border-gray-500/30",
+    SUSPENDED: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+    FAILED: "bg-red-500/20 text-red-300 border-red-500/30",
+    TERMINATED: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+    DELETED: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+  };
+  return <span className={`rounded-full border px-2 py-0.5 text-xs ${colors[status] ?? colors.PENDING}`}>{status}</span>;
+}
+
+type VpsCardProps = { d: CloudDeployment & { ipv4Address?: string }; trialEndsAt: string | null; now: number };
+function VpsCard({ d, trialEndsAt, now }: VpsCardProps) {
+  const [u, setU] = useState<{ cpuPercent: number; ramPercent: number; diskPercent: number } | null>(null);
+  useEffect(() => { cloudApi.deployments.usageOne(d.id).then(setU).catch(() => {}); }, [d.id]);
+  const trialDays = trialEndsAt ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - now) / (1000 * 60 * 60 * 24))) : null;
+  return (
+    <Link href={`/amercloud/dashboard/vps/${d.id}`} className="block rounded-xl border border-white/10 bg-white/5 p-4 hover:border-cyan-400/30 hover:bg-white/10">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="font-semibold">{d.name}</div>
+          <div className="font-mono text-xs text-cyan-300 mt-0.5">{d.ipv4Address ?? "no IP"}</div>
+        </div>
+        <StatusBadge status={d.status} />
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+        <Metric label="CPU" pct={u?.cpuPercent ?? 0} />
+        <Metric label="RAM" pct={u?.ramPercent ?? 0} />
+        <Metric label="Disk" pct={u?.diskPercent ?? 0} />
+      </div>
+      {trialDays !== null && (
+        <div className="mt-3 text-[11px] text-amber-300">⏳ Trial: {trialDays} day{trialDays === 1 ? "" : "s"} left</div>
+      )}
+    </Link>
+  );
+}
+function Metric({ label, pct }: { label: string; pct: number }) {
+  const color = pct > 90 ? "from-red-500 to-orange-500" : pct > 70 ? "from-yellow-400 to-orange-500" : "from-cyan-400 to-fuchsia-500";
+  return (
+    <div>
+      <div className="flex justify-between text-white/50"><span>{label}</span><span>{pct.toFixed(0)}%</span></div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div className={`h-full bg-gradient-to-r ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
     </div>
   );

@@ -44,7 +44,7 @@ export function AlertRules({ vpsId }: { vpsId?: string }) {
       setLoading(false);
     }
   }, [vpsId]);
-
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   async function create() {

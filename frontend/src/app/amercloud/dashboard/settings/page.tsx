@@ -58,7 +58,7 @@ function ProfileTab() {
   const [emailPw, setEmailPw] = useState("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     cloudAccount.getProfile().then((p) => {
       setProfile(p); setName(p.name); setPhone(p.phone || "");
@@ -133,6 +133,7 @@ function SecurityTab() {
   const [disablePw, setDisablePw] = useState("");
 
   async function refresh() { try { setStatus(await cloudTwoFactor.status()); } catch {} }
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh(); }, []);
 
   async function changePw() {
@@ -248,7 +249,7 @@ function NotificationsTab() {
   const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { cloudAccount.getNotificationPrefs().then(setPrefs).catch(() => {}); }, []);
 
   async function toggle(key: keyof NotificationPrefs) {

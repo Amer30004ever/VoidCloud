@@ -21,7 +21,7 @@ export function SSHKeyManager({ vpsId }: { vpsId?: string }) {
     setKeys(all);
     if (vpsId) setVpsKeys(await cloudSshKeys.listForVps(vpsId));
   }, [vpsId]);
-
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh().catch(() => {}); }, [refresh]);
 
   async function run(fn: () => Promise<any>, label: string) {

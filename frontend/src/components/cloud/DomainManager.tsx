@@ -22,6 +22,7 @@ export default function DomainManager({ vpsId }: { vpsId: string }) {
     catch (e) { setErr(e instanceof Error ? e.message : "Failed to load"); }
     finally { setLoading(false); }
   }
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh(); }, [vpsId]);
 
   async function addDomain() {

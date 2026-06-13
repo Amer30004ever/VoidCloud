@@ -1244,3 +1244,52 @@ model ReferralPayoutRequest {
   @@index([userId])
   @@index([status])
 }
+
+model SSHKey {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  name        String
+  publicKey   String    @unique
+  fingerprint String
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+
+  vpses       CloudDeployment[] @relation("VPSKeys")
+
+  @@index([userId])
+}
+
+model CustomImage {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  name        String
+  description String?
+  type        String      // SNAPSHOT, CUSTOM, MARKETPLACE
+  sourceVpsId String?
+  sourceVps   CloudDeployment? @relation(fields: [sourceVpsId], references: [id])
+  sizeMB      Int
+  isPublic    Boolean     @default(false)
+  storageUrl  String
+  createdAt   DateTime    @default(now())
+
+  shares      CustomImageShare[]
+
+  @@index([userId])
+  @@index([isPublic])
+}
+
+model CustomImageShare {
+  id          String      @id @default(cuid())
+  imageId     String
+  image       CustomImage @relation(fields: [imageId], references: [id])
+  sharedWithEmail String
+  sharedBy    String
+  sharedAt    DateTime    @default(now())
+
+  // Opposite relation to User model
+  user        User        @relation(fields: [sharedBy], references: [id])
+
+  @@unique([imageId, sharedWithEmail])
+}

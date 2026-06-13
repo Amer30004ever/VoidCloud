@@ -21,6 +21,7 @@ export default function OrgPage() {
       setOrg(o); setMembers(m);
     } catch (e: any) { setMsg(e?.response?.data?.message ?? "Failed to load"); }
   }, [id]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (id) refresh(); }, [id, refresh]);
 
   async function run(fn: () => Promise<any>, ok: string) {

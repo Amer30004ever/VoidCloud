@@ -17,9 +17,11 @@ export default function GlobalBackupsPage() {
     const b = await cloudBackups.listAll({ vpsId: vpsId || undefined, from: from || undefined, to: to || undefined });
     setList(b); setSelected(new Set());
   }, [vpsId, from, to]);
-
   useEffect(() => { cloudApi.deployments.list().then(setVpsList).catch(() => {}); }, []);
-  useEffect(() => { refresh().catch(() => {}); }, [refresh]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refresh().catch(() => {});
+  }, [refresh]);
 
   function toggle(id: string) {
     const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n);

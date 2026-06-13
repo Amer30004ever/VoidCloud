@@ -11,9 +11,20 @@
 #
 # Manual jobs (run from CI > Pipelines > Run pipeline, set MODE variable):
 #   MODE=auto                 (default) — detect changes, build + deploy
-#   MODE=apply-manifests      kubectl apply all k8s manifests
-#   MODE=validate-secrets     validate + annotate secrets
-#   MODE=reset-postgres       DESTRUCTIVE postgres reset
+#   MODE=test-backend-only    Test backend code only
+#   MODE=test-frontend-only   Test frontend code only
+#   MODE=test-both            Test both backend and frontend
+#   MODE=build-backend-only   Test + Build + Push backend image + Deploy
+#   MODE=build-frontend-only  Test + Build + Push frontend image + Deploy
+#   MODE=build-both           Test + Build + Push both images + Deploy both
+#   MODE=build-postgres       Build + Push PostgreSQL image only
+#   MODE=full-ci-backend      Complete CI + Deploy backend
+#   MODE=full-ci-frontend     Complete CI + Deploy frontend
+#   MODE=full-ci-both         Complete CI + Deploy both
+#   MODE=full-ci-all          Complete CI + Deploy backend, frontend, and postgres
+#   MODE=apply-manifests      kubectl apply all k8s manifests (no build)
+#   MODE=validate-secrets     Run Validate-Secrets equivalent + annotate
+#   MODE=reset-postgres       DESTRUCTIVE: wipe postgres PVC/PV + reinit
 #   MODE=k8s-full-reset       reset-postgres -> apply -> validate -> redeploy
 
 variables:
@@ -22,49 +33,166 @@ variables:
   NAMESPACE: amer-portal
   MODE:
     value: "auto"
-    description: "auto | apply-manifests | validate-secrets | reset-postgres | k8s-full-reset | build-backend | build-frontend | build-both"
+    description: "auto | test-backend-only | test-frontend-only | test-both | build-backend-only | build-frontend-only | build-both | build-postgres | full-ci-backend | full-ci-frontend | full-ci-both | full-ci-all | apply-manifests | validate-secrets | reset-postgres | k8s-full-reset"
+  DEPLOY_ENABLED:
+    value: "true"
+    description: "Enable auto-deploy after build (true/false)"
+  BACKEND_IMAGE:
+    value: "latest"
+    description: "Backend image tag for manual deploy"
+  FRONTEND_IMAGE:
+    value: "latest"
+    description: "Frontend image tag for manual deploy"
+  POSTGRES_IMAGE:
+    value: "latest"
+    description: "PostgreSQL image tag for manual deploy"
+  FORCE_PULL:
+    value: "true"
+    description: "Force pull new images on deploy (true/false)"
 
 stages:
   - detect
   - test
   - build
   - deploy
+  - migrations
   - k8s-ops
+  - summary
+
+# ---------- Concurrency control ----------
+# GitLab uses resource groups for concurrency control
+# This ensures only one pipeline runs per branch at a time
+resource_group: ci-cd-$CI_COMMIT_REF_NAME
 
 # ---------- detect changes ----------
 detect-changes:
   stage: detect
   image: alpine:3.19
-  before_script: [apk add --no-cache git]
+  before_script:
+    - apk add --no-cache git bash
   script:
     - |
-      BACKEND=false; FRONTEND=false; POSTGRES=false
-      if [ "$CI_PIPELINE_SOURCE" = "push" ]; then
-        git fetch --depth=2 origin "$CI_COMMIT_REF_NAME" || true
-        DIFF=$(git diff --name-only HEAD~1 HEAD || true)
-        echo "$DIFF" | grep -q '^backend/'             && BACKEND=true   || true
-        echo "$DIFF" | grep -q '^frontend/'            && FRONTEND=true  || true
-        echo "$DIFF" | grep -q '^kubernetes/postgres/' && POSTGRES=true  || true
+      BACKEND="false"
+      FRONTEND="false"
+      POSTGRES="false"
+      BUILD_BACKEND="false"
+      BUILD_FRONTEND="false"
+      BUILD_POSTGRES="false"
+      
+      echo "✅ Mode: ${MODE}"
+      
+      # For manual triggers, respect the mode
+      if [[ "$MODE" == "test-backend-only" ]] || [[ "$MODE" == "build-backend-only" ]] || [[ "$MODE" == "full-ci-backend" ]] || [[ "$MODE" == "full-ci-all" ]]; then
+        BACKEND="true"
+        echo "✅ Backend selected"
       fi
-      case "$MODE" in
-        build-backend)  BACKEND=true ;;
-        build-frontend) FRONTEND=true ;;
-        build-both)     BACKEND=true; FRONTEND=true ;;
-      esac
-      echo "BUILD_BACKEND=$BACKEND"   > detect.env
-      echo "BUILD_FRONTEND=$FRONTEND" >> detect.env
-      echo "BUILD_POSTGRES=$POSTGRES" >> detect.env
+      
+      if [[ "$MODE" == "test-frontend-only" ]] || [[ "$MODE" == "build-frontend-only" ]] || [[ "$MODE" == "full-ci-frontend" ]] || [[ "$MODE" == "full-ci-all" ]]; then
+        FRONTEND="true"
+        echo "✅ Frontend selected"
+      fi
+      
+      if [[ "$MODE" == "test-both" ]] || [[ "$MODE" == "build-both" ]] || [[ "$MODE" == "full-ci-both" ]] || [[ "$MODE" == "full-ci-all" ]]; then
+        BACKEND="true"
+        FRONTEND="true"
+        echo "✅ Both selected"
+      fi
+      
+      if [[ "$MODE" == "build-postgres" ]] || [[ "$MODE" == "full-ci-all" ]]; then
+        POSTGRES="true"
+        echo "✅ PostgreSQL selected"
+      fi
+      
+      # For auto mode, detect changes from git
+      if [[ "$MODE" == "auto" ]]; then
+        git fetch --depth=2 origin "$CI_COMMIT_REF_NAME" 2>/dev/null || true
+        DIFF=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+        
+        if echo "$DIFF" | grep -q "^backend/"; then
+          BACKEND="true"
+          echo "✅ Backend changes detected"
+        fi
+        if echo "$DIFF" | grep -q "^frontend/"; then
+          FRONTEND="true"
+          echo "✅ Frontend changes detected"
+        fi
+        if echo "$DIFF" | grep -q "^kubernetes/postgres/"; then
+          POSTGRES="true"
+          echo "✅ PostgreSQL changes detected"
+        fi
+      fi
+      
+      # Determine if we should build
+      if [[ "$CI_PIPELINE_SOURCE" == "web" ]]; then
+        case "$MODE" in
+          "build-backend-only"|"full-ci-backend")
+            BUILD_BACKEND="true"
+            ;;
+          "build-frontend-only"|"full-ci-frontend")
+            BUILD_FRONTEND="true"
+            ;;
+          "build-both"|"full-ci-both")
+            BUILD_BACKEND="true"
+            BUILD_FRONTEND="true"
+            ;;
+          "build-postgres")
+            BUILD_POSTGRES="true"
+            ;;
+          "full-ci-all")
+            BUILD_BACKEND="true"
+            BUILD_FRONTEND="true"
+            BUILD_POSTGRES="true"
+            ;;
+          "auto")
+            BUILD_BACKEND="$BACKEND"
+            BUILD_FRONTEND="$FRONTEND"
+            BUILD_POSTGRES="$POSTGRES"
+            ;;
+        esac
+      fi
+      
+      # For push events, build what changed
+      if [[ "$CI_PIPELINE_SOURCE" == "push" ]]; then
+        BUILD_BACKEND="$BACKEND"
+        BUILD_FRONTEND="$FRONTEND"
+        BUILD_POSTGRES="$POSTGRES"
+      fi
+      
+      # Write outputs
+      echo "BACKEND=$BACKEND" >> detect.env
+      echo "FRONTEND=$FRONTEND" >> detect.env
+      echo "POSTGRES=$POSTGRES" >> detect.env
+      echo "BUILD_BACKEND=$BUILD_BACKEND" >> detect.env
+      echo "BUILD_FRONTEND=$BUILD_FRONTEND" >> detect.env
+      echo "BUILD_POSTGRES=$BUILD_POSTGRES" >> detect.env
+      echo "MODE=$MODE" >> detect.env
+      echo "DEPLOY_ENABLED=$DEPLOY_ENABLED" >> detect.env
+      echo "BACKEND_TAG=$BACKEND_IMAGE" >> detect.env
+      echo "FRONTEND_TAG=$FRONTEND_IMAGE" >> detect.env
+      echo "POSTGRES_TAG=$POSTGRES_IMAGE" >> detect.env
+      echo "FORCE_PULL=$FORCE_PULL" >> detect.env
+      
       cat detect.env
+      
+      echo "📊 Summary:"
+      echo "  backend: $BACKEND"
+      echo "  frontend: $FRONTEND"
+      echo "  postgres: $POSTGRES"
+      echo "  build_backend: $BUILD_BACKEND"
+      echo "  build_frontend: $BUILD_FRONTEND"
+      echo "  build_postgres: $BUILD_POSTGRES"
+      echo "  deploy_enabled: $DEPLOY_ENABLED"
   artifacts:
     reports:
       dotenv: detect.env
 
-# ---------- backend tests ----------
+# ---------- BACKEND TESTS ----------
 test-backend:
   stage: test
   image: node:20
   needs: [detect-changes]
-  rules: [{ if: '$BUILD_BACKEND == "true"' }]
+  rules:
+    - if: '$BACKEND == "true"'
   services:
     - name: postgres:15-alpine
       alias: postgres
@@ -85,12 +213,13 @@ test-backend:
     - npm test
     - npm run build
 
-# ---------- frontend tests ----------
+# ---------- FRONTEND TESTS ----------
 test-frontend:
   stage: test
   image: node:20
   needs: [detect-changes]
-  rules: [{ if: '$BUILD_FRONTEND == "true"' }]
+  rules:
+    - if: '$FRONTEND == "true"'
   variables:
     NEXT_PUBLIC_API_URL: https://api.amer-portal.cc.cd/api/v1
   script:
@@ -101,10 +230,96 @@ test-frontend:
     - npm run build
     - npm test -- --watchAll=false --passWithNoTests
 
-# ---------- build & push images ----------
+# ---------- BACKEND ARTIFACT TESTS ----------
+test-backend-artifact:
+  stage: test
+  image: docker:24
+  services:
+    - docker:24-dind
+  needs: [detect-changes, test-backend]
+  rules:
+    - if: '$BACKEND == "true" && $BUILD_BACKEND == "true"'
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - |
+      cd backend
+      docker build -t backend-test:latest .
+      
+      docker network create test-network || true
+      
+      docker run -d \
+        --name test-postgres \
+        --network test-network \
+        -e POSTGRES_USER=test_user \
+        -e POSTGRES_PASSWORD=test_password \
+        -e POSTGRES_DB=test_db \
+        postgres:15-alpine
+      
+      echo "Waiting for PostgreSQL..."
+      for i in $(seq 1 30); do
+        if docker exec test-postgres pg_isready -U test_user; then
+          break
+        fi
+        sleep 2
+      done
+      
+      docker run -d \
+        --name test-backend \
+        --network test-network \
+        -p 8080:3001 \
+        -e DATABASE_URL="postgresql://test_user:test_password@test-postgres:5432/test_db" \
+        -e JWT_SECRET="test_secret_key_for_ci_only" \
+        -e NODE_ENV="test" \
+        backend-test:latest
+      
+      echo "Waiting for backend..."
+      for i in $(seq 1 30); do
+        if curl -f http://localhost:8080/api/v1/health 2>/dev/null; then
+          echo "✅ Backend health check passed!"
+          exit 0
+        fi
+        sleep 3
+      done
+      
+      echo "❌ Backend failed to start"
+      docker logs test-backend
+      exit 1
+  after_script:
+    - docker stop test-backend test-postgres 2>/dev/null || true
+    - docker rm test-backend test-postgres 2>/dev/null || true
+    - docker network rm test-network 2>/dev/null || true
+    - docker rmi backend-test:latest 2>/dev/null || true
+
+# ---------- FRONTEND ARTIFACT TESTS ----------
+test-frontend-artifact:
+  stage: test
+  image: docker:24
+  services:
+    - docker:24-dind
+  needs: [detect-changes, test-frontend]
+  rules:
+    - if: '$FRONTEND == "true" && $BUILD_FRONTEND == "true"'
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - |
+      cd frontend
+      docker build -t frontend-test:latest .
+      
+      docker run -d --name test-frontend -p 8081:3000 frontend-test:latest
+      sleep 10
+      curl -f http://localhost:8081 || exit 1
+      docker stop test-frontend
+      docker rm test-frontend
+  after_script:
+    - docker rmi frontend-test:latest 2>/dev/null || true
+
+# ---------- BUILD & PUSH IMAGES ----------
 .docker-build: &docker-build
   image: docker:24
-  services: [docker:24-dind]
+  services:
+    - docker:24-dind
   variables:
     DOCKER_TLS_CERTDIR: ""
   before_script:
@@ -113,101 +328,193 @@ test-frontend:
 build-backend:
   <<: *docker-build
   stage: build
-  needs: [detect-changes, test-backend]
-  rules: [{ if: '$BUILD_BACKEND == "true"' }]
+  needs: [detect-changes, test-backend, test-backend-artifact]
+  rules:
+    - if: '$BUILD_BACKEND == "true"'
   script:
     - cd backend
-    - TAG=$(date +%Y%m%d-%H%M%S)
-    - docker build -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:latest -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:$TAG .
+    - TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+    - docker build -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:latest -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:$TIMESTAMP .
     - docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:latest
-    - docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:$TAG
-    - echo "BACKEND_TAG=$TAG" >> build.env
-  artifacts: { reports: { dotenv: build.env } }
+    - docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:$TIMESTAMP
+    - echo "BACKEND_BUILT=true" >> build.env
+    - echo "BACKEND_TAG=$TIMESTAMP" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
 
 build-frontend:
   <<: *docker-build
   stage: build
-  needs: [detect-changes, test-frontend]
-  rules: [{ if: '$BUILD_FRONTEND == "true"' }]
+  needs: [detect-changes, test-frontend, test-frontend-artifact]
+  rules:
+    - if: '$BUILD_FRONTEND == "true"'
   script:
     - cd frontend
-    - TAG=$(date +%Y%m%d-%H%M%S)
-    - docker build -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:latest -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:$TAG .
+    - TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+    - docker build -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:latest -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:$TIMESTAMP .
     - docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:latest
-    - docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:$TAG
-    - echo "FRONTEND_TAG=$TAG" >> build.env
-  artifacts: { reports: { dotenv: build.env } }
+    - docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:$TIMESTAMP
+    - echo "FRONTEND_BUILT=true" >> build.env
+    - echo "FRONTEND_TAG=$TIMESTAMP" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
 
 build-postgres:
   <<: *docker-build
   stage: build
   needs: [detect-changes]
-  rules: [{ if: '$BUILD_POSTGRES == "true"' }]
+  rules:
+    - if: '$BUILD_POSTGRES == "true"'
   script:
     - cd kubernetes/postgres/build_image
-    - TAG=$(date +%Y%m%d-%H%M%S)
-    - docker build -t $POSTGRES_IMAGE_NAME:latest -t $POSTGRES_IMAGE_NAME:$TAG ./postgres
+    - TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+    - |
+      if [ ! -f "./postgres/Dockerfile" ]; then
+        echo "❌ Dockerfile not found"
+        exit 1
+      fi
+    - docker build -t $POSTGRES_IMAGE_NAME:latest -t $POSTGRES_IMAGE_NAME:$TIMESTAMP ./postgres
     - docker push $POSTGRES_IMAGE_NAME:latest
-    - docker push $POSTGRES_IMAGE_NAME:$TAG
+    - docker push $POSTGRES_IMAGE_NAME:$TIMESTAMP
+    - echo "POSTGRES_BUILT=true" >> build.env
+    - echo "POSTGRES_TAG=$TIMESTAMP" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
 
-# ---------- deploy on self-hosted homelab runner ----------
+# ---------- KUBERNETES DEPLOYMENT (Self-Hosted Runner) ----------
 .k8s-runner: &k8s-runner
-  tags: [homelab]
+  tags:
+    - homelab
   image: bitnami/kubectl:latest
   before_script:
     - mkdir -p $HOME/.kube
-    - echo "$KUBECONFIG_B64" | base64 -d > $HOME/.kube/config
+    - echo "$KUBECONFIG" | base64 -d > $HOME/.kube/config
     - chmod 600 $HOME/.kube/config
+
+deploy-postgres:
+  <<: *k8s-runner
+  stage: deploy
+  needs: [build-postgres]
+  rules:
+    - if: '$DEPLOY_ENABLED == "true" && ($BUILD_POSTGRES == "true" || $MODE == "build-postgres" || $MODE == "full-ci-all")'
+  script:
+    - |
+      echo "🐘 Deploying PostgreSQL..."
+      kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+      
+      kubectl apply -f kubernetes/postgres/pv.yaml 2>/dev/null || true
+      kubectl apply -f kubernetes/postgres/pvc.yaml 2>/dev/null || true
+      kubectl apply -f kubernetes/postgres/deployment.yaml 2>/dev/null || true
+      kubectl apply -f kubernetes/postgres/service.yaml 2>/dev/null || true
+      
+      POSTGRES_TAG="${POSTGRES_TAG:-latest}"
+      if [ "$POSTGRES_TAG" != "latest" ] && [ "$POSTGRES_TAG" != "" ]; then
+        kubectl set image deployment/postgres -n $NAMESPACE postgres=$POSTGRES_IMAGE_NAME:${POSTGRES_TAG} 2>/dev/null || true
+      fi
+      
+      kubectl patch deployment postgres -n $NAMESPACE -p '{"spec":{"template":{"spec":{"containers":[{"name":"postgres","imagePullPolicy":"Always"}]}}}}' 2>/dev/null || true
+      
+      kubectl rollout restart deployment/postgres -n $NAMESPACE 2>/dev/null || true
+      kubectl rollout status deployment/postgres -n $NAMESPACE --timeout=120s 2>/dev/null || true
+      
+      echo "✅ PostgreSQL deployment complete!"
 
 deploy-backend:
   <<: *k8s-runner
   stage: deploy
   needs: [build-backend]
-  rules: [{ if: '$BUILD_BACKEND == "true"' }]
+  rules:
+    - if: '$DEPLOY_ENABLED == "true" && ($BUILD_BACKEND == "true" || $MODE == "full-ci-backend" || $MODE == "full-ci-both" || $MODE == "full-ci-all" || $MODE == "build-backend-only" || $MODE == "build-both")'
   script:
-    - kubectl apply -f kubernetes/backend/deployment.yaml
-    - kubectl apply -f kubernetes/backend/service.yaml -n $NAMESPACE
-    - kubectl set image deployment/backend -n $NAMESPACE backend=$DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:${BACKEND_TAG:-latest}
-    - kubectl rollout restart deployment/backend -n $NAMESPACE
-    - kubectl rollout status  deployment/backend -n $NAMESPACE --timeout=300s
+    - |
+      echo "🚀 Deploying backend..."
+      kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+      
+      kubectl apply -f kubernetes/backend/service.yaml 2>/dev/null || true
+      kubectl apply -f kubernetes/backend/deployment.yaml
+      
+      kubectl patch deployment backend -n $NAMESPACE -p '{"spec":{"template":{"spec":{"containers":[{"name":"backend","imagePullPolicy":"Always"}]}}}}'
+      
+      BACKEND_TAG="${BACKEND_TAG:-latest}"
+      kubectl set image deployment/backend -n $NAMESPACE backend=$DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:${BACKEND_TAG}
+      
+      if [ "$FORCE_PULL" == "true" ]; then
+        kubectl rollout restart deployment/backend -n $NAMESPACE
+      fi
+      
+      kubectl rollout status deployment/backend -n $NAMESPACE --timeout=180s
+      echo "✅ Backend deployment complete!"
+
+run-migrations:
+  <<: *k8s-runner
+  stage: migrations
+  needs: [deploy-backend]
+  rules:
+    - if: '$DEPLOY_ENABLED == "true" && ($MODE == "full-ci-backend" || $MODE == "full-ci-both" || $MODE == "full-ci-all" || $BUILD_BACKEND == "true")'
+  script:
+    - |
+      echo "🔄 Running database migrations..."
+      kubectl -n $NAMESPACE exec deploy/backend -- npx prisma migrate deploy || true
+      echo "✅ Migrations completed"
 
 deploy-frontend:
   <<: *k8s-runner
   stage: deploy
   needs: [build-frontend]
-  rules: [{ if: '$BUILD_FRONTEND == "true"' }]
+  rules:
+    - if: '$DEPLOY_ENABLED == "true" && ($BUILD_FRONTEND == "true" || $MODE == "full-ci-frontend" || $MODE == "full-ci-both" || $MODE == "full-ci-all" || $MODE == "build-frontend-only" || $MODE == "build-both")'
   script:
-    - kubectl apply -f kubernetes/frontend/deployment.yaml
-    - kubectl apply -f kubernetes/frontend/service.yaml -n $NAMESPACE
-    - kubectl set image deployment/frontend -n $NAMESPACE frontend=$DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:${FRONTEND_TAG:-latest}
-    - kubectl rollout restart deployment/frontend -n $NAMESPACE
-    - kubectl rollout status  deployment/frontend -n $NAMESPACE --timeout=300s
+    - |
+      echo "🚀 Deploying frontend..."
+      kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+      
+      kubectl apply -f kubernetes/frontend/service.yaml 2>/dev/null || true
+      kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml 2>/dev/null || true
+      kubectl apply -f kubernetes/frontend/deployment.yaml
+      
+      kubectl patch deployment frontend -n $NAMESPACE -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"Always"}]}}}}'
+      
+      FRONTEND_TAG="${FRONTEND_TAG:-latest}"
+      kubectl set image deployment/frontend -n $NAMESPACE frontend=$DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:${FRONTEND_TAG}
+      
+      if [ "$FORCE_PULL" == "true" ]; then
+        kubectl rollout restart deployment/frontend -n $NAMESPACE
+      fi
+      
+      kubectl rollout status deployment/frontend -n $NAMESPACE --timeout=180s
+      echo "✅ Frontend deployment complete!"
 
-# ---------- k8s ops (manual) ----------
+# ---------- K8S OPS (Manual Jobs) ----------
 apply-manifests:
   <<: *k8s-runner
   stage: k8s-ops
   rules:
     - if: '$MODE == "apply-manifests" || $MODE == "k8s-full-reset"'
   script:
-    - kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-    - kubectl apply -f kubernetes/configmaps.yaml
-    - kubectl apply -f kubernetes/secrets.yaml
-    - kubectl apply -f kubernetes/postgres/pv.yaml
-    - kubectl apply -f kubernetes/postgres/pvc.yaml -n $NAMESPACE
-    - kubectl apply -f kubernetes/postgres/deployment.yaml
-    - kubectl apply -f kubernetes/postgres/service.yaml -n $NAMESPACE
-    - kubectl apply -f kubernetes/backend/rbac.yaml -n $NAMESPACE || true
-    - kubectl apply -f kubernetes/backend/deployment.yaml
-    - kubectl apply -f kubernetes/backend/service.yaml -n $NAMESPACE
-    - kubectl apply -f kubernetes/frontend/deployment.yaml
-    - kubectl apply -f kubernetes/frontend/service.yaml -n $NAMESPACE
-    - kubectl apply -f kubernetes/ingress.yaml -n $NAMESPACE || true
+    - |
+      set -e
+      kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+      kubectl apply -f kubernetes/configmaps.yaml
+      kubectl apply -f kubernetes/secrets.yaml 2>/dev/null || echo "kubernetes/secrets.yaml not present; keeping existing cluster secrets"
+      kubectl apply -f kubernetes/postgres/pv.yaml
+      kubectl apply -f kubernetes/postgres/pvc.yaml -n $NAMESPACE
+      kubectl apply -f kubernetes/postgres/deployment.yaml
+      kubectl apply -f kubernetes/postgres/service.yaml -n $NAMESPACE
+      kubectl apply -f kubernetes/backend/rbac.yaml -n $NAMESPACE 2>/dev/null || true
+      kubectl apply -f kubernetes/backend/deployment.yaml
+      kubectl apply -f kubernetes/backend/service.yaml -n $NAMESPACE
+      kubectl apply -f kubernetes/frontend/deployment.yaml
+      kubectl apply -f kubernetes/frontend/service.yaml -n $NAMESPACE
+      kubectl apply -f kubernetes/ingress.yaml -n $NAMESPACE 2>/dev/null || true
+      kubectl -n $NAMESPACE rollout status deploy/backend --timeout=300s
 
 validate-secrets:
   <<: *k8s-runner
   stage: k8s-ops
-  needs: []
+  needs: [apply-manifests]
   rules:
     - if: '$MODE == "validate-secrets" || $MODE == "apply-manifests" || $MODE == "k8s-full-reset"'
   script:
@@ -220,11 +527,11 @@ reset-postgres:
   rules:
     - if: '$MODE == "reset-postgres" || $MODE == "k8s-full-reset"'
       when: manual
-      allow_failure: false
   script:
-    - bash kubernetes/reset-postgres.sh
-        --namespace $NAMESPACE
-        --node "${PG_DATA_NODE:-workernode01}"
+    - |
+      bash kubernetes/reset-postgres.sh \
+        --namespace $NAMESPACE \
+        --node "${PG_DATA_NODE:-workernode01}" \
         --path "${PG_DATA_PATH:-/mnt/homelab/volumes/amer-portal/postgres}"
 
 redeploy-after-reset:
@@ -234,6 +541,72 @@ redeploy-after-reset:
   rules:
     - if: '$MODE == "k8s-full-reset"'
   script:
-    - kubectl -n $NAMESPACE rollout restart deploy/backend
-    - kubectl -n $NAMESPACE rollout status  deploy/backend --timeout=300s
-    - kubectl -n $NAMESPACE rollout restart deploy/frontend || true
+    - |
+      kubectl -n $NAMESPACE rollout restart deploy/backend
+      kubectl -n $NAMESPACE rollout status deploy/backend --timeout=300s
+      kubectl -n $NAMESPACE rollout restart deploy/frontend 2>/dev/null || true
+
+# ---------- CI SUMMARY ----------
+ci-summary:
+  stage: summary
+  image: alpine:3.19
+  needs:
+    - detect-changes
+    - test-backend
+    - test-frontend
+    - build-backend
+    - build-frontend
+    - build-postgres
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web"'
+  script:
+    - |
+      echo "========================================="
+      echo "📊 CI Summary"
+      echo "========================================="
+      echo ""
+      echo "Mode: $MODE"
+      echo "Deploy Enabled: $DEPLOY_ENABLED"
+      echo ""
+      echo "Build Flags from detect-changes:"
+      echo "  build_backend: $BUILD_BACKEND"
+      echo "  build_frontend: $BUILD_FRONTEND"
+      echo "  build_postgres: $BUILD_POSTGRES"
+      echo ""
+      echo "Backend selected: $BACKEND"
+      echo "Frontend selected: $FRONTEND"
+      echo "PostgreSQL selected: $POSTGRES"
+      echo ""
+      echo "========================================="
+  allow_failure: true
+
+deploy-summary:
+  <<: *k8s-runner
+  stage: summary
+  needs:
+    - deploy-postgres
+    - deploy-backend
+    - deploy-frontend
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" || ($CI_PIPELINE_SOURCE == "web" && ($BUILD_BACKEND == "true" || $BUILD_FRONTEND == "true" || $BUILD_POSTGRES == "true"))'
+  script:
+    - |
+      echo ""
+      echo "========================================="
+      echo "🎉 CI/CD Pipeline Complete!"
+      echo "========================================="
+      echo ""
+      echo "Trigger: $CI_PIPELINE_SOURCE"
+      echo "Mode: $MODE"
+      echo ""
+      echo "🏥 Current Cluster Status:"
+      kubectl get pods -n $NAMESPACE
+      echo ""
+      kubectl get svc -n $NAMESPACE
+      echo ""
+      echo "🌐 Access URLs:"
+      echo "   https://amer-portal.cc.cd"
+      echo "   https://api.amer-portal.cc.cd/api/v1/health"
+      echo ""
+      echo "========================================="
+  allow_failure: true

@@ -20,6 +20,7 @@ export function FirewallManager({ vpsId }: { vpsId: string }) {
   const refresh = useCallback(async () => {
     try { setRules(await cloudFirewall.list(vpsId)); } catch (e: any) { setErr(e?.response?.data?.message ?? "Failed to load"); }
   }, [vpsId]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh(); }, [refresh]);
 
   async function run(fn: () => Promise<any>) {

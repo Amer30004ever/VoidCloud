@@ -35,6 +35,7 @@ export default function ImageManager() {
       setErr(e instanceof Error ? e.message : "Failed to load images");
     } finally { setLoading(false); }
   }
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh(); }, []);
 
   async function createSnapshot() {

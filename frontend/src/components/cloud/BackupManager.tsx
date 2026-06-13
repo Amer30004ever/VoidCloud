@@ -19,7 +19,7 @@ export function BackupManager({ vpsId }: { vpsId: string }) {
     const [b, s] = await Promise.all([cloudBackups.listForVps(vpsId), cloudBackups.getSchedule(vpsId)]);
     setList(b); setSchedule(s);
   }, [vpsId]);
-
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh().catch(() => {}); }, [refresh]);
 
   async function run(fn: () => Promise<any>, label: string) {

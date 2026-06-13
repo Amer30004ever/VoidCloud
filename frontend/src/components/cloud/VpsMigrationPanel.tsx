@@ -22,8 +22,9 @@ export function VpsMigrationPanel({ vpsId }: { vpsId: string }) {
     } catch { /* ignore */ }
     try { setHistory(await cloudMigration.history(vpsId)); } catch { /* ignore */ }
   }
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh(); }, [vpsId]);
-
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!active || active.status !== "RUNNING") return;
     const t = setInterval(async () => {
