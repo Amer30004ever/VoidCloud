@@ -54,13 +54,20 @@ export interface ContainerStatus {
 @Injectable()
 export class ProxmoxService {
   private readonly logger = new Logger(ProxmoxService.name);
-  private readonly node = process.env.PROXMOX_NODE ?? 'workernode01';
+  /** Comma-separated list, e.g. "pve-eg-1,pve-eg-2". Falls back to PROXMOX_NODE. */
+  private readonly nodes: string[] = (process.env.PROXMOX_NODES || process.env.PROXMOX_NODE || 'workernode01')
+    .split(',')
+    .map((n) => n.trim())
+    .filter(Boolean);
+  private readonly node = this.nodes[0];
   private readonly storage = process.env.PROXMOX_STORAGE ?? 'local-lvm';
   private readonly bridge = process.env.PROXMOX_BRIDGE ?? 'vmbr0';
   private readonly template = process.env.PROXMOX_TEMPLATE ?? 'local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst';
   private readonly gateway = process.env.PROXMOX_GATEWAY ?? '';
   private readonly ipBase = (process.env.PROXMOX_IP_POOL_CIDR ?? '10.51.100.0/24').split('/')[0].split('.').slice(0, 3).join('.');
   private nextHostOctet = Number(process.env.PROXMOX_IP_POOL_START || 50);
+  /** Tracks IPs handed out this process to avoid double-allocation under concurrent provisions. */
+  private readonly inFlightIps = new Set<string>();
   private readonly agent = new https.Agent({
     rejectUnauthorized: process.env.PROXMOX_VERIFY_TLS !== 'false',
   });
@@ -71,6 +78,36 @@ export class ProxmoxService {
         process.env.PROXMOX_TOKEN_ID &&
         process.env.PROXMOX_TOKEN_SECRET,
     );
+  }
+
+  /** Per-node / per-template overrides via env: PROXMOX_STORAGE_<NODE>, PROXMOX_BRIDGE_<NODE>, PROXMOX_TEMPLATE_<ID>. */
+  private nodeTemplateConfig(node: string, templateId: number): { storage: string; bridge: string; ostemplate: string } {
+    const upper = node.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+    return {
+      storage: process.env[`PROXMOX_STORAGE_${upper}`] ?? this.storage,
+      bridge: process.env[`PROXMOX_BRIDGE_${upper}`] ?? this.bridge,
+      ostemplate: process.env[`PROXMOX_TEMPLATE_${templateId}`] ?? this.template,
+    };
+  }
+
+  /** Pick the least-loaded online node (by cpu + mem%). Falls back to first node on error. */
+  private async pickNode(): Promise<string> {
+    if (this.nodes.length === 1) return this.nodes[0];
+    try {
+      const stats = await this.pveRequest<any[]>('GET', `/nodes`);
+      const online = (stats ?? []).filter((n) => this.nodes.includes(n.node) && n.status === 'online');
+      if (!online.length) return this.nodes[0];
+      online.sort((a, b) => {
+        const aLoad = (a.cpu ?? 0) + (a.mem ?? 0) / (a.maxmem || 1);
+        const bLoad = (b.cpu ?? 0) + (b.mem ?? 0) / (b.maxmem || 1);
+        return aLoad - bLoad;
+      });
+      this.logger.log(`Selected least-loaded node: ${online[0].node}`);
+      return online[0].node;
+    } catch (e: any) {
+      this.logger.warn(`Node selection fallback (${e.message}); using ${this.nodes[0]}`);
+      return this.nodes[0];
+    }
   }
 
   // ---------------- HTTP ----------------
