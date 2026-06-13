@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { cloudApi, type CloudDeployment, type VpsUsage } from "@/lib/cloud";
 import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
+import { AlertRules } from "@/components/cloud/AlertRules";
 
 type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "activity";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
