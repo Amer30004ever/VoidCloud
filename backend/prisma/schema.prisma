@@ -979,3 +979,24 @@ model CloudAnnouncement {
   audience  String   @default("all")
   createdAt DateTime @default(now())
 }
+
+model FirewallRule {
+  id          String   @id @default(cuid())
+  vpsId       String
+  vps         CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  priority    Int      @default(100)
+  action      String
+  protocol    String
+  port        String?
+  sourceIP    String?
+  description String?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([vpsId])
+  @@index([priority])
+}
