@@ -12,6 +12,7 @@ import { FawryService } from './billing/fawry.service';
 import { InstapayService } from './billing/instapay.service';
 import { CloudEmailService } from './notifications/email.service';
 import { TwoFactorService } from './auth/two-factor.service';
+import { CloudAccountService } from './auth/account.service';
 import { CloudAuditService } from './audit/cloud-audit.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import {
@@ -21,8 +22,10 @@ import {
   CloudWebhooksController,
   CloudAdminController,
   CloudTwoFactorController,
+  CloudAccountController,
   CloudBackupController,
 } from './cloud.controllers';
+
 
 @Module({
   imports: [AuthModule],
