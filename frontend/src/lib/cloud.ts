@@ -102,6 +102,9 @@ export const cloudApi = {
     deleteUser: async (id: string) => api.delete(`/cloud/admin/users/${id}`),
     resetPassword: async (id: string) => (await api.post(`/cloud/admin/users/${id}/reset-password`)).data,
     reset2FA: async (id: string) => (await api.post(`/cloud/admin/users/${id}/reset-2fa`)).data,
+    smtpStatus: async () => (await api.get<{ transport: string; from: string; host: string | null; port: number | null; user: string | null; configured: boolean }>("/cloud/admin/smtp/status")).data,
+    smtpVerify: async () => (await api.post<{ ok: boolean; transport: string; error?: string }>("/cloud/admin/smtp/verify")).data,
+    smtpTest: async (to?: string) => (await api.post<{ ok: boolean }>("/cloud/admin/smtp/test", { to })).data,
     impersonate: async (id: string) =>
       (await api.post<{ access_token: string; user: { id: string; email: string; name: string; role: string } }>(`/cloud/admin/users/${id}/impersonate`)).data,
     setPlan: async (id: string, planId: string | null) =>
