@@ -16,10 +16,12 @@ import { StripeService } from './billing/stripe.service';
 import { FawryService } from './billing/fawry.service';
 import { InstapayService } from './billing/instapay.service';
 import { TwoFactorService } from './auth/two-factor.service';
+import { CloudAccountService } from './auth/account.service';
 import { CloudAuditService } from './audit/cloud-audit.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
+
 
 interface AuthedRequest { user: { id: string; role: Role; email: string } }
 
@@ -224,6 +226,36 @@ export class CloudTwoFactorController {
     return this.tfa.disableWithProof(req.user.id, b.password, b.recoveryCode);
   }
 }
+
+@ApiTags('Cloud / Account')
+@Controller('cloud/account')
+export class CloudAccountController {
+  constructor(private account: CloudAccountService) {}
+
+  @ApiSecurity('bearer')
+  @UseGuards(JwtAuthGuard)
+  @Post('email/request-change')
+  @HttpCode(200)
+  requestEmail(@Req() req: AuthedRequest, @Body() b: { currentPassword: string; newEmail: string }) {
+    return this.account.requestEmailChange(req.user.id, b.currentPassword, b.newEmail);
+  }
+
+  @Public()
+  @Post('email/confirm')
+  @HttpCode(200)
+  confirmEmail(@Body() b: { token: string }) {
+    return this.account.confirmEmailChange(b.token);
+  }
+
+  @ApiSecurity('bearer')
+  @UseGuards(JwtAuthGuard)
+  @Post('password/change')
+  @HttpCode(200)
+  changePassword(@Req() req: AuthedRequest, @Body() b: { currentPassword: string; newPassword: string }) {
+    return this.account.changePassword(req.user.id, b.currentPassword, b.newPassword);
+  }
+}
+
 
 @ApiTags('Cloud / Backups')
 @ApiSecurity('bearer')

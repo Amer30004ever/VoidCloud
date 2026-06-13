@@ -14,9 +14,10 @@ export class CloudAdminService {
   ) {}
 
   async stats() {
-    const [users, plans, deployments, invoices, mrr] = await Promise.all([
+    const [users, plans, activeSubscriptions, deployments, invoices, mrr] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.cloudPlan.count({ where: { isActive: true } }),
+      this.prisma.user.count({ where: { subscriptionStatus: { in: ['ACTIVE', 'TRIALING'] as any } } }),
       this.prisma.cloudDeployment.count({ where: { status: { not: 'DELETED' } } }),
       this.prisma.cloudInvoice.count(),
       this.prisma.cloudInvoice.aggregate({
@@ -27,12 +28,14 @@ export class CloudAdminService {
     return {
       users,
       plans,
+      activeSubscriptions,
       deployments,
       invoices,
-      revenueUSD: mrr._sum.amountUSD ?? 0,
-      revenueEGP: mrr._sum.amountEGP ?? 0,
+      revenueUSD: Number(mrr._sum.amountUSD ?? 0),
+      revenueEGP: Number(mrr._sum.amountEGP ?? 0),
     };
   }
+
 
   async listUsers(search?: string, planId?: string, status?: string) {
     return this.prisma.user.findMany({

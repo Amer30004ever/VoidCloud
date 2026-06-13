@@ -42,16 +42,22 @@ export default function AdminDashboard() {
   const totalPods = nodes.reduce((s, n) => s + (n.podCount ?? 0), 0);
   const clusterHealthy = sys?.kubernetesConnected && nodes.every((n) => n.status === "True");
 
+  const fmtMoney = (n: number, cur: string) =>
+    new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + ` ${cur}`;
+
   const cards = [
-    { label: "Active Users", value: activeUsers ?? stats?.users ?? "—", icon: "👤" },
-    { label: "Running Pods", value: totalPods || "—", icon: "📦" },
-    { label: "Namespaces", value: namespaces.length || "—", icon: "🗂️" },
+    { label: "Total Users", value: stats?.users ?? activeUsers ?? "—", icon: "👤" },
+    { label: "Active Plans", value: stats?.activeSubscriptions ?? "—", icon: "💎" },
+    { label: "Deployments", value: stats?.deployments ?? deployments.length ?? "—", icon: "🖥️" },
     {
-      label: "Cluster Health",
-      value: sys ? (clusterHealthy ? "Healthy" : "Degraded") : "—",
-      icon: clusterHealthy ? "💚" : "⚠️",
+      label: "Revenue (paid)",
+      value: stats
+        ? `${fmtMoney(stats.revenueUSD ?? 0, "USD")} · ${fmtMoney(stats.revenueEGP ?? 0, "EGP")}`
+        : "—",
+      icon: "💰",
     },
   ];
+
 
   return (
     <div className="space-y-6">
@@ -111,11 +117,11 @@ export default function AdminDashboard() {
             <div className="divide-y divide-white/5">
               {namespaces.map((ns) => (
                 <div key={ns.namespace} className="flex items-center justify-between py-2">
-                  <div>
-                    <div className="text-sm font-medium">{ns.namespace}</div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium font-mono">{ns.namespace || "(unnamed)"}</div>
                     <div className="text-xs text-white/50">{ns.podCount} pods</div>
                   </div>
-                  <span className={`rounded-full border px-2 py-0.5 text-xs ${
+                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${
                     ns.status === "critical" ? "border-red-500/30 bg-red-500/10 text-red-300"
                     : ns.status === "warning" ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
                     : "border-green-500/30 bg-green-500/10 text-green-300"
@@ -123,6 +129,7 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
+
           )}
         </section>
       </div>

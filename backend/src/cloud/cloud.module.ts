@@ -12,6 +12,7 @@ import { FawryService } from './billing/fawry.service';
 import { InstapayService } from './billing/instapay.service';
 import { CloudEmailService } from './notifications/email.service';
 import { TwoFactorService } from './auth/two-factor.service';
+import { CloudAccountService } from './auth/account.service';
 import { CloudAuditService } from './audit/cloud-audit.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import {
@@ -21,8 +22,10 @@ import {
   CloudWebhooksController,
   CloudAdminController,
   CloudTwoFactorController,
+  CloudAccountController,
   CloudBackupController,
 } from './cloud.controllers';
+
 
 @Module({
   imports: [AuthModule],
@@ -33,14 +36,16 @@ import {
     CloudWebhooksController,
     CloudAdminController,
     CloudTwoFactorController,
+    CloudAccountController,
     CloudBackupController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
     KubernetesService, PrometheusService, ProxmoxService,
     StripeService, FawryService, InstapayService,
-    CloudEmailService, TwoFactorService, CloudAuditService, CloudBackupService,
+    CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, CloudBackupService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
+
 })
 export class CloudModule {}
