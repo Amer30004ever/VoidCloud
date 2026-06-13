@@ -974,3 +974,46 @@ export class CloudRateLimitController {
     return this.rl.setAlertThreshold(req.user.id, Number(body?.threshold ?? 80), Boolean(body?.enabled));
   }
 }
+
+import { WebhookService, type CreateWebhookDto, type UpdateWebhookDto } from './webhook/webhook.service';
+
+@ApiTags('Cloud / Webhooks')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/webhooks')
+export class CloudWebhookController {
+  constructor(private webhooks: WebhookService) {}
+
+  @Get('events')
+  events() { return this.webhooks.listEventTypes(); }
+
+  @Get()
+  list(@Req() req: AuthedRequest) { return this.webhooks.listEndpoints(req.user.id); }
+
+  @Post()
+  async create(@Req() req: AuthedRequest, @Body() body: CreateWebhookDto) {
+    try { return await this.webhooks.createEndpoint(req.user.id, body); }
+    catch (e) { throw new BadRequestException((e as Error).message); }
+  }
+
+  @Put(':id')
+  async update(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: UpdateWebhookDto) {
+    try { return await this.webhooks.updateEndpoint(req.user.id, id, body); }
+    catch (e) { throw new BadRequestException((e as Error).message); }
+  }
+
+  @Delete(':id')
+  remove(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.webhooks.deleteEndpoint(req.user.id, id);
+  }
+
+  @Post(':id/test')
+  test(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.webhooks.testEndpoint(req.user.id, id);
+  }
+
+  @Get(':id/deliveries')
+  deliveries(@Req() req: AuthedRequest, @Param('id') id: string, @Query('limit') limit?: string) {
+    return this.webhooks.listDeliveries(req.user.id, id, Number(limit) || 50);
+  }
+}
