@@ -43,8 +43,9 @@ import {
   CloudOrganizationController,
   CloudVpsTransferController,
 } from './cloud.controllers';
-import { CloudImageController, CloudDomainController, CloudAnalyticsController, CloudRateLimitController } from './cloud.controllers';
+import { CloudImageController, CloudDomainController, CloudAnalyticsController, CloudRateLimitController, CloudWebhookController } from './cloud.controllers';
 import { RateLimitService } from './rate-limit/rate-limit.service';
+import { WebhookService } from './webhook/webhook.service';
 
 
 
@@ -70,6 +71,7 @@ import { RateLimitService } from './rate-limit/rate-limit.service';
     CloudDomainController,
     CloudAnalyticsController,
     CloudRateLimitController,
+    CloudWebhookController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
@@ -78,8 +80,8 @@ import { RateLimitService } from './rate-limit/rate-limit.service';
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
     SSHKeyService, VPSResizeService, FirewallService, OrganizationService,
     VpsTerminalGateway, VpsAlertService, ImageService, DNSService, AnalyticsService,
-    RateLimitService,
+    RateLimitService, WebhookService,
   ],
-  exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
+  exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService, WebhookService],
 })
 export class CloudModule {}
