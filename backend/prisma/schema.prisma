@@ -831,6 +831,7 @@ model CloudDeployment {
   sshKeys       SSHKey[] @relation("VPSKeys")
   firewallRules FirewallRule[]
   snapshots     CustomImage[]
+  domains       Domain[]
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
