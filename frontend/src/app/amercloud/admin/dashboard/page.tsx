@@ -138,23 +138,30 @@ export default function AdminDashboard() {
           {namespaces.length === 0 ? (
             <p className="py-6 text-center text-sm text-white/50">No namespaces.</p>
           ) : (
-            <div className="divide-y divide-white/5">
-              {namespaces.map((ns) => (
-                <div key={ns.namespace} className="flex items-center justify-between py-2">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium font-mono">{ns.namespace || "(unnamed)"}</div>
-                    <div className="text-xs text-white/50">{ns.podCount} pods</div>
+            <>
+              <div className="divide-y divide-white/5">
+                {(showAllNs ? namespaces : namespaces.slice(0, 12)).map((ns) => (
+                  <div key={ns.namespace} className="flex items-center justify-between py-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium font-mono">{ns.namespace || "(unnamed)"}</div>
+                      <div className="text-xs text-white/50">{ns.podCount} pods</div>
+                    </div>
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${
+                      ns.status === "critical" ? "border-red-500/30 bg-red-500/10 text-red-300"
+                      : ns.status === "warning" ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
+                      : "border-green-500/30 bg-green-500/10 text-green-300"
+                    }`}>{ns.status}</span>
                   </div>
-                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${
-                    ns.status === "critical" ? "border-red-500/30 bg-red-500/10 text-red-300"
-                    : ns.status === "warning" ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
-                    : "border-green-500/30 bg-green-500/10 text-green-300"
-                  }`}>{ns.status}</span>
-                </div>
-              ))}
-            </div>
-
+                ))}
+              </div>
+              {namespaces.length > 12 && (
+                <button onClick={() => setShowAllNs((v) => !v)} className="mt-3 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10">
+                  {showAllNs ? "Show less" : `Show all ${namespaces.length}`}
+                </button>
+              )}
+            </>
           )}
+
         </section>
       </div>
 
