@@ -14,16 +14,16 @@ export function VpsResizeModal({ vpsId, onClose, onDone }: { vpsId: string; onCl
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     cloudResize.options(vpsId).then((r) => { setCurrent(r.current); setUpgrades(r.upgrades); setDowngrades(r.downgrades); }).catch((e) => setErr(e?.response?.data?.message ?? "Failed to load"));
     cloudResize.liveSupported(vpsId).then(setLive).catch(() => {});
   }, [vpsId]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-  // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!selected) { setQuote(null); return; }
     cloudResize.quote(vpsId, selected.id).then(setQuote).catch((e) => setErr(e?.response?.data?.message ?? "Quote failed"));
   }, [selected, vpsId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   async function confirm() {
     if (!selected) return;

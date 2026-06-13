@@ -63,8 +63,8 @@ function RegisterInner() {
       });
       setDone(true);
     } catch (e: unknown) {
-      const error = e as any;
-      setErr(error?.response?.data?.message ?? \"Registration failed\");
+      const error = e as { response?: { data?: { message?: string } } };
+      setErr(error?.response?.data?.message ?? "Registration failed");
     } finally {
       setBusy(false);
     }

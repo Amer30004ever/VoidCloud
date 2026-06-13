@@ -1,6 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
+import api from "@/lib/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function ApiKeysPage() {
   const [keys, setKeys] = useState<any[]>([]);
@@ -17,9 +19,11 @@ export default function ApiKeysPage() {
       setKeys([]);
     }
   }
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     refresh();
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   async function create() {
     try {

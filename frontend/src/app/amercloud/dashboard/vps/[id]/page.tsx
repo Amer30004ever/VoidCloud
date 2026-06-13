@@ -6,8 +6,6 @@ import { cloudApi, type CloudDeployment, type VpsCurrentUsage } from "@/lib/clou
 import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 import { VpsResizeModal } from "@/components/cloud/VpsResizeModal";
-import DomainManager from "@/components/cloud/DomainManager";
-import { VpsMigrationPanel } from "@/components/cloud/VpsMigrationPanel";
 
 type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "firewall" | "migration" | "activity";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };

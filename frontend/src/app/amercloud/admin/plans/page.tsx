@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/set-state-in-effect, react-hooks/exhaustive-deps, react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
 import { cloudApi, CloudPlan } from "@/lib/cloud";
@@ -8,7 +8,9 @@ export default function AdminPlansPage() {
   const [edit, setEdit] = useState<Partial<CloudPlan> | null>(null);
 
   async function load() { setPlans(await cloudApi.admin.plans()); }
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => { load(); }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   async function save() {
     if (!edit) return;

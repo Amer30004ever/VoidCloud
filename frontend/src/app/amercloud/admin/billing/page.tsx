@@ -8,8 +8,9 @@ export default function AdminBillingPage() {
   const [busy, setBusy] = useState<string | null>(null);
 
   async function load() { setTx(await cloudApi.admin.transactions()); }
-  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => { load(); }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   async function confirmPay(id: string) {
     setBusy(id);

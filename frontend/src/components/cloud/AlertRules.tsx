@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -44,8 +43,9 @@ export function AlertRules({ vpsId }: { vpsId?: string }) {
       setLoading(false);
     }
   }, [vpsId]);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => { load(); }, [load]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   async function create() {
     if (!draft.name.trim()) return;

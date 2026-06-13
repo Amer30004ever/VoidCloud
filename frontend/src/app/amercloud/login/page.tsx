@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/set-state-in-effect, react-hooks/exhaustive-deps, react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
@@ -73,7 +73,7 @@ function LoginInner() {
           New to AmerCloud? <Link href="/amercloud/register" className="text-cyan-300 hover:underline">Create account</Link>
         </p>
         <p className="text-center text-xs text-white/50">
-          Didn't get the verification email?{" "}
+          Didn&apos;t get the verification email?{" "}
           <button
             type="button"
             onClick={() => { if (email) api.post("/auth/resend-verification", { email }).catch(() => {}); }}

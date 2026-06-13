@@ -18,7 +18,7 @@ function CollaborationPageContent() {
   const activeTab: CollaborationTab =
     tabParam && validTabs.includes(tabParam as CollaborationTab) ? (tabParam as CollaborationTab) : localTab;
 
-  const [, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   const tabs = [
     { id: "chat" as const, label: "Team Chat", icon: MessageSquare },
