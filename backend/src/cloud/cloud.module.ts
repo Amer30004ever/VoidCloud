@@ -18,6 +18,7 @@ import { ActivityService } from './audit/activity.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import { BackupServiceV2 } from './backup/backup-v2.service';
 import { SSHKeyService } from './ssh/ssh-key.service';
+import { VPSResizeService } from './vps/vps-resize.service';
 import { VpsTerminalGateway } from './terminal/vps-terminal.gateway';
 import { VpsAlertService } from './monitoring/vps-alert.service';
 import { VpsAlertController } from './monitoring/vps-alert.controller';
@@ -32,6 +33,7 @@ import {
   CloudAccountController,
   CloudBackupController,
   CloudSshKeyController,
+  CloudVpsResizeController,
 } from './cloud.controllers';
 
 
