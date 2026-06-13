@@ -2,40 +2,32 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/api";
+import en from "@/locales/en.json";
+import ar from "@/locales/ar.json";
 
-const NAV = [
-  { href: "/amercloud/user/dashboard", label: "Dashboard", icon: "🏠" },
-  { href: "/amercloud/dashboard/deployments", label: "VPS Instances", icon: "🖥️" },
-  { href: "/amercloud/dashboard/billing", label: "Billing", icon: "💳" },
-  { href: "/amercloud/dashboard/settings", label: "Settings", icon: "⚙️" },
-  { href: "/amercloud/dashboard/settings/api-keys", label: "API Keys", icon: "🔑" },
-];
+type Lang = "en" | "ar";
 
-const ADMIN_NAV = [
-  { href: "/amercloud/admin/dashboard", label: "Dashboard", icon: "📊" },
-  { href: "/amercloud/admin/users", label: "Users", icon: "👤" },
-  { href: "/amercloud/admin/plans", label: "Plans", icon: "💎" },
-  { href: "/amercloud/dashboard/deployments", label: "VPS Instances", icon: "🖥️" },
-  { href: "/amercloud/admin/billing", label: "Billing", icon: "💰" },
-  { href: "/amercloud/admin/transactions", label: "Transactions", icon: "🧾" },
-  { href: "/amercloud/dashboard/settings", label: "Settings", icon: "⚙️" },
-  { href: "/amercloud/dashboard/settings/api-keys", label: "API Keys", icon: "🔑" },
-  { href: "/amercloud/dashboard/settings/team", label: "Team", icon: "👥" },
-];
+function t(dict: any, path: string, fallback: string) {
+  return path.split(".").reduce((o: any, k) => (o ? o[k] : undefined), dict) ?? fallback;
+}
 
 export default function CloudDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(true);
-  const [lang, setLang] = useState<"en" | "ar">("en");
+  const [lang, setLang] = useState<Lang>("en");
   const [role, setRole] = useState<string | null>(null);
   const isAdminArea = pathname.startsWith("/amercloud/admin");
+  const dict = lang === "ar" ? ar : en;
 
   useEffect(() => {
-    const t = typeof window !== "undefined" && (localStorage.getItem("amer_portal_token") || sessionStorage.getItem("amer_portal_token"));
-    if (!t) {
+    if (typeof window === "undefined") return;
+    const saved = (localStorage.getItem("amer_lang") as Lang) || "en";
+    setLang(saved);
+    const tok = localStorage.getItem("amer_portal_token") || sessionStorage.getItem("amer_portal_token");
+    if (!tok) {
       router.replace("/amercloud/login");
       return;
     }
@@ -44,7 +36,32 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
 
   useEffect(() => {
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    document.documentElement.lang = lang;
+    if (typeof window !== "undefined") localStorage.setItem("amer_lang", lang);
   }, [lang]);
+
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+
+  const NAV = useMemo(() => [
+    { href: "/amercloud/user/dashboard", label: t(dict, "dashboard.welcome", "Dashboard").replace(", {{name}}", "").replace("Welcome", "Dashboard"), icon: "🏠" },
+    { href: "/amercloud/dashboard/deployments", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥️" },
+    { href: "/amercloud/dashboard/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💳" },
+    { href: "/amercloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙️" },
+  ], [dict]);
+
+  const ADMIN_NAV = useMemo(() => [
+    { href: "/amercloud/admin/dashboard", label: t(dict, "admin.dashboard", "Dashboard"), icon: "📊" },
+    { href: "/amercloud/admin/users", label: t(dict, "admin.users", "Users"), icon: "👤" },
+    { href: "/amercloud/admin/plans", label: t(dict, "admin.plans", "Plans"), icon: "💎" },
+    { href: "/amercloud/dashboard/deployments", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥️" },
+    { href: "/amercloud/admin/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💰" },
+    { href: "/amercloud/admin/transactions", label: t(dict, "admin.transactions", "Transactions"), icon: "🧾" },
+    { href: "/amercloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙️" },
+  ], [dict]);
+
+  const logoHref = role
+    ? (isAdmin ? "/amercloud/admin/dashboard" : "/amercloud/user/dashboard")
+    : "/amercloud";
 
   function logout() {
     localStorage.removeItem("amer_portal_token");
@@ -52,22 +69,20 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     router.push("/amercloud/login");
   }
 
-  const isAdmin = role === "ADMIN";
-
   return (
     <div className="flex min-h-screen bg-slate-950 text-white">
       <aside
-        className={`flex flex-col border-r border-white/5 bg-slate-900/60 backdrop-blur-xl transition-all ${
-          open ? "w-64" : "w-16"
-        }`}
+        className={`flex flex-col border-white/5 bg-slate-900/60 backdrop-blur-xl transition-all ${
+          lang === "ar" ? "border-l" : "border-r"
+        } ${open ? "w-64" : "w-16"}`}
       >
         <div className="flex items-center justify-between p-4">
-          <Link href="/amercloud/dashboard" className={`flex items-center gap-2 font-bold ${open ? "" : "hidden"}`}>
+          <Link href={logoHref} className={`flex items-center gap-2 font-bold ${open ? "" : "hidden"}`}>
             <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">☁</span>
             AmerCloud
           </Link>
           <button onClick={() => setOpen(!open)} className="rounded-md p-1 text-white/60 hover:bg-white/10">
-            {open ? "◀" : "▶"}
+            {open ? (lang === "ar" ? "▶" : "◀") : (lang === "ar" ? "◀" : "▶")}
           </button>
         </div>
         <nav className="flex-1 space-y-1 px-2">
@@ -87,7 +102,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
             <>
               <div className="my-3 border-t border-white/5" />
               <Link
-                href={isAdminArea ? "/amercloud/dashboard" : "/amercloud/admin"}
+                href={isAdminArea ? "/amercloud/user/dashboard" : "/amercloud/admin/dashboard"}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-white"
               >
                 <span>{isAdminArea ? "←" : "🛡️"}</span>
@@ -97,8 +112,8 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
           )}
         </nav>
         <div className="border-t border-white/5 p-3">
-          <button onClick={logout} className="w-full rounded-lg px-3 py-2 text-left text-sm text-white/60 hover:bg-white/5 hover:text-white">
-            🚪 {open && "Sign out"}
+          <button onClick={logout} className="w-full rounded-lg px-3 py-2 text-start text-sm text-white/60 hover:bg-white/5 hover:text-white">
+            🚪 {open && (t(dict, "dashboard.logout", "Sign out"))}
           </button>
         </div>
       </aside>
@@ -108,7 +123,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
           <div className="text-sm text-white/50">{pathname}</div>
           <div className="flex items-center gap-3">
             <button onClick={() => setLang(lang === "en" ? "ar" : "en")} className="rounded-md border border-white/10 px-3 py-1 text-xs">
-              {lang === "en" ? "🇪🇬 AR" : "🇬🇧 EN"}
+              {lang === "en" ? "🇪🇬 العربية" : "🇬🇧 EN"}
             </button>
             <button className="rounded-md border border-white/10 px-3 py-1 text-xs" title="Notifications">🔔</button>
           </div>
