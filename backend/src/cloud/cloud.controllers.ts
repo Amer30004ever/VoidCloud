@@ -73,7 +73,7 @@ function extractUA(req: any): string | undefined {
 @ApiTags('Cloud / Plans')
 @Controller('cloud/plans')
 export class CloudPlansController {
-  constructor(private plans: CloudPlansService) {}
+  constructor(private plans: CloudPlansService) { }
 
   @Public()
   @Get()
@@ -128,7 +128,7 @@ export class CloudTemplatesController {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud/deployments')
 export class CloudDeploymentsController {
-  constructor(private deployments: CloudDeploymentsService) {}
+  constructor(private deployments: CloudDeploymentsService) { }
 
   @Get()
   list(@Req() req: AuthedRequest) {
@@ -234,7 +234,7 @@ export class CloudDeploymentsController {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud/billing')
 export class CloudBillingController {
-  constructor(private billing: CloudBillingService) {}
+  constructor(private billing: CloudBillingService) { }
 
   @Get('current')
   current(@Req() req: AuthedRequest) {
@@ -299,7 +299,7 @@ export class CloudWebhooksController {
     private billing: CloudBillingService,
     private stripeSvc: StripeService,
     private fawrySvc: FawryService,
-  ) {}
+  ) { }
 
   @Public()
   @Post('stripe')
@@ -364,7 +364,7 @@ export class CloudWebhooksController {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud/auth/2fa')
 export class CloudTwoFactorController {
-  constructor(private tfa: TwoFactorService) {}
+  constructor(private tfa: TwoFactorService) { }
   @Get('status') status(@Req() req: AuthedRequest) {
     return this.tfa.status(req.user.id);
   }
@@ -396,7 +396,7 @@ export class CloudAccountController {
   constructor(
     private account: CloudAccountService,
     private activity: ActivityService,
-  ) {}
+  ) { }
 
   @ApiSecurity('bearer')
   @UseGuards(JwtAuthGuard)
@@ -498,7 +498,7 @@ export class CloudBackupController {
     private backups: CloudBackupService,
     private backupsV2: BackupServiceV2,
     private deployments: CloudDeploymentsService,
-  ) {}
+  ) { }
 
   // ---- VPS-scoped ----
   @Get('vps/:id/backups')
@@ -614,7 +614,7 @@ export class CloudBackupController {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud')
 export class CloudSshKeyController {
-  constructor(private ssh: SSHKeyService) {}
+  constructor(private ssh: SSHKeyService) { }
 
   @Get('ssh-keys')
   list(@Req() req: AuthedRequest) {
@@ -663,7 +663,7 @@ export class CloudSshKeyController {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud/vps')
 export class CloudVpsResizeController {
-  constructor(private resize: VPSResizeService) {}
+  constructor(private resize: VPSResizeService) { }
 
   @Get(':id/upgrades')
   upgrades(@Req() req: AuthedRequest, @Param('id') id: string) {
@@ -705,7 +705,7 @@ export class CloudVpsResizeController {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud')
 export class CloudFirewallController {
-  constructor(private fw: FirewallService) {}
+  constructor(private fw: FirewallService) { }
 
   @Get('vps/:id/firewall')
   list(@Req() req: AuthedRequest, @Param('id') id: string) {
@@ -765,7 +765,7 @@ export class CloudFirewallController {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud/orgs')
 export class CloudOrganizationController {
-  constructor(private orgs: OrganizationService) {}
+  constructor(private orgs: OrganizationService) { }
 
   @Get()
   list(@Req() req: AuthedRequest) {
@@ -855,7 +855,7 @@ export class CloudOrganizationController {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud/vps')
 export class CloudVpsTransferController {
-  constructor(private orgs: OrganizationService) {}
+  constructor(private orgs: OrganizationService) { }
   @Post(':id/transfer')
   transfer(
     @Req() req: AuthedRequest,
@@ -871,7 +871,7 @@ export class CloudVpsTransferController {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud')
 export class CloudImageController {
-  constructor(private images: ImageService) {}
+  constructor(private images: ImageService) { }
 
   @Get('images')
   list(@Req() req: AuthedRequest) {
@@ -965,7 +965,7 @@ export class CloudImageController {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud')
 export class CloudDomainController {
-  constructor(private dns: DNSService) {}
+  constructor(private dns: DNSService) { }
 
   @Get('vps/:id/domains')
   list(@Req() req: AuthedRequest, @Param('id') id: string) {
@@ -1026,7 +1026,7 @@ export class CloudDomainController {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud/analytics')
 export class CloudAnalyticsController {
-  constructor(private analytics: AnalyticsService) {}
+  constructor(private analytics: AnalyticsService) { }
 
   @Get('vps/:id/usage')
   usage(
@@ -1084,7 +1084,7 @@ export class CloudAdminController {
     private tfa: TwoFactorService,
     private mailer: MailerService,
     private deployments: CloudDeploymentsService,
-  ) {}
+  ) { }
 
   @Get('activity')
   listActivity(
@@ -1332,7 +1332,7 @@ import { RateLimitService } from './rate-limit/rate-limit.service';
 @UseGuards(JwtAuthGuard)
 @Controller('cloud/rate-limits')
 export class CloudRateLimitController {
-  constructor(private rl: RateLimitService) {}
+  constructor(private rl: RateLimitService) { }
 
   @Get()
   current(@Req() req: AuthedRequest) {
@@ -1348,8 +1348,8 @@ export class CloudRateLimitController {
   }
 
   @Get('alert')
-  getAlert(@Req() req: AuthedRequest) {
-    return this.rl.getAlertThresholds(req.user.id);
+  async getAlert(@Req() req: AuthedRequest) {
+    return await this.rl.getAlertThresholds(req.user.id);
   }
 
   @Post('alert')
@@ -1376,7 +1376,7 @@ import {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud/webhooks')
 export class CloudWebhookController {
-  constructor(private webhooks: WebhookService) {}
+  constructor(private webhooks: WebhookService) { }
 
   @Get('events')
   events() {
@@ -1437,7 +1437,7 @@ import { VPSMigrationService } from './vps/vps-migration.service';
 @UseGuards(JwtAuthGuard)
 @Controller('cloud')
 export class CloudVpsMigrationController {
-  constructor(private mig: VPSMigrationService) {}
+  constructor(private mig: VPSMigrationService) { }
 
   @Get('vps/:id/migration/targets')
   targets(@Req() req: AuthedRequest, @Param('id') id: string) {
@@ -1488,7 +1488,7 @@ export class CloudVpsMigrationController {
 @UseGuards(JwtAuthGuard)
 @Controller('admin/cloud/migration')
 export class AdminVpsMigrationController {
-  constructor(private mig: VPSMigrationService) {}
+  constructor(private mig: VPSMigrationService) { }
 
   @Post('drain')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
@@ -1512,7 +1512,7 @@ import {
 @UseGuards(JwtAuthGuard)
 @Controller('cloud/referral')
 export class CloudReferralController {
-  constructor(private referral: ReferralService) {}
+  constructor(private referral: ReferralService) { }
 
   @Get('code')
   async code(@Req() req: AuthedRequest) {

@@ -19,38 +19,76 @@ export function SSHKeyManager({ vpsId }: { vpsId?: string }) {
   const refresh = useCallback(async () => {
     const all = await cloudSshKeys.list();
     setKeys(all);
-    if (vpsId) setVpsKeys(await cloudSshKeys.listForVps(vpsId));
+    if (vpsId) {
+      setVpsKeys(await cloudSshKeys.listForVps(vpsId));
+    }
   }, [vpsId]);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { refresh().catch(() => {}); }, [refresh]);
+
+  useEffect(() => {
+    refresh().catch(() => {});
+  }, [refresh]);
 
   async function run(fn: () => Promise<any>, label: string) {
-    setBusy(true); setMsg("");
-    try { await fn(); setMsg(`${label} OK`); await refresh(); }
-    catch (e: any) { setMsg(e?.response?.data?.message ?? `${label} failed`); }
-    finally { setBusy(false); }
+    setBusy(true);
+    setMsg("");
+    try {
+      await fn();
+      setMsg(`${label} OK`);
+      await refresh();
+    } catch (e: any) {
+      setMsg(e?.response?.data?.message ?? `${label} failed`);
+    } finally {
+      setBusy(false);
+    }
   }
 
   const attachedIds = new Set(vpsKeys.map((k) => k.id));
 
   return (
     <div className="space-y-6">
-      {msg && <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-xs text-emerald-200">{msg}</div>}
+      {msg && (
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-xs text-emerald-200">
+          {msg}
+        </div>
+      )}
 
       <section>
         <h3 className="mb-2 text-sm font-semibold text-white/80">Add SSH key</h3>
         <div className="space-y-2">
-          <input className={input} placeholder="Key name (e.g. laptop)" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
-          <textarea rows={3} className={`${input} font-mono text-xs`} placeholder="ssh-ed25519 AAAA... user@host" value={publicKey} onChange={(e) => setPublicKey(e.target.value)} />
-          <button disabled={busy || !name || !publicKey} className={btnPrimary}
-            onClick={() => run(async () => { await cloudSshKeys.add(name, publicKey); setName(""); setPublicKey(""); }, "Key added")}>
+          <input
+            className={input}
+            placeholder="Key name (e.g. laptop)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={100}
+          />
+          <textarea
+            rows={3}
+            className={`${input} font-mono text-xs`}
+            placeholder="ssh-ed25519 AAAA... user@host"
+            value={publicKey}
+            onChange={(e) => setPublicKey(e.target.value)}
+          />
+          <button
+            disabled={busy || !name || !publicKey}
+            className={btnPrimary}
+            onClick={() =>
+              run(async () => {
+                await cloudSshKeys.add(name, publicKey);
+                setName("");
+                setPublicKey("");
+              }, "Key added")
+            }
+          >
             + Add key
           </button>
         </div>
       </section>
 
       <section>
-        <h3 className="mb-2 text-sm font-semibold text-white/80">{vpsId ? "Your SSH keys" : `Saved keys (${keys.length})`}</h3>
+        <h3 className="mb-2 text-sm font-semibold text-white/80">
+          {vpsId ? "Your SSH keys" : `Saved keys (${keys.length})`}
+        </h3>
         {keys.length === 0 ? (
           <p className="text-sm text-white/50">No SSH keys yet.</p>
         ) : (
@@ -58,26 +96,68 @@ export function SSHKeyManager({ vpsId }: { vpsId?: string }) {
             {keys.map((k) => {
               const attached = attachedIds.has(k.id);
               return (
-                <div key={k.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div
+                  key={k.id}
+                  className="rounded-lg border border-white/10 bg-white/5 p-3"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-sm">{k.name}</div>
-                      <div className="text-xs font-mono text-white/60 truncate">{k.fingerprint}</div>
-                      <div className="text-xs text-white/40 mt-1">
-                        Added {new Date(k.createdAt).toLocaleDateString()}
-                        {k.lastUsedAt && ` · Last used ${new Date(k.lastUsedAt).toLocaleDateString()}`}
+                      <div className="text-sm font-semibold">{k.name}</div>
+                      <div className="font-mono text-xs text-white/60 truncate">
+                        {k.fingerprint}
                       </div>
-                      {!vpsId && k.vpses && k.vpses.length > 0 && (
-                        <div className="text-xs text-cyan-300 mt-1">Attached to: {k.vpses.map((v) => v.name).join(", ")}</div>
+                      <div className="mt-1 text-xs text-white/40">
+                        Added {new Date(k.createdAt).toLocaleDateString()}
+                        {k.lastUsedAt &&
+                          ` · Last used ${new Date(k.lastUsedAt).toLocaleDateString()}`}
+                      </div>
+                      {!vpsId && (k as any).vpses && (k as any).vpses.length > 0 && (
+                        <div className="mt-1 text-xs text-cyan-300">
+                          Attached to: {(k as any).vpses.map((v: any) => v.name).join(", ")}
+                        </div>
                       )}
                     </div>
                     <div className="flex gap-1">
-                      {vpsId && (attached ? (
-                        <button className={btn} disabled={busy} onClick={() => run(() => cloudSshKeys.detach(vpsId, k.id), "Detached")}>Detach</button>
-                      ) : (
-                        <button className={btn} disabled={busy} onClick={() => run(() => cloudSshKeys.attach(vpsId, k.id), "Attached")}>Attach</button>
-                      ))}
-                      <button className={btnDanger} disabled={busy} onClick={() => { if (confirm("Delete this SSH key?")) run(() => cloudSshKeys.remove(k.id), "Deleted"); }}>Delete</button>
+                      {vpsId ? (
+                        attached ? (
+                          <button
+                            className={btn}
+                            disabled={busy}
+                            onClick={() =>
+                              run(
+                                () => cloudSshKeys.detach(vpsId, k.id),
+                                "Detached"
+                              )
+                            }
+                          >
+                            Detach
+                          </button>
+                        ) : (
+                          <button
+                            className={btn}
+                            disabled={busy}
+                            onClick={() =>
+                              run(
+                                () => cloudSshKeys.attach(vpsId, k.id),
+                                "Attached"
+                              )
+                            }
+                          >
+                            Attach
+                          </button>
+                        )
+                      ) : null}
+                      <button
+                        className={btnDanger}
+                        disabled={busy}
+                        onClick={() => {
+                          if (confirm("Delete this SSH key?")) {
+                            run(() => cloudSshKeys.remove(k.id), "Deleted");
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 </div>

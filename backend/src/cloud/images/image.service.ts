@@ -15,7 +15,7 @@ export class ImageService {
   constructor(
     private prisma: PrismaService,
     private deployments: CloudDeploymentsService,
-  ) {}
+  ) { }
 
   private async assertVpsOwner(vpsId: string, userId: string) {
     const vps = await this.prisma.cloudDeployment.findUnique({
@@ -32,11 +32,9 @@ export class ImageService {
     });
     if (!image) throw new NotFoundException('Image not found');
     if (image.userId === userId || image.isPublic) return image;
-    const share = await this.prisma.customImageShare
-      .findUnique({
-        where: { imageId_userId: { imageId, userId } },
-      })
-      .catch(() => null);
+    const share = await this.prisma.customImageShare.findFirst({
+      where: { imageId, sharedWithEmail: userId },
+    });
     if (!share) throw new ForbiddenException();
     return image;
   }
@@ -92,16 +90,14 @@ export class ImageService {
       orderBy: { createdAt: 'desc' },
       include: { sourceVps: { select: { id: true, name: true } } },
     });
-    const shared = await this.prisma.customImageShare
-      .findMany({
-        where: { userId },
-        include: {
-          image: {
-            include: { sourceVps: { select: { id: true, name: true } } },
-          },
+    const shared = await this.prisma.customImageShare.findMany({
+      where: { sharedWithEmail: userId },
+      include: {
+        image: {
+          include: { sourceVps: { select: { id: true, name: true } } },
         },
-      })
-      .catch(() => []);
+      },
+    });
     return [
       ...owned,
       ...shared.map((s: any) => ({ ...s.image, _shared: true })),
@@ -149,9 +145,18 @@ export class ImageService {
     if (target.id === userId)
       throw new BadRequestException('Cannot share with yourself');
     await this.prisma.customImageShare.upsert({
-      where: { imageId_userId: { imageId, userId: target.id } },
-      update: {},
-      create: { imageId, userId: target.id },
+      where: {
+        imageId_sharedWithEmail: {
+          imageId,
+          sharedWithEmail: target.id,
+        },
+      },
+      update: { sharedAt: new Date() },
+      create: {
+        imageId,
+        sharedWithEmail: target.id,
+        sharedBy: userId,
+      },
     });
     return { ok: true };
   }

@@ -6,16 +6,16 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { cloudApi, CloudDeployment, CloudUsage } from "@/lib/cloud";
 
-export default function UserDashboard() {
+export default function WebhookManager() {
   const [usage, setUsage] = useState<CloudUsage | null>(null);
   const [deployments, setDeployments] = useState<CloudDeployment[]>([]);
   const [me, setMe] = useState<any>(null);
   const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
-    cloudApi.deployments.usage().then(setUsage).catch(() => {});
-    cloudApi.deployments.list().then(setDeployments).catch(() => {});
-    api.get("/auth/me").then((r) => setMe(r.data)).catch(() => {});
+    cloudApi.deployments.usage().then(setUsage).catch(() => { });
+    cloudApi.deployments.list().then(setDeployments).catch(() => { });
+    api.get("/auth/me").then((r) => setMe(r.data)).catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -33,11 +33,10 @@ export default function UserDashboard() {
     <div className="space-y-6">
       {isTrialing && (
         <div
-          className={`rounded-2xl border p-4 backdrop-blur-xl ${
-            trialExpired
+          className={`rounded-2xl border p-4 backdrop-blur-xl ${trialExpired
               ? "border-red-500/30 bg-red-500/10 text-red-200"
               : "border-amber-500/30 bg-amber-500/10 text-amber-200"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between gap-4">
             <div className="text-sm">
@@ -150,7 +149,7 @@ function StatusBadge({ status }: { status: string }) {
 type VpsCardProps = { d: CloudDeployment & { ipv4Address?: string }; trialEndsAt: string | null; now: number };
 function VpsCard({ d, trialEndsAt, now }: VpsCardProps) {
   const [u, setU] = useState<{ cpuPercent: number; ramPercent: number; diskPercent: number } | null>(null);
-  useEffect(() => { cloudApi.deployments.usageOne(d.id).then(setU).catch(() => {}); }, [d.id]);
+  useEffect(() => { cloudApi.deployments.usageOne(d.id).then(setU).catch(() => { }); }, [d.id]);
   const trialDays = trialEndsAt ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - now) / (1000 * 60 * 60 * 24))) : null;
   return (
     <Link href={`/amercloud/dashboard/vps/${d.id}`} className="block rounded-xl border border-white/10 bg-white/5 p-4 hover:border-cyan-400/30 hover:bg-white/10">

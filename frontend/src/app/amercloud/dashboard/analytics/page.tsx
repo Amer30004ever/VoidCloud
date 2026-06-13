@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/api";
-import { cloudApi, cloudAnalytics, type CloudDeployment, type CostBreakdown, type ResourceTrends, type VpsUsage } from "@/lib/cloud";
+import { cloudAnalytics, cloudApi, type CostBreakdown, type ResourceTrends, type VpsHistoricalUsage, type CloudDeployment } from "@/lib/cloud";
 import {
   LineChart, Line, PieChart, Pie, Cell, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
@@ -14,7 +14,7 @@ export default function AnalyticsPage() {
   const [vpsList, setVpsList] = useState<CloudDeployment[]>([]);
   const [selVps, setSelVps] = useState<string>("");
   const [hours, setHours] = useState(24);
-  const [usage, setUsage] = useState<VpsUsage | null>(null);
+  const [usage, setUsage] = useState<VpsHistoricalUsage | null>(null);
   const [costs, setCosts] = useState<CostBreakdown | null>(null);
   const [trends, setTrends] = useState<ResourceTrends | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -23,9 +23,9 @@ export default function AnalyticsPage() {
     cloudApi.deployments.list().then((l: CloudDeployment[]) => {
       setVpsList(l);
       if (l[0]) setSelVps(l[0].id);
-    }).catch(() => {});
-    cloudAnalytics.costs(3).then(setCosts).catch(() => {});
-    cloudAnalytics.trends(30).then(setTrends).catch(() => {});
+    }).catch(() => { });
+    cloudAnalytics.costs(3).then(setCosts).catch(() => { });
+    cloudAnalytics.trends(30).then(setTrends).catch(() => { });
   }, []);
 
   useEffect(() => {

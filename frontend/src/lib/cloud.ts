@@ -66,8 +66,8 @@ export interface CloudUsage {
   used: { cpu: number; memory: number; storage: number; deployments: number; apiRequests: number };
 }
 
-export interface VpsUsage {
-  status: "running" | "stopped" | "paused" | "unknown";
+// Single VPS current usage (for dashboard cards)
+export interface VpsCurrentUsage {
   cpuPercent: number;
   ramPercent: number;
   diskPercent: number;
@@ -112,7 +112,7 @@ export const cloudApi = {
       (await api.put(`/cloud/deployments/${id}/resize`, body)).data,
     metrics: async (id: string) => (await api.get(`/cloud/deployments/${id}/metrics`)).data,
     usage: async () => (await api.get<CloudUsage>("/cloud/deployments/usage/me")).data,
-    usageOne: async (id: string) => (await api.get<VpsUsage>(`/cloud/deployments/${id}/usage`)).data,
+    usageOne: async (id: string) => (await api.get<VpsCurrentUsage>(`/cloud/deployments/${id}/usage`)).data,
     logs: async (id: string) => (await api.get(`/cloud/deployments/${id}/logs`)).data,
   },
   billing: {
@@ -187,7 +187,7 @@ export function streamDeploymentLogs(
     try {
       const { line } = JSON.parse(e.data);
       if (line) onLine(line);
-    } catch {}
+    } catch { }
   };
   if (onError) es.onerror = onError;
   return () => es.close();
@@ -379,7 +379,16 @@ export const cloudDomains = {
 };
 
 export interface UsagePoint { timestamp: string; value: number }
-export interface VpsUsage { cpu: UsagePoint[]; ram: UsagePoint[]; disk: UsagePoint[]; networkRx: UsagePoint[]; networkTx: UsagePoint[] }
+
+// Historical VPS usage for analytics charts (time series data)
+export interface VpsHistoricalUsage {
+  cpu: UsagePoint[];
+  ram: UsagePoint[];
+  disk: UsagePoint[];
+  networkRx: UsagePoint[];
+  networkTx: UsagePoint[];
+}
+
 export interface CostBreakdown {
   byVPS: { vpsId: string; vpsName: string; cost: number }[];
   monthly: { month: string; total: number }[];
@@ -388,7 +397,7 @@ export interface CostBreakdown {
 }
 export interface ResourceTrends { cpu: number; ram: number; disk: number; vpsCount: number }
 export const cloudAnalytics = {
-  vpsUsage: async (vpsId: string, hours = 24): Promise<VpsUsage> =>
+  vpsUsage: async (vpsId: string, hours = 24): Promise<VpsHistoricalUsage> =>
     (await api.get(`/cloud/analytics/vps/${vpsId}/usage`, { params: { hours } })).data,
   costs: async (months = 3): Promise<CostBreakdown> =>
     (await api.get(`/cloud/analytics/costs`, { params: { months } })).data,
@@ -479,4 +488,33 @@ export const cloudReferral = {
   payouts: async (): Promise<ReferralPayout[]> => (await api.get('/cloud/referral/payouts')).data,
   requestPayout: async (amount: number, method: string): Promise<ReferralPayout> =>
     (await api.post('/cloud/referral/payout', { amount, method })).data,
+};
+
+// ============ SSH Keys ============
+
+export interface SSHKey {
+  id: string;
+  name: string;
+  publicKey: string;
+  fingerprint: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  vpses?: { id: string; name: string }[];
+}
+
+export const cloudSshKeys = {
+  list: async (): Promise<SSHKey[]> => (await api.get("/cloud/ssh-keys")).data,
+  add: async (name: string, publicKey: string): Promise<SSHKey> =>
+    (await api.post("/cloud/ssh-keys", { name, publicKey })).data,
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/cloud/ssh-keys/${id}`);
+  },
+  listForVps: async (vpsId: string): Promise<SSHKey[]> =>
+    (await api.get(`/cloud/vps/${vpsId}/ssh-keys`)).data,
+  attach: async (vpsId: string, keyId: string): Promise<void> => {
+    await api.post(`/cloud/vps/${vpsId}/ssh-keys/${keyId}`);
+  },
+  detach: async (vpsId: string, keyId: string): Promise<void> => {
+    await api.delete(`/cloud/vps/${vpsId}/ssh-keys/${keyId}`);
+  },
 };

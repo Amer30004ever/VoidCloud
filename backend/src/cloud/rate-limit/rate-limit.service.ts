@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
-interface AlertPrefs {
+export interface AlertPrefs {
   threshold: number;
   enabled: boolean;
 }

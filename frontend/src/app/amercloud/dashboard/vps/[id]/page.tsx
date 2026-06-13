@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { cloudApi, type CloudDeployment, type VpsUsage } from "@/lib/cloud";
+import { cloudApi, type CloudDeployment, type VpsCurrentUsage } from "@/lib/cloud";
 import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 import { AlertRules } from "@/components/cloud/AlertRules";
@@ -20,7 +20,7 @@ export default function VpsDetailPage() {
   const router = useRouter();
   const [d, setD] = useState<Vps | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
-  const [usage, setUsage] = useState<VpsUsage | null>(null);
+  const [usage, setUsage] = useState<VpsCurrentUsage | null>(null);
   const [revealPw, setRevealPw] = useState(false);
   const [tempPw, setTempPw] = useState<string | null>(null);
   const [envRows, setEnvRows] = useState<Array<{ key: string; value: string }>>([]);
@@ -39,7 +39,7 @@ export default function VpsDetailPage() {
   useEffect(() => {
     if (tab !== "usage" || !id) return;
     let stop = false;
-    const fetch = () => cloudApi.deployments.usageOne(id).then((u) => { if (!stop) setUsage(u); }).catch(() => {});
+    const fetch = () => cloudApi.deployments.usageOne(id).then((u) => { if (!stop) setUsage(u); }).catch(() => { });
     fetch();
     const i = setInterval(fetch, 5000);
     return () => { stop = true; clearInterval(i); };
@@ -75,7 +75,7 @@ export default function VpsDetailPage() {
           <button onClick={() => action(() => cloudApi.deployments.stop(d.id), "Stopped")} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10">■ Stop</button>
           <button onClick={() => action(() => cloudApi.deployments.restart(d.id), "Restarted")} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10">↻ Restart</button>
           <button
-            onClick={async () => { try { const r = await cloudApi.deployments.resetRootPassword(d.id); setTempPw(r.rootPassword); setRevealPw(true); } catch {} }}
+            onClick={async () => { try { const r = await cloudApi.deployments.resetRootPassword(d.id); setTempPw(r.rootPassword); setRevealPw(true); } catch { } }}
             className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10">🔑 Reset root password</button>
           <button onClick={async () => { if (confirm("Delete this VPS? This is irreversible.")) { await cloudApi.deployments.remove(d.id); router.push("/amercloud/dashboard/vps"); } }}
             className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300 hover:bg-red-500/20">Delete</button>
@@ -96,7 +96,7 @@ export default function VpsDetailPage() {
             <Kv k="Status" v={<VpsStatusBadge status={d.status} />} />
             <Kv k="IP Address" v={<span className="font-mono">{d.ipv4Address ?? "—"}</span>} />
             <Kv k="Hostname" v={<span className="font-mono">{d.hostname ?? d.name}</span>} />
-            <Kv k="Resources" v={`${d.cpu} CPU · ${d.memory}MB RAM · ${Math.ceil(d.storage/1024)}GB disk`} />
+            <Kv k="Resources" v={`${d.cpu} CPU · ${d.memory}MB RAM · ${Math.ceil(d.storage / 1024)}GB disk`} />
             <Kv k="Custom domains" v={d.customDomains?.join(", ") || "—"} />
             <Kv k="Created" v={new Date(d.createdAt).toLocaleString()} />
             <div className="pt-3">
@@ -122,7 +122,7 @@ export default function VpsDetailPage() {
                 <UsageCard label="CPU" pct={usage.cpuPercent} sub={`${usage.cpuPercent}%`} />
                 <UsageCard label="RAM" pct={usage.ramPercent} sub={`${usage.memUsedMB}/${usage.memTotalMB} MB`} />
                 <UsageCard label="Disk" pct={usage.diskPercent} sub={`${usage.diskUsedGB.toFixed(1)}/${usage.diskTotalGB} GB`} />
-                <UsageCard label="Uptime" pct={0} sub={`${Math.floor(usage.uptime/3600)}h ${Math.floor((usage.uptime%3600)/60)}m`} bare />
+                <UsageCard label="Uptime" pct={0} sub={`${Math.floor(usage.uptime / 3600)}h ${Math.floor((usage.uptime % 3600) / 60)}m`} bare />
                 <UsageCard label="Network RX" pct={0} sub={fmtBytes(usage.networkRx)} bare />
                 <UsageCard label="Network TX" pct={0} sub={fmtBytes(usage.networkTx)} bare />
               </div>
@@ -160,7 +160,7 @@ export default function VpsDetailPage() {
           <p className="text-sm text-white/60">VPS activity log is coming soon. Account-level audit events live under <span className="text-cyan-300">/amercloud/admin</span>.</p>
         )}
       </div>
-      {showResize && <VpsResizeModal vpsId={d.id} onClose={() => setShowResize(false)} onDone={() => cloudApi.deployments.get(d.id).then(setD).catch(() => {})} />}
+      {showResize && <VpsResizeModal vpsId={d.id} onClose={() => setShowResize(false)} onDone={() => cloudApi.deployments.get(d.id).then(setD).catch(() => { })} />}
     </div>
   );
 }
