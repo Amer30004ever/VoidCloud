@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { cloudApi, CloudDeployment } from "@/lib/cloud";
 import { StatusBadge } from "../../page";
+import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 
 export default function DeploymentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [d, setD] = useState<CloudDeployment | null>(null);
-  const [tab, setTab] = useState<"overview" | "logs" | "metrics" | "env">("overview");
+  const [tab, setTab] = useState<"overview" | "terminal" | "logs" | "metrics" | "env">("overview");
   const [logs, setLogs] = useState<string[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
 
