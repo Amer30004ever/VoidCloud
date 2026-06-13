@@ -29,6 +29,7 @@ on:
           - apply-manifests         # kubectl apply all k8s manifests (no build)
           - validate-secrets        # Run Validate-Secrets equivalent + annotate
           - reset-postgres          # DESTRUCTIVE: wipe postgres PVC/PV + reinit
+          - rollback-migrations       # Rollback last database migration
           - k8s-full-reset          # reset-postgres -> apply -> validate -> redeploy
       deploy_enabled:
         description: 'Enable auto-deploy after build'
@@ -714,8 +715,10 @@ jobs:
     needs: [deploy-backend]
     if: |
       needs.deploy-backend.result == 'success' &&
-      github.event_name == 'workflow_dispatch'
+      (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     runs-on: self-hosted
+    outputs:
+      migration_status: ${{ steps.migration.outputs.status }}
     steps:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
