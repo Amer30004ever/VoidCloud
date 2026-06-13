@@ -26,6 +26,7 @@ import { VPSResizeService } from './vps/vps-resize.service';
 import { FirewallService, type FirewallRuleInput } from './firewall/firewall.service';
 import { OrganizationService } from './organization/organization.service';
 import { ImageService } from './images/image.service';
+import { DNSService, type CreateDNSRecordDto } from './dns/dns.service';
 import type { OrgRole } from '@prisma/client';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
@@ -669,8 +670,63 @@ export class CloudImageController {
   @Post('images/:id/publish')
   publish(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { isPublic: boolean }) {
     return this.images.makePublic(id, req.user.id, !!body?.isPublic);
+}
+
+
+@ApiTags('Cloud / Domains')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud')
+export class CloudDomainController {
+  constructor(private dns: DNSService) {}
+
+  @Get('vps/:id/domains')
+  list(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.dns.listForVps(id, req.user.id);
+  }
+
+  @Post('vps/:id/domains')
+  add(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { domain: string; autoSSL?: boolean }) {
+    return this.dns.addDomain(id, req.user.id, body?.domain, !!body?.autoSSL);
+  }
+
+  @Get('domains/:id/verify')
+  verifyInfo(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.dns.getVerificationInstructions(id, req.user.id);
+  }
+
+  @Post('domains/:id/verify')
+  verify(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.dns.verifyDomain(id, req.user.id);
+  }
+
+  @Post('domains/:id/ssl')
+  ssl(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.dns.requestSSL(id, req.user.id);
+  }
+
+  @Delete('domains/:id')
+  remove(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.dns.deleteDomain(id, req.user.id);
+  }
+
+  @Get('domains/:id/dns')
+  records(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.dns.getDNSRecords(id, req.user.id);
+  }
+
+  @Post('domains/:id/dns')
+  addRecord(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: CreateDNSRecordDto) {
+    return this.dns.addDNSRecord(id, req.user.id, body);
+  }
+
+  @Delete('dns/:id')
+  removeRecord(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.dns.deleteDNSRecord(id, req.user.id);
   }
 }
+
+
 
 
 
