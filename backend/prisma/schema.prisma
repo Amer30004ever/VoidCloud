@@ -879,16 +879,42 @@ model VpsAlertNotification {
 }
 
 
+enum BackupType {
+  MANUAL
+  SCHEDULED
+}
+
 model CloudBackup {
   id           String   @id @default(uuid())
   deploymentId String
   deployment   CloudDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  userId       String?
+  name         String?
+  type         BackupType @default(MANUAL)
+  sizeMB       Int       @default(0)
   storagePath  String
   sizeBytes    BigInt?
   status       String   @default("pending")
   createdAt    DateTime @default(now())
+  completedAt  DateTime?
 
   @@index([deploymentId])
+  @@index([userId])
+}
+
+model BackupSchedule {
+  id          String   @id @default(cuid())
+  vpsId       String   @unique
+  vps         CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  enabled     Boolean  @default(true)
+  frequency   String   @default("DAILY")
+  retention   Int      @default(7)
+  hour        Int?
+  dayOfWeek   Int?
+  dayOfMonth  Int?
+  lastRunAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model CloudAuditLog {
