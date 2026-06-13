@@ -54,13 +54,20 @@ export interface ContainerStatus {
 @Injectable()
 export class ProxmoxService {
   private readonly logger = new Logger(ProxmoxService.name);
-  private readonly node = process.env.PROXMOX_NODE ?? 'workernode01';
+  /** Comma-separated list, e.g. "pve-eg-1,pve-eg-2". Falls back to PROXMOX_NODE. */
+  private readonly nodes: string[] = (process.env.PROXMOX_NODES || process.env.PROXMOX_NODE || 'workernode01')
+    .split(',')
+    .map((n) => n.trim())
+    .filter(Boolean);
+  private readonly node = this.nodes[0];
   private readonly storage = process.env.PROXMOX_STORAGE ?? 'local-lvm';
   private readonly bridge = process.env.PROXMOX_BRIDGE ?? 'vmbr0';
   private readonly template = process.env.PROXMOX_TEMPLATE ?? 'local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst';
   private readonly gateway = process.env.PROXMOX_GATEWAY ?? '';
   private readonly ipBase = (process.env.PROXMOX_IP_POOL_CIDR ?? '10.51.100.0/24').split('/')[0].split('.').slice(0, 3).join('.');
   private nextHostOctet = Number(process.env.PROXMOX_IP_POOL_START || 50);
+  /** Tracks IPs handed out this process to avoid double-allocation under concurrent provisions. */
+  private readonly inFlightIps = new Set<string>();
   private readonly agent = new https.Agent({
     rejectUnauthorized: process.env.PROXMOX_VERIFY_TLS !== 'false',
   });
@@ -71,6 +78,36 @@ export class ProxmoxService {
         process.env.PROXMOX_TOKEN_ID &&
         process.env.PROXMOX_TOKEN_SECRET,
     );
+  }
+
+  /** Per-node / per-template overrides via env: PROXMOX_STORAGE_<NODE>, PROXMOX_BRIDGE_<NODE>, PROXMOX_TEMPLATE_<ID>. */
+  private nodeTemplateConfig(node: string, templateId: number): { storage: string; bridge: string; ostemplate: string } {
+    const upper = node.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+    return {
+      storage: process.env[`PROXMOX_STORAGE_${upper}`] ?? this.storage,
+      bridge: process.env[`PROXMOX_BRIDGE_${upper}`] ?? this.bridge,
+      ostemplate: process.env[`PROXMOX_TEMPLATE_${templateId}`] ?? this.template,
+    };
+  }
+
+  /** Pick the least-loaded online node (by cpu + mem%). Falls back to first node on error. */
+  private async pickNode(): Promise<string> {
+    if (this.nodes.length === 1) return this.nodes[0];
+    try {
+      const stats = await this.pveRequest<any[]>('GET', `/nodes`);
+      const online = (stats ?? []).filter((n) => this.nodes.includes(n.node) && n.status === 'online');
+      if (!online.length) return this.nodes[0];
+      online.sort((a, b) => {
+        const aLoad = (a.cpu ?? 0) + (a.mem ?? 0) / (a.maxmem || 1);
+        const bLoad = (b.cpu ?? 0) + (b.mem ?? 0) / (b.maxmem || 1);
+        return aLoad - bLoad;
+      });
+      this.logger.log(`Selected least-loaded node: ${online[0].node}`);
+      return online[0].node;
+    } catch (e: any) {
+      this.logger.warn(`Node selection fallback (${e.message}); using ${this.nodes[0]}`);
+      return this.nodes[0];
+    }
   }
 
   // ---------------- HTTP ----------------
@@ -114,26 +151,33 @@ export class ProxmoxService {
 
   // ---------------- IP pool ----------------
 
-  /** Take the next free IP from the configured pool. */
+  /** Take the next free IP from the configured pool. Concurrency-safe within process. */
   private async allocateIp(): Promise<string> {
-    // Best-effort: list existing CTs on node, find used IPs, advance counter past them.
+    const used = new Set<number>(Array.from(this.inFlightIps).map((ip) => Number(ip.split('.')[3])));
     try {
-      const list = await this.pveRequest<any[]>('GET', `/nodes/${this.node}/lxc`);
-      const usedOctets = new Set<number>();
-      for (const ct of list ?? []) {
-        try {
-          const cfg = await this.pveRequest<any>('GET', `/nodes/${this.node}/lxc/${ct.vmid}/config`);
-          const ip = String(cfg.net0 ?? '').match(/ip=([\d.]+)/)?.[1];
-          if (ip?.startsWith(this.ipBase + '.')) usedOctets.add(Number(ip.split('.')[3]));
-        } catch { /* ignore */ }
+      // Scan every configured node — IPs are pool-wide, not per-node.
+      for (const node of this.nodes) {
+        const list = await this.pveRequest<any[]>('GET', `/nodes/${node}/lxc`).catch(() => []);
+        for (const ct of list ?? []) {
+          try {
+            const cfg = await this.pveRequest<any>('GET', `/nodes/${node}/lxc/${ct.vmid}/config`);
+            const ip = String(cfg.net0 ?? '').match(/ip=([\d.]+)/)?.[1];
+            if (ip?.startsWith(this.ipBase + '.')) used.add(Number(ip.split('.')[3]));
+          } catch {
+            /* ignore */
+          }
+        }
       }
-      while (usedOctets.has(this.nextHostOctet)) this.nextHostOctet++;
     } catch (e: any) {
       this.logger.warn(`IP allocation fallback (could not list CTs): ${e.message}`);
     }
+    while (used.has(this.nextHostOctet)) this.nextHostOctet++;
     if (this.nextHostOctet > 254) throw new ServiceUnavailableException('IP pool exhausted');
-    return `${this.ipBase}.${this.nextHostOctet++}`;
+    const ip = `${this.ipBase}.${this.nextHostOctet++}`;
+    this.inFlightIps.add(ip);
+    return ip;
   }
+
 
   // ---------------- Public API ----------------
 
@@ -155,6 +199,8 @@ export class ProxmoxService {
 
 
 
+    const targetNode = await this.pickNode();
+    const cfg = this.nodeTemplateConfig(targetNode, templateId);
     const nextId = await this.pveRequest<string>('GET', `/cluster/nextid`);
     const vmid = Number(nextId);
     const ipv4Address = await this.allocateIp();
@@ -162,23 +208,30 @@ export class ProxmoxService {
     const params = {
       vmid,
       hostname: spec.hostname.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 60),
-      ostemplate: this.template,
-      storage: this.storage,
+      ostemplate: cfg.ostemplate,
+      storage: cfg.storage,
       cores,
       memory: spec.ramMB,
       swap: Math.max(256, Math.floor(spec.ramMB / 2)),
-      rootfs: `${this.storage}:${spec.storageGB}`,
-      net0: `name=eth0,bridge=${this.bridge},ip=${ipv4Address}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
+      rootfs: `${cfg.storage}:${spec.storageGB}`,
+      net0: `name=eth0,bridge=${cfg.bridge},ip=${ipv4Address}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
       password: rootPassword,
       unprivileged: 1,
       onboot: 1,
       start: 1,
       features: 'nesting=1',
     };
-    await this.pveRequest('POST', `/nodes/${this.node}/lxc`, params);
-    this.logger.log(`Proxmox created LXC vmid=${vmid} ip=${ipv4Address} node=${this.node}`);
-    return { vmid, ipv4Address, node: this.node, rootPassword };
+    try {
+      await this.pveRequest('POST', `/nodes/${targetNode}/lxc`, params);
+    } catch (e) {
+      // Release the IP back on failure so the next provision can reuse it.
+      this.inFlightIps.delete(ipv4Address);
+      throw e;
+    }
+    this.logger.log(`Proxmox created LXC vmid=${vmid} ip=${ipv4Address} node=${targetNode} template=${templateId}`);
+    return { vmid, ipv4Address, node: targetNode, rootPassword };
   }
+
 
   async startContainer(vmid: number, node = this.node): Promise<void> {
     if (!this.isLive()) { this.logger.log(`[STUB] start vmid=${vmid}`); return; }
@@ -216,17 +269,19 @@ export class ProxmoxService {
   async reinstallContainer(vmid: number, spec: ProvisionSpec, ipv4: string, node = this.node): Promise<{ rootPassword: string }> {
     const rootPassword = randomBytes(12).toString('base64url');
     if (!this.isLive()) { this.logger.log(`[STUB] reinstall vmid=${vmid}`); return { rootPassword }; }
+    const templateId = spec.templateId ?? getTemplateForPlan(spec.planSlug);
+    const cfg = this.nodeTemplateConfig(node, templateId);
     await this.destroyContainer(vmid, node);
     await this.pveRequest('POST', `/nodes/${node}/lxc`, {
       vmid,
       hostname: spec.hostname,
-      ostemplate: this.template,
-      storage: this.storage,
+      ostemplate: cfg.ostemplate,
+      storage: cfg.storage,
       cores: Math.max(1, Math.ceil(spec.cpuCores)),
       memory: spec.ramMB,
       swap: Math.max(256, Math.floor(spec.ramMB / 2)),
-      rootfs: `${this.storage}:${spec.storageGB}`,
-      net0: `name=eth0,bridge=${this.bridge},ip=${ipv4}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
+      rootfs: `${cfg.storage}:${spec.storageGB}`,
+      net0: `name=eth0,bridge=${cfg.bridge},ip=${ipv4}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
       password: rootPassword,
       unprivileged: 1, onboot: 1, start: 1, features: 'nesting=1',
     });

@@ -1,11 +1,65 @@
 {
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "create": "إنشاء",
+    "search": "بحث",
+    "loading": "جاري التحميل…",
+    "error": "حدث خطأ ما",
+    "retry": "إعادة المحاولة",
+    "confirm": "تأكيد",
+    "close": "إغلاق",
+    "back": "رجوع",
+    "next": "التالي",
+    "yes": "نعم",
+    "no": "لا",
+    "name": "الاسم",
+    "status": "الحالة",
+    "actions": "الإجراءات",
+    "created": "تاريخ الإنشاء",
+    "updated": "آخر تحديث",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "copy": "نسخ",
+    "copied": "تم النسخ!",
+    "show": "إظهار",
+    "hide": "إخفاء",
+    "enabled": "مُفعّل",
+    "disabled": "مُعطّل",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "language": "اللغة"
+  },
   "landing": {
     "hero_title": "استضف تطبيقاتك بسهولة مع أمير كلاود",
     "hero_subtitle": "منصة استضافة سحابية متكاملة للمطورين والشركات الناشئة",
     "get_started": "ابدأ الآن",
     "pricing": "خطط التسعير",
     "login": "تسجيل الدخول",
-    "register": "إنشاء حساب"
+    "register": "إنشاء حساب",
+    "features": "المميزات",
+    "faq": "الأسئلة الشائعة",
+    "contact": "تواصل معنا"
+  },
+  "auth": {
+    "login_title": "أهلاً بعودتك",
+    "register_title": "أنشئ حسابك",
+    "full_name": "الاسم الكامل",
+    "phone": "رقم الهاتف",
+    "confirm_password": "تأكيد كلمة المرور",
+    "forgot_password": "هل نسيت كلمة المرور؟",
+    "remember_me": "تذكرني",
+    "no_account": "ليس لديك حساب؟",
+    "have_account": "لديك حساب بالفعل؟",
+    "sign_in": "تسجيل الدخول",
+    "sign_up": "إنشاء حساب",
+    "sign_out": "تسجيل الخروج",
+    "verify_email": "تأكيد بريدك الإلكتروني",
+    "resend_verification": "إعادة إرسال رسالة التأكيد",
+    "select_plan": "اختر خطة",
+    "password_strength": "قوة كلمة المرور"
   },
   "dashboard": {
     "welcome": "مرحباً بك، {{name}}",
@@ -17,7 +71,11 @@
     "create_new": "إنشاء تطبيق جديد",
     "billing": "الفواتير والدفع",
     "settings": "الإعدادات",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "overview": "نظرة عامة",
+    "api_keys": "مفاتيح API",
+    "support": "الدعم الفني",
+    "notifications": "الإشعارات"
   },
   "deployments": {
     "create": "إنشاء تطبيق جديد",
@@ -26,16 +84,26 @@
     "env_vars": "متغيرات البيئة",
     "deploy": "نشر التطبيق",
     "restart": "إعادة التشغيل",
+    "start": "تشغيل",
+    "stop": "إيقاف",
     "delete": "حذف",
     "logs": "السجلات",
     "metrics": "القياسات",
     "domains": "النطاقات",
+    "ip_address": "عنوان IP",
+    "root_password": "كلمة مرور الجذر",
+    "ssh_command": "أمر SSH",
+    "reinstall": "إعادة تثبيت النظام",
+    "resize": "تغيير الخطة",
+    "uptime": "مدة التشغيل",
     "status": {
       "running": "قيد التشغيل",
       "stopped": "متوقف",
       "failed": "فشل",
       "deploying": "جاري النشر",
-      "pending": "قيد الانتظار"
+      "pending": "قيد الانتظار",
+      "provisioning": "جاري التجهيز",
+      "pending_payment": "بانتظار الدفع"
     }
   },
   "billing": {
@@ -47,7 +115,15 @@
     "stripe": "الدفع بالبطاقة",
     "fawry": "الدفع عبر فوري",
     "instapay": "الدفع عبر إنستا باي",
-    "cash": "الدفع نقداً"
+    "cash": "الدفع نقداً",
+    "amount": "المبلغ",
+    "currency": "العملة",
+    "date": "التاريخ",
+    "download_pdf": "تحميل PDF",
+    "paid": "مدفوعة",
+    "unpaid": "غير مدفوعة",
+    "refunded": "تم الاسترداد",
+    "pending": "قيد المعالجة"
   },
   "admin": {
     "users": "المستخدمين",
@@ -56,7 +132,14 @@
     "audit_logs": "سجل العمليات",
     "suspend": "تعليق",
     "activate": "تفعيل",
-    "extend_trial": "تمديد الفترة التجريبية"
+    "extend_trial": "تمديد الفترة التجريبية",
+    "impersonate": "الدخول بهوية المستخدم",
+    "reset_password": "إعادة تعيين كلمة المرور",
+    "reset_2fa": "إعادة تعيين المصادقة الثنائية",
+    "all_vps": "جميع الخوادم الافتراضية",
+    "cluster": "العنقود",
+    "smtp": "خادم البريد",
+    "announcements": "الإعلانات"
   },
   "2fa": {
     "title": "المصادقة الثنائية",
@@ -64,6 +147,7 @@
     "disable": "تعطيل",
     "scan_qr": "امسح الرمز ضوئياً بتطبيق Authenticator",
     "enter_code": "أدخل الرمز المكون من 6 أرقام",
-    "recovery_codes": "رموز الاسترداد"
+    "recovery_codes": "رموز الاسترداد",
+    "regenerate_codes": "إعادة توليد رموز الاسترداد"
   }
 }

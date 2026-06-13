@@ -564,11 +564,20 @@ admin/internal surfaces it depends on. Updated 2026-06-13.
 | 12 | **User registration (this task)** | **Done** | `/amercloud/register` page with full name, email, Egyptian phone, password + strength meter, confirm, plan selector. Backend validates Egyptian phone, hashes password (bcrypt cost 12), creates user + subscription (Free Trial = 7 days), sends welcome + verification emails, redirects to login. Verification page at `/amercloud/verify-email`. Resend link on login page. |
 
 ### What is NOT done yet (carry-over polish)
-- Full Arabic translation of every page body — RTL + key strings are wired,
-  long-form copy still falls back to English.
-- API Keys section: `curl` usage examples + tooltips.
-- Proxmox: real IP pool draining and per-node template selection — current
-  implementation uses a single template/storage/bridge from env.
+- **Arabic translations** — Done: `en.json`/`ar.json` expanded with `common`,
+  `auth`, `dashboard` extras, full deployment status set, billing/admin/2FA
+  strings. Long-form marketing copy still falls back to English by design.
+- **API Keys curl examples + tooltips** — Done: every input/button/column on
+  `/amercloud/dashboard/settings/api-keys` has a `title` tooltip, plus four
+  copy-to-clipboard `curl` examples (list, create, restart, metrics) that
+  inject the freshly-generated token or `$AMER_API_KEY` placeholder.
+- **Proxmox per-node + IP pool draining** — Done: `PROXMOX_NODES` (CSV)
+  enables multi-node provisioning with least-loaded scheduling; per-node
+  storage/bridge overrides via `PROXMOX_STORAGE_<NODE>` /
+  `PROXMOX_BRIDGE_<NODE>`; per-template ostemplate override via
+  `PROXMOX_TEMPLATE_<ID>`; IP allocator now scans every node, tracks
+  in-flight IPs to prevent double allocation under concurrent provisions,
+  and releases the IP on PVE failure.
 - Marketing emails / lifecycle drips — intentionally out of scope.
 
 ### New / changed endpoints in this iteration
