@@ -176,6 +176,36 @@ export const cloudTwoFactor = {
     (await api.post("/cloud/auth/2fa/disable", body)).data,
 };
 
+export interface CloudProfile {
+  id: string; email: string; name: string; phone: string;
+  emailVerified: boolean; twoFactorEnabled: boolean;
+  avatar: string | null; createdAt: string;
+}
+
+export interface NotificationPrefs {
+  vpsAlerts: boolean;
+  usageAlerts: boolean;
+  trialReminders: boolean;
+  paymentAlerts: boolean;
+  securityAlerts: boolean;
+}
+
+export const cloudAccount = {
+  getProfile: async () => (await api.get<CloudProfile>("/cloud/account/profile")).data,
+  updateProfile: async (b: { displayName?: string; phone?: string | null }) =>
+    (await api.put<{ ok: boolean }>("/cloud/account/profile", b)).data,
+  requestEmailChange: async (b: { currentPassword: string; newEmail: string }) =>
+    (await api.post<{ ok: boolean; message: string }>("/cloud/account/email/request-change", b)).data,
+  changePassword: async (b: { currentPassword: string; newPassword: string }) =>
+    (await api.post<{ ok: boolean }>("/cloud/account/password/change", b)).data,
+  deleteAccount: async (password: string) =>
+    (await api.delete<{ ok: boolean }>("/cloud/account", { data: { password } })).data,
+  getNotificationPrefs: async () =>
+    (await api.get<NotificationPrefs>("/cloud/account/notifications/preferences")).data,
+  updateNotificationPrefs: async (prefs: Partial<NotificationPrefs>) =>
+    (await api.put<NotificationPrefs>("/cloud/account/notifications/preferences", prefs)).data,
+};
+
 export const cloudBackups = {
   list: async (deploymentId: string) =>
     (await api.get(`/cloud/deployments/${deploymentId}/backups`)).data,

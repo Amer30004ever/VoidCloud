@@ -254,6 +254,38 @@ export class CloudAccountController {
   changePassword(@Req() req: AuthedRequest, @Body() b: { currentPassword: string; newPassword: string }) {
     return this.account.changePassword(req.user.id, b.currentPassword, b.newPassword);
   }
+
+  @ApiSecurity('bearer')
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  getProfile(@Req() req: AuthedRequest) { return this.account.getProfile(req.user.id); }
+
+  @ApiSecurity('bearer')
+  @UseGuards(JwtAuthGuard)
+  @Put('profile')
+  updateProfile(@Req() req: AuthedRequest, @Body() b: { displayName?: string; phone?: string | null }) {
+    return this.account.updateProfile(req.user.id, b);
+  }
+
+  @ApiSecurity('bearer')
+  @UseGuards(JwtAuthGuard)
+  @Delete('')
+  @HttpCode(200)
+  deleteAccount(@Req() req: AuthedRequest, @Body() b: { password: string }) {
+    return this.account.deleteAccount(req.user.id, b.password);
+  }
+
+  @ApiSecurity('bearer')
+  @UseGuards(JwtAuthGuard)
+  @Get('notifications/preferences')
+  getNotifPrefs(@Req() req: AuthedRequest) { return this.account.getNotificationPreferences(req.user.id); }
+
+  @ApiSecurity('bearer')
+  @UseGuards(JwtAuthGuard)
+  @Put('notifications/preferences')
+  setNotifPrefs(@Req() req: AuthedRequest, @Body() b: Record<string, boolean>) {
+    return this.account.updateNotificationPreferences(req.user.id, b);
+  }
 }
 
 

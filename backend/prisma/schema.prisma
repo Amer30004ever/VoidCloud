@@ -70,6 +70,7 @@ model User {
   trialEndsAt        DateTime?
   subscriptionStatus CloudSubscriptionStatus @default(TRIALING)
   overrideLimits     Json?
+  notificationPrefs  Json?
   suspendedAt        DateTime?
   suspendedReason    String?
   lastLoginAt        DateTime?
