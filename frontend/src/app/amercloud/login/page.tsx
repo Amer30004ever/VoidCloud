@@ -14,12 +14,21 @@ function LoginInner() {
   const [remember, setRemember] = useState(true);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [needs2FA, setNeeds2FA] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setErr("");
     try {
-      const { data } = await api.post("/auth/login", { email, password });
+      const body: Record<string, string> = { email, password };
+      if (needs2FA && twoFactorToken) body.twoFactorToken = twoFactorToken.trim();
+      const { data } = await api.post("/auth/login", body);
+      if (data?.requires2FA) {
+        setNeeds2FA(true);
+        setBusy(false);
+        return;
+      }
       const token = data.access_token ?? data.token;
       if (token) {
         if (remember) localStorage.setItem("amer_portal_token", token);
@@ -47,6 +56,9 @@ function LoginInner() {
         {err && <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{err}</div>}
         <Input label="Email" type="email" value={email} onChange={setEmail} required />
         <Input label="Password" type="password" value={password} onChange={setPassword} required />
+        {needs2FA && (
+          <Input label="Two-factor code (or recovery code)" type="text" value={twoFactorToken} onChange={setTwoFactorToken} required placeholder="123456" />
+        )}
         <label className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-2">
             <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
