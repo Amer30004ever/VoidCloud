@@ -8,8 +8,9 @@ import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 import { AlertRules } from "@/components/cloud/AlertRules";
 import { BackupManager } from "@/components/cloud/BackupManager";
 import { VpsResizeModal } from "@/components/cloud/VpsResizeModal";
+import { FirewallManager } from "@/components/cloud/FirewallManager";
 
-type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "activity";
+type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "firewall" | "activity";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
 
 export default function VpsDetailPage() {
