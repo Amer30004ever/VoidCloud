@@ -36,14 +36,16 @@ import {
     CloudWebhooksController,
     CloudAdminController,
     CloudTwoFactorController,
+    CloudAccountController,
     CloudBackupController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
     KubernetesService, PrometheusService, ProxmoxService,
     StripeService, FawryService, InstapayService,
-    CloudEmailService, TwoFactorService, CloudAuditService, CloudBackupService,
+    CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, CloudBackupService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
+
 })
 export class CloudModule {}
