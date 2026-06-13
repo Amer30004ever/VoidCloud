@@ -43,7 +43,7 @@ import {
   CloudOrganizationController,
   CloudVpsTransferController,
 } from './cloud.controllers';
-import { CloudImageController, CloudDomainController } from './cloud.controllers';
+import { CloudImageController, CloudDomainController, CloudAnalyticsController } from './cloud.controllers';
 
 
 
