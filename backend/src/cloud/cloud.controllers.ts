@@ -27,6 +27,7 @@ import { FirewallService, type FirewallRuleInput } from './firewall/firewall.ser
 import { OrganizationService } from './organization/organization.service';
 import { ImageService } from './images/image.service';
 import { DNSService, type CreateDNSRecordDto } from './dns/dns.service';
+import { AnalyticsService } from './analytics/analytics.service';
 import type { OrgRole } from '@prisma/client';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
