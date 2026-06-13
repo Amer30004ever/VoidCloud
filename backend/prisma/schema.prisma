@@ -816,9 +816,66 @@ model CloudDeployment {
   updatedAt     DateTime @updatedAt
 
   backups       CloudBackup[]
+  vpsAlertRules         VpsAlertRule[]
+  vpsAlertNotifications VpsAlertNotification[]
 
   @@index([userId, status])
 }
+
+enum VpsAlertType {
+  CPU
+  RAM
+  DISK
+  BANDWIDTH
+  UPTIME
+}
+
+enum VpsAlertOperator {
+  GREATER_THAN
+  LESS_THAN
+  EQUALS
+}
+
+model VpsAlertRule {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation("UserVpsAlertRules", fields: [userId], references: [id], onDelete: Cascade)
+  vpsId           String?
+  vps             CloudDeployment? @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  name            String
+  type            VpsAlertType
+  operator        VpsAlertOperator
+  threshold       Float
+  duration        Int?
+  cooldown        Int      @default(30)
+  enabled         Boolean  @default(true)
+  lastTriggeredAt DateTime?
+  notifications   VpsAlertNotification[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([vpsId])
+  @@index([enabled])
+}
+
+model VpsAlertNotification {
+  id          String   @id @default(uuid())
+  alertRuleId String
+  alertRule   VpsAlertRule @relation(fields: [alertRuleId], references: [id], onDelete: Cascade)
+  vpsId       String
+  vps         CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  status      String   @default("TRIGGERED")
+  message     String
+  value       Float
+  triggeredAt DateTime @default(now())
+  resolvedAt  DateTime?
+
+  @@index([alertRuleId])
+  @@index([vpsId])
+  @@index([triggeredAt])
+}
+
 
 model CloudBackup {
   id           String   @id @default(uuid())
