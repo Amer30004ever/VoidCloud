@@ -13,6 +13,7 @@ function VerifyInner() {
   const [state, setState] = useState<"loading" | "ok" | "error">("loading");
   const [msg, setMsg] = useState("");
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!token) { setState("error"); setMsg("Missing verification token"); return; }
     api.post("/auth/verify-email", { token })
