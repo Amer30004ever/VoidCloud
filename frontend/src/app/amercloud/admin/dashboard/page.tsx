@@ -69,10 +69,11 @@ export default function AdminDashboard() {
   const fmtMoney = (n: number, cur: string) =>
     new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + ` ${cur}`;
 
+  const runningDeployments = deployments.filter((d) => d.status === "RUNNING").length;
   const cards = [
     { label: "Total Users", value: stats?.users ?? activeUsers ?? "—", icon: "👤" },
     { label: "Active Plans", value: stats?.activeSubscriptions ?? "—", icon: "💎" },
-    { label: "Deployments", value: stats?.deployments ?? deployments.length ?? "—", icon: "🖥️" },
+    { label: "Running VPS", value: stats?.deployments || runningDeployments || deployments.length || "—", icon: "🖥️" },
     {
       label: "Revenue (paid)",
       value: stats
