@@ -269,17 +269,19 @@ export class ProxmoxService {
   async reinstallContainer(vmid: number, spec: ProvisionSpec, ipv4: string, node = this.node): Promise<{ rootPassword: string }> {
     const rootPassword = randomBytes(12).toString('base64url');
     if (!this.isLive()) { this.logger.log(`[STUB] reinstall vmid=${vmid}`); return { rootPassword }; }
+    const templateId = spec.templateId ?? getTemplateForPlan(spec.planSlug);
+    const cfg = this.nodeTemplateConfig(node, templateId);
     await this.destroyContainer(vmid, node);
     await this.pveRequest('POST', `/nodes/${node}/lxc`, {
       vmid,
       hostname: spec.hostname,
-      ostemplate: this.template,
-      storage: this.storage,
+      ostemplate: cfg.ostemplate,
+      storage: cfg.storage,
       cores: Math.max(1, Math.ceil(spec.cpuCores)),
       memory: spec.ramMB,
       swap: Math.max(256, Math.floor(spec.ramMB / 2)),
-      rootfs: `${this.storage}:${spec.storageGB}`,
-      net0: `name=eth0,bridge=${this.bridge},ip=${ipv4}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
+      rootfs: `${cfg.storage}:${spec.storageGB}`,
+      net0: `name=eth0,bridge=${cfg.bridge},ip=${ipv4}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
       password: rootPassword,
       unprivileged: 1, onboot: 1, start: 1, features: 'nesting=1',
     });
