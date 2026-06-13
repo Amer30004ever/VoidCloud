@@ -81,4 +81,38 @@ export class MailerService {
 
     this.logger.log(`[email/stub] to=${to} subject=${subject}\n${text ?? html}`);
   }
+
+  /** Returns transport status for admin diagnostics. */
+  status() {
+    return {
+      transport: this.transporter ? 'smtp' : this.resend ? 'resend' : 'stub',
+      from: this.from,
+      host: process.env.SMTP_HOST ?? null,
+      port: process.env.SMTP_HOST ? Number(process.env.SMTP_PORT || 587) : null,
+      user: process.env.SMTP_USER ?? null,
+      configured: !!(this.transporter || this.resend),
+    };
+  }
+
+  /** Verify SMTP connectivity (no email sent). */
+  async verify(): Promise<{ ok: boolean; transport: string; error?: string }> {
+    if (this.transporter) {
+      try {
+        await this.transporter.verify();
+        return { ok: true, transport: 'smtp' };
+      } catch (e: any) {
+        return { ok: false, transport: 'smtp', error: e?.message ?? String(e) };
+      }
+    }
+    if (this.resend) return { ok: true, transport: 'resend' };
+    return { ok: false, transport: 'stub', error: 'No SMTP_* or RESEND_API_KEY configured' };
+  }
+
+  /** Send a test email to the admin's own address. */
+  async sendTest(to: string) {
+    const subject = 'AmerCloud SMTP test email';
+    const html = `<p>This is a test from AmerCloud admin (${new Date().toISOString()}).</p><p>Transport: <b>${this.transporter ? 'SMTP' : this.resend ? 'Resend' : 'stub'}</b></p>`;
+    await this.send(to, subject, html);
+    return { ok: true };
+  }
 }
