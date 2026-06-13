@@ -353,10 +353,69 @@ export class CloudAdminController {
     private plans: CloudPlansService,
     private billing: CloudBillingService,
     private audit: CloudAuditService,
+    private activity: ActivityService,
     private tfa: TwoFactorService,
     private mailer: MailerService,
     private deployments: CloudDeploymentsService,
   ) {}
+
+  @Get('activity')
+  listActivity(
+    @Query('userId') userId?: string,
+    @Query('action') action?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('ipAddress') ipAddress?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.activity.listAll({
+      userId, action, from, to, ipAddress,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 100,
+    });
+  }
+
+  @Get('activity/export')
+  async exportActivity(
+    @Res() res: Response,
+    @Query('userId') userId?: string,
+    @Query('action') action?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    const csv = await this.activity.exportCsv({ userId, action, from, to });
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="amercloud-activity-${new Date().toISOString().slice(0,10)}.csv"`);
+    res.send(csv);
+  }
+
+  @Put('users/:id/role')
+  @Roles(Role.SUPER_ADMIN)
+  async changeRole(@Req() req: any, @Param('id') id: string, @Body() body: { role: Role }) {
+    if (!['USER', 'ADMIN', 'SUPER_ADMIN'].includes(body.role)) {
+      throw new BadRequestException('Invalid role');
+    }
+    const result = await this.admin.changeRole(req.user.id, id, body.role);
+    await this.activity.log({
+      userId: id, adminId: req.user.id, action: 'ROLE_CHANGE',
+      details: { from: result.previousRole, to: result.role },
+      ipAddress: extractIp(req), userAgent: extractUA(req),
+    });
+    return result;
+  }
+
+  @Post('impersonate/stop')
+  @HttpCode(200)
+  async stopImpersonate(@Req() req: any) {
+    if (req.user.impersonatedBy) {
+      await this.activity.log({
+        userId: req.user.id, adminId: req.user.impersonatedBy, action: 'IMPERSONATE_END',
+        ipAddress: extractIp(req), userAgent: extractUA(req),
+      });
+    }
+    return { ok: true };
+  }
 
   @Get('smtp/status') smtpStatus() { return this.mailer.status(); }
   @Post('smtp/verify') smtpVerify() { return this.mailer.verify(); }
