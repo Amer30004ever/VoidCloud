@@ -134,7 +134,7 @@ export default function AdminDashboard() {
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-          <h2 className="mb-4 text-lg font-semibold">Running namespaces</h2>
+          <h2 className="mb-4 text-lg font-semibold">Running namespaces ({namespaces.length})</h2>
           {namespaces.length === 0 ? (
             <p className="py-6 text-center text-sm text-white/50">No namespaces.</p>
           ) : (
