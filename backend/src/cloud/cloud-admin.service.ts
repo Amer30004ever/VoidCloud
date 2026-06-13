@@ -1,9 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthService } from '../auth/auth.service';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class CloudAdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auth: AuthService,
+    private jwt: JwtService,
+  ) {}
 
   async stats() {
     const [users, plans, deployments, invoices, mrr] = await Promise.all([
