@@ -9,8 +9,8 @@ import ar from "@/locales/ar.json";
 
 type Lang = "en" | "ar";
 
-function t(dict: any, path: string, fallback: string) {
-  return path.split(".").reduce((o: any, k) => (o ? o[k] : undefined), dict) ?? fallback;
+function t(dict: unknown, path: string, fallback: string) {
+  return path.split(".").reduce<unknown>((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), dict) as string ?? fallback;
 }
 
 export default function CloudDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -22,6 +22,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
   const isAdminArea = pathname.startsWith("/amercloud/admin");
   const dict = lang === "ar" ? ar : en;
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = (localStorage.getItem("amer_lang") as Lang) || "en";

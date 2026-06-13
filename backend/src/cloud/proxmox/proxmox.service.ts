@@ -1,12 +1,15 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as https from 'https';
+import { getTemplateForPlan, TEMPLATE_MANIFEST, type TemplateId } from './template-manifest';
 
 export interface ProvisionSpec {
   hostname: string;
   cpuCores: number;
   ramMB: number;
   storageGB: number;
+  planSlug?: string;
+  templateId?: TemplateId;
 }
 
 export interface ProvisionResult {
@@ -136,13 +139,21 @@ export class ProxmoxService {
 
   async createContainer(spec: ProvisionSpec): Promise<ProvisionResult> {
     const rootPassword = randomBytes(12).toString('base64url');
+    const templateId = spec.templateId ?? getTemplateForPlan(spec.planSlug);
+    const template = TEMPLATE_MANIFEST[templateId];
+    this.logger.log(
+      `Provisioning request: plan=${spec.planSlug ?? 'n/a'} template=${templateId} (${template.displayName}) ` +
+      `hostname=${spec.hostname} cpu=${spec.cpuCores} ram=${spec.ramMB}MB disk=${spec.storageGB}GB`,
+    );
 
     if (!this.isLive()) {
       const vmid = 1000 + Math.floor(Math.random() * 9000);
       const ipv4Address = `${this.ipBase}.${this.nextHostOctet++}`;
-      this.logger.log(`[STUB] proxmox create vmid=${vmid} ip=${ipv4Address} ${JSON.stringify(spec)}`);
+      this.logger.log(`[STUB] proxmox clone template=${templateId} → vmid=${vmid} ip=${ipv4Address}`);
       return { vmid, ipv4Address, node: this.node, rootPassword };
     }
+
+
 
     const nextId = await this.pveRequest<string>('GET', `/cluster/nextid`);
     const vmid = Number(nextId);

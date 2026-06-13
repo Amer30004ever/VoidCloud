@@ -320,6 +320,11 @@ export class CloudAdminController {
   deleteUser(@Param('id') id: string) { return this.admin.deleteUser(id); }
   @Post('users/:id/reset-password')
   resetPw(@Param('id') id: string) { return this.admin.resetUserPassword(id); }
+  @Post('reset-admin-password')
+  @Roles(Role.SUPER_ADMIN)
+  resetAdminPassword(@Body() body: { newPassword: string; email?: string }) {
+    return this.admin.resetAdminPassword(body.newPassword, body.email);
+  }
   @Post('users/:id/reset-2fa')
   reset2fa(@Param('id') id: string) { return this.tfa.adminReset(id); }
   @Post('users/:id/impersonate')

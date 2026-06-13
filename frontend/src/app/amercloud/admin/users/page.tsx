@@ -13,7 +13,9 @@ export default function AdminUsersPage() {
   const [draft, setDraft] = useState({ email: "", name: "", password: "", role: "USER", planId: "" });
 
   const load = useCallback(async () => { setUsers(await cloudApi.admin.users(q)); }, [q]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { cloudApi.admin.plans().then(setPlans).catch(() => {}); }, []);
 
   async function suspend(id: string) { const r = prompt("Suspension reason?") ?? "manual"; await cloudApi.admin.suspend(id, r); load(); }

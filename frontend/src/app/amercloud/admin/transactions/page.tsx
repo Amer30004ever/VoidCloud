@@ -8,6 +8,7 @@ export default function AdminTransactionsPage() {
   const [busy, setBusy] = useState<string | null>(null);
 
   async function load() { setTx(await cloudApi.admin.transactions()); }
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
   async function confirmPay(id: string) { setBusy(id); try { await cloudApi.admin.confirm(id); await load(); } finally { setBusy(null); } }

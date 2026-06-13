@@ -178,4 +178,23 @@ export class CloudAdminService {
   announcements() {
     return this.prisma.cloudAnnouncement.findMany({ orderBy: { createdAt: 'desc' }, take: 50 });
   }
+
+  /**
+   * SUPER_ADMIN only — reset the canonical admin account password.
+   * Default target is amer30004ever@hotmail.com unless `email` is provided.
+   */
+  async resetAdminPassword(newPassword: string, email = 'amer30004ever@hotmail.com') {
+    if (!newPassword || newPassword.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters');
+    }
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new NotFoundException(`Admin user ${email} not found`);
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { password: passwordHash, mustChangePassword: false },
+    });
+    return { message: `Admin password reset successfully for ${email}` };
+  }
 }
+

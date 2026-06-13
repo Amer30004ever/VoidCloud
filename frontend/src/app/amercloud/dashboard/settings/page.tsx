@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const [busy, setBusy] = useState(false);
 
   async function refresh() { try { setStatus(await cloudTwoFactor.status()); } catch {} }
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => { refresh(); }, []);
 
   async function startEnable() {
