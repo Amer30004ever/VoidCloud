@@ -25,6 +25,7 @@ import { VpsTerminalGateway } from './terminal/vps-terminal.gateway';
 import { VpsAlertService } from './monitoring/vps-alert.service';
 import { VpsAlertController } from './monitoring/vps-alert.controller';
 import { ImageService } from './images/image.service';
+import { DNSService } from './dns/dns.service';
 import {
   CloudPlansController,
   CloudTemplatesController,
