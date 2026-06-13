@@ -127,6 +127,7 @@ model User {
   customImages        CustomImage[]
   customImageShares   CustomImageShare[]
   domains             Domain[]
+  apiRateLimits       APIRateLimit[]
 
 
   // Password reset
