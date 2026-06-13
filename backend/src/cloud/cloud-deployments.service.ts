@@ -120,6 +120,7 @@ export class CloudDeploymentsService {
       cpuCores: deployment.cpu,
       ramMB: deployment.memory,
       storageGB: Math.ceil(deployment.storage / 1024),
+      planSlug: user.cloudPlan?.slug,
     });
     const rootPasswordHash = await bcrypt.hash(prov.rootPassword, 10);
     await this.prisma.cloudDeployment.update({
