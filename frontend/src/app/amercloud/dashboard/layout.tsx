@@ -128,7 +128,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
             <button onClick={() => setLang(lang === "en" ? "ar" : "en")} className="rounded-md border border-white/10 px-3 py-1 text-xs">
               {lang === "en" ? "🇪🇬 العربية" : "🇬🇧 EN"}
             </button>
-            <button className="rounded-md border border-white/10 px-3 py-1 text-xs" title="Notifications">🔔</button>
+            <NotificationBell />
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
