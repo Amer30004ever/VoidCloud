@@ -45,15 +45,15 @@ import {
     CloudTwoFactorController,
     CloudAccountController,
     CloudBackupController,
+    VpsAlertController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
     KubernetesService, PrometheusService, ProxmoxService,
     StripeService, FawryService, InstapayService,
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService,
-    VpsTerminalGateway,
+    VpsTerminalGateway, VpsAlertService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
-
 })
 export class CloudModule {}
