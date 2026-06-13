@@ -651,6 +651,8 @@ model ApiKey {
   lastUsedAt DateTime?
   expiresAt  DateTime?
   createdAt  DateTime  @default(now())
+
+  rateLimits APIRateLimit[]
 }
 
 model AppSecret {
