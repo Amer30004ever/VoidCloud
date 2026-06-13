@@ -135,15 +135,40 @@ export class CloudAdminService {
     return this.auth.forgotPassword(user.email);
   }
 
-  async impersonate(userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException();
-    const access_token = this.jwt.sign({ email: user.email, sub: user.id, role: user.role });
+  async impersonate(adminId: string, userId: string) {
+    if (adminId === userId) throw new BadRequestException('Cannot impersonate yourself');
+    const [admin, user] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: adminId } }),
+      this.prisma.user.findUnique({ where: { id: userId } }),
+    ]);
+    if (!admin || !user) throw new NotFoundException();
+    // Short-lived token (1h) carrying both the impersonated user and original admin.
+    const access_token = this.jwt.sign(
+      { email: user.email, sub: user.id, role: user.role, impersonatedBy: adminId, impersonatorEmail: admin.email },
+      { expiresIn: '1h' },
+    );
     return {
       access_token,
       user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      impersonatedBy: { id: admin.id, email: admin.email, name: admin.name },
     };
   }
+
+  async changeRole(actorId: string, targetId: string, newRole: Role) {
+    const actor = await this.prisma.user.findUnique({ where: { id: actorId } });
+    if (!actor || actor.role !== 'SUPER_ADMIN') {
+      throw new BadRequestException('Only SUPER_ADMIN can change roles');
+    }
+    const target = await this.prisma.user.findUnique({ where: { id: targetId } });
+    if (!target) throw new NotFoundException();
+    if (target.id === actor.id) throw new BadRequestException('Cannot change your own role');
+    const updated = await this.prisma.user.update({
+      where: { id: targetId },
+      data: { role: newRole },
+    });
+    return { id: updated.id, role: updated.role, previousRole: target.role };
+  }
+
 
   transactions() {
     return this.prisma.cloudInvoice.findMany({

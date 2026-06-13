@@ -111,7 +111,9 @@ model User {
   apiKeys             ApiKey[]
   appSecrets          AppSecret[]
   auditLogs           AuditLog[]
+  adminAuditLogs      AuditLog[] @relation("AdminAuditActions")
   notes               Note[]
+
 
   // Cloud (HaaS) relations
   cloudDeployments    CloudDeployment[]
@@ -674,12 +676,22 @@ model AuditLog {
   action    String
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
+  adminId   String?
+  admin     User?    @relation("AdminAuditActions", fields: [adminId], references: [id])
   userEmail String?
   resource  String?
   details   Json?
   ipAddress String?
+  userAgent String?
+  status    String   @default("SUCCESS")
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([adminId])
 }
+
 model Note {
   id        String   @id @default(uuid())
   title     String
