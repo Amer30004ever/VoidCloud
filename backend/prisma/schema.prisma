@@ -129,6 +129,9 @@ model User {
   domains             Domain[]
   apiRateLimits       APIRateLimit[]
   webhookEndpoints    WebhookEndpoint[]
+  referralsMade       Referral[] @relation("Referrals")
+  referredBy          Referral?  @relation("Referred")
+  referralPayoutMethod Json?
 
 
   // Password reset
