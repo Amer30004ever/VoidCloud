@@ -19,6 +19,7 @@ import { TwoFactorService } from './auth/two-factor.service';
 import { CloudAuditService } from './audit/cloud-audit.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import { CloudEmailService } from './notifications/email.service';
+import { MailerService } from '../mailer/mailer.service';
 
 interface AuthedRequest { user: { id: string; role: Role; email: string } }
 
