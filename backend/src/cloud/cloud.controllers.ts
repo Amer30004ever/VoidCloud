@@ -245,7 +245,15 @@ export class CloudAdminController {
     private billing: CloudBillingService,
     private audit: CloudAuditService,
     private tfa: TwoFactorService,
+    private mailer: MailerService,
   ) {}
+
+  @Get('smtp/status') smtpStatus() { return this.mailer.status(); }
+  @Post('smtp/verify') smtpVerify() { return this.mailer.verify(); }
+  @Post('smtp/test')
+  smtpTest(@Req() req: AuthedRequest, @Body() b: { to?: string }) {
+    return this.mailer.sendTest((b?.to || req.user.email).trim());
+  }
 
   @Get('audit-logs')
   auditLogs(@Query('targetId') targetId?: string, @Query('action') action?: string) {
