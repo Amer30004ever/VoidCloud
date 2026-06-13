@@ -1051,7 +1051,7 @@ jobs:
   # DEPLOYMENT VERIFICATION & SUMMARY
   # ============================================
   deploy-summary:
-    needs: [deploy-postgres, deploy-backend, deploy-frontend, manual-full-deploy, manual-restart-backend, manual-restart-frontend, manual-restart-all]
+    needs: [deploy-postgres, deploy-backend, deploy-frontend, run-migrations, manual-full-deploy, manual-restart-backend, manual-restart-frontend, manual-restart-all]
     runs-on: self-hosted
     if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     steps:
