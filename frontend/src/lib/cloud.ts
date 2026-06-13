@@ -96,6 +96,12 @@ export const cloudApi = {
   admin: {
     stats: async () => (await api.get("/cloud/admin/stats")).data,
     users: async (q?: string) => (await api.get("/cloud/admin/users", { params: { q } })).data,
+    createUser: async (body: { email: string; name: string; password: string; role?: string; planId?: string | null }) =>
+      (await api.post("/cloud/admin/users", body)).data,
+    deleteUser: async (id: string) => api.delete(`/cloud/admin/users/${id}`),
+    resetPassword: async (id: string) => (await api.post(`/cloud/admin/users/${id}/reset-password`)).data,
+    impersonate: async (id: string) =>
+      (await api.post<{ access_token: string; user: { id: string; email: string; name: string; role: string } }>(`/cloud/admin/users/${id}/impersonate`)).data,
     setPlan: async (id: string, planId: string | null) =>
       (await api.put(`/cloud/admin/users/${id}/plan`, { planId })).data,
     suspend: async (id: string, reason: string) =>
@@ -112,6 +118,10 @@ export const cloudApi = {
       (await api.put<CloudPlan>(`/cloud/admin/plans/${id}`, body)).data,
     deletePlan: async (id: string) => api.delete(`/cloud/admin/plans/${id}`),
     transactions: async () => (await api.get("/cloud/admin/billing/transactions")).data,
+    transactionsCsvUrl: () => {
+      const base = (api.defaults?.baseURL || "").replace(/\/$/, "");
+      return `${base}/cloud/admin/billing/transactions.csv`;
+    },
     refund: async (invoiceId: string, partial?: number) =>
       (await api.post("/cloud/admin/billing/refund", { invoiceId, partial })).data,
     confirm: async (invoiceId: string) =>
