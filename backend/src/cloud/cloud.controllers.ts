@@ -286,6 +286,13 @@ export class CloudAdminController {
   @Delete('plans/:id') planDelete(@Param('id') id: string) { return this.plans.remove(id); }
 
   @Get('billing/transactions') transactions() { return this.admin.transactions(); }
+  @Get('billing/transactions.csv')
+  async transactionsCsv(@Res() res: Response) {
+    const csv = await this.admin.transactionsCSV();
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="amercloud-transactions-${new Date().toISOString().slice(0,10)}.csv"`);
+    res.send(csv);
+  }
   @Post('billing/refund')
   refund(@Body() body: { invoiceId: string; partial?: number }) {
     return this.admin.refund(body.invoiceId, body.partial);
