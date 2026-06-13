@@ -23,6 +23,7 @@ import { CloudBackupService } from './backup/cloud-backup.service';
 import { BackupServiceV2 } from './backup/backup-v2.service';
 import { SSHKeyService } from './ssh/ssh-key.service';
 import { VPSResizeService } from './vps/vps-resize.service';
+import { FirewallService, type FirewallRuleInput } from './firewall/firewall.service';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
 
@@ -494,6 +495,55 @@ export class CloudVpsResizeController {
     return this.resize.resizeVPS(id, body?.newPlanId, req.user.id, !!body?.confirmPrice);
   }
 }
+
+
+@ApiTags('Cloud / Firewall')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud')
+export class CloudFirewallController {
+  constructor(private fw: FirewallService) {}
+
+  @Get('vps/:id/firewall')
+  list(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.fw.getRules(id, req.user.id);
+  }
+
+  @Get('vps/:id/firewall/defaults')
+  defaults() { return this.fw.getDefaultRules(); }
+
+  @Post('vps/:id/firewall')
+  create(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: FirewallRuleInput) {
+    return this.fw.createRule(id, req.user.id, body);
+  }
+
+  @Put('firewall/:id')
+  update(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: Partial<FirewallRuleInput>) {
+    return this.fw.updateRule(id, req.user.id, body);
+  }
+
+  @Delete('firewall/:id')
+  remove(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.fw.deleteRule(id, req.user.id);
+  }
+
+  @Post('firewall/:id/toggle')
+  toggle(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.fw.toggleRule(id, req.user.id);
+  }
+
+  @Post('vps/:id/firewall/reorder')
+  reorder(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { ruleIds: string[] }) {
+    return this.fw.reorderRules(id, req.user.id, body?.ruleIds ?? []);
+  }
+
+  @Post('vps/:id/firewall/reset')
+  reset(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.fw.resetToDefault(id, req.user.id);
+  }
+}
+
+
 
 
 

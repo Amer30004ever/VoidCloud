@@ -292,3 +292,23 @@ export const cloudResize = {
   resize: async (vpsId: string, newPlanId: string) =>
     (await api.post(`/cloud/vps/${vpsId}/resize`, { newPlanId, confirmPrice: true })).data,
 };
+
+export interface FirewallRule {
+  id: string; vpsId: string; name: string; priority: number;
+  action: "ALLOW" | "DENY"; protocol: "TCP" | "UDP" | "ICMP" | "ANY";
+  port?: string | null; sourceIP?: string | null; description?: string | null;
+  enabled: boolean; createdAt: string; updatedAt: string;
+}
+export type FirewallRuleInput = Partial<Omit<FirewallRule, "id" | "vpsId" | "createdAt" | "updatedAt">>;
+export const cloudFirewall = {
+  list: async (vpsId: string): Promise<FirewallRule[]> => (await api.get(`/cloud/vps/${vpsId}/firewall`)).data,
+  create: async (vpsId: string, data: FirewallRuleInput): Promise<FirewallRule> =>
+    (await api.post(`/cloud/vps/${vpsId}/firewall`, data)).data,
+  update: async (id: string, data: FirewallRuleInput): Promise<FirewallRule> =>
+    (await api.put(`/cloud/firewall/${id}`, data)).data,
+  remove: async (id: string) => (await api.delete(`/cloud/firewall/${id}`)).data,
+  toggle: async (id: string): Promise<FirewallRule> => (await api.post(`/cloud/firewall/${id}/toggle`)).data,
+  reorder: async (vpsId: string, ruleIds: string[]) =>
+    (await api.post(`/cloud/vps/${vpsId}/firewall/reorder`, { ruleIds })).data,
+  reset: async (vpsId: string) => (await api.post(`/cloud/vps/${vpsId}/firewall/reset`)).data,
+};
