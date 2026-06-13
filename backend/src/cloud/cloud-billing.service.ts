@@ -232,6 +232,13 @@ export class CloudBillingService {
             lastDeployedAt: new Date(),
           },
         });
+        // Notify user that the queued VPS is now ready (root password NOT included — already shown at create time hash-only).
+        const owner = await this.prisma.user.findUnique({ where: { id: d.userId } });
+        if (owner) {
+          this.email.vpsReady(owner.email, owner.name, {
+            vpsName: d.name, ipv4: prov.ipv4Address, rootPassword: prov.rootPassword,
+          });
+        }
       } catch (e: any) {
         await this.prisma.cloudDeployment.update({
           where: { id: d.id },
