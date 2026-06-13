@@ -3,12 +3,42 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { API_BASE_URL } from "@/lib/constants";
+import { cloudRateLimits, type RateLimitStatus, type RateLimitHistory, type RateLimitAlert } from "@/lib/cloud";
 
 export default function ApiKeysPage() {
   const [keys, setKeys] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [created, setCreated] = useState<string | null>(null);
   const [copiedExample, setCopiedExample] = useState<string | null>(null);
+  const [rlStatus, setRlStatus] = useState<RateLimitStatus | null>(null);
+  const [rlHistory, setRlHistory] = useState<RateLimitHistory | null>(null);
+  const [rlAlert, setRlAlert] = useState<RateLimitAlert>({ threshold: 80, enabled: false });
+  const [rlSaving, setRlSaving] = useState(false);
+
+  async function refreshRateLimits() {
+    try {
+      const [s, h, a] = await Promise.all([
+        cloudRateLimits.current(),
+        cloudRateLimits.history(7),
+        cloudRateLimits.getAlert(),
+      ]);
+      setRlStatus(s);
+      setRlHistory(h);
+      setRlAlert(a);
+    } catch {
+      setRlStatus({ limits: [], overall: { limit: 1000, remaining: 1000, resetAt: new Date(Date.now() + 3600_000).toISOString() } });
+      setRlHistory({ daily: [], byEndpoint: [] });
+    }
+  }
+
+  async function saveAlert(next: Partial<RateLimitAlert>) {
+    const merged = { ...rlAlert, ...next };
+    setRlAlert(merged);
+    setRlSaving(true);
+    try { await cloudRateLimits.setAlert(merged.threshold, merged.enabled); }
+    catch { /* ignore */ }
+    setRlSaving(false);
+  }
 
   async function refresh() {
     try {

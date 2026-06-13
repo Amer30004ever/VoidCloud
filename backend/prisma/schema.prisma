@@ -127,6 +127,7 @@ model User {
   customImages        CustomImage[]
   customImageShares   CustomImageShare[]
   domains             Domain[]
+  apiRateLimits       APIRateLimit[]
 
 
   // Password reset
@@ -651,6 +652,8 @@ model ApiKey {
   lastUsedAt DateTime?
   expiresAt  DateTime?
   createdAt  DateTime  @default(now())
+
+  rateLimits APIRateLimit[]
 }
 
 model AppSecret {
@@ -1109,4 +1112,23 @@ model UsageMetric {
   @@index([userId])
   @@index([vpsId])
   @@index([recordedAt])
+}
+
+model APIRateLimit {
+  id        String   @id @default(cuid())
+  apiKeyId  String?
+  apiKey    ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String
+  method    String
+  period    String
+  limit     Int
+  remaining Int
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([apiKeyId])
+  @@index([userId])
+  @@index([createdAt])
 }

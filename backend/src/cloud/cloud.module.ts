@@ -43,7 +43,8 @@ import {
   CloudOrganizationController,
   CloudVpsTransferController,
 } from './cloud.controllers';
-import { CloudImageController, CloudDomainController, CloudAnalyticsController } from './cloud.controllers';
+import { CloudImageController, CloudDomainController, CloudAnalyticsController, CloudRateLimitController } from './cloud.controllers';
+import { RateLimitService } from './rate-limit/rate-limit.service';
 
 
 
@@ -68,6 +69,7 @@ import { CloudImageController, CloudDomainController, CloudAnalyticsController }
     CloudImageController,
     CloudDomainController,
     CloudAnalyticsController,
+    CloudRateLimitController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
@@ -76,6 +78,7 @@ import { CloudImageController, CloudDomainController, CloudAnalyticsController }
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
     SSHKeyService, VPSResizeService, FirewallService, OrganizationService,
     VpsTerminalGateway, VpsAlertService, ImageService, DNSService, AnalyticsService,
+    RateLimitService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
 })
