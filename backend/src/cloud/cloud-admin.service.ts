@@ -36,6 +36,26 @@ export class CloudAdminService {
     };
   }
 
+  async realStats() {
+    const [totalUsers, activePlans, runningVPS, mrr] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { subscriptionStatus: 'ACTIVE' as any } }),
+      this.prisma.cloudDeployment.count({ where: { status: 'RUNNING' as any } }),
+      this.prisma.cloudInvoice.aggregate({
+        where: { status: 'PAID' },
+        _sum: { amountUSD: true, amountEGP: true },
+      }),
+    ]);
+    return {
+      totalUsers,
+      activePlans,
+      runningVPS,
+      revenueUSD: Number(mrr._sum.amountUSD ?? 0),
+      revenueEGP: Number(mrr._sum.amountEGP ?? 0),
+    };
+  }
+
+
 
   async listUsers(search?: string, planId?: string, status?: string) {
     return this.prisma.user.findMany({

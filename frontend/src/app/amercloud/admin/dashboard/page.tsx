@@ -69,10 +69,11 @@ export default function AdminDashboard() {
   const fmtMoney = (n: number, cur: string) =>
     new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + ` ${cur}`;
 
+  const runningDeployments = deployments.filter((d) => d.status === "RUNNING").length;
   const cards = [
     { label: "Total Users", value: stats?.users ?? activeUsers ?? "—", icon: "👤" },
     { label: "Active Plans", value: stats?.activeSubscriptions ?? "—", icon: "💎" },
-    { label: "Deployments", value: stats?.deployments ?? deployments.length ?? "—", icon: "🖥️" },
+    { label: "Running VPS", value: stats?.deployments || runningDeployments || deployments.length || "—", icon: "🖥️" },
     {
       label: "Revenue (paid)",
       value: stats
@@ -134,7 +135,7 @@ export default function AdminDashboard() {
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-          <h2 className="mb-4 text-lg font-semibold">Running namespaces</h2>
+          <h2 className="mb-4 text-lg font-semibold">Running namespaces ({namespaces.length})</h2>
           {namespaces.length === 0 ? (
             <p className="py-6 text-center text-sm text-white/50">No namespaces.</p>
           ) : (
