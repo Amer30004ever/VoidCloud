@@ -1070,3 +1070,48 @@ export class AdminVpsMigrationController {
     return this.mig.drainNode(body.sourceNode, body.targetNode, req.user.id);
   }
 }
+
+import { ReferralService, type PayoutMethod } from './referral/referral.service';
+
+@ApiTags('Cloud / Referral')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/referral')
+export class CloudReferralController {
+  constructor(private referral: ReferralService) {}
+
+  @Get('code')
+  async code(@Req() req: AuthedRequest) {
+    return { code: await this.referral.getReferralCode(req.user.id) };
+  }
+
+  @Get('stats')
+  stats(@Req() req: AuthedRequest) {
+    return this.referral.getReferralStats(req.user.id);
+  }
+
+  @Get('payout-method')
+  getPayoutMethod(@Req() req: AuthedRequest) {
+    return this.referral.getPayoutMethod(req.user.id);
+  }
+
+  @Post('payout-method')
+  setPayoutMethod(@Req() req: AuthedRequest, @Body() body: PayoutMethod) {
+    return this.referral.setPayoutMethod(req.user.id, body);
+  }
+
+  @Get('payouts')
+  payouts(@Req() req: AuthedRequest) {
+    return this.referral.listPayouts(req.user.id);
+  }
+
+  @Post('payout')
+  payout(@Req() req: AuthedRequest, @Body() body: { amount: number; method: string }) {
+    return this.referral.requestPayout(req.user.id, Number(body?.amount ?? 0), String(body?.method ?? ''));
+  }
+
+  @Post('claim')
+  claim(@Req() req: AuthedRequest, @Body() body: { code: string }) {
+    return this.referral.processReferral(req.user.id, String(body?.code ?? '')).then(() => ({ ok: true }));
+  }
+}
