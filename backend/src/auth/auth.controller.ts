@@ -100,6 +100,25 @@ export class AuthController {
     return this.authService.resetPassword(dto.token, dto.password);
   }
 
+  /** POST /api/v1/auth/verify-email — confirm email via emailed token */
+  @Public()
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify email via emailed token' })
+  async verifyEmail(@Body() body: { token: string }) {
+    return this.authService.verifyEmail(body?.token);
+  }
+
+  /** POST /api/v1/auth/resend-verification — resend the verification email */
+  @Public()
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend verification email' })
+  async resendVerification(@Body() body: { email: string }) {
+    return this.authService.resendVerification(body?.email ?? '');
+  }
+
+
   /**
    * GET /api/v1/auth/me
    * Return the currently authenticated user
