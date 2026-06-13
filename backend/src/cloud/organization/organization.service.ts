@@ -48,7 +48,7 @@ export class OrganizationService {
     return this.prisma.organization.findUnique({
       where: { id: orgId },
       include: {
-        members: { include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } } },
+        members: { include: { user: { select: { id: true, email: true, name: true } } } },
         invitations: { where: { acceptedAt: null } },
         _count: { select: { vps: true } },
       },
@@ -74,7 +74,7 @@ export class OrganizationService {
     await this.assertRole(orgId, userId, ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER']);
     return this.prisma.organizationMember.findMany({
       where: { organizationId: orgId },
-      include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+      include: { user: { select: { id: true, email: true, name: true } } },
       orderBy: { joinedAt: 'asc' },
     });
   }
