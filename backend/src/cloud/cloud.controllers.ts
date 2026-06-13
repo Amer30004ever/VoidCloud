@@ -452,7 +452,14 @@ export class CloudAdminController {
   @Post('users/:id/reset-2fa')
   reset2fa(@Param('id') id: string) { return this.tfa.adminReset(id); }
   @Post('users/:id/impersonate')
-  impersonate(@Param('id') id: string) { return this.admin.impersonate(id); }
+  async impersonate(@Req() req: any, @Param('id') id: string) {
+    const result = await this.admin.impersonate(req.user.id, id);
+    await this.activity.log({
+      userId: id, adminId: req.user.id, action: 'IMPERSONATE_START',
+      ipAddress: extractIp(req), userAgent: extractUA(req),
+    });
+    return result;
+  }
   @Put('users/:id/plan')
   setPlan(@Param('id') id: string, @Body() body: { planId: string | null }) {
     return this.admin.setUserPlan(id, body.planId);
