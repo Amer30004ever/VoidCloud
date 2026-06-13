@@ -276,3 +276,19 @@ export const cloudAudit = {
   list: async (params?: { targetId?: string; action?: string }) =>
     (await api.get("/cloud/admin/audit-logs", { params })).data,
 };
+
+export interface ResizeQuote {
+  daysLeft: number; cycleDays: number;
+  currentPlan: CloudPlan | null; newPlan: CloudPlan;
+  amountUSD: number; amountEGP: number; credit: boolean; isUpgrade: boolean;
+}
+export const cloudResize = {
+  options: async (vpsId: string): Promise<{ current: CloudPlan | null; upgrades: CloudPlan[]; downgrades: CloudPlan[] }> =>
+    (await api.get(`/cloud/vps/${vpsId}/upgrades`)).data,
+  quote: async (vpsId: string, newPlanId: string): Promise<ResizeQuote> =>
+    (await api.get(`/cloud/vps/${vpsId}/resize/price`, { params: { newPlanId } })).data,
+  liveSupported: async (vpsId: string): Promise<{ supported: boolean; requiresReboot: boolean }> =>
+    (await api.get(`/cloud/vps/${vpsId}/resize/live-supported`)).data,
+  resize: async (vpsId: string, newPlanId: string) =>
+    (await api.post(`/cloud/vps/${vpsId}/resize`, { newPlanId, confirmPrice: true })).data,
+};

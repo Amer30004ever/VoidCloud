@@ -22,6 +22,7 @@ import { ActivityService } from './audit/activity.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import { BackupServiceV2 } from './backup/backup-v2.service';
 import { SSHKeyService } from './ssh/ssh-key.service';
+import { VPSResizeService } from './vps/vps-resize.service';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
 
@@ -463,6 +464,38 @@ export class CloudSshKeyController {
     return this.ssh.removeKeyFromVPS(keyId, id, req.user.id);
   }
 }
+
+
+@ApiTags('Cloud / VPS Resize')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/vps')
+export class CloudVpsResizeController {
+  constructor(private resize: VPSResizeService) {}
+
+  @Get(':id/upgrades')
+  upgrades(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.resize.getAvailableUpgrades(id, req.user.id);
+  }
+
+  @Get(':id/resize/price')
+  price(@Req() req: AuthedRequest, @Param('id') id: string, @Query('newPlanId') newPlanId: string) {
+    if (!newPlanId) throw new BadRequestException('newPlanId required');
+    return this.resize.calculateProratedPrice(id, req.user.id, newPlanId);
+  }
+
+  @Get(':id/resize/live-supported')
+  live(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.resize.liveResizeSupported(id, req.user.id);
+  }
+
+  @Post(':id/resize')
+  doResize(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { newPlanId: string; confirmPrice: boolean }) {
+    return this.resize.resizeVPS(id, body?.newPlanId, req.user.id, !!body?.confirmPrice);
+  }
+}
+
+
 
 
 
