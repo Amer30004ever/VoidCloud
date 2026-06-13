@@ -707,7 +707,32 @@ jobs:
           kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
           
           echo "✅ Backend deployment complete!"
+  # ============================================
+  # RUN DATABASE MIGRATIONS
+  # ============================================
+  run-migrations:
+    needs: [deploy-backend]
+    if: |
+      needs.deploy-backend.result == 'success' &&
+      github.event_name == 'workflow_dispatch'
+    runs-on: self-hosted
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
 
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Run Prisma Migrations
+        run: |
+          echo "🔄 Running database migrations..."
+          kubectl -n amer-portal exec deploy/backend -- npx prisma migrate deploy
+          echo "✅ Migrations completed successfully"
   # ============================================
   # DEPLOY FRONTEND (Self-Hosted Runner)
   # ============================================
