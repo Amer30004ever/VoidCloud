@@ -224,6 +224,7 @@ export class CloudTwoFactorController {
   @Post('disable')
   disable(@Req() req: AuthedRequest, @Body() b: { password?: string; recoveryCode?: string }) {
     return this.tfa.disableWithProof(req.user.id, b.password, b.recoveryCode);
+  }
 }
 
 @ApiTags('Cloud / Account')
@@ -255,7 +256,6 @@ export class CloudAccountController {
   }
 }
 
-}
 
 @ApiTags('Cloud / Backups')
 @ApiSecurity('bearer')
