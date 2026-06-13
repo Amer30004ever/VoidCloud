@@ -51,6 +51,7 @@ import {
     CloudAccountController,
     CloudBackupController,
     CloudSshKeyController,
+    CloudVpsResizeController,
     VpsAlertController,
   ],
   providers: [
@@ -58,7 +59,7 @@ import {
     KubernetesService, PrometheusService, ProxmoxService,
     StripeService, FawryService, InstapayService,
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
-    SSHKeyService,
+    SSHKeyService, VPSResizeService,
     VpsTerminalGateway, VpsAlertService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
