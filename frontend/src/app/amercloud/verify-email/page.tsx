@@ -13,9 +13,11 @@ function VerifyInner() {
   const [state, setState] = useState<"loading" | "ok" | "error">("loading");
   const [msg, setMsg] = useState("");
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    if (!token) { setState("error"); setMsg("Missing verification token"); return; }
+    if (!token) {
+      queueMicrotask(() => { setState("error"); setMsg("Missing verification token"); });
+      return;
+    }
     api.post("/auth/verify-email", { token })
       .then(() => setState("ok"))
       .catch((e) => { setState("error"); setMsg(e?.response?.data?.message ?? "Invalid or expired link"); });
