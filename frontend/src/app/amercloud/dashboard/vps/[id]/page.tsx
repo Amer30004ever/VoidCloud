@@ -23,6 +23,7 @@ export default function VpsDetailPage() {
   const [envRows, setEnvRows] = useState<Array<{ key: string; value: string }>>([]);
   const [domainsText, setDomainsText] = useState("");
   const [msg, setMsg] = useState("");
+  const [showResize, setShowResize] = useState(false);
 
   useEffect(() => {
     cloudApi.deployments.get(id).then((x) => {
