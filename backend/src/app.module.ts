@@ -10,6 +10,8 @@ import { LogsModule } from './logs/logs.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ClusterModule } from './cluster/cluster.module';
+import { AdminClusterModule } from './admin-cluster/admin-cluster.module';
+
 import { GithubModule } from './github/github.module';
 import { DocumentationModule } from './documentation/documentation.module';
 import { LearningModule } from './learning/learning.module';
@@ -49,6 +51,8 @@ import { AppController } from './app.controller';
     
     // New modules
     ClusterModule,
+    AdminClusterModule,
+
     GithubModule,
     DocumentationModule,
     LearningModule,

@@ -25,12 +25,23 @@ export default function AdminDashboard() {
   const [sys, setSys] = useState<any>(null);
   const [deployments, setDeployments] = useState<CloudDeployment[]>([]);
   const [activeUsers, setActiveUsers] = useState<number | null>(null);
+  const [podsTotal, setPodsTotal] = useState<number | null>(null);
+  const [showAllNs, setShowAllNs] = useState(false);
+  const [smtpTesting, setSmtpTesting] = useState(false);
+  const [smtpTestMsg, setSmtpTestMsg] = useState<string | null>(null);
 
   useEffect(() => {
     cloudApi.admin.stats().then(setStats).catch(() => {});
-    api.get("/cluster/nodes").then((r) => setNodes(r.data?.nodes ?? [])).catch(() => {});
-    api.get("/namespaces/running").then((r) => setNamespaces(r.data?.namespaces ?? [])).catch(() => {});
-    api.get("/system/smtp-status").then((r) => setSmtp(r.data)).catch(() => setSmtp({ status: "failed" }));
+    api.get("/admin/cluster/nodes").then((r) => setNodes(r.data?.nodes ?? [])).catch(() =>
+      api.get("/cluster/nodes").then((r) => setNodes(r.data?.nodes ?? [])).catch(() => {})
+    );
+    api.get("/admin/cluster/namespaces?limit=200").then((r) => setNamespaces(r.data?.namespaces ?? [])).catch(() =>
+      api.get("/namespaces/running").then((r) => setNamespaces(r.data?.namespaces ?? [])).catch(() => {})
+    );
+    api.get("/admin/cluster/pods").then((r) => setPodsTotal(r.data?.total ?? null)).catch(() => {});
+    api.get("/admin/smtp/status").then((r) => setSmtp(r.data)).catch(() =>
+      api.get("/system/smtp-status").then((r) => setSmtp(r.data)).catch(() => setSmtp({ status: "failed" }))
+    );
     api.get("/system/status").then((r) => setSys(r.data)).catch(() => {});
     cloudApi.admin.users().then((u: any) => {
       const list = Array.isArray(u) ? u : (u?.users ?? []);
@@ -38,6 +49,19 @@ export default function AdminDashboard() {
     }).catch(() => {});
     cloudApi.deployments.list().then(setDeployments).catch(() => {});
   }, []);
+
+  async function testSmtp() {
+    setSmtpTesting(true); setSmtpTestMsg(null);
+    try {
+      const r = await api.post("/admin/smtp/test", {});
+      setSmtpTestMsg(r.data?.ok ? "✓ Test email sent" : `Failed: ${r.data?.error ?? "unknown"}`);
+      const s = await api.get("/admin/smtp/status").catch(() => null);
+      if (s?.data) setSmtp(s.data);
+    } catch (e: any) {
+      setSmtpTestMsg(`Failed: ${e?.response?.data?.message ?? e?.message ?? "error"}`);
+    } finally { setSmtpTesting(false); }
+  }
+
 
   const totalPods = nodes.reduce((s, n) => s + (n.podCount ?? 0), 0);
   const clusterHealthy = sys?.kubernetesConnected && nodes.every((n) => n.status === "True");
@@ -114,29 +138,41 @@ export default function AdminDashboard() {
           {namespaces.length === 0 ? (
             <p className="py-6 text-center text-sm text-white/50">No namespaces.</p>
           ) : (
-            <div className="divide-y divide-white/5">
-              {namespaces.map((ns) => (
-                <div key={ns.namespace} className="flex items-center justify-between py-2">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium font-mono">{ns.namespace || "(unnamed)"}</div>
-                    <div className="text-xs text-white/50">{ns.podCount} pods</div>
+            <>
+              <div className="divide-y divide-white/5">
+                {(showAllNs ? namespaces : namespaces.slice(0, 12)).map((ns) => (
+                  <div key={ns.namespace} className="flex items-center justify-between py-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium font-mono">{ns.namespace || "(unnamed)"}</div>
+                      <div className="text-xs text-white/50">{ns.podCount} pods</div>
+                    </div>
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${
+                      ns.status === "critical" ? "border-red-500/30 bg-red-500/10 text-red-300"
+                      : ns.status === "warning" ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
+                      : "border-green-500/30 bg-green-500/10 text-green-300"
+                    }`}>{ns.status}</span>
                   </div>
-                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${
-                    ns.status === "critical" ? "border-red-500/30 bg-red-500/10 text-red-300"
-                    : ns.status === "warning" ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
-                    : "border-green-500/30 bg-green-500/10 text-green-300"
-                  }`}>{ns.status}</span>
-                </div>
-              ))}
-            </div>
-
+                ))}
+              </div>
+              {namespaces.length > 12 && (
+                <button onClick={() => setShowAllNs((v) => !v)} className="mt-3 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10">
+                  {showAllNs ? "Show less" : `Show all ${namespaces.length}`}
+                </button>
+              )}
+            </>
           )}
+
         </section>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-          <h2 className="mb-3 text-lg font-semibold">SMTP status</h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">SMTP status</h2>
+            <button onClick={testSmtp} disabled={smtpTesting} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs hover:bg-white/10 disabled:opacity-50">
+              {smtpTesting ? "Testing…" : "Test connection"}
+            </button>
+          </div>
           <div className="flex items-center gap-3">
             <span className={`inline-block h-3 w-3 rounded-full ${smtp?.status === "connected" ? "bg-green-400 shadow-[0_0_12px_rgba(74,222,128,0.7)]" : "bg-red-400"}`} />
             <div className="text-sm">
@@ -145,9 +181,12 @@ export default function AdminDashboard() {
                 {smtp?.transport ?? "—"} {smtp?.host ? `· ${smtp.host}` : ""}
               </div>
               {smtp?.from && <div className="text-xs text-white/40">From: {smtp.from}</div>}
+              {smtp?.error && <div className="text-xs text-red-300">{smtp.error}</div>}
             </div>
           </div>
+          {smtpTestMsg && <p className="mt-2 text-xs text-white/60">{smtpTestMsg}</p>}
         </section>
+
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
           <h2 className="mb-3 text-lg font-semibold">Recent deployments</h2>
