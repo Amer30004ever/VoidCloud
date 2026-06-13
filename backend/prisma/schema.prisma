@@ -111,7 +111,9 @@ model User {
   apiKeys             ApiKey[]
   appSecrets          AppSecret[]
   auditLogs           AuditLog[]
+  adminAuditLogs      AuditLog[] @relation("AdminAuditActions")
   notes               Note[]
+
 
   // Cloud (HaaS) relations
   cloudDeployments    CloudDeployment[]
