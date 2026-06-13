@@ -72,6 +72,14 @@ function LoginInner() {
         <p className="text-center text-sm text-white/60">
           New to AmerCloud? <Link href="/amercloud/register" className="text-cyan-300 hover:underline">Create account</Link>
         </p>
+        <p className="text-center text-xs text-white/50">
+          Didn't get the verification email?{" "}
+          <button
+            type="button"
+            onClick={() => { if (email) api.post("/auth/resend-verification", { email }).catch(() => {}); }}
+            className="text-cyan-300 hover:underline"
+          >Resend</button>
+        </p>
       </form>
     </AuthShell>
   );
