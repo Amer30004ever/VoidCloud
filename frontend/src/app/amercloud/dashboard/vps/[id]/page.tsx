@@ -65,7 +65,7 @@ export default function VpsDetailPage() {
         <div>
           <h1 className="text-3xl font-bold">{d.name}</h1>
           <p className="mt-1 text-sm font-mono text-cyan-300">{d.ipv4Address ?? "no IP yet"}</p>
-          <div className="mt-2 flex gap-2"><VpsStatusBadge status={d.status} /></div>
+          <div className="mt-2 flex gap-2 items-center"><VpsStatusBadge status={d.status} /><button onClick={() => setShowResize(true)} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200 hover:bg-cyan-400/20">⇅ Change Plan</button></div>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => action(() => cloudApi.deployments.start(d.id), "Started")} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10">▶ Start</button>
