@@ -73,6 +73,8 @@ import { VPSMigrationService } from './vps/vps-migration.service';
     CloudAnalyticsController,
     CloudRateLimitController,
     CloudWebhookController,
+    CloudVpsMigrationController,
+    AdminVpsMigrationController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
@@ -81,7 +83,7 @@ import { VPSMigrationService } from './vps/vps-migration.service';
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
     SSHKeyService, VPSResizeService, FirewallService, OrganizationService,
     VpsTerminalGateway, VpsAlertService, ImageService, DNSService, AnalyticsService,
-    RateLimitService, WebhookService,
+    RateLimitService, WebhookService, VPSMigrationService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService, WebhookService],
 })
