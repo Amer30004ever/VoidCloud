@@ -824,6 +824,7 @@ model CloudDeployment {
   vpsAlertRules         VpsAlertRule[]
   vpsAlertNotifications VpsAlertNotification[]
   sshKeys       SSHKey[] @relation("VPSKeys")
+  firewallRules FirewallRule[]
 
   @@index([userId, status])
 }
