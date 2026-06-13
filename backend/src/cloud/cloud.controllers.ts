@@ -263,7 +263,21 @@ export class CloudTwoFactorController {
 @ApiTags('Cloud / Account')
 @Controller('cloud/account')
 export class CloudAccountController {
-  constructor(private account: CloudAccountService) {}
+  constructor(private account: CloudAccountService, private activity: ActivityService) {}
+
+  @ApiSecurity('bearer')
+  @UseGuards(JwtAuthGuard)
+  @Get('activity')
+  myActivity(
+    @Req() req: AuthedRequest,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.activity.listForUser(req.user.id, {
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 50,
+    });
+  }
 
   @ApiSecurity('bearer')
   @UseGuards(JwtAuthGuard)
