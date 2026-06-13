@@ -353,3 +353,27 @@ export const cloudImages = {
   share: async (id: string, email: string) => (await api.post(`/cloud/images/${id}/share`, { email })).data,
   publish: async (id: string, isPublic: boolean) => (await api.post(`/cloud/images/${id}/publish`, { isPublic })).data,
 };
+
+export interface Domain {
+  id: string; vpsId: string; domain: string; autoSSL: boolean;
+  sslIssuedAt?: string | null; sslExpiresAt?: string | null;
+  verifiedAt?: string | null; verifyToken: string; createdAt: string;
+  _count?: { dnsRecords: number };
+}
+export interface DNSRecord {
+  id: string; domainId: string; type: string; name: string;
+  value: string; ttl: number; priority?: number | null; createdAt: string;
+}
+export const cloudDomains = {
+  list: async (vpsId: string): Promise<Domain[]> => (await api.get(`/cloud/vps/${vpsId}/domains`)).data,
+  add: async (vpsId: string, domain: string, autoSSL: boolean): Promise<Domain> =>
+    (await api.post(`/cloud/vps/${vpsId}/domains`, { domain, autoSSL })).data,
+  verifyInfo: async (id: string) => (await api.get(`/cloud/domains/${id}/verify`)).data,
+  verify: async (id: string) => (await api.post(`/cloud/domains/${id}/verify`)).data,
+  ssl: async (id: string) => (await api.post(`/cloud/domains/${id}/ssl`)).data,
+  remove: async (id: string) => (await api.delete(`/cloud/domains/${id}`)).data,
+  records: async (id: string): Promise<DNSRecord[]> => (await api.get(`/cloud/domains/${id}/dns`)).data,
+  addRecord: async (id: string, data: Partial<DNSRecord>): Promise<DNSRecord> =>
+    (await api.post(`/cloud/domains/${id}/dns`, data)).data,
+  removeRecord: async (id: string) => (await api.delete(`/cloud/dns/${id}`)).data,
+};
