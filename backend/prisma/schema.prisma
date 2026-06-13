@@ -126,6 +126,7 @@ model User {
   organizationMembers OrganizationMember[]
   customImages        CustomImage[]
   customImageShares   CustomImageShare[]
+  domains             Domain[]
 
 
   // Password reset
