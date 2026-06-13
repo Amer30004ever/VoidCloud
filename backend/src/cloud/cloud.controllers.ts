@@ -25,9 +25,19 @@ import { MailerService } from '../mailer/mailer.service';
 
 
 
-interface AuthedRequest { user: { id: string; role: Role; email: string } }
+interface AuthedRequest { user: { id: string; role: Role; email: string; impersonatedBy?: string; impersonatorEmail?: string } }
 
 const ADMIN_ROLES = [Role.ADMIN, Role.SUPER_ADMIN] as const;
+
+function extractIp(req: any): string | undefined {
+  const fwd = req?.headers?.['x-forwarded-for'];
+  if (typeof fwd === 'string' && fwd.length) return fwd.split(',')[0].trim();
+  return req?.ip || req?.socket?.remoteAddress || undefined;
+}
+function extractUA(req: any): string | undefined {
+  return req?.headers?.['user-agent'] || undefined;
+}
+
 
 @ApiTags('Cloud / Plans')
 @Controller('cloud/plans')
