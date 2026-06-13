@@ -818,6 +818,7 @@ model CloudDeployment {
   updatedAt     DateTime @updatedAt
 
   backups       CloudBackup[]
+  backupSchedule BackupSchedule?
   vpsAlertRules         VpsAlertRule[]
   vpsAlertNotifications VpsAlertNotification[]
 
