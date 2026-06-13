@@ -48,6 +48,8 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
   const NAV = useMemo(() => [
     { href: "/amercloud/user/dashboard", label: t(dict, "dashboard.welcome", "Dashboard").replace(", {{name}}", "").replace("Welcome", "Dashboard"), icon: "🏠" },
     { href: "/amercloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥️" },
+    { href: "/amercloud/dashboard/images", label: "Images", icon: "💿" },
+    { href: "/amercloud/dashboard/backups", label: "Backups", icon: "💾" },
     { href: "/amercloud/dashboard/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💳" },
     { href: "/amercloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙️" },
   ], [dict]);
