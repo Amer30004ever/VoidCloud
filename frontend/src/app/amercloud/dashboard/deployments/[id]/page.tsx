@@ -58,6 +58,7 @@ export default function DeploymentDetailPage() {
             <Row k="Last deployed" v={d.lastDeployedAt ?? "never"} />
           </div>
         )}
+        {tab === "terminal" && <VpsTerminal deploymentId={d.id} />}
         {tab === "logs" && (
           <pre className="max-h-96 overflow-auto rounded-lg bg-slate-950 p-4 font-mono text-xs text-green-300">{logs.join("\n")}</pre>
         )}
