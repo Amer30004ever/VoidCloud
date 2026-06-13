@@ -122,6 +122,8 @@ model User {
   vpsAlertRules       VpsAlertRule[] @relation("UserVpsAlertRules")
   sshKeys             SSHKey[]
   firewallRules       FirewallRule[]
+  ownedOrganizations  Organization[]            @relation("OrgOwner")
+  organizationMembers OrganizationMember[]
 
 
   // Password reset
