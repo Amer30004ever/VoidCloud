@@ -45,7 +45,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
 
   const NAV = useMemo(() => [
     { href: "/amercloud/user/dashboard", label: t(dict, "dashboard.welcome", "Dashboard").replace(", {{name}}", "").replace("Welcome", "Dashboard"), icon: "🏠" },
-    { href: "/amercloud/dashboard/deployments", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥️" },
+    { href: "/amercloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥️" },
     { href: "/amercloud/dashboard/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💳" },
     { href: "/amercloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙️" },
   ], [dict]);
@@ -54,7 +54,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     { href: "/amercloud/admin/dashboard", label: t(dict, "admin.dashboard", "Dashboard"), icon: "📊" },
     { href: "/amercloud/admin/users", label: t(dict, "admin.users", "Users"), icon: "👤" },
     { href: "/amercloud/admin/plans", label: t(dict, "admin.plans", "Plans"), icon: "💎" },
-    { href: "/amercloud/dashboard/deployments", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥️" },
+    { href: "/amercloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥️" },
     { href: "/amercloud/admin/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💰" },
     { href: "/amercloud/admin/transactions", label: t(dict, "admin.transactions", "Transactions"), icon: "🧾" },
     { href: "/amercloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙️" },
