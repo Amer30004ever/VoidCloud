@@ -120,6 +120,7 @@ model User {
   cloudInvoices       CloudInvoice[]
   cloudPaymentMethods CloudPaymentMethod[]
   vpsAlertRules       VpsAlertRule[] @relation("UserVpsAlertRules")
+  sshKeys             SSHKey[]
 
 
   // Password reset
@@ -821,6 +822,7 @@ model CloudDeployment {
   backupSchedule BackupSchedule?
   vpsAlertRules         VpsAlertRule[]
   vpsAlertNotifications VpsAlertNotification[]
+  sshKeys       SSHKey[] @relation("VPSKeys")
 
   @@index([userId, status])
 }

@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cloudTwoFactor, cloudAccount, type CloudProfile, type NotificationPrefs } from "@/lib/cloud";
+import { SSHKeyManager } from "@/components/cloud/SSHKeyManager";
 
-type Tab = "profile" | "security" | "notifications" | "api" | "danger";
+type Tab = "profile" | "security" | "ssh" | "notifications" | "api" | "danger";
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("profile");
@@ -13,6 +14,7 @@ export default function SettingsPage() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "profile", label: "Profile" },
     { id: "security", label: "Security" },
+    { id: "ssh", label: "SSH Keys" },
     { id: "notifications", label: "Notifications" },
     { id: "api", label: "API Keys" },
     { id: "danger", label: "Danger Zone" },
@@ -39,6 +41,7 @@ export default function SettingsPage() {
 
       {tab === "profile" && <ProfileTab />}
       {tab === "security" && <SecurityTab />}
+      {tab === "ssh" && <SSHKeyManager />}
       {tab === "notifications" && <NotificationsTab />}
       {tab === "api" && <ApiKeysTab />}
       {tab === "danger" && <DangerTab />}
