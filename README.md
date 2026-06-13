@@ -540,3 +540,49 @@ Full Swagger UI at `https://api.amer-portal.cc.cd/api/docs` when the backend is 
 ## License
 
 Private / internal — see repository owner for terms.
+
+---
+
+## AmerCloud Phase 3 — Status of the 12 Customer-Portal Tasks
+
+Tracking the customer-facing AmerCloud portal (`/amercloud/*`) and the
+admin/internal surfaces it depends on. Updated 2026-06-13.
+
+| #  | Task | Status | Notes |
+|----|------|--------|-------|
+| 1  | Full admin user management (`/amercloud/admin/users`) | Done | List, search, create, delete, change plan, suspend/activate, reset password, impersonate. |
+| 2  | Admin plan management (`/amercloud/admin/plans`) | Done | Create, edit, enable/disable, delete (blocked when subscriptions exist). |
+| 3  | Admin transactions (`/amercloud/admin/transactions`) | Done | View, refund (full/partial), confirm cash, CSV export. |
+| 4  | Real Two-Factor Authentication | Done | TOTP (speakeasy + qrcode), 8 hashed recovery codes, login challenge, disable via password or recovery code, admin reset. |
+| 5  | Real password reset over SMTP | Done | Outlook SMTP via Nodemailer, 32-byte token (hashed, 30-min TTL), branded templates (reset / welcome / invoice-paid / vps-ready), admin SMTP status + test. |
+| 6  | Real VPS provisioning via Proxmox | Done | PVE REST client (token auth, optional TLS bypass), LXC create/start/stop/restart/reinstall/destroy, dynamic IP allocation from `PROXMOX_IP_POOL_CIDR`, live status, admin "all VPS" view. |
+| 7  | UI polish — Arabic RTL, billing merge, logo nav, role-aware redirects | Done | `dir="rtl"` toggle + language persistence, billing/invoices merged, logo navigates by role, single sidebar. Full string translation table is partial — see "Pending polish" below. |
+| 8  | Real cluster stats for admin dashboard | Done | New `AdminClusterModule` exposes `/admin/cluster/{nodes,namespaces,pods}` and `/admin/smtp/{status,test}`. Dashboard shows real users / pods / namespaces / revenue (USD + EGP) with degraded fallbacks. |
+| 9  | Move old DevOps portal away from `/login` | Done | Old portal moved to `/devops/login`; `/login` redirects to `/amercloud/login`; `/portal` redirects to `/dashboard`. |
+| 10 | Real account email/password change flow | Done | `CloudAccountService` with `/cloud/account/email/request-change`, `/email/confirm`, `/password/change`. Confirmation sent to old email; change notification emailed. |
+| 11 | Real cluster integration / live KPIs | Done | Same `ClusterService` powers the public landing KPIs and the admin dashboard; namespace health is computed from pod phases. |
+| 12 | **User registration (this task)** | **Done** | `/amercloud/register` page with full name, email, Egyptian phone, password + strength meter, confirm, plan selector. Backend validates Egyptian phone, hashes password (bcrypt cost 12), creates user + subscription (Free Trial = 7 days), sends welcome + verification emails, redirects to login. Verification page at `/amercloud/verify-email`. Resend link on login page. |
+
+### What is NOT done yet (carry-over polish)
+- Full Arabic translation of every page body — RTL + key strings are wired,
+  long-form copy still falls back to English.
+- API Keys section: `curl` usage examples + tooltips.
+- Proxmox: real IP pool draining and per-node template selection — current
+  implementation uses a single template/storage/bridge from env.
+- Marketing emails / lifecycle drips — intentionally out of scope.
+
+### New / changed endpoints in this iteration
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/v1/auth/register` | public | Now accepts `phone`, `planSlug`; creates trial subscription, issues verification token. |
+| POST | `/api/v1/auth/verify-email` | public | Confirm email via emailed token. |
+| POST | `/api/v1/auth/resend-verification` | public | Re-issue verification email. |
+
+### Schema additions (migration `20260613120000_user_phone_and_email_verify`)
+- `User.phone` (TEXT, nullable)
+- `User.emailVerifyTokenHash` (TEXT, unique, nullable)
+- `User.emailVerifyExpires` (TIMESTAMP, nullable)
+
+No Kubernetes or CI/CD changes required — the new flow reuses existing SMTP
+secrets (`SMTP_*`) and `FRONTEND_URL`. `ci-cd.yaml` is intentionally
+untouched.
