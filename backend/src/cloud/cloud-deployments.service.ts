@@ -38,6 +38,15 @@ export class CloudDeploymentsService {
     });
   }
 
+  /** Admin: list every VPS across all users. */
+  listAll() {
+    return this.prisma.cloudDeployment.findMany({
+      orderBy: { updatedAt: 'desc' },
+      include: { user: { select: { id: true, email: true, name: true } } },
+      take: 500,
+    });
+  }
+
   async get(userId: string, id: string, allowAny = false) {
     const d = await this.prisma.cloudDeployment.findUnique({ where: { id } });
     if (!d || (!allowAny && d.userId !== userId)) throw new NotFoundException();
