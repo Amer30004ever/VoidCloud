@@ -1,12 +1,15 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as https from 'https';
+import { getTemplateForPlan, TEMPLATE_MANIFEST, type TemplateId } from './template-manifest';
 
 export interface ProvisionSpec {
   hostname: string;
   cpuCores: number;
   ramMB: number;
   storageGB: number;
+  planSlug?: string;
+  templateId?: TemplateId;
 }
 
 export interface ProvisionResult {
