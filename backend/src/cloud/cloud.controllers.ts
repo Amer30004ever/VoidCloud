@@ -20,6 +20,7 @@ import { CloudAccountService } from './auth/account.service';
 import { CloudAuditService } from './audit/cloud-audit.service';
 import { ActivityService } from './audit/activity.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
+import { BackupServiceV2 } from './backup/backup-v2.service';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
 
