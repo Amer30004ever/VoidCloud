@@ -586,3 +586,40 @@ admin/internal surfaces it depends on. Updated 2026-06-13.
 No Kubernetes or CI/CD changes required — the new flow reuses existing SMTP
 secrets (`SMTP_*`) and `FRONTEND_URL`. `ci-cd.yaml` is intentionally
 untouched.
+
+## Proxmox Templates
+
+VPS provisioning clones from a curated set of Proxmox templates. The mapping
+lives in `backend/src/cloud/proxmox/template-manifest.ts` and is selected by
+plan slug at provision time.
+
+| Template ID | OS | Plan | Packages |
+|-------------|-----|------|----------|
+| 9101 | Debian 12 | Free Trial / Starter (default) | curl, wget, git, htop, nethogs, haveged, qemu-guest-agent |
+| 9102 | Ubuntu 22.04 | Pro / Business / Enterprise | + docker, docker-compose, fail2ban, ufw |
+| 9100 | Alpine 3 | `free` / `alpine` slug | curl, wget, htop, openssh-server, tzdata |
+
+`ProxmoxService.createContainer` accepts `planSlug` (or explicit `templateId`)
+and logs the resolved template before issuing the PVE call. In stub mode
+(no `PROXMOX_HOST`) it returns a deterministic VMID + IP + one-time root
+password so dev preview keeps working.
+
+### Admin password reset
+
+Default super-admin: `amer30004ever@hotmail.com`.
+
+```bash
+# 1) API (must be authenticated as SUPER_ADMIN)
+curl -X POST https://api.amer-portal.cc.cd/api/v1/cloud/admin/reset-admin-password \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"newPassword":"YourNewPassword123!"}'
+
+# 2) kubectl (one-shot CLI inside the running pod)
+kubectl -n amer-portal exec deploy/backend -- \
+  env ADMIN_PASSWORD='YourNewPassword123!' \
+  npx ts-node scripts/reset-admin-password.ts
+
+# 3) Env var on deploy (defaults to AmerAdmin2026! when unset)
+ADMIN_PASSWORD=YourNewPassword123!
+```
