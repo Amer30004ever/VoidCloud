@@ -17,16 +17,16 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(true);
-  const [lang, setLang] = useState<Lang>("en");
+  const [lang, setLang] = useState<Lang>(() => {
+    if (typeof window === "undefined") return "en";
+    return (localStorage.getItem("amer_lang") as Lang) || "en";
+  });
   const [role, setRole] = useState<string | null>(null);
   const isAdminArea = pathname.startsWith("/amercloud/admin");
   const dict = lang === "ar" ? ar : en;
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const saved = (localStorage.getItem("amer_lang") as Lang) || "en";
-    setLang(saved);
     const tok = localStorage.getItem("amer_portal_token") || sessionStorage.getItem("amer_portal_token");
     if (!tok) {
       router.replace("/amercloud/login");
