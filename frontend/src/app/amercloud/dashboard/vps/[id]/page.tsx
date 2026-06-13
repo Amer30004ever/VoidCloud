@@ -5,10 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { cloudApi, type CloudDeployment, type VpsCurrentUsage } from "@/lib/cloud";
 import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
-import { AlertRules } from "@/components/cloud/AlertRules";
-import { BackupManager } from "@/components/cloud/BackupManager";
 import { VpsResizeModal } from "@/components/cloud/VpsResizeModal";
-import { FirewallManager } from "@/components/cloud/FirewallManager";
 import DomainManager from "@/components/cloud/DomainManager";
 import { VpsMigrationPanel } from "@/components/cloud/VpsMigrationPanel";
 

@@ -17,14 +17,20 @@ export default function GlobalBackupsPage() {
     const b = await cloudBackups.listAll({ vpsId: vpsId || undefined, from: from || undefined, to: to || undefined });
     setList(b); setSelected(new Set());
   }, [vpsId, from, to]);
-  useEffect(() => { cloudApi.deployments.list().then(setVpsList).catch(() => {}); }, []);
+  useEffect(() => { cloudApi.deployments.list().then(setVpsList).catch(() => { }); }, []);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    refresh().catch(() => {});
+    refresh().catch(() => { });
   }, [refresh]);
 
   function toggle(id: string) {
-    const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n);
+    const n = new Set(selected);
+    if (n.has(id)) {
+      n.delete(id);
+    } else {
+      n.add(id);
+    }
+    setSelected(n);
   }
 
   async function batchDelete() {
@@ -62,7 +68,7 @@ export default function GlobalBackupsPage() {
               <tr key={b.id} className="border-t border-white/5">
                 <td className="p-3"><input type="checkbox" checked={selected.has(b.id)} onChange={() => toggle(b.id)} /></td>
                 <td className="font-mono">{b.name || b.id.slice(0, 8)}</td>
-                <td><Link href={`/amercloud/dashboard/vps/${b.deploymentId}`} className="text-cyan-300 hover:underline">{b.deployment?.name ?? b.deploymentId.slice(0,8)}</Link></td>
+                <td><Link href={`/amercloud/dashboard/vps/${b.deploymentId}`} className="text-cyan-300 hover:underline">{b.deployment?.name ?? b.deploymentId.slice(0, 8)}</Link></td>
                 <td><span className="rounded bg-white/10 px-2 py-0.5 text-xs">{b.type}</span></td>
                 <td>{b.sizeMB} MB</td>
                 <td className={b.status === "COMPLETED" ? "text-emerald-300" : b.status === "FAILED" ? "text-red-300" : "text-amber-300"}>{b.status}</td>

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { cloudMigration, type MigrationTarget, type MigrationStorage, type MigrationRecord } from "@/lib/cloud";
 
 export function VpsMigrationPanel({ vpsId }: { vpsId: string }) {
@@ -15,27 +15,42 @@ export function VpsMigrationPanel({ vpsId }: { vpsId: string }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     try {
       const t = await cloudMigration.targets(vpsId);
-      setNodes(t.nodes); setStorage(t.storage); setCurrentNode(t.current?.node ?? null);
-    } catch { /* ignore */ }
-    try { setHistory(await cloudMigration.history(vpsId)); } catch { /* ignore */ }
-  }
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { refresh(); }, [vpsId]);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNodes(t.nodes);
+      setStorage(t.storage);
+      setCurrentNode(t.current?.node ?? null);
+    } catch {
+      /* ignore */
+    }
+    try {
+      setHistory(await cloudMigration.history(vpsId));
+    } catch {
+      /* ignore */
+    }
+  }, [vpsId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refresh();
+  }, [vpsId, refresh]);
+
   useEffect(() => {
     if (!active || active.status !== "RUNNING") return;
     const t = setInterval(async () => {
       try {
         const s = await cloudMigration.status(active.id);
         setActive({ id: active.id, ...s });
-        if (s.status !== "RUNNING") { await refresh(); }
-      } catch { /* ignore */ }
+        if (s.status !== "RUNNING") {
+          await refresh();
+        }
+      } catch {
+        /* ignore */
+      }
     }, 2000);
     return () => clearInterval(t);
-  }, [active?.id, active?.status]);
+  }, [active, refresh]);
 
   async function start() {
     setErr(null); setBusy(true);

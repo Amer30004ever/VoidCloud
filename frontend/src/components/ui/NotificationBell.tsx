@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Check, X, Loader2 } from "lucide-react";
+import { Bell, Check, X } from "lucide-react";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useState } from "react";
 
@@ -58,9 +58,8 @@ export function NotificationBell() {
                 notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`flex gap-3 border-b border-border p-4 last:border-b-0 ${
-                      !notification.read ? "bg-primary/5" : ""
-                    }`}
+                    className={`flex gap-3 border-b border-border p-4 last:border-b-0 ${!notification.read ? "bg-primary/5" : ""
+                      }`}
                   >
                     <div className="flex-1">
                       <div className="mb-1 flex items-center gap-2">

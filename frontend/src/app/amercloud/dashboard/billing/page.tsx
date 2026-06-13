@@ -18,8 +18,8 @@ export default function BillingPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    cloudApi.billing.current().then(setCurrent).catch(() => {});
-    cloudApi.plans.list().then(setPlans).catch(() => {});
+    cloudApi.billing.current().then(setCurrent).catch(() => { });
+    cloudApi.plans.list().then(setPlans).catch(() => { });
   }, []);
 
   async function subscribe() {
@@ -199,7 +199,10 @@ function FawryPanel({ c }: { c: any }) {
     <div className="space-y-3">
       {c.sandbox && <p className="rounded bg-orange-500/10 px-2 py-1 text-xs text-orange-300">Sandbox mode — no real charge</p>}
       <div className="grid gap-4 md:grid-cols-[auto,1fr]">
-        {c.qrCode && <img src={c.qrCode} alt="Fawry QR" className="h-44 w-44 rounded-lg bg-white p-2" />}
+        {c.qrCode && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={c.qrCode} alt="Fawry QR" className="h-44 w-44 rounded-lg bg-white p-2" />
+        )}
         <div className="space-y-2 text-sm">
           <div><span className="text-white/50">Reference:</span> <code className="rounded bg-slate-950 px-2 py-0.5">{c.reference}</code></div>
           <div><span className="text-white/50">Amount:</span> {c.amount} EGP</div>

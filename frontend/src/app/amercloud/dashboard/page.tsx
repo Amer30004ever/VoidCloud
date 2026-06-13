@@ -9,11 +9,10 @@ export default function CloudDashboardHome() {
   const [usage, setUsage] = useState<CloudUsage | null>(null);
   const [deployments, setDeployments] = useState<CloudDeployment[]>([]);
   const [me, setMe] = useState<any>(null);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    cloudApi.deployments.usage().then(setUsage).catch(() => {});
-    cloudApi.deployments.list().then(setDeployments).catch(() => {});
-    import("@/lib/api").then(({ default: api }) => api.get("/auth/me").then((r) => setMe(r.data)).catch(() => {}));
+    cloudApi.deployments.usage().then(setUsage).catch(() => { });
+    cloudApi.deployments.list().then(setDeployments).catch(() => { });
+    import("@/lib/api").then(({ default: api }) => api.get("/auth/me").then((r) => setMe(r.data)).catch(() => { }));
   }, []);
 
   return (

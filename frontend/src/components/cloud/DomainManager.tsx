@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { cloudDomains, type Domain, type DNSRecord } from "@/lib/cloud";
 
 export default function DomainManager({ vpsId }: { vpsId: string }) {
@@ -16,14 +16,21 @@ export default function DomainManager({ vpsId }: { vpsId: string }) {
 
   const [rec, setRec] = useState({ type: "A", name: "@", value: "", ttl: 3600, priority: 10 });
 
-  async function refresh() {
-    setLoading(true); setErr(null);
-    try { setDomains(await cloudDomains.list(vpsId)); }
-    catch (e) { setErr(e instanceof Error ? e.message : "Failed to load"); }
-    finally { setLoading(false); }
-  }
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { refresh(); }, [vpsId]);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setErr(null);
+    try {
+      setDomains(await cloudDomains.list(vpsId));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setLoading(false);
+    }
+  }, [vpsId]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refresh();
+  }, [vpsId, refresh]);
 
   async function addDomain() {
     if (!newDomain.trim()) return;

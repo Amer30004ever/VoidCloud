@@ -25,7 +25,17 @@ export function SSHKeyManager({ vpsId }: { vpsId?: string }) {
   }, [vpsId]);
 
   useEffect(() => {
-    refresh().catch(() => {});
+    let isMounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refresh()
+      .catch(() => { })
+      .finally(() => {
+        // Ensure we don't set state if component unmounted
+        if (!isMounted) return;
+      });
+    return () => {
+      isMounted = false;
+    };
   }, [refresh]);
 
   async function run(fn: () => Promise<any>, label: string) {

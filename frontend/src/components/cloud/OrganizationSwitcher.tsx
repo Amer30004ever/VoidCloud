@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -11,7 +10,7 @@ export function OrganizationSwitcher() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    cloudOrgs.list().then((o) => { setOrgs(o); setActive(localStorage.getItem("activeOrgId") || (o[0]?.id ?? null)); }).catch(() => {});
+    cloudOrgs.list().then((o) => { setOrgs(o); setActive(localStorage.getItem("activeOrgId") || (o[0]?.id ?? null)); }).catch(() => { });
   }, []);
 
   function pick(id: string | null) {

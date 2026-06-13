@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react/no-unescaped-entities */
 "use client";
 
 import { useState, useEffect, Suspense, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
 import { AuthShell, Input } from "../login/page";
@@ -26,7 +24,6 @@ function isEgyptianPhone(p: string): boolean {
 }
 
 function RegisterInner() {
-  const router = useRouter();
   const params = useSearchParams();
   const initialPlan = params.get("plan") ?? "free";
 
@@ -65,8 +62,9 @@ function RegisterInner() {
         planSlug,
       });
       setDone(true);
-    } catch (e: any) {
-      setErr(e?.response?.data?.message ?? "Registration failed");
+    } catch (e: unknown) {
+      const error = e as any;
+      setErr(error?.response?.data?.message ?? \"Registration failed\");
     } finally {
       setBusy(false);
     }
@@ -78,7 +76,7 @@ function RegisterInner() {
         <div className="space-y-4 text-sm text-white/80">
           <p>Verify <strong>{email}</strong> to activate your account. The link is valid for 24 hours.</p>
           <button
-            onClick={() => api.post("/auth/resend-verification", { email }).catch(() => {})}
+            onClick={() => api.post("/auth/resend-verification", { email }).catch(() => { })}
             className="w-full rounded-xl border border-white/10 bg-white/5 py-3 font-medium text-white hover:bg-white/10"
           >Resend verification email</button>
           <Link

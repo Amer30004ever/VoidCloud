@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Bell, LogOut, User, ChevronDown, Search } from "lucide-react";
+import { LogOut, User, ChevronDown, Search } from "lucide-react";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useState } from "react";
 // import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ export function Topbar() {
           <ChevronDown className="h-3 w-3 rotate-[-90deg] text-muted-foreground" />
           <span className="text-sm font-medium text-foreground">{pageLabel}</span>
         </div>
-        
+
         {/* Global Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

@@ -2,7 +2,7 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
-import { Briefcase, Newspaper, BookOpen, Award, FileText, Search, Plus, Clock, Tag, Users, Download, Share2, Star, Loader2, Calendar, Book } from "lucide-react";
+import { Briefcase, Newspaper, BookOpen, Award, FileText, Search, Download, Share2, Star, Loader2, Calendar, Book } from "lucide-react";
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AddItemButton } from "@/components/ui/create-item-dialog";
@@ -17,7 +17,6 @@ function LearningPageContent() {
   const [localTab, setLocalTab] = useState<LearningTab>("jobs");
   const activeTab: LearningTab =
     tabParam && validTabs.includes(tabParam as LearningTab) ? (tabParam as LearningTab) : localTab;
-  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const tabs = [
@@ -43,11 +42,10 @@ function LearningPageContent() {
           <button
             key={tab.id}
             onClick={() => setLocalTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === tab.id
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === tab.id
                 ? "border-b-2 border-primary text-primary"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <tab.icon className="h-4 w-4" />
             {tab.label}
@@ -91,7 +89,7 @@ function JobsTab({ searchQuery, setSearchQuery }: { searchQuery: string; setSear
           Saved Jobs
         </button>
       </div>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -131,7 +129,7 @@ function NewsTab({ isLoading }: { isLoading: boolean }) {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-foreground">Latest Tech News</h3>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -148,7 +146,7 @@ function NewsTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">Kubernetes 1.30 introduces several new features including improved security, better resource management, and enhanced observability.</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -159,7 +157,7 @@ function NewsTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">Docker introduces new security features including enhanced vulnerability scanning and improved access controls.</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -190,7 +188,7 @@ function PathsTab({ isLoading }: { isLoading: boolean }) {
           onSubmit={() => Promise.resolve()}
         />
       </div>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -210,7 +208,7 @@ function PathsTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">60% complete • 5/8 modules done</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -221,7 +219,7 @@ function PathsTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">Master advanced CI/CD techniques including matrix builds, caching, and custom actions.</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -242,7 +240,7 @@ function CertificationsTab({ isLoading }: { isLoading: boolean }) {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-foreground">Certifications</h3>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -259,7 +257,7 @@ function CertificationsTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">Earned on March 15, 2024</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -273,7 +271,7 @@ function CertificationsTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">40% complete • Target: June 2024</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -307,7 +305,7 @@ function CVStudioTab({ isLoading }: { isLoading: boolean }) {
           }}
         />
       </div>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -335,7 +333,7 @@ function CVStudioTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">Professional CV optimized for DevOps roles with ATS-friendly formatting.</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -357,7 +355,7 @@ function CVStudioTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">CV for Site Reliability Engineer positions - needs AI optimization.</p>
           </div>
-          
+
           <div className="rounded-xl border border-primary/50 bg-primary/10 p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -380,7 +378,7 @@ function ConferencesTab({ isLoading }: { isLoading: boolean }) {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-foreground">Conference Calendar</h3>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -403,7 +401,7 @@ function ConferencesTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">The premier Kubernetes conference in Europe with workshops, talks, and networking.</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -420,7 +418,7 @@ function ConferencesTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">Annual DevOps conference featuring industry leaders and best practices.</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -447,7 +445,7 @@ function BooksTab({ isLoading }: { isLoading: boolean }) {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-foreground">Book Recommendations</h3>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -472,7 +470,7 @@ function BooksTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">A novel about IT, DevOps, and helping your business win.</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -491,7 +489,7 @@ function BooksTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">How Google runs production systems and the lessons learned.</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -510,7 +508,7 @@ function BooksTab({ isLoading }: { isLoading: boolean }) {
             </div>
             <p className="text-xs text-muted-foreground">How to create world-class agility, reliability, and security in technology organizations.</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">

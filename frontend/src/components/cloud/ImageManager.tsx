@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { cloudImages, type CustomImage, cloudApi, type CloudDeployment } from "@/lib/cloud";
 
 type Tab = "mine" | "marketplace";
@@ -21,7 +21,7 @@ export default function ImageManager() {
   const [deployImageId, setDeployImageId] = useState<string | null>(null);
   const [deployName, setDeployName] = useState("");
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setErr(null);
     try {
@@ -38,11 +38,12 @@ export default function ImageManager() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
-  }, []);
+  }, [refresh]);
 
   async function createSnapshot() {
     if (!snapVpsId || !snapName.trim()) return;
@@ -118,11 +119,10 @@ export default function ImageManager() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm ${
-              tab === t
+            className={`-mb-px border-b-2 px-4 py-2 text-sm ${tab === t
                 ? "border-cyan-400 text-white"
                 : "border-transparent text-white/50 hover:text-white"
-            }`}
+              }`}
           >
             {t === "mine" ? "My Images" : "Marketplace"}
           </button>

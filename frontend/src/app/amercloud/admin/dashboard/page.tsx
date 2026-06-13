@@ -22,32 +22,28 @@ export default function AdminDashboard() {
   const [nodes, setNodes] = useState<NodeInfo[]>([]);
   const [namespaces, setNamespaces] = useState<Ns[]>([]);
   const [smtp, setSmtp] = useState<any>(null);
-  const [sys, setSys] = useState<any>(null);
   const [deployments, setDeployments] = useState<CloudDeployment[]>([]);
   const [activeUsers, setActiveUsers] = useState<number | null>(null);
-  const [podsTotal, setPodsTotal] = useState<number | null>(null);
   const [showAllNs, setShowAllNs] = useState(false);
   const [smtpTesting, setSmtpTesting] = useState(false);
   const [smtpTestMsg, setSmtpTestMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    cloudApi.admin.stats().then(setStats).catch(() => {});
+    cloudApi.admin.stats().then(setStats).catch(() => { });
     api.get("/admin/cluster/nodes").then((r) => setNodes(r.data?.nodes ?? [])).catch(() =>
-      api.get("/cluster/nodes").then((r) => setNodes(r.data?.nodes ?? [])).catch(() => {})
+      api.get("/cluster/nodes").then((r) => setNodes(r.data?.nodes ?? [])).catch(() => { })
     );
     api.get("/admin/cluster/namespaces?limit=200").then((r) => setNamespaces(r.data?.namespaces ?? [])).catch(() =>
-      api.get("/namespaces/running").then((r) => setNamespaces(r.data?.namespaces ?? [])).catch(() => {})
+      api.get("/namespaces/running").then((r) => setNamespaces(r.data?.namespaces ?? [])).catch(() => { })
     );
-    api.get("/admin/cluster/pods").then((r) => setPodsTotal(r.data?.total ?? null)).catch(() => {});
     api.get("/admin/smtp/status").then((r) => setSmtp(r.data)).catch(() =>
       api.get("/system/smtp-status").then((r) => setSmtp(r.data)).catch(() => setSmtp({ status: "failed" }))
     );
-    api.get("/system/status").then((r) => setSys(r.data)).catch(() => {});
     cloudApi.admin.users().then((u: any) => {
       const list = Array.isArray(u) ? u : (u?.users ?? []);
       setActiveUsers(list.filter((x: any) => x.isActive !== false).length);
-    }).catch(() => {});
-    cloudApi.deployments.list().then(setDeployments).catch(() => {});
+    }).catch(() => { });
+    cloudApi.deployments.list().then(setDeployments).catch(() => { });
   }, []);
 
   async function testSmtp() {
@@ -63,8 +59,7 @@ export default function AdminDashboard() {
   }
 
 
-  const totalPods = nodes.reduce((s, n) => s + (n.podCount ?? 0), 0);
-  const clusterHealthy = sys?.kubernetesConnected && nodes.every((n) => n.status === "True");
+
 
   const fmtMoney = (n: number, cur: string) =>
     new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + ` ${cur}`;
@@ -147,11 +142,10 @@ export default function AdminDashboard() {
                       <div className="truncate text-sm font-medium font-mono">{ns.namespace || "(unnamed)"}</div>
                       <div className="text-xs text-white/50">{ns.podCount} pods</div>
                     </div>
-                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${
-                      ns.status === "critical" ? "border-red-500/30 bg-red-500/10 text-red-300"
-                      : ns.status === "warning" ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
-                      : "border-green-500/30 bg-green-500/10 text-green-300"
-                    }`}>{ns.status}</span>
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${ns.status === "critical" ? "border-red-500/30 bg-red-500/10 text-red-300"
+                        : ns.status === "warning" ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
+                          : "border-green-500/30 bg-green-500/10 text-green-300"
+                      }`}>{ns.status}</span>
                   </div>
                 ))}
               </div>
