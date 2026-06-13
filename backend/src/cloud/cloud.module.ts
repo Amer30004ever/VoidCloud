@@ -20,6 +20,7 @@ import { BackupServiceV2 } from './backup/backup-v2.service';
 import { SSHKeyService } from './ssh/ssh-key.service';
 import { VPSResizeService } from './vps/vps-resize.service';
 import { FirewallService } from './firewall/firewall.service';
+import { OrganizationService } from './organization/organization.service';
 import { VpsTerminalGateway } from './terminal/vps-terminal.gateway';
 import { VpsAlertService } from './monitoring/vps-alert.service';
 import { VpsAlertController } from './monitoring/vps-alert.controller';
@@ -36,6 +37,8 @@ import {
   CloudSshKeyController,
   CloudVpsResizeController,
   CloudFirewallController,
+  CloudOrganizationController,
+  CloudVpsTransferController,
 } from './cloud.controllers';
 
 
