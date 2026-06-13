@@ -157,6 +157,7 @@ export default function VpsDetailPage() {
           <p className="text-sm text-white/60">VPS activity log is coming soon. Account-level audit events live under <span className="text-cyan-300">/amercloud/admin</span>.</p>
         )}
       </div>
+      {showResize && <VpsResizeModal vpsId={d.id} onClose={() => setShowResize(false)} onDone={() => cloudApi.deployments.get(d.id).then(setD).catch(() => {})} />}
     </div>
   );
 }
