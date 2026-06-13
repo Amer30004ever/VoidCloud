@@ -56,6 +56,9 @@ model User {
   mustChangePassword Boolean @default(false)
   avatar             String?
   emailVerified      Boolean  @default(false)
+  emailVerifyTokenHash String?  @unique
+  emailVerifyExpires   DateTime?
+  phone              String?
   twoFactorSecret    String?
   twoFactorEnabled   Boolean  @default(false)
   recoveryCodes      String[] @default([])
