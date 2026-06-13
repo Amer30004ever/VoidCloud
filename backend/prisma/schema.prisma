@@ -122,6 +122,8 @@ model User {
   vpsAlertRules       VpsAlertRule[] @relation("UserVpsAlertRules")
   sshKeys             SSHKey[]
   firewallRules       FirewallRule[]
+  ownedOrganizations  Organization[]            @relation("OrgOwner")
+  organizationMembers OrganizationMember[]
 
 
   // Password reset
@@ -825,6 +827,8 @@ model CloudDeployment {
   vpsAlertNotifications VpsAlertNotification[]
   sshKeys       SSHKey[] @relation("VPSKeys")
   firewallRules FirewallRule[]
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
 }
@@ -999,4 +1003,55 @@ model FirewallRule {
 
   @@index([vpsId])
   @@index([priority])
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  ownerId   String
+  owner     User     @relation("OrgOwner", fields: [ownerId], references: [id])
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members     OrganizationMember[]
+  vps         CloudDeployment[]
+  invitations OrganizationInvitation[]
+
+  @@index([slug])
+}
+
+model OrganizationMember {
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           OrgRole      @default(MEMBER)
+  joinedAt       DateTime     @default(now())
+
+  @@id([organizationId, userId])
+  @@index([userId])
+}
+
+model OrganizationInvitation {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           OrgRole      @default(MEMBER)
+  invitedBy      String
+  invitedAt      DateTime     @default(now())
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+
+  @@unique([organizationId, email])
+  @@index([email])
 }

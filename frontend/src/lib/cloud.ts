@@ -312,3 +312,22 @@ export const cloudFirewall = {
     (await api.post(`/cloud/vps/${vpsId}/firewall/reorder`, { ruleIds })).data,
   reset: async (vpsId: string) => (await api.post(`/cloud/vps/${vpsId}/firewall/reset`)).data,
 };
+
+export type OrgRole = "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
+export interface Organization { id: string; name: string; slug: string; ownerId: string; avatar?: string | null; createdAt: string; _count?: { members: number; vps: number }; members?: { role: OrgRole }[] }
+export interface OrgMember { organizationId: string; userId: string; role: OrgRole; joinedAt: string; user: { id: string; email: string; name: string } }
+export interface OrgInvitation { id: string; organizationId: string; email: string; role: OrgRole; expiresAt: string; acceptedAt: string | null; organization?: { id: string; name: string; slug: string } }
+export const cloudOrgs = {
+  list: async (): Promise<Organization[]> => (await api.get("/cloud/orgs")).data,
+  create: async (name: string): Promise<Organization> => (await api.post("/cloud/orgs", { name })).data,
+  get: async (id: string) => (await api.get(`/cloud/orgs/${id}`)).data,
+  update: async (id: string, data: { name?: string }) => (await api.put(`/cloud/orgs/${id}`, data)).data,
+  remove: async (id: string) => (await api.delete(`/cloud/orgs/${id}`)).data,
+  members: async (id: string): Promise<OrgMember[]> => (await api.get(`/cloud/orgs/${id}/members`)).data,
+  invite: async (id: string, email: string, role: OrgRole) => (await api.post(`/cloud/orgs/${id}/members/invite`, { email, role })).data,
+  removeMember: async (id: string, userId: string) => (await api.delete(`/cloud/orgs/${id}/members/${userId}`)).data,
+  setRole: async (id: string, userId: string, role: OrgRole) => (await api.put(`/cloud/orgs/${id}/members/${userId}/role`, { role })).data,
+  myInvitations: async (): Promise<OrgInvitation[]> => (await api.get("/cloud/orgs/invitations")).data,
+  accept: async (invId: string) => (await api.post(`/cloud/orgs/invitations/${invId}/accept`)).data,
+  revokeInvite: async (invId: string) => (await api.delete(`/cloud/orgs/invitations/${invId}`)).data,
+};
