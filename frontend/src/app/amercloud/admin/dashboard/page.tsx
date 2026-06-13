@@ -25,12 +25,23 @@ export default function AdminDashboard() {
   const [sys, setSys] = useState<any>(null);
   const [deployments, setDeployments] = useState<CloudDeployment[]>([]);
   const [activeUsers, setActiveUsers] = useState<number | null>(null);
+  const [podsTotal, setPodsTotal] = useState<number | null>(null);
+  const [showAllNs, setShowAllNs] = useState(false);
+  const [smtpTesting, setSmtpTesting] = useState(false);
+  const [smtpTestMsg, setSmtpTestMsg] = useState<string | null>(null);
 
   useEffect(() => {
     cloudApi.admin.stats().then(setStats).catch(() => {});
-    api.get("/cluster/nodes").then((r) => setNodes(r.data?.nodes ?? [])).catch(() => {});
-    api.get("/namespaces/running").then((r) => setNamespaces(r.data?.namespaces ?? [])).catch(() => {});
-    api.get("/system/smtp-status").then((r) => setSmtp(r.data)).catch(() => setSmtp({ status: "failed" }));
+    api.get("/admin/cluster/nodes").then((r) => setNodes(r.data?.nodes ?? [])).catch(() =>
+      api.get("/cluster/nodes").then((r) => setNodes(r.data?.nodes ?? [])).catch(() => {})
+    );
+    api.get("/admin/cluster/namespaces?limit=200").then((r) => setNamespaces(r.data?.namespaces ?? [])).catch(() =>
+      api.get("/namespaces/running").then((r) => setNamespaces(r.data?.namespaces ?? [])).catch(() => {})
+    );
+    api.get("/admin/cluster/pods").then((r) => setPodsTotal(r.data?.total ?? null)).catch(() => {});
+    api.get("/admin/smtp/status").then((r) => setSmtp(r.data)).catch(() =>
+      api.get("/system/smtp-status").then((r) => setSmtp(r.data)).catch(() => setSmtp({ status: "failed" }))
+    );
     api.get("/system/status").then((r) => setSys(r.data)).catch(() => {});
     cloudApi.admin.users().then((u: any) => {
       const list = Array.isArray(u) ? u : (u?.users ?? []);
@@ -38,6 +49,19 @@ export default function AdminDashboard() {
     }).catch(() => {});
     cloudApi.deployments.list().then(setDeployments).catch(() => {});
   }, []);
+
+  async function testSmtp() {
+    setSmtpTesting(true); setSmtpTestMsg(null);
+    try {
+      const r = await api.post("/admin/smtp/test", {});
+      setSmtpTestMsg(r.data?.ok ? "✓ Test email sent" : `Failed: ${r.data?.error ?? "unknown"}`);
+      const s = await api.get("/admin/smtp/status").catch(() => null);
+      if (s?.data) setSmtp(s.data);
+    } catch (e: any) {
+      setSmtpTestMsg(`Failed: ${e?.response?.data?.message ?? e?.message ?? "error"}`);
+    } finally { setSmtpTesting(false); }
+  }
+
 
   const totalPods = nodes.reduce((s, n) => s + (n.podCount ?? 0), 0);
   const clusterHealthy = sys?.kubernetesConnected && nodes.every((n) => n.status === "True");
