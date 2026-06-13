@@ -154,7 +154,7 @@ export class CloudBillingService {
     const meta = (inv.metadata ?? {}) as Record<string, string>;
     const planId = meta.planId;
 
-    await this.prisma.cloudInvoice.update({
+    const paid = await this.prisma.cloudInvoice.update({
       where: { id: invoiceId },
       data: { status: 'PAID', paidAt: new Date() },
     });
@@ -166,6 +166,16 @@ export class CloudBillingService {
           subscriptionStatus: 'ACTIVE',
           trialEndsAt: null,
         },
+      });
+    }
+
+    // Confirmation email (best-effort)
+    const user = await this.prisma.user.findUnique({ where: { id: inv.userId } });
+    if (user) {
+      const amount = paid.amountEGP ?? paid.amountUSD ?? 0;
+      const currency = paid.amountEGP ? 'EGP' : 'USD';
+      this.email.invoicePaid(user.email, user.name, {
+        invoiceNumber: paid.number, amount: Number(amount), currency, invoiceId: paid.id,
       });
     }
 
