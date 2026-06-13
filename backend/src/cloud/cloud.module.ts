@@ -26,6 +26,7 @@ import { VpsAlertService } from './monitoring/vps-alert.service';
 import { VpsAlertController } from './monitoring/vps-alert.controller';
 import { ImageService } from './images/image.service';
 import { DNSService } from './dns/dns.service';
+import { AnalyticsService } from './analytics/analytics.service';
 import {
   CloudPlansController,
   CloudTemplatesController,
@@ -42,7 +43,7 @@ import {
   CloudOrganizationController,
   CloudVpsTransferController,
 } from './cloud.controllers';
-import { CloudImageController, CloudDomainController } from './cloud.controllers';
+import { CloudImageController, CloudDomainController, CloudAnalyticsController } from './cloud.controllers';
 
 
 
@@ -66,6 +67,7 @@ import { CloudImageController, CloudDomainController } from './cloud.controllers
     VpsAlertController,
     CloudImageController,
     CloudDomainController,
+    CloudAnalyticsController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
@@ -73,7 +75,7 @@ import { CloudImageController, CloudDomainController } from './cloud.controllers
     StripeService, FawryService, InstapayService,
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
     SSHKeyService, VPSResizeService, FirewallService, OrganizationService,
-    VpsTerminalGateway, VpsAlertService, ImageService, DNSService,
+    VpsTerminalGateway, VpsAlertService, ImageService, DNSService, AnalyticsService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
 })

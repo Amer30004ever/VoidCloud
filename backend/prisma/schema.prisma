@@ -832,6 +832,7 @@ model CloudDeployment {
   firewallRules FirewallRule[]
   snapshots     CustomImage[]
   domains       Domain[]
+  usageMetrics  UsageMetric[]
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
@@ -1093,4 +1094,19 @@ model DNSRecord {
   createdAt DateTime @default(now())
 
   @@index([domainId])
+}
+
+model UsageMetric {
+  id         String   @id @default(cuid())
+  userId     String
+  vpsId      String
+  vps        CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  metricType String
+  value      Float
+  unit       String
+  recordedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([vpsId])
+  @@index([recordedAt])
 }

@@ -377,3 +377,22 @@ export const cloudDomains = {
     (await api.post(`/cloud/domains/${id}/dns`, data)).data,
   removeRecord: async (id: string) => (await api.delete(`/cloud/dns/${id}`)).data,
 };
+
+export interface UsagePoint { timestamp: string; value: number }
+export interface VpsUsage { cpu: UsagePoint[]; ram: UsagePoint[]; disk: UsagePoint[]; networkRx: UsagePoint[]; networkTx: UsagePoint[] }
+export interface CostBreakdown {
+  byVPS: { vpsId: string; vpsName: string; cost: number }[];
+  monthly: { month: string; total: number }[];
+  total: number;
+  forecast: number;
+}
+export interface ResourceTrends { cpu: number; ram: number; disk: number; vpsCount: number }
+export const cloudAnalytics = {
+  vpsUsage: async (vpsId: string, hours = 24): Promise<VpsUsage> =>
+    (await api.get(`/cloud/analytics/vps/${vpsId}/usage`, { params: { hours } })).data,
+  costs: async (months = 3): Promise<CostBreakdown> =>
+    (await api.get(`/cloud/analytics/costs`, { params: { months } })).data,
+  trends: async (days = 30): Promise<ResourceTrends> =>
+    (await api.get(`/cloud/analytics/trends`, { params: { days } })).data,
+  exportCsvUrl: () => `/cloud/analytics/export/csv`,
+};

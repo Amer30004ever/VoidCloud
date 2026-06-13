@@ -27,6 +27,7 @@ import { FirewallService, type FirewallRuleInput } from './firewall/firewall.ser
 import { OrganizationService } from './organization/organization.service';
 import { ImageService } from './images/image.service';
 import { DNSService, type CreateDNSRecordDto } from './dns/dns.service';
+import { AnalyticsService } from './analytics/analytics.service';
 import type { OrgRole } from '@prisma/client';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
@@ -723,8 +724,41 @@ export class CloudDomainController {
   @Delete('dns/:id')
   removeRecord(@Req() req: AuthedRequest, @Param('id') id: string) {
     return this.dns.deleteDNSRecord(id, req.user.id);
+}
+
+
+@ApiTags('Cloud / Analytics')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/analytics')
+export class CloudAnalyticsController {
+  constructor(private analytics: AnalyticsService) {}
+
+  @Get('vps/:id/usage')
+  usage(@Req() req: AuthedRequest, @Param('id') id: string, @Query('hours') hours?: string) {
+    return this.analytics.getVPSUsage(id, req.user.id, hours ? Math.max(1, Math.min(720, parseInt(hours, 10))) : 24);
+  }
+
+  @Get('costs')
+  costs(@Req() req: AuthedRequest, @Query('months') months?: string) {
+    return this.analytics.getCostBreakdown(req.user.id, months ? Math.max(1, Math.min(12, parseInt(months, 10))) : 3);
+  }
+
+  @Get('trends')
+  trends(@Req() req: AuthedRequest, @Query('days') days?: string) {
+    return this.analytics.getResourceTrends(req.user.id, days ? Math.max(1, Math.min(365, parseInt(days, 10))) : 30);
+  }
+
+  @Get('export/csv')
+  async exportCsv(@Req() req: AuthedRequest, @Res() res: Response) {
+    const csv = await this.analytics.exportCSV(req.user.id);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="amercloud-analytics-${Date.now()}.csv"`);
+    res.send(csv);
   }
 }
+
+
 
 
 
