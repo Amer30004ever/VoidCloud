@@ -111,6 +111,7 @@ export const cloudApi = {
     smtpStatus: async () => (await api.get<{ transport: string; from: string; host: string | null; port: number | null; user: string | null; configured: boolean }>("/cloud/admin/smtp/status")).data,
     smtpVerify: async () => (await api.post<{ ok: boolean; transport: string; error?: string }>("/cloud/admin/smtp/verify")).data,
     smtpTest: async (to?: string) => (await api.post<{ ok: boolean }>("/cloud/admin/smtp/test", { to })).data,
+    allVps: async () => (await api.get("/cloud/admin/vps")).data,
     impersonate: async (id: string) =>
       (await api.post<{ access_token: string; user: { id: string; email: string; name: string; role: string } }>(`/cloud/admin/users/${id}/impersonate`)).data,
     setPlan: async (id: string, planId: string | null) =>
