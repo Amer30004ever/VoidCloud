@@ -232,13 +232,44 @@ export const cloudAccount = {
     (await api.put<NotificationPrefs>("/cloud/account/notifications/preferences", prefs)).data,
 };
 
+export interface VpsBackup {
+  id: string;
+  deploymentId: string;
+  name?: string | null;
+  type: "MANUAL" | "SCHEDULED";
+  sizeMB: number;
+  storagePath: string;
+  status: string;
+  createdAt: string;
+  completedAt?: string | null;
+  deployment?: { id: string; name: string };
+}
+export interface BackupSchedule {
+  vpsId: string;
+  enabled: boolean;
+  frequency: "DAILY" | "WEEKLY" | "MONTHLY";
+  retention: number;
+  hour?: number | null;
+  dayOfWeek?: number | null;
+  dayOfMonth?: number | null;
+}
 export const cloudBackups = {
-  list: async (deploymentId: string) =>
-    (await api.get(`/cloud/deployments/${deploymentId}/backups`)).data,
-  create: async (deploymentId: string) =>
-    (await api.post(`/cloud/deployments/${deploymentId}/backups`)).data,
-  restore: async (deploymentId: string, backupId: string) =>
-    (await api.post(`/cloud/deployments/${deploymentId}/backups/restore/${backupId}`)).data,
+  listForVps: async (vpsId: string): Promise<VpsBackup[]> =>
+    (await api.get(`/cloud/vps/${vpsId}/backups`)).data,
+  create: async (vpsId: string, name?: string): Promise<VpsBackup> =>
+    (await api.post(`/cloud/vps/${vpsId}/backups`, { name })).data,
+  listAll: async (params?: { vpsId?: string; from?: string; to?: string }): Promise<VpsBackup[]> =>
+    (await api.get(`/cloud/backups`, { params })).data,
+  restore: async (backupId: string, targetVpsId?: string) =>
+    (await api.post(`/cloud/backups/${backupId}/restore`, { targetVpsId })).data,
+  remove: async (backupId: string) =>
+    (await api.delete(`/cloud/backups/${backupId}`)).data,
+  removeBatch: async (ids: string[]) =>
+    (await api.post(`/cloud/backups/batch-delete`, { ids })).data,
+  getSchedule: async (vpsId: string): Promise<BackupSchedule> =>
+    (await api.get(`/cloud/vps/${vpsId}/backup-schedule`)).data,
+  updateSchedule: async (vpsId: string, s: Partial<BackupSchedule>): Promise<BackupSchedule> =>
+    (await api.put(`/cloud/vps/${vpsId}/backup-schedule`, s)).data,
 };
 
 export const cloudAudit = {

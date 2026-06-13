@@ -6,8 +6,9 @@ import { cloudApi, type CloudDeployment, type VpsUsage } from "@/lib/cloud";
 import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 import { AlertRules } from "@/components/cloud/AlertRules";
+import { BackupManager } from "@/components/cloud/BackupManager";
 
-type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "alerts" | "activity";
+type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "activity";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
 
 export default function VpsDetailPage() {
@@ -79,7 +80,7 @@ export default function VpsDetailPage() {
       {msg && <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-xs text-emerald-200">{msg}</div>}
 
       <div className="mb-4 flex gap-1 border-b border-white/5 overflow-x-auto">
-        {(["overview", "usage", "terminal", "env", "domains", "alerts", "activity"] as Tab[]).map((t) => (
+        {(["overview", "usage", "terminal", "env", "domains", "backups", "alerts", "activity"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm capitalize whitespace-nowrap ${tab === t ? "border-b-2 border-cyan-400 text-white" : "text-white/50 hover:text-white"}`}>{t}</button>
         ))}
       </div>

@@ -20,6 +20,7 @@ import { CloudAccountService } from './auth/account.service';
 import { CloudAuditService } from './audit/cloud-audit.service';
 import { ActivityService } from './audit/activity.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
+import { BackupServiceV2 } from './backup/backup-v2.service';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
 
@@ -339,22 +340,92 @@ export class CloudAccountController {
 @ApiTags('Cloud / Backups')
 @ApiSecurity('bearer')
 @UseGuards(JwtAuthGuard)
-@Controller('cloud/deployments/:id/backups')
+@Controller('cloud')
 export class CloudBackupController {
-  constructor(private backups: CloudBackupService, private deployments: CloudDeploymentsService) {}
-  @Get()
-  async list(@Req() req: AuthedRequest, @Param('id') id: string) {
+  constructor(
+    private backups: CloudBackupService,
+    private backupsV2: BackupServiceV2,
+    private deployments: CloudDeploymentsService,
+  ) {}
+
+  // ---- VPS-scoped ----
+  @Get('vps/:id/backups')
+  async listForVps(@Req() req: AuthedRequest, @Param('id') id: string) {
+    await this.deployments.get(req.user.id, id);
+    return this.backupsV2.listBackups(id);
+  }
+
+  @Post('vps/:id/backups')
+  async create(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { name?: string }) {
+    return this.backupsV2.createBackup(id, req.user.id, body?.name);
+  }
+
+  @Post('vps/:id/backups/manual')
+  async createManual(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { name?: string }) {
+    return this.backupsV2.createBackup(id, req.user.id, body?.name);
+  }
+
+  @Get('vps/:id/backup-schedule')
+  async getSchedule(@Req() req: AuthedRequest, @Param('id') id: string) {
+    await this.deployments.get(req.user.id, id);
+    return (await this.backupsV2.getSchedule(id)) ?? { vpsId: id, enabled: false, frequency: 'DAILY', retention: 7, hour: 2 };
+  }
+
+  @Put('vps/:id/backup-schedule')
+  async updateSchedule(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { enabled?: boolean; frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY'; retention?: number; hour?: number; dayOfWeek?: number; dayOfMonth?: number },
+  ) {
+    return this.backupsV2.updateSchedule(id, req.user.id, body);
+  }
+
+  // ---- Backup-scoped ----
+  @Get('backups')
+  async listAll(
+    @Req() req: AuthedRequest,
+    @Query('vpsId') vpsId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.backupsV2.listAllForUser(req.user.id, {
+      vpsId,
+      from: from ? new Date(from) : undefined,
+      to: to ? new Date(to) : undefined,
+    });
+  }
+
+  @Post('backups/:id/restore')
+  restore(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { targetVpsId?: string }) {
+    return this.backupsV2.restoreBackup(id, req.user.id, body?.targetVpsId);
+  }
+
+  @Delete('backups/:id')
+  remove(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.backupsV2.deleteBackup(id, req.user.id);
+  }
+
+  @Post('backups/batch-delete')
+  removeBatch(@Req() req: AuthedRequest, @Body() body: { ids: string[] }) {
+    return this.backupsV2.deleteMany(body?.ids ?? [], req.user.id);
+  }
+
+  // ---- Legacy compatibility (old paths) ----
+  @Get('deployments/:id/backups')
+  async legacyList(@Req() req: AuthedRequest, @Param('id') id: string) {
     await this.deployments.get(req.user.id, id);
     return this.backups.list(id);
   }
-  @Post()
-  async create(@Req() req: AuthedRequest, @Param('id') id: string) {
-    await this.deployments.get(req.user.id, id);
-    return this.backups.backup(id);
+  @Post('deployments/:id/backups')
+  async legacyCreate(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.backupsV2.createBackup(id, req.user.id);
   }
-  @Post('restore/:backupId')
-  restore(@Param('backupId') backupId: string) { return this.backups.restore(backupId); }
+  @Post('deployments/:id/backups/restore/:backupId')
+  legacyRestore(@Req() req: AuthedRequest, @Param('backupId') backupId: string) {
+    return this.backupsV2.restoreBackup(backupId, req.user.id);
+  }
 }
+
 
 @ApiTags('Cloud / Admin')
 @ApiSecurity('bearer')
