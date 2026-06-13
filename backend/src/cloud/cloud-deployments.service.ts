@@ -38,6 +38,15 @@ export class CloudDeploymentsService {
     });
   }
 
+  /** Admin: list every VPS across all users. */
+  listAll() {
+    return this.prisma.cloudDeployment.findMany({
+      orderBy: { updatedAt: 'desc' },
+      include: { user: { select: { id: true, email: true, name: true } } },
+      take: 500,
+    });
+  }
+
   async get(userId: string, id: string, allowAny = false) {
     const d = await this.prisma.cloudDeployment.findUnique({ where: { id } });
     if (!d || (!allowAny && d.userId !== userId)) throw new NotFoundException();
@@ -193,20 +202,91 @@ export class CloudDeploymentsService {
 
   async remove(userId: string, id: string) {
     const d = await this.get(userId, id);
-    await this.k8s.deleteNamespace(d.namespace).catch(() => undefined);
+    if (d.proxmoxVMID) {
+      try { await this.proxmox.destroyContainer(d.proxmoxVMID, d.proxmoxNode ?? undefined); }
+      catch (e: any) { this.logger.warn(`Proxmox destroy failed for vmid=${d.proxmoxVMID}: ${e.message}`); }
+    }
+    if (d.namespace) await this.k8s.deleteNamespace(d.namespace).catch(() => undefined);
     return this.prisma.cloudDeployment.update({ where: { id }, data: { status: 'DELETED' } });
   }
 
   async restart(userId: string, id: string) {
     const d = await this.get(userId, id);
+    if (d.proxmoxVMID) {
+      await this.proxmox.rebootContainer(d.proxmoxVMID, d.proxmoxNode ?? undefined);
+      return this.prisma.cloudDeployment.update({
+        where: { id }, data: { status: 'RUNNING', lastDeployedAt: new Date() },
+      });
+    }
     await this.k8s.restartDeployment(d.namespace, this.k8sName(d.name));
     return this.prisma.cloudDeployment.update({
       where: { id }, data: { status: 'DEPLOYING', lastDeployedAt: new Date() },
     });
   }
 
+  async start(userId: string, id: string) {
+    const d = await this.get(userId, id);
+    if (!d.proxmoxVMID) throw new BadRequestException('VPS not provisioned');
+    await this.proxmox.startContainer(d.proxmoxVMID, d.proxmoxNode ?? undefined);
+    return this.prisma.cloudDeployment.update({ where: { id }, data: { status: 'RUNNING' } });
+  }
+
+  async stop(userId: string, id: string) {
+    const d = await this.get(userId, id);
+    if (!d.proxmoxVMID) throw new BadRequestException('VPS not provisioned');
+    await this.proxmox.stopContainer(d.proxmoxVMID, d.proxmoxNode ?? undefined);
+    return this.prisma.cloudDeployment.update({ where: { id }, data: { status: 'STOPPED' } });
+  }
+
+  async reinstall(userId: string, id: string) {
+    const d = await this.get(userId, id);
+    if (!d.proxmoxVMID || !d.ipv4Address) throw new BadRequestException('VPS not provisioned');
+    const { rootPassword } = await this.proxmox.reinstallContainer(
+      d.proxmoxVMID,
+      { hostname: d.hostname ?? d.name, cpuCores: d.cpu, ramMB: d.memory, storageGB: Math.ceil(d.storage / 1024) },
+      d.ipv4Address,
+      d.proxmoxNode ?? undefined,
+    );
+    const rootPasswordHash = await bcrypt.hash(rootPassword, 10);
+    await this.prisma.cloudDeployment.update({
+      where: { id }, data: { rootPasswordHash, status: 'RUNNING', provisionedAt: new Date() },
+    });
+    return { ok: true, rootPassword };
+  }
+
+  async resetRootPassword(userId: string, id: string) {
+    const d = await this.get(userId, id);
+    if (!d.proxmoxVMID) throw new BadRequestException('VPS not provisioned');
+    const { rootPassword } = await this.proxmox.setRootPassword(d.proxmoxVMID, d.proxmoxNode ?? undefined);
+    const rootPasswordHash = await bcrypt.hash(rootPassword, 10);
+    await this.prisma.cloudDeployment.update({ where: { id }, data: { rootPasswordHash } });
+    return { ok: true, rootPassword };
+  }
+
+  async resize(userId: string, id: string, input: { cpu?: number; memory?: number; storage?: number }) {
+    const d = await this.get(userId, id);
+    if (!d.proxmoxVMID) throw new BadRequestException('VPS not provisioned');
+    await this.proxmox.resizeContainer(
+      d.proxmoxVMID,
+      { cpuCores: input.cpu, ramMB: input.memory, storageGB: input.storage ? Math.ceil(input.storage / 1024) : undefined },
+      d.proxmoxNode ?? undefined,
+    );
+    return this.prisma.cloudDeployment.update({
+      where: { id },
+      data: { cpu: input.cpu ?? d.cpu, memory: input.memory ?? d.memory, storage: input.storage ?? d.storage },
+    });
+  }
+
   async metrics(userId: string, id: string) {
     const d = await this.get(userId, id);
+    if (d.proxmoxVMID) {
+      try {
+        const status = await this.proxmox.getStatus(d.proxmoxVMID, d.proxmoxNode ?? undefined);
+        return { live: status, range: [] };
+      } catch (e: any) {
+        this.logger.warn(`Proxmox status failed: ${e.message}`);
+      }
+    }
     const name = this.k8sName(d.name);
     const [live, range] = await Promise.all([
       this.prom.getDeploymentMetrics(d.namespace, name),

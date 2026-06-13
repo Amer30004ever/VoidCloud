@@ -79,6 +79,12 @@ export const cloudApi = {
       (await api.put<CloudDeployment>(`/cloud/deployments/${id}`, body)).data,
     remove: async (id: string) => api.delete(`/cloud/deployments/${id}`),
     restart: async (id: string) => (await api.post(`/cloud/deployments/${id}/restart`)).data,
+    start: async (id: string) => (await api.post(`/cloud/deployments/${id}/start`)).data,
+    stop: async (id: string) => (await api.post(`/cloud/deployments/${id}/stop`)).data,
+    reinstall: async (id: string) => (await api.post<{ ok: boolean; rootPassword: string }>(`/cloud/deployments/${id}/reinstall`)).data,
+    resetRootPassword: async (id: string) => (await api.post<{ ok: boolean; rootPassword: string }>(`/cloud/deployments/${id}/reset-root-password`)).data,
+    resize: async (id: string, body: { cpu?: number; memory?: number; storage?: number }) =>
+      (await api.put(`/cloud/deployments/${id}/resize`, body)).data,
     metrics: async (id: string) => (await api.get(`/cloud/deployments/${id}/metrics`)).data,
     logs: async (id: string) => (await api.get(`/cloud/deployments/${id}/logs`)).data,
     usage: async () => (await api.get<CloudUsage>("/cloud/deployments/usage/me")).data,
@@ -105,6 +111,7 @@ export const cloudApi = {
     smtpStatus: async () => (await api.get<{ transport: string; from: string; host: string | null; port: number | null; user: string | null; configured: boolean }>("/cloud/admin/smtp/status")).data,
     smtpVerify: async () => (await api.post<{ ok: boolean; transport: string; error?: string }>("/cloud/admin/smtp/verify")).data,
     smtpTest: async (to?: string) => (await api.post<{ ok: boolean }>("/cloud/admin/smtp/test", { to })).data,
+    allVps: async () => (await api.get("/cloud/admin/vps")).data,
     impersonate: async (id: string) =>
       (await api.post<{ access_token: string; user: { id: string; email: string; name: string; role: string } }>(`/cloud/admin/users/${id}/impersonate`)).data,
     setPlan: async (id: string, planId: string | null) =>

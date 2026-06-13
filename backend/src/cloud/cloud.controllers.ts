@@ -77,6 +77,18 @@ export class CloudDeploymentsController {
   restart(@Req() req: AuthedRequest, @Param('id') id: string) {
     return this.deployments.restart(req.user.id, id);
   }
+  @Post(':id/start')
+  start(@Req() req: AuthedRequest, @Param('id') id: string) { return this.deployments.start(req.user.id, id); }
+  @Post(':id/stop')
+  stop(@Req() req: AuthedRequest, @Param('id') id: string) { return this.deployments.stop(req.user.id, id); }
+  @Post(':id/reinstall')
+  reinstall(@Req() req: AuthedRequest, @Param('id') id: string) { return this.deployments.reinstall(req.user.id, id); }
+  @Post(':id/reset-root-password')
+  resetRootPw(@Req() req: AuthedRequest, @Param('id') id: string) { return this.deployments.resetRootPassword(req.user.id, id); }
+  @Put(':id/resize')
+  resize(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { cpu?: number; memory?: number; storage?: number }) {
+    return this.deployments.resize(req.user.id, id, body);
+  }
 
   @Get(':id/metrics')
   metrics(@Req() req: AuthedRequest, @Param('id') id: string) {
@@ -246,6 +258,7 @@ export class CloudAdminController {
     private audit: CloudAuditService,
     private tfa: TwoFactorService,
     private mailer: MailerService,
+    private deployments: CloudDeploymentsService,
   ) {}
 
   @Get('smtp/status') smtpStatus() { return this.mailer.status(); }
@@ -324,6 +337,7 @@ export class CloudAdminController {
     return this.billing.rejectPayment(body.invoiceId, body.reason ?? 'Rejected by admin');
   }
 
+  @Get('vps') allVps() { return this.deployments.listAll(); }
   @Get('announcements') announcements() { return this.admin.announcements(); }
   @Post('announcements')
   broadcast(@Body() body: { title: string; body: string; severity?: string; audience?: string }) {

@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import * as https from 'https';
 
 export interface ProvisionSpec {
   hostname: string;
@@ -15,20 +16,51 @@ export interface ProvisionResult {
   rootPassword: string;
 }
 
+export interface ContainerStatus {
+  status: 'running' | 'stopped' | 'paused' | 'unknown';
+  cpuPercent: number;       // 0-100
+  memUsedMB: number;
+  memTotalMB: number;
+  diskUsedGB: number;
+  diskTotalGB: number;
+  uptimeSec: number;
+  netIn: number;
+  netOut: number;
+}
+
 /**
- * Proxmox API client — STUB.
+ * Proxmox VE REST API client.
  *
- * Logs the action that would be taken and returns synthesised values
- * (VMID, IP from a fake pool, root password). When real Proxmox creds
- * are configured (PROXMOX_HOST, PROXMOX_TOKEN_ID, PROXMOX_TOKEN_SECRET,
- * PROXMOX_NODE, PROXMOX_STORAGE, PROXMOX_BRIDGE, PROXMOX_IP_POOL_CIDR),
- * swap this for a real client.
+ * Auth: API token (https://pve.proxmox.com/wiki/Proxmox_VE_API#API_Tokens).
+ * Required env:
+ *   PROXMOX_HOST            e.g. 10.0.0.10:8006
+ *   PROXMOX_TOKEN_ID        e.g. amercloud@pve!api
+ *   PROXMOX_TOKEN_SECRET    UUID secret
+ *   PROXMOX_NODE            target node (default: workernode01)
+ *   PROXMOX_STORAGE         e.g. local-lvm
+ *   PROXMOX_BRIDGE          e.g. vmbr0
+ *   PROXMOX_TEMPLATE        e.g. local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst
+ *   PROXMOX_IP_POOL_CIDR    e.g. 10.51.100.0/24
+ *   PROXMOX_IP_POOL_START   first usable host octet (default 50)
+ *   PROXMOX_GATEWAY         e.g. 10.51.100.1
+ *   PROXMOX_VERIFY_TLS      "false" to skip self-signed cert verification
+ *
+ * When env is incomplete, falls back to a deterministic STUB so dev preview
+ * keeps working without a Proxmox cluster.
  */
 @Injectable()
 export class ProxmoxService {
   private readonly logger = new Logger(ProxmoxService.name);
   private readonly node = process.env.PROXMOX_NODE ?? 'workernode01';
-  private nextHostOctet = 50;
+  private readonly storage = process.env.PROXMOX_STORAGE ?? 'local-lvm';
+  private readonly bridge = process.env.PROXMOX_BRIDGE ?? 'vmbr0';
+  private readonly template = process.env.PROXMOX_TEMPLATE ?? 'local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst';
+  private readonly gateway = process.env.PROXMOX_GATEWAY ?? '';
+  private readonly ipBase = (process.env.PROXMOX_IP_POOL_CIDR ?? '10.51.100.0/24').split('/')[0].split('.').slice(0, 3).join('.');
+  private nextHostOctet = Number(process.env.PROXMOX_IP_POOL_START || 50);
+  private readonly agent = new https.Agent({
+    rejectUnauthorized: process.env.PROXMOX_VERIFY_TLS !== 'false',
+  });
 
   isLive(): boolean {
     return Boolean(
@@ -38,35 +70,187 @@ export class ProxmoxService {
     );
   }
 
+  // ---------------- HTTP ----------------
+
+  private get baseUrl(): string {
+    const host = process.env.PROXMOX_HOST!;
+    return host.startsWith('http') ? host : `https://${host}`;
+  }
+
+  private headers(): Record<string, string> {
+    return {
+      Authorization: `PVEAPIToken=${process.env.PROXMOX_TOKEN_ID}=${process.env.PROXMOX_TOKEN_SECRET}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+  }
+
+  private async pveRequest<T = any>(method: string, path: string, params?: Record<string, any>): Promise<T> {
+    const url = `${this.baseUrl}/api2/json${path}`;
+    const body = params
+      ? new URLSearchParams(
+          Object.entries(params)
+            .filter(([, v]) => v !== undefined && v !== null)
+            .map(([k, v]) => [k, String(v)]),
+        ).toString()
+      : undefined;
+    // Node fetch supports `dispatcher`/`agent` via undici in Node 22; pass through `--cap-add` style.
+    const res = await fetch(url, {
+      method,
+      headers: this.headers(),
+      body,
+      // @ts-expect-error: undici accepts dispatcher; node 22 fetch picks up our https.Agent via global symbol
+      agent: this.agent,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new ServiceUnavailableException(`Proxmox ${method} ${path} → ${res.status} ${text.slice(0, 200)}`);
+    }
+    const json: any = await res.json();
+    return json?.data as T;
+  }
+
+  // ---------------- IP pool ----------------
+
+  /** Take the next free IP from the configured pool. */
+  private async allocateIp(): Promise<string> {
+    // Best-effort: list existing CTs on node, find used IPs, advance counter past them.
+    try {
+      const list = await this.pveRequest<any[]>('GET', `/nodes/${this.node}/lxc`);
+      const usedOctets = new Set<number>();
+      for (const ct of list ?? []) {
+        try {
+          const cfg = await this.pveRequest<any>('GET', `/nodes/${this.node}/lxc/${ct.vmid}/config`);
+          const ip = String(cfg.net0 ?? '').match(/ip=([\d.]+)/)?.[1];
+          if (ip?.startsWith(this.ipBase + '.')) usedOctets.add(Number(ip.split('.')[3]));
+        } catch { /* ignore */ }
+      }
+      while (usedOctets.has(this.nextHostOctet)) this.nextHostOctet++;
+    } catch (e: any) {
+      this.logger.warn(`IP allocation fallback (could not list CTs): ${e.message}`);
+    }
+    if (this.nextHostOctet > 254) throw new ServiceUnavailableException('IP pool exhausted');
+    return `${this.ipBase}.${this.nextHostOctet++}`;
+  }
+
+  // ---------------- Public API ----------------
+
   async createContainer(spec: ProvisionSpec): Promise<ProvisionResult> {
-    const vmid = 1000 + Math.floor(Math.random() * 9000);
-    const ipv4Address = `10.51.100.${this.nextHostOctet++}`;
     const rootPassword = randomBytes(12).toString('base64url');
 
-    this.logger.log(
-      `[STUB] Proxmox create container: ${JSON.stringify({
-        hostname: spec.hostname,
-        cpuCores: spec.cpuCores,
-        ramMB: spec.ramMB,
-        storageGB: spec.storageGB,
-      })}`,
-    );
-    this.logger.log(
-      `[STUB] Would create container: VMID=${vmid}, IP=${ipv4Address}, node=${this.node}`,
-    );
+    if (!this.isLive()) {
+      const vmid = 1000 + Math.floor(Math.random() * 9000);
+      const ipv4Address = `${this.ipBase}.${this.nextHostOctet++}`;
+      this.logger.log(`[STUB] proxmox create vmid=${vmid} ip=${ipv4Address} ${JSON.stringify(spec)}`);
+      return { vmid, ipv4Address, node: this.node, rootPassword };
+    }
 
+    const nextId = await this.pveRequest<string>('GET', `/cluster/nextid`);
+    const vmid = Number(nextId);
+    const ipv4Address = await this.allocateIp();
+    const cores = Math.max(1, Math.ceil(spec.cpuCores));
+    const params = {
+      vmid,
+      hostname: spec.hostname.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 60),
+      ostemplate: this.template,
+      storage: this.storage,
+      cores,
+      memory: spec.ramMB,
+      swap: Math.max(256, Math.floor(spec.ramMB / 2)),
+      rootfs: `${this.storage}:${spec.storageGB}`,
+      net0: `name=eth0,bridge=${this.bridge},ip=${ipv4Address}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
+      password: rootPassword,
+      unprivileged: 1,
+      onboot: 1,
+      start: 1,
+      features: 'nesting=1',
+    };
+    await this.pveRequest('POST', `/nodes/${this.node}/lxc`, params);
+    this.logger.log(`Proxmox created LXC vmid=${vmid} ip=${ipv4Address} node=${this.node}`);
     return { vmid, ipv4Address, node: this.node, rootPassword };
   }
 
-  async startContainer(vmid: number): Promise<void> {
-    this.logger.log(`[STUB] Proxmox start container VMID=${vmid}`);
+  async startContainer(vmid: number, node = this.node): Promise<void> {
+    if (!this.isLive()) { this.logger.log(`[STUB] start vmid=${vmid}`); return; }
+    await this.pveRequest('POST', `/nodes/${node}/lxc/${vmid}/status/start`);
   }
 
-  async stopContainer(vmid: number): Promise<void> {
-    this.logger.log(`[STUB] Proxmox stop container VMID=${vmid}`);
+  async stopContainer(vmid: number, node = this.node): Promise<void> {
+    if (!this.isLive()) { this.logger.log(`[STUB] stop vmid=${vmid}`); return; }
+    await this.pveRequest('POST', `/nodes/${node}/lxc/${vmid}/status/shutdown`);
   }
 
-  async destroyContainer(vmid: number): Promise<void> {
-    this.logger.log(`[STUB] Proxmox destroy container VMID=${vmid}`);
+  async rebootContainer(vmid: number, node = this.node): Promise<void> {
+    if (!this.isLive()) { this.logger.log(`[STUB] reboot vmid=${vmid}`); return; }
+    await this.pveRequest('POST', `/nodes/${node}/lxc/${vmid}/status/reboot`);
+  }
+
+  async destroyContainer(vmid: number, node = this.node): Promise<void> {
+    if (!this.isLive()) { this.logger.log(`[STUB] destroy vmid=${vmid}`); return; }
+    try { await this.pveRequest('POST', `/nodes/${node}/lxc/${vmid}/status/stop`); } catch { /* may already be stopped */ }
+    await this.pveRequest('DELETE', `/nodes/${node}/lxc/${vmid}`, { purge: 1, 'destroy-unreferenced-disks': 1 });
+  }
+
+  async resizeContainer(vmid: number, spec: { cpuCores?: number; ramMB?: number; storageGB?: number }, node = this.node): Promise<void> {
+    if (!this.isLive()) { this.logger.log(`[STUB] resize vmid=${vmid} ${JSON.stringify(spec)}`); return; }
+    const cfg: Record<string, any> = {};
+    if (spec.cpuCores) cfg.cores = Math.max(1, Math.ceil(spec.cpuCores));
+    if (spec.ramMB) { cfg.memory = spec.ramMB; cfg.swap = Math.max(256, Math.floor(spec.ramMB / 2)); }
+    if (Object.keys(cfg).length) await this.pveRequest('PUT', `/nodes/${node}/lxc/${vmid}/config`, cfg);
+    if (spec.storageGB) {
+      await this.pveRequest('PUT', `/nodes/${node}/lxc/${vmid}/resize`, { disk: 'rootfs', size: `${spec.storageGB}G` });
+    }
+  }
+
+  /** Reinstall = destroy + recreate with same VMID + same IP (best effort). */
+  async reinstallContainer(vmid: number, spec: ProvisionSpec, ipv4: string, node = this.node): Promise<{ rootPassword: string }> {
+    const rootPassword = randomBytes(12).toString('base64url');
+    if (!this.isLive()) { this.logger.log(`[STUB] reinstall vmid=${vmid}`); return { rootPassword }; }
+    await this.destroyContainer(vmid, node);
+    await this.pveRequest('POST', `/nodes/${node}/lxc`, {
+      vmid,
+      hostname: spec.hostname,
+      ostemplate: this.template,
+      storage: this.storage,
+      cores: Math.max(1, Math.ceil(spec.cpuCores)),
+      memory: spec.ramMB,
+      swap: Math.max(256, Math.floor(spec.ramMB / 2)),
+      rootfs: `${this.storage}:${spec.storageGB}`,
+      net0: `name=eth0,bridge=${this.bridge},ip=${ipv4}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
+      password: rootPassword,
+      unprivileged: 1, onboot: 1, start: 1, features: 'nesting=1',
+    });
+    return { rootPassword };
+  }
+
+  async setRootPassword(vmid: number, node = this.node): Promise<{ rootPassword: string }> {
+    const rootPassword = randomBytes(12).toString('base64url');
+    if (!this.isLive()) { this.logger.log(`[STUB] set-root-pw vmid=${vmid}`); return { rootPassword }; }
+    // PVE LXC accepts password reset via the config endpoint while CT is running.
+    await this.pveRequest('PUT', `/nodes/${node}/lxc/${vmid}/config`, { password: rootPassword });
+    return { rootPassword };
+  }
+
+  async getStatus(vmid: number, node = this.node): Promise<ContainerStatus> {
+    if (!this.isLive()) {
+      return {
+        status: 'running',
+        cpuPercent: Math.round(Math.random() * 40),
+        memUsedMB: 256, memTotalMB: 1024,
+        diskUsedGB: 2, diskTotalGB: 20,
+        uptimeSec: 3600, netIn: 0, netOut: 0,
+      };
+    }
+    const s = await this.pveRequest<any>('GET', `/nodes/${node}/lxc/${vmid}/status/current`);
+    return {
+      status: (s.status ?? 'unknown') as ContainerStatus['status'],
+      cpuPercent: Math.round((s.cpu ?? 0) * 100),
+      memUsedMB: Math.round((s.mem ?? 0) / 1024 / 1024),
+      memTotalMB: Math.round((s.maxmem ?? 0) / 1024 / 1024),
+      diskUsedGB: Math.round((s.disk ?? 0) / 1024 / 1024 / 1024 * 10) / 10,
+      diskTotalGB: Math.round((s.maxdisk ?? 0) / 1024 / 1024 / 1024 * 10) / 10,
+      uptimeSec: s.uptime ?? 0,
+      netIn: s.netin ?? 0,
+      netOut: s.netout ?? 0,
+    };
   }
 }
