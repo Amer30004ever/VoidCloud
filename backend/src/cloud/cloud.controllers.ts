@@ -336,6 +336,7 @@ export class CloudAdminController {
     return this.billing.rejectPayment(body.invoiceId, body.reason ?? 'Rejected by admin');
   }
 
+  @Get('vps') allVps() { return this.deployments.listAll(); }
   @Get('announcements') announcements() { return this.admin.announcements(); }
   @Post('announcements')
   broadcast(@Body() body: { title: string; body: string; severity?: string; audience?: string }) {
