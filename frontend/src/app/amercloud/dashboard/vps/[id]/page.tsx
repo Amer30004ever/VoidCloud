@@ -10,8 +10,9 @@ import { BackupManager } from "@/components/cloud/BackupManager";
 import { VpsResizeModal } from "@/components/cloud/VpsResizeModal";
 import { FirewallManager } from "@/components/cloud/FirewallManager";
 import DomainManager from "@/components/cloud/DomainManager";
+import { VpsMigrationPanel } from "@/components/cloud/VpsMigrationPanel";
 
-type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "firewall" | "activity";
+type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "firewall" | "migration" | "activity";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
 
 export default function VpsDetailPage() {

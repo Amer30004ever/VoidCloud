@@ -837,6 +837,7 @@ model CloudDeployment {
   snapshots     CustomImage[]
   domains       Domain[]
   usageMetrics  UsageMetric[]
+  migrations    VPSMigration[]
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
@@ -1166,4 +1167,29 @@ model WebhookDelivery {
 
   @@index([webhookId])
   @@index([createdAt])
+}
+
+model VPSMigration {
+  id              String   @id @default(cuid())
+  vpsId           String
+  vps             CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  userId          String
+  sourceNode      String
+  targetNode      String
+  sourceStorage   String?
+  targetStorage   String?
+  status          String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, CANCELLED, SCHEDULED
+  progress        Int      @default(0)
+  estimatedDowntimeSec Int @default(0)
+  scheduledFor    DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  proxmoxTaskId   String?
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([vpsId])
+  @@index([userId])
+  @@index([status])
 }

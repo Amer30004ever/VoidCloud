@@ -43,9 +43,10 @@ import {
   CloudOrganizationController,
   CloudVpsTransferController,
 } from './cloud.controllers';
-import { CloudImageController, CloudDomainController, CloudAnalyticsController, CloudRateLimitController, CloudWebhookController } from './cloud.controllers';
+import { CloudImageController, CloudDomainController, CloudAnalyticsController, CloudRateLimitController, CloudWebhookController, CloudVpsMigrationController, AdminVpsMigrationController } from './cloud.controllers';
 import { RateLimitService } from './rate-limit/rate-limit.service';
 import { WebhookService } from './webhook/webhook.service';
+import { VPSMigrationService } from './vps/vps-migration.service';
 
 
 
@@ -72,6 +73,8 @@ import { WebhookService } from './webhook/webhook.service';
     CloudAnalyticsController,
     CloudRateLimitController,
     CloudWebhookController,
+    CloudVpsMigrationController,
+    AdminVpsMigrationController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
@@ -80,7 +83,7 @@ import { WebhookService } from './webhook/webhook.service';
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
     SSHKeyService, VPSResizeService, FirewallService, OrganizationService,
     VpsTerminalGateway, VpsAlertService, ImageService, DNSService, AnalyticsService,
-    RateLimitService, WebhookService,
+    RateLimitService, WebhookService, VPSMigrationService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService, WebhookService],
 })
