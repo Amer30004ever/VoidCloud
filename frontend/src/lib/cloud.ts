@@ -415,3 +415,25 @@ export const cloudRateLimits = {
   setAlert: async (threshold: number, enabled: boolean): Promise<RateLimitAlert> =>
     (await api.post('/cloud/rate-limits/alert', { threshold, enabled })).data,
 };
+
+export interface WebhookEndpoint {
+  id: string; name: string; url: string; events: string[];
+  secret?: string | null; enabled: boolean; createdAt: string; updatedAt: string;
+}
+export interface WebhookDelivery {
+  id: string; webhookId: string; eventType: string; payload: unknown;
+  responseStatus?: number | null; responseBody?: string | null;
+  attempt: number; success: boolean; error?: string | null; createdAt: string;
+}
+export const cloudWebhooks = {
+  events: async (): Promise<string[]> => (await api.get('/cloud/webhooks/events')).data,
+  list: async (): Promise<WebhookEndpoint[]> => (await api.get('/cloud/webhooks')).data,
+  create: async (data: { name: string; url: string; events: string[]; enabled?: boolean }): Promise<WebhookEndpoint> =>
+    (await api.post('/cloud/webhooks', data)).data,
+  update: async (id: string, data: Partial<{ name: string; url: string; events: string[]; enabled: boolean; regenerateSecret: boolean }>): Promise<WebhookEndpoint> =>
+    (await api.put(`/cloud/webhooks/${id}`, data)).data,
+  remove: async (id: string): Promise<void> => { await api.delete(`/cloud/webhooks/${id}`); },
+  test: async (id: string): Promise<WebhookDelivery> => (await api.post(`/cloud/webhooks/${id}/test`)).data,
+  deliveries: async (id: string, limit = 50): Promise<WebhookDelivery[]> =>
+    (await api.get(`/cloud/webhooks/${id}/deliveries`, { params: { limit } })).data,
+};
