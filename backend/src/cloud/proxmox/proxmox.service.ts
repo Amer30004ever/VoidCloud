@@ -199,6 +199,8 @@ export class ProxmoxService {
 
 
 
+    const targetNode = await this.pickNode();
+    const cfg = this.nodeTemplateConfig(targetNode, templateId);
     const nextId = await this.pveRequest<string>('GET', `/cluster/nextid`);
     const vmid = Number(nextId);
     const ipv4Address = await this.allocateIp();
@@ -206,23 +208,30 @@ export class ProxmoxService {
     const params = {
       vmid,
       hostname: spec.hostname.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 60),
-      ostemplate: this.template,
-      storage: this.storage,
+      ostemplate: cfg.ostemplate,
+      storage: cfg.storage,
       cores,
       memory: spec.ramMB,
       swap: Math.max(256, Math.floor(spec.ramMB / 2)),
-      rootfs: `${this.storage}:${spec.storageGB}`,
-      net0: `name=eth0,bridge=${this.bridge},ip=${ipv4Address}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
+      rootfs: `${cfg.storage}:${spec.storageGB}`,
+      net0: `name=eth0,bridge=${cfg.bridge},ip=${ipv4Address}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
       password: rootPassword,
       unprivileged: 1,
       onboot: 1,
       start: 1,
       features: 'nesting=1',
     };
-    await this.pveRequest('POST', `/nodes/${this.node}/lxc`, params);
-    this.logger.log(`Proxmox created LXC vmid=${vmid} ip=${ipv4Address} node=${this.node}`);
-    return { vmid, ipv4Address, node: this.node, rootPassword };
+    try {
+      await this.pveRequest('POST', `/nodes/${targetNode}/lxc`, params);
+    } catch (e) {
+      // Release the IP back on failure so the next provision can reuse it.
+      this.inFlightIps.delete(ipv4Address);
+      throw e;
+    }
+    this.logger.log(`Proxmox created LXC vmid=${vmid} ip=${ipv4Address} node=${targetNode} template=${templateId}`);
+    return { vmid, ipv4Address, node: targetNode, rootPassword };
   }
+
 
   async startContainer(vmid: number, node = this.node): Promise<void> {
     if (!this.isLive()) { this.logger.log(`[STUB] start vmid=${vmid}`); return; }
