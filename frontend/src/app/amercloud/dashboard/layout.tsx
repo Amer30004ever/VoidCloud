@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/api";
 import en from "@/locales/en.json";
 import ar from "@/locales/ar.json";
+import { NotificationBell } from "@/components/ui/NotificationBell";
+
 
 type Lang = "en" | "ar";
 
