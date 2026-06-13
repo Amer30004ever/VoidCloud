@@ -396,3 +396,22 @@ export const cloudAnalytics = {
     (await api.get(`/cloud/analytics/trends`, { params: { days } })).data,
   exportCsvUrl: () => `/cloud/analytics/export/csv`,
 };
+
+export interface RateLimitWindow { endpoint: string; method: string; period: string; limit: number; remaining: number; resetAt: string }
+export interface RateLimitStatus {
+  limits: RateLimitWindow[];
+  overall: { limit: number; remaining: number; resetAt: string };
+}
+export interface RateLimitHistory {
+  daily: { date: string; count: number }[];
+  byEndpoint: { endpoint: string; count: number }[];
+}
+export interface RateLimitAlert { threshold: number; enabled: boolean }
+export const cloudRateLimits = {
+  current: async (): Promise<RateLimitStatus> => (await api.get('/cloud/rate-limits')).data,
+  history: async (days = 7): Promise<RateLimitHistory> =>
+    (await api.get('/cloud/rate-limits/history', { params: { days } })).data,
+  getAlert: async (): Promise<RateLimitAlert> => (await api.get('/cloud/rate-limits/alert')).data,
+  setAlert: async (threshold: number, enabled: boolean): Promise<RateLimitAlert> =>
+    (await api.post('/cloud/rate-limits/alert', { threshold, enabled })).data,
+};
