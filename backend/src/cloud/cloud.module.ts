@@ -76,6 +76,7 @@ import { ReferralService } from './referral/referral.service';
     CloudWebhookController,
     CloudVpsMigrationController,
     AdminVpsMigrationController,
+    CloudReferralController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
@@ -84,8 +85,8 @@ import { ReferralService } from './referral/referral.service';
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
     SSHKeyService, VPSResizeService, FirewallService, OrganizationService,
     VpsTerminalGateway, VpsAlertService, ImageService, DNSService, AnalyticsService,
-    RateLimitService, WebhookService, VPSMigrationService,
+    RateLimitService, WebhookService, VPSMigrationService, ReferralService,
   ],
-  exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService, WebhookService],
+  exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService, WebhookService, ReferralService],
 })
 export class CloudModule {}
