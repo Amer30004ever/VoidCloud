@@ -71,6 +71,7 @@ import { WebhookService } from './webhook/webhook.service';
     CloudDomainController,
     CloudAnalyticsController,
     CloudRateLimitController,
+    CloudWebhookController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
@@ -79,8 +80,8 @@ import { WebhookService } from './webhook/webhook.service';
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
     SSHKeyService, VPSResizeService, FirewallService, OrganizationService,
     VpsTerminalGateway, VpsAlertService, ImageService, DNSService, AnalyticsService,
-    RateLimitService,
+    RateLimitService, WebhookService,
   ],
-  exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
+  exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService, WebhookService],
 })
 export class CloudModule {}
