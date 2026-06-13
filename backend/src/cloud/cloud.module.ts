@@ -14,6 +14,7 @@ import { CloudEmailService } from './notifications/email.service';
 import { TwoFactorService } from './auth/two-factor.service';
 import { CloudAccountService } from './auth/account.service';
 import { CloudAuditService } from './audit/cloud-audit.service';
+import { ActivityService } from './audit/activity.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import { VpsTerminalGateway } from './terminal/vps-terminal.gateway';
 import {
