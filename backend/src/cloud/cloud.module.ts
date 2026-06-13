@@ -17,6 +17,7 @@ import { CloudAuditService } from './audit/cloud-audit.service';
 import { ActivityService } from './audit/activity.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import { BackupServiceV2 } from './backup/backup-v2.service';
+import { SSHKeyService } from './ssh/ssh-key.service';
 import { VpsTerminalGateway } from './terminal/vps-terminal.gateway';
 import { VpsAlertService } from './monitoring/vps-alert.service';
 import { VpsAlertController } from './monitoring/vps-alert.controller';
@@ -30,6 +31,7 @@ import {
   CloudTwoFactorController,
   CloudAccountController,
   CloudBackupController,
+  CloudSshKeyController,
 } from './cloud.controllers';
 
 
@@ -46,6 +48,7 @@ import {
     CloudTwoFactorController,
     CloudAccountController,
     CloudBackupController,
+    CloudSshKeyController,
     VpsAlertController,
   ],
   providers: [
@@ -53,6 +56,7 @@ import {
     KubernetesService, PrometheusService, ProxmoxService,
     StripeService, FawryService, InstapayService,
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
+    SSHKeyService,
     VpsTerminalGateway, VpsAlertService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],

@@ -21,6 +21,7 @@ import { CloudAuditService } from './audit/cloud-audit.service';
 import { ActivityService } from './audit/activity.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
 import { BackupServiceV2 } from './backup/backup-v2.service';
+import { SSHKeyService } from './ssh/ssh-key.service';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
 
@@ -425,6 +426,45 @@ export class CloudBackupController {
     return this.backupsV2.restoreBackup(backupId, req.user.id);
   }
 }
+
+
+@ApiTags('Cloud / SSH Keys')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud')
+export class CloudSshKeyController {
+  constructor(private ssh: SSHKeyService) {}
+
+  @Get('ssh-keys')
+  list(@Req() req: AuthedRequest) { return this.ssh.listKeys(req.user.id); }
+
+  @Post('ssh-keys')
+  add(@Req() req: AuthedRequest, @Body() body: { name: string; publicKey: string }) {
+    return this.ssh.addKey(req.user.id, body?.name, body?.publicKey);
+  }
+
+  @Delete('ssh-keys/:id')
+  remove(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.ssh.deleteKey(id, req.user.id);
+  }
+
+  @Get('vps/:id/ssh-keys')
+  listForVps(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.ssh.getKeysForVPS(id, req.user.id);
+  }
+
+  @Post('vps/:id/ssh-keys/:keyId')
+  attach(@Req() req: AuthedRequest, @Param('id') id: string, @Param('keyId') keyId: string) {
+    return this.ssh.addKeyToVPS(keyId, id, req.user.id);
+  }
+
+  @Delete('vps/:id/ssh-keys/:keyId')
+  detach(@Req() req: AuthedRequest, @Param('id') id: string, @Param('keyId') keyId: string) {
+    return this.ssh.removeKeyFromVPS(keyId, id, req.user.id);
+  }
+}
+
+
 
 
 @ApiTags('Cloud / Admin')
