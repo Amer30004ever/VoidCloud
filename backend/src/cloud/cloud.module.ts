@@ -43,7 +43,8 @@ import {
   CloudOrganizationController,
   CloudVpsTransferController,
 } from './cloud.controllers';
-import { CloudImageController, CloudDomainController, CloudAnalyticsController } from './cloud.controllers';
+import { CloudImageController, CloudDomainController, CloudAnalyticsController, CloudRateLimitController } from './cloud.controllers';
+import { RateLimitService } from './rate-limit/rate-limit.service';
 
 
 
