@@ -97,6 +97,11 @@ export class CloudDeploymentsController {
     return this.deployments.metrics(req.user.id, id);
   }
 
+  @Get(':id/usage')
+  usageOne(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.deployments.vpsUsage(req.user.id, id);
+  }
+
   @Get(':id/logs')
   async logs(@Req() req: AuthedRequest, @Param('id') id: string) {
     return this.deployments.tailLogs(req.user.id, id);
