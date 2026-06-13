@@ -15,6 +15,7 @@ import { TwoFactorService } from './auth/two-factor.service';
 import { CloudAccountService } from './auth/account.service';
 import { CloudAuditService } from './audit/cloud-audit.service';
 import { CloudBackupService } from './backup/cloud-backup.service';
+import { VpsTerminalGateway } from './terminal/vps-terminal.gateway';
 import {
   CloudPlansController,
   CloudDeploymentsController,
@@ -44,6 +45,7 @@ import {
     KubernetesService, PrometheusService, ProxmoxService,
     StripeService, FawryService, InstapayService,
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, CloudBackupService,
+    VpsTerminalGateway,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
 

@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { cloudApi, CloudDeployment } from "@/lib/cloud";
 import { StatusBadge } from "../../page";
+import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 
 export default function DeploymentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [d, setD] = useState<CloudDeployment | null>(null);
-  const [tab, setTab] = useState<"overview" | "logs" | "metrics" | "env">("overview");
+  const [tab, setTab] = useState<"overview" | "terminal" | "logs" | "metrics" | "env">("overview");
   const [logs, setLogs] = useState<string[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
 
@@ -41,7 +42,7 @@ export default function DeploymentDetailPage() {
       </div>
 
       <div className="mb-4 flex gap-1 border-b border-white/5">
-        {(["overview", "logs", "metrics", "env"] as const).map((t) => (
+        {(["overview", "terminal", "logs", "metrics", "env"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm ${tab === t ? "border-b-2 border-cyan-400 text-white" : "text-white/50"}`}>{t}</button>
         ))}
       </div>
@@ -57,6 +58,7 @@ export default function DeploymentDetailPage() {
             <Row k="Last deployed" v={d.lastDeployedAt ?? "never"} />
           </div>
         )}
+        {tab === "terminal" && <VpsTerminal deploymentId={d.id} />}
         {tab === "logs" && (
           <pre className="max-h-96 overflow-auto rounded-lg bg-slate-950 p-4 font-mono text-xs text-green-300">{logs.join("\n")}</pre>
         )}
