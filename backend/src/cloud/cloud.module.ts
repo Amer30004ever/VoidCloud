@@ -69,6 +69,7 @@ import { RateLimitService } from './rate-limit/rate-limit.service';
     CloudImageController,
     CloudDomainController,
     CloudAnalyticsController,
+    CloudRateLimitController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
@@ -77,6 +78,7 @@ import { RateLimitService } from './rate-limit/rate-limit.service';
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
     SSHKeyService, VPSResizeService, FirewallService, OrganizationService,
     VpsTerminalGateway, VpsAlertService, ImageService, DNSService, AnalyticsService,
+    RateLimitService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
 })
