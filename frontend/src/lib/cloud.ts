@@ -437,3 +437,25 @@ export const cloudWebhooks = {
   deliveries: async (id: string, limit = 50): Promise<WebhookDelivery[]> =>
     (await api.get(`/cloud/webhooks/${id}/deliveries`, { params: { limit } })).data,
 };
+
+export interface MigrationTarget { name: string; currentLoad: number; online: boolean }
+export interface MigrationStorage { name: string; available: number; total: number }
+export interface MigrationRecord {
+  id: string; vpsId: string; sourceNode: string; targetNode: string;
+  targetStorage?: string | null; status: string; progress: number;
+  estimatedDowntimeSec: number; scheduledFor?: string | null;
+  startedAt?: string | null; completedAt?: string | null; errorMessage?: string | null; createdAt: string;
+}
+export const cloudMigration = {
+  targets: async (vpsId: string): Promise<{ current: { node: string | null }; nodes: MigrationTarget[]; storage: MigrationStorage[] }> =>
+    (await api.get(`/cloud/vps/${vpsId}/migration/targets`)).data,
+  start: async (vpsId: string, targetNode: string, targetStorage?: string, scheduledFor?: string) =>
+    (await api.post(`/cloud/vps/${vpsId}/migration`, { targetNode, targetStorage, scheduledFor })).data,
+  status: async (migrationId: string): Promise<{ status: string; progress: number; estimatedRemaining: number }> =>
+    (await api.get(`/cloud/migration/${migrationId}/status`)).data,
+  cancel: async (migrationId: string) => (await api.delete(`/cloud/migration/${migrationId}/cancel`)).data,
+  history: async (vpsId: string): Promise<MigrationRecord[]> =>
+    (await api.get(`/cloud/vps/${vpsId}/migration/history`)).data,
+  adminDrain: async (sourceNode: string, targetNode: string) =>
+    (await api.post(`/admin/cloud/migration/drain`, { sourceNode, targetNode })).data,
+};
