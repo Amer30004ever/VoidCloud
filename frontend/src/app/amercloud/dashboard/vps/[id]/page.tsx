@@ -7,6 +7,7 @@ import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 import { AlertRules } from "@/components/cloud/AlertRules";
 import { BackupManager } from "@/components/cloud/BackupManager";
+import { VpsResizeModal } from "@/components/cloud/VpsResizeModal";
 
 type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "activity";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
