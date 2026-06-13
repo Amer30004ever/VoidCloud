@@ -42,16 +42,22 @@ export default function AdminDashboard() {
   const totalPods = nodes.reduce((s, n) => s + (n.podCount ?? 0), 0);
   const clusterHealthy = sys?.kubernetesConnected && nodes.every((n) => n.status === "True");
 
+  const fmtMoney = (n: number, cur: string) =>
+    new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + ` ${cur}`;
+
   const cards = [
-    { label: "Active Users", value: activeUsers ?? stats?.users ?? "—", icon: "👤" },
-    { label: "Running Pods", value: totalPods || "—", icon: "📦" },
-    { label: "Namespaces", value: namespaces.length || "—", icon: "🗂️" },
+    { label: "Total Users", value: stats?.users ?? activeUsers ?? "—", icon: "👤" },
+    { label: "Active Plans", value: stats?.activeSubscriptions ?? "—", icon: "💎" },
+    { label: "Deployments", value: stats?.deployments ?? deployments.length ?? "—", icon: "🖥️" },
     {
-      label: "Cluster Health",
-      value: sys ? (clusterHealthy ? "Healthy" : "Degraded") : "—",
-      icon: clusterHealthy ? "💚" : "⚠️",
+      label: "Revenue (paid)",
+      value: stats
+        ? `${fmtMoney(stats.revenueUSD ?? 0, "USD")} · ${fmtMoney(stats.revenueEGP ?? 0, "EGP")}`
+        : "—",
+      icon: "💰",
     },
   ];
+
 
   return (
     <div className="space-y-6">
