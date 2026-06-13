@@ -42,7 +42,7 @@ export default function DeploymentDetailPage() {
       </div>
 
       <div className="mb-4 flex gap-1 border-b border-white/5">
-        {(["overview", "logs", "metrics", "env"] as const).map((t) => (
+        {(["overview", "terminal", "logs", "metrics", "env"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm ${tab === t ? "border-b-2 border-cyan-400 text-white" : "text-white/50"}`}>{t}</button>
         ))}
       </div>
