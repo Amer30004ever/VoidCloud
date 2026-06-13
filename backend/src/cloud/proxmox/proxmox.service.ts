@@ -319,4 +319,72 @@ export class ProxmoxService {
       netOut: s.netout ?? 0,
     };
   }
+
+  // ---------------- Migration helpers ----------------
+
+  /** Returns cluster nodes with cpu/mem load. Falls back to a synthetic list when not live. */
+  async listClusterNodes(): Promise<Array<{ name: string; currentLoad: number; online: boolean }>> {
+    if (!this.isLive()) {
+      return this.nodes.map((n, i) => ({
+        name: n,
+        currentLoad: Math.round((0.2 + i * 0.15 + Math.random() * 0.1) * 100) / 100,
+        online: true,
+      }));
+    }
+    try {
+      const list = await this.pveRequest<any[]>('GET', `/nodes`);
+      return (list ?? []).map((n) => ({
+        name: n.node,
+        currentLoad: Math.round(((n.cpu ?? 0) + (n.mem ?? 0) / (n.maxmem || 1)) * 50) / 100,
+        online: n.status === 'online',
+      }));
+    } catch {
+      return this.nodes.map((n) => ({ name: n, currentLoad: 0, online: false }));
+    }
+  }
+
+  /** Returns storage pools across the cluster. */
+  async listClusterStorage(): Promise<Array<{ name: string; available: number; total: number; node: string }>> {
+    if (!this.isLive()) {
+      return [
+        { name: this.storage, available: 500_000_000_000, total: 1_000_000_000_000, node: this.nodes[0] },
+      ];
+    }
+    try {
+      const out: Array<{ name: string; available: number; total: number; node: string }> = [];
+      for (const node of this.nodes) {
+        const list = await this.pveRequest<any[]>('GET', `/nodes/${node}/storage`).catch(() => []);
+        for (const s of list ?? []) {
+          out.push({
+            name: s.storage,
+            available: Number(s.avail ?? 0),
+            total: Number(s.total ?? 0),
+            node,
+          });
+        }
+      }
+      return out;
+    } catch {
+      return [];
+    }
+  }
+
+  /** Start an online migration of an LXC container. Returns the Proxmox task UPID. */
+  async startContainerMigration(sourceNode: string, vmid: number, targetNode: string, targetStorage?: string): Promise<string | null> {
+    if (!this.isLive()) return null;
+    const params: Record<string, unknown> = { target: targetNode, online: 1, restart: 1 };
+    if (targetStorage) params['target-storage'] = targetStorage;
+    return this.pveRequest<string>('POST', `/nodes/${sourceNode}/lxc/${vmid}/migrate`, params);
+  }
+
+  async getTaskStatus(node: string, upid: string): Promise<{ status: string; exitstatus?: string; progress?: number }> {
+    if (!this.isLive()) return { status: 'stopped', exitstatus: 'OK', progress: 100 };
+    const s = await this.pveRequest<any>('GET', `/nodes/${node}/tasks/${encodeURIComponent(upid)}/status`);
+    return { status: s.status, exitstatus: s.exitstatus, progress: s.progress };
+  }
+
+  async stopTask(node: string, upid: string): Promise<void> {
+    if (!this.isLive()) return;
+    await this.pveRequest('DELETE', `/nodes/${node}/tasks/${encodeURIComponent(upid)}`);
+  }
 }
