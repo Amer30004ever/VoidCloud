@@ -832,6 +832,7 @@ model CloudDeployment {
   firewallRules FirewallRule[]
   snapshots     CustomImage[]
   domains       Domain[]
+  usageMetrics  UsageMetric[]
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
