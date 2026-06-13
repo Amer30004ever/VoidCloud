@@ -6,8 +6,9 @@ import { cloudApi, type CloudDeployment, type VpsUsage } from "@/lib/cloud";
 import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 import { AlertRules } from "@/components/cloud/AlertRules";
+import { BackupManager } from "@/components/cloud/BackupManager";
 
-type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "alerts" | "activity";
+type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "activity";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
 
 export default function VpsDetailPage() {
