@@ -17,12 +17,43 @@ export default function UserDashboard() {
     api.get("/auth/me").then((r) => setMe(r.data)).catch(() => {});
   }, []);
 
+  const trialDaysLeft = me?.trialEndsAt
+    ? Math.ceil((new Date(me.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  const isTrialing = me?.subscriptionStatus === "TRIALING" && trialDaysLeft !== null;
+  const trialExpired = isTrialing && trialDaysLeft <= 0;
+
   return (
     <div className="space-y-6">
+      {isTrialing && (
+        <div
+          className={`rounded-2xl border p-4 backdrop-blur-xl ${
+            trialExpired
+              ? "border-red-500/30 bg-red-500/10 text-red-200"
+              : "border-amber-500/30 bg-amber-500/10 text-amber-200"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-sm">
+              {trialExpired
+                ? "❌ Your trial has expired. Your VPS has been suspended. Upgrade now to resume service."
+                : `⚠️ Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"}. Upgrade to keep your VPS running.`}
+            </div>
+            <Link
+              href="/amercloud/dashboard/billing"
+              className="shrink-0 rounded-lg bg-white/10 px-4 py-2 text-xs font-semibold hover:bg-white/20"
+            >
+              Upgrade plan
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 p-8 backdrop-blur-xl">
         <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
         <p className="mt-2 text-white/60">Manage your VPS instances, plan, and usage from one place.</p>
       </div>
+
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <PlanCard usage={usage} />
