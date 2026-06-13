@@ -67,6 +67,7 @@ import { CloudImageController, CloudDomainController, CloudAnalyticsController }
     VpsAlertController,
     CloudImageController,
     CloudDomainController,
+    CloudAnalyticsController,
   ],
   providers: [
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
@@ -74,7 +75,7 @@ import { CloudImageController, CloudDomainController, CloudAnalyticsController }
     StripeService, FawryService, InstapayService,
     CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
     SSHKeyService, VPSResizeService, FirewallService, OrganizationService,
-    VpsTerminalGateway, VpsAlertService, ImageService, DNSService,
+    VpsTerminalGateway, VpsAlertService, ImageService, DNSService, AnalyticsService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
 })
