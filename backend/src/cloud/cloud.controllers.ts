@@ -25,6 +25,7 @@ import { SSHKeyService } from './ssh/ssh-key.service';
 import { VPSResizeService } from './vps/vps-resize.service';
 import { FirewallService, type FirewallRuleInput } from './firewall/firewall.service';
 import { OrganizationService } from './organization/organization.service';
+import { ImageService } from './images/image.service';
 import type { OrgRole } from '@prisma/client';
 import { CloudEmailService } from './notifications/email.service';
 import { MailerService } from '../mailer/mailer.service';
@@ -618,8 +619,60 @@ export class CloudVpsTransferController {
   @Post(':id/transfer')
   transfer(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { organizationId: string | null }) {
     return this.orgs.transferVps(id, req.user.id, body?.organizationId ?? null);
+}
+
+
+@ApiTags('Cloud / Images')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud')
+export class CloudImageController {
+  constructor(private images: ImageService) {}
+
+  @Get('images')
+  list(@Req() req: AuthedRequest) { return this.images.listUserImages(req.user.id); }
+
+  @Get('marketplace')
+  marketplace() { return this.images.listMarketplaceImages(); }
+
+  @Post('images/snapshot/:vpsId')
+  snapshot(@Req() req: AuthedRequest, @Param('vpsId') vpsId: string, @Body() body: { name: string; description?: string }) {
+    return this.images.createSnapshot(vpsId, req.user.id, body?.name, body?.description);
+  }
+
+  @Post('images/upload')
+  upload(@Req() req: AuthedRequest, @Body() body: { name: string; sizeMB: number; storageUrl: string; description?: string }) {
+    return this.images.createFromUpload(req.user.id, body?.name, body?.sizeMB, body?.storageUrl, body?.description);
+  }
+
+  @Delete('images/:id')
+  remove(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.images.deleteImage(id, req.user.id);
+  }
+
+  @Post('images/:id/deploy')
+  deploy(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { vpsName: string }) {
+    return this.images.deployFromImage(id, req.user.id, body?.vpsName);
+  }
+
+  @Post('marketplace/:id/deploy')
+  deployFromMarketplace(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { vpsName: string }) {
+    return this.images.deployFromImage(id, req.user.id, body?.vpsName);
+  }
+
+  @Post('images/:id/share')
+  share(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { email: string }) {
+    if (!body?.email) throw new BadRequestException('email required');
+    return this.images.shareImage(id, req.user.id, body.email);
+  }
+
+  @Post('images/:id/publish')
+  publish(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { isPublic: boolean }) {
+    return this.images.makePublic(id, req.user.id, !!body?.isPublic);
   }
 }
+
+
 
 
 

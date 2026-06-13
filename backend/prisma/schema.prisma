@@ -124,6 +124,8 @@ model User {
   firewallRules       FirewallRule[]
   ownedOrganizations  Organization[]            @relation("OrgOwner")
   organizationMembers OrganizationMember[]
+  customImages        CustomImage[]
+  customImageShares   CustomImageShare[]
 
 
   // Password reset
@@ -827,6 +829,7 @@ model CloudDeployment {
   vpsAlertNotifications VpsAlertNotification[]
   sshKeys       SSHKey[] @relation("VPSKeys")
   firewallRules FirewallRule[]
+  snapshots     CustomImage[]
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 

@@ -331,3 +331,25 @@ export const cloudOrgs = {
   accept: async (invId: string) => (await api.post(`/cloud/orgs/invitations/${invId}/accept`)).data,
   revokeInvite: async (invId: string) => (await api.delete(`/cloud/orgs/invitations/${invId}`)).data,
 };
+
+export type ImageType = "SNAPSHOT" | "CUSTOM" | "MARKETPLACE";
+export interface CustomImage {
+  id: string; userId: string; name: string; description?: string | null;
+  type: ImageType; sourceVpsId?: string | null; sizeMB: number;
+  isPublic: boolean; storageUrl?: string | null; createdAt: string;
+  sourceVps?: { id: string; name: string } | null;
+  _shared?: boolean;
+}
+export const cloudImages = {
+  list: async (): Promise<CustomImage[]> => (await api.get("/cloud/images")).data,
+  marketplace: async (): Promise<CustomImage[]> => (await api.get("/cloud/marketplace")).data,
+  snapshot: async (vpsId: string, name: string, description?: string): Promise<CustomImage> =>
+    (await api.post(`/cloud/images/snapshot/${vpsId}`, { name, description })).data,
+  upload: async (data: { name: string; sizeMB: number; storageUrl: string; description?: string }): Promise<CustomImage> =>
+    (await api.post("/cloud/images/upload", data)).data,
+  remove: async (id: string) => (await api.delete(`/cloud/images/${id}`)).data,
+  deploy: async (id: string, vpsName: string) => (await api.post(`/cloud/images/${id}/deploy`, { vpsName })).data,
+  deployMarketplace: async (id: string, vpsName: string) => (await api.post(`/cloud/marketplace/${id}/deploy`, { vpsName })).data,
+  share: async (id: string, email: string) => (await api.post(`/cloud/images/${id}/share`, { email })).data,
+  publish: async (id: string, isPublic: boolean) => (await api.post(`/cloud/images/${id}/publish`, { isPublic })).data,
+};
