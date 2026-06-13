@@ -52,7 +52,7 @@ import {
     CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudAdminService,
     KubernetesService, PrometheusService, ProxmoxService,
     StripeService, FawryService, InstapayService,
-    CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService,
+    CloudEmailService, TwoFactorService, CloudAccountService, CloudAuditService, ActivityService, CloudBackupService, BackupServiceV2,
     VpsTerminalGateway, VpsAlertService,
   ],
   exports: [CloudPlansService, CloudDeploymentsService, CloudBillingService, CloudEmailService, TwoFactorService],
