@@ -167,7 +167,12 @@ export default function AdminDashboard() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-          <h2 className="mb-3 text-lg font-semibold">SMTP status</h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">SMTP status</h2>
+            <button onClick={testSmtp} disabled={smtpTesting} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs hover:bg-white/10 disabled:opacity-50">
+              {smtpTesting ? "Testing…" : "Test connection"}
+            </button>
+          </div>
           <div className="flex items-center gap-3">
             <span className={`inline-block h-3 w-3 rounded-full ${smtp?.status === "connected" ? "bg-green-400 shadow-[0_0_12px_rgba(74,222,128,0.7)]" : "bg-red-400"}`} />
             <div className="text-sm">
@@ -176,9 +181,12 @@ export default function AdminDashboard() {
                 {smtp?.transport ?? "—"} {smtp?.host ? `· ${smtp.host}` : ""}
               </div>
               {smtp?.from && <div className="text-xs text-white/40">From: {smtp.from}</div>}
+              {smtp?.error && <div className="text-xs text-red-300">{smtp.error}</div>}
             </div>
           </div>
+          {smtpTestMsg && <p className="mt-2 text-xs text-white/60">{smtpTestMsg}</p>}
         </section>
+
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
           <h2 className="mb-3 text-lg font-semibold">Recent deployments</h2>
