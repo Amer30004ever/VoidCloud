@@ -15,6 +15,7 @@ function IntegrationsPageContent() {
   const validTabs = ["slack", "email", "webhooks", "jira", "pagerduty"] as const;
   type IntegrationTab = (typeof validTabs)[number];
   const [localTab, setLocalTab] = useState<IntegrationTab>("slack");
+  const [isLoading] = useState(false);
   const activeTab: IntegrationTab =
     tabParam && validTabs.includes(tabParam as IntegrationTab) ? (tabParam as IntegrationTab) : localTab;
 

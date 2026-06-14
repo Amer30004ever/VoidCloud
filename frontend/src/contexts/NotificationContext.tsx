@@ -25,6 +25,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isConnected] = useState(false);
 
   // WebSocket connection (disabled until backend implements WebSocket gateway)
   useEffect(() => {

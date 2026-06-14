@@ -15,6 +15,7 @@ function LearningPageContent() {
   const validTabs = ["jobs", "news", "paths", "certifications", "cv-studio", "conferences", "books"] as const;
   type LearningTab = (typeof validTabs)[number];
   const [localTab, setLocalTab] = useState<LearningTab>("jobs");
+  const [isLoading] = useState(false);
   const activeTab: LearningTab =
     tabParam && validTabs.includes(tabParam as LearningTab) ? (tabParam as LearningTab) : localTab;
   const [searchQuery, setSearchQuery] = useState("");
