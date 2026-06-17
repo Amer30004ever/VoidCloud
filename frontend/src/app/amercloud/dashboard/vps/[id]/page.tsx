@@ -7,7 +7,7 @@ import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 import { VpsResizeModal } from "@/components/cloud/VpsResizeModal";
 
-type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "firewall" | "migration" | "activity";
+type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "snapshots" | "apps" | "alerts" | "firewall" | "migration" | "activity";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
 
 export default function VpsDetailPage() {
@@ -80,7 +80,7 @@ export default function VpsDetailPage() {
       {msg && <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-xs text-emerald-200">{msg}</div>}
 
       <div className="mb-4 flex gap-1 border-b border-white/5 overflow-x-auto">
-        {(["overview", "usage", "terminal", "env", "domains", "backups", "alerts", "firewall", "activity"] as Tab[]).map((t) => (
+        {(["overview", "usage", "terminal", "env", "domains", "backups", "snapshots", "apps", "alerts", "firewall", "activity"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm capitalize whitespace-nowrap ${tab === t ? "border-b-2 border-cyan-400 text-white" : "text-white/50 hover:text-white"}`}>{t}</button>
         ))}
       </div>
@@ -151,6 +151,9 @@ export default function VpsDetailPage() {
           </div>
         )}
 
+        {tab === "snapshots" && <SnapshotsTab vpsId={d.id} />}
+        {tab === "apps" && <AppsTab vpsId={d.id} />}
+
         {tab === "activity" && (
           <p className="text-sm text-white/60">VPS activity log is coming soon. Account-level audit events live under <span className="text-cyan-300">/amercloud/admin</span>.</p>
         )}
@@ -184,3 +187,93 @@ function fmtBytes(n: number) {
   return `${v.toFixed(1)} ${u[i]}`;
 }
 const input = "w-full rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 outline-none focus:border-cyan-400/50";
+
+function SnapshotsTab({ vpsId }: { vpsId: string }) {
+  const [list, setList] = useState<any[]>([]);
+  const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
+  const [busy, setBusy] = useState(false);
+  const refresh = () => cloudApi.snapshots.list(vpsId).then(setList).catch(() => {});
+  useEffect(() => { refresh(); }, [vpsId]);
+  async function create() {
+    if (!name.trim()) return;
+    setBusy(true);
+    try { await cloudApi.snapshots.create(vpsId, name.trim(), desc || undefined); setName(""); setDesc(""); refresh(); }
+    finally { setBusy(false); }
+  }
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-white/10 bg-slate-950/40 p-4 space-y-2">
+        <div className="text-sm font-semibold">Create snapshot</div>
+        <input className={input} placeholder="Snapshot name" value={name} onChange={(e) => setName(e.target.value)} />
+        <input className={input} placeholder="Description (optional)" value={desc} onChange={(e) => setDesc(e.target.value)} />
+        <button onClick={create} disabled={busy || !name.trim()} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">{busy ? "Creating…" : "📸 Create Snapshot"}</button>
+      </div>
+      <table className="w-full text-sm">
+        <thead className="text-left text-xs uppercase text-white/40 border-b border-white/5">
+          <tr><th className="p-2">Name</th><th>Date</th><th>Size</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          {list.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-white/50">No snapshots yet.</td></tr>}
+          {list.map((s) => (
+            <tr key={s.id} className="border-b border-white/5">
+              <td className="p-2 font-medium">{s.name}</td>
+              <td>{new Date(s.createdAt).toLocaleString()}</td>
+              <td>{(Number(s.sizeBytes) / 1024 / 1024 / 1024).toFixed(2)} GB</td>
+              <td><span className="rounded bg-cyan-400/10 px-2 py-0.5 text-xs text-cyan-300">{s.status}</span></td>
+              <td className="p-2 space-x-2">
+                <button onClick={async () => { if (confirm("Restore will overwrite the current VPS state. Continue?")) { await cloudApi.snapshots.restore(s.id); alert("Restore initiated"); }}} className="text-xs text-cyan-300 hover:underline">Restore</button>
+                <button onClick={async () => { if (confirm("Delete snapshot?")) { await cloudApi.snapshots.remove(s.id); refresh(); }}} className="text-xs text-red-300 hover:underline">Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AppsTab({ vpsId }: { vpsId: string }) {
+  const [catalog, setCatalog] = useState<Array<{ id: string; name: string; category: string; description: string }>>([]);
+  const [installed, setInstalled] = useState<Record<string, { status: string; installedAt: string }>>({});
+  const [selected, setSelected] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    cloudApi.apps.catalog().then(setCatalog).catch(() => {});
+    cloudApi.apps.status(vpsId).then((s) => setInstalled((s.installedApps as any) ?? {})).catch(() => {});
+  }, [vpsId]);
+  const toggle = (id: string) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
+  async function install() {
+    if (!selected.length) return;
+    setBusy(true);
+    try {
+      const r = await cloudApi.apps.install(vpsId, selected);
+      setInstalled(((r as any).installedApps as Record<string, { status: string; installedAt: string }>) ?? {});
+      setSelected([]);
+    } finally { setBusy(false); }
+  }
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+        {catalog.map((app) => {
+          const isInstalled = !!installed[app.id];
+          const isSelected = selected.includes(app.id);
+          return (
+            <label key={app.id} className={`cursor-pointer rounded-lg border p-3 ${isInstalled ? "border-emerald-400/40 bg-emerald-400/5" : isSelected ? "border-cyan-400 bg-cyan-400/10" : "border-white/10 bg-white/5 hover:bg-white/10"}`}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-semibold text-sm">{app.name}</div>
+                  <div className="text-xs text-white/50">{app.category}</div>
+                </div>
+                {isInstalled ? <span className="text-xs text-emerald-300">✓ Installed</span>
+                  : <input type="checkbox" checked={isSelected} onChange={() => toggle(app.id)} />}
+              </div>
+              <p className="mt-2 text-xs text-white/60">{app.description}</p>
+            </label>
+          );
+        })}
+      </div>
+      <button onClick={install} disabled={busy || !selected.length} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">{busy ? "Installing…" : `Install ${selected.length} app(s)`}</button>
+    </div>
+  );
+}

@@ -115,6 +115,22 @@ export const cloudApi = {
     usageOne: async (id: string) => (await api.get<VpsCurrentUsage>(`/cloud/deployments/${id}/usage`)).data,
     logs: async (id: string) => (await api.get(`/cloud/deployments/${id}/logs`)).data,
   },
+  snapshots: {
+    list: async (vpsId: string): Promise<Array<{ id: string; name: string; description?: string; sizeBytes: string; status: string; createdAt: string }>> =>
+      (await api.get(`/cloud/vps/${vpsId}/snapshots`)).data,
+    create: async (vpsId: string, name: string, description?: string) =>
+      (await api.post(`/cloud/vps/${vpsId}/snapshots`, { name, description })).data,
+    restore: async (snapshotId: string) => (await api.post(`/cloud/snapshots/${snapshotId}/restore`)).data,
+    remove: async (snapshotId: string) => (await api.delete(`/cloud/snapshots/${snapshotId}`)).data,
+  },
+  apps: {
+    catalog: async (): Promise<Array<{ id: string; name: string; category: string; description: string }>> =>
+      (await api.get(`/cloud/apps/catalog`)).data,
+    install: async (vpsId: string, apps: string[]) =>
+      (await api.post(`/cloud/vps/${vpsId}/apps/install`, { apps })).data,
+    status: async (vpsId: string): Promise<{ apps: string[]; installedApps: Record<string, { status: string; installedAt: string }> }> =>
+      (await api.get(`/cloud/vps/${vpsId}/apps/status`)).data,
+  },
   billing: {
     current: async () => (await api.get("/cloud/billing/current")).data,
     subscribe: async (body: { planId: string; provider: "stripe" | "fawry" | "instapay" | "cash"; customerPhone?: string; payerInstapayId?: string }) =>

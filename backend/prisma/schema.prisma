@@ -129,6 +129,7 @@ model User {
   domains             Domain[]
   apiRateLimits       APIRateLimit[]
   webhookEndpoints    WebhookEndpoint[]
+  vpsSnapshots        VPSSnapshot[]
   referralsMade       Referral[] @relation("Referrals")
   referredBy          Referral?  @relation("Referred")
   referralPayoutMethod Json?
@@ -838,13 +839,35 @@ model CloudDeployment {
   sshKeys       SSHKey[] @relation("VPSKeys")
   firewallRules FirewallRule[]
   snapshots     CustomImage[]
+  vpsSnapshots  VPSSnapshot[]
   domains       Domain[]
   usageMetrics  UsageMetric[]
   migrations    VPSMigration[]
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  apps          String[]      @default([])
+  installedApps Json?
 
   @@index([userId, status])
+}
+
+model VPSSnapshot {
+  id                  String    @id @default(uuid())
+  vpsId               String
+  vps                 CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                String
+  description         String?
+  sizeBytes           BigInt    @default(0)
+  status              String    @default("CREATING")
+  proxmoxSnapshotName String?
+  errorMessage        String?
+  createdAt           DateTime  @default(now())
+  completedAt         DateTime?
+
+  @@index([vpsId])
+  @@index([userId])
 }
 
 enum VpsAlertType {
