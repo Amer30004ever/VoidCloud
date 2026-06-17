@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node frontend/node_modules/next/dist/bin/next dev frontend --hostname 0.0.0.0",
     "build": "npm --prefix frontend run build",
+    "build:dev": "npm --prefix frontend run build",
     "start": "npm --prefix frontend run start",
     "lint": "npm --prefix frontend run lint",
     "test": "npm --prefix frontend run test",
