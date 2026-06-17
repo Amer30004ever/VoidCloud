@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
+
 
 const navLinks = [
   { href: "#features", label: "Features" },
@@ -41,6 +43,7 @@ export function Navbar() {
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
             Live
           </span>
+          <ThemeToggle />
           <Link
             href="/amercloud/login"
             className="rounded-lg px-4 py-2 text-sm text-white/80 hover:text-white"
