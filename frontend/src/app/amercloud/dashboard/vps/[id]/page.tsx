@@ -151,6 +151,9 @@ export default function VpsDetailPage() {
           </div>
         )}
 
+        {tab === "snapshots" && <SnapshotsTab vpsId={d.id} />}
+        {tab === "apps" && <AppsTab vpsId={d.id} />}
+
         {tab === "activity" && (
           <p className="text-sm text-white/60">VPS activity log is coming soon. Account-level audit events live under <span className="text-cyan-300">/amercloud/admin</span>.</p>
         )}
