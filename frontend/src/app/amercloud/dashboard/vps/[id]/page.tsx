@@ -278,3 +278,61 @@ function AppsTab({ vpsId }: { vpsId: string }) {
     </div>
   );
 }
+
+function PanelTab({ vpsId }: { vpsId: string }) {
+  const [catalog, setCatalog] = useState<Array<{ id: string; name: string; description: string; priceUSD: number; defaultPort: number; pathSuffix: string }>>([]);
+  const [status, setStatus] = useState<{ panel: string; status: string; url: string | null; user: string | null; password: string | null; installedAt: string | null } | null>(null);
+  const [choice, setChoice] = useState("none");
+  const [busy, setBusy] = useState(false);
+  const [reveal, setReveal] = useState(false);
+  const refresh = () => cloudApi.panels.status(vpsId).then((s) => { setStatus(s); setChoice(s.panel || "none"); }).catch(() => {});
+  useEffect(() => {
+    cloudApi.panels.list().then(setCatalog).catch(() => {});
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vpsId]);
+  async function install() {
+    setBusy(true);
+    try { const s = await cloudApi.panels.install(vpsId, choice); setStatus(s); setReveal(false); }
+    finally { setBusy(false); }
+  }
+  const installed = status && status.status === "INSTALLED" && status.panel !== "none";
+  return (
+    <div className="space-y-4">
+      {installed && status && (
+        <div className="rounded-lg border border-emerald-400/30 bg-emerald-400/5 p-4 text-sm space-y-2">
+          <div className="font-semibold text-emerald-200">✓ {catalog.find((c) => c.id === status.panel)?.name ?? status.panel} installed</div>
+          <div className="font-mono text-xs space-y-1">
+            <div>URL: {status.url ? <a className="text-cyan-300 underline" href={status.url} target="_blank" rel="noreferrer">{status.url}</a> : "—"}</div>
+            <div>User: {status.user ?? "—"}</div>
+            <div>
+              Password:{" "}
+              <code className="text-amber-200">{reveal ? status.password ?? "—" : "•".repeat((status.password ?? "").length || 8)}</code>
+              <button onClick={() => setReveal((r) => !r)} className="ml-3 text-cyan-300 hover:underline">{reveal ? "Hide" : "Reveal"}</button>
+            </div>
+            {status.installedAt && <div className="text-white/40">Installed {new Date(status.installedAt).toLocaleString()}</div>}
+          </div>
+        </div>
+      )}
+      <div className="grid gap-2 md:grid-cols-2">
+        {catalog.map((p) => (
+          <label key={p.id} className={`cursor-pointer rounded-lg border p-3 ${choice === p.id ? "border-cyan-400 bg-cyan-400/10" : "border-white/10 bg-white/5 hover:bg-white/10"}`}>
+            <input type="radio" name="ctlpanel" className="sr-only" checked={choice === p.id} onChange={() => setChoice(p.id)} />
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="font-semibold text-sm">{p.name}</div>
+                <div className="text-xs text-white/60 mt-1">{p.description}</div>
+              </div>
+              <span className={`shrink-0 text-xs font-mono ${p.priceUSD > 0 ? "text-amber-300" : "text-emerald-300"}`}>
+                {p.priceUSD > 0 ? `+$${p.priceUSD}/mo` : "Free"}
+              </span>
+            </div>
+          </label>
+        ))}
+      </div>
+      <button onClick={install} disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">
+        {busy ? "Installing…" : installed ? "Re-install / Switch panel" : "Install panel"}
+      </button>
+    </div>
+  );
+}
