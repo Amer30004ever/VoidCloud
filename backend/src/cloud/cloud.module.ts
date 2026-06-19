@@ -91,6 +91,7 @@ import { VpsPanelService } from './vps/vps-panel.service';
     CloudReferralController,
     CloudVpsSnapshotController,
     CloudVpsAppsController,
+    CloudVpsPanelController,
   ],
   providers: [
     CloudPlansService,
