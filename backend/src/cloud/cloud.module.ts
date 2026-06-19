@@ -54,12 +54,14 @@ import {
   CloudReferralController,
   CloudVpsSnapshotController,
   CloudVpsAppsController,
+  CloudVpsPanelController,
 } from './cloud.controllers';
 import { RateLimitService } from './rate-limit/rate-limit.service';
 import { WebhookService } from './webhook/webhook.service';
 import { VPSMigrationService } from './vps/vps-migration.service';
 import { ReferralService } from './referral/referral.service';
 import { VpsSnapshotService, VpsAppsService } from './vps/vps-snapshot.service';
+import { VpsPanelService } from './vps/vps-panel.service';
 
 @Module({
   imports: [AuthModule],
