@@ -6,17 +6,22 @@ import { cloudApi, type CloudPlan, type OsTemplate } from "@/lib/cloud";
 
 type EnvRow = { key: string; value: string };
 
+type ControlPanel = { id: string; name: string; description: string; priceUSD: number; defaultPort: number; pathSuffix: string };
+
 export default function NewVpsPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+  const TOTAL_STEPS = 5;
   const [plans, setPlans] = useState<CloudPlan[]>([]);
   const [templates, setTemplates] = useState<OsTemplate[]>([]);
+  const [panels, setPanels] = useState<ControlPanel[]>([]);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
   const [name, setName] = useState("");
   const [planId, setPlanId] = useState<string>("");
   const [templateId, setTemplateId] = useState<string>("debian-12");
+  const [panelId, setPanelId] = useState<string>("none");
 
   const [envRows, setEnvRows] = useState<EnvRow[]>([]);
   const [domainsText, setDomainsText] = useState("");
@@ -33,10 +38,21 @@ export default function NewVpsPage() {
       { id: "ubuntu-22.04", label: "Ubuntu 22.04", proxmoxId: 9102, description: "With Docker", hasDocker: true },
       { id: "alpine", label: "Alpine Linux", proxmoxId: 9100, description: "Ultra-lightweight", hasDocker: false },
     ]));
+    cloudApi.panels.list().then(setPanels).catch(() => setPanels([
+      { id: "none", name: "None", description: "SSH only.", priceUSD: 0, defaultPort: 0, pathSuffix: "" },
+      { id: "1panel", name: "1Panel", description: "Modern open-source panel.", priceUSD: 0, defaultPort: 30000, pathSuffix: "/entrance" },
+      { id: "cockpit", name: "Cockpit", description: "Server management.", priceUSD: 0, defaultPort: 9090, pathSuffix: "" },
+      { id: "cpanel", name: "cPanel", description: "Industry standard.", priceUSD: 15, defaultPort: 2083, pathSuffix: "" },
+      { id: "plesk", name: "Plesk", description: "Popular alternative.", priceUSD: 12, defaultPort: 8443, pathSuffix: "" },
+      { id: "cyberpanel", name: "CyberPanel", description: "OpenLiteSpeed panel.", priceUSD: 0, defaultPort: 8090, pathSuffix: "" },
+    ]));
   }, []);
 
   const plan = plans.find((p) => p.id === planId);
   const tpl = templates.find((t) => t.id === templateId);
+  const panel = panels.find((p) => p.id === panelId);
+  const panelExtra = panel?.priceUSD ?? 0;
+  const totalUSD = (plan?.priceUSD ?? 0) + panelExtra;
 
   async function submit() {
     if (!name.trim() || !plan) { setErr("Name and plan are required"); setStep(1); return; }
@@ -56,6 +72,9 @@ export default function NewVpsPage() {
         customDomains,
         envVars,
       } as any);
+      if (panelId && panelId !== "none") {
+        try { await cloudApi.panels.install(created.id, panelId); } catch {}
+      }
       router.push(`/amercloud/dashboard/vps/${created.id}`);
     } catch (e: any) {
       setErr(e?.response?.data?.message ?? "Failed to create VPS");
