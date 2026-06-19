@@ -7,7 +7,7 @@ import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 import { VpsResizeModal } from "@/components/cloud/VpsResizeModal";
 
-type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "snapshots" | "apps" | "alerts" | "firewall" | "migration" | "activity";
+type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "snapshots" | "apps" | "panel" | "alerts" | "firewall" | "migration" | "activity";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
 
 export default function VpsDetailPage() {
