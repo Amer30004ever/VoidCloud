@@ -126,6 +126,7 @@ import { VpsPanelService } from './vps/vps-panel.service';
     ReferralService,
     VpsSnapshotService,
     VpsAppsService,
+    VpsPanelService,
   ],
   exports: [
     CloudPlansService,
