@@ -84,9 +84,9 @@ export default function NewVpsPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="mb-2 text-3xl font-bold">New VPS</h1>
-      <p className="mb-6 text-white/60">Step {step} of 4</p>
+      <p className="mb-6 text-white/60">Step {step} of {TOTAL_STEPS}</p>
       <div className="mb-6 h-2 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 transition-all" style={{ width: `${(step / 4) * 100}%` }} />
+        <div className="h-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 transition-all" style={{ width: `${(step / TOTAL_STEPS) * 100}%` }} />
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
@@ -144,6 +144,29 @@ export default function NewVpsPage() {
         )}
 
         {step === 4 && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Control Panel</h2>
+            <p className="text-xs text-white/60">Optional. Install a web-based management panel after provisioning. Paid panels add to your monthly bill.</p>
+            <div className="grid gap-2 md:grid-cols-2">
+              {panels.map((p) => (
+                <label key={p.id} className={`cursor-pointer rounded-lg border p-3 ${panelId === p.id ? "border-cyan-400 bg-cyan-400/10" : "border-white/10 bg-white/5 hover:bg-white/10"}`}>
+                  <input type="radio" name="panel" className="sr-only" checked={panelId === p.id} onChange={() => setPanelId(p.id)} />
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-semibold text-sm">{p.name}</div>
+                      <div className="text-xs text-white/60 mt-1">{p.description}</div>
+                    </div>
+                    <span className={`shrink-0 text-xs font-mono ${p.priceUSD > 0 ? "text-amber-300" : "text-emerald-300"}`}>
+                      {p.priceUSD > 0 ? `+$${p.priceUSD}/mo` : "Free"}
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === 5 && (
           <div className="space-y-3">
             <h2 className="text-xl font-semibold">Review</h2>
             <div className="rounded-lg border border-white/10 bg-slate-950/50 p-4 text-sm space-y-1">
@@ -151,6 +174,7 @@ export default function NewVpsPage() {
               <Row k="Plan" v={plan?.name ?? "—"} />
               <Row k="OS Template" v={tpl?.label ?? "—"} />
               <Row k="Resources" v={`${plan?.cpuLimit} CPU · ${plan?.memoryLimit}MB · ${plan?.storageLimit ? Math.ceil(plan.storageLimit/1024) : 0}GB`} />
+              <Row k="Control panel" v={panel ? `${panel.name}${panelExtra > 0 ? ` (+$${panelExtra}/mo)` : ""}` : "None"} />
               <Row k="Custom domains" v={domainsText || "—"} />
               <Row k="Env vars" v={`${envRows.filter((r) => r.key).length} defined`} />
               <Row k="SSH keys" v={sshKeys ? `${sshKeys.split(/\n/).filter(Boolean).length} key(s)` : "—"} />
@@ -159,15 +183,15 @@ export default function NewVpsPage() {
             </div>
             <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-4 text-sm">
               <div className="text-xs uppercase text-cyan-300">Estimated cost</div>
-              <div className="text-2xl font-bold">${plan?.priceUSD ?? 0}/mo</div>
-              <div className="text-xs text-white/60">{plan?.priceEGP ?? 0} EGP/mo</div>
+              <div className="text-2xl font-bold">${totalUSD}/mo</div>
+              <div className="text-xs text-white/60">{plan?.priceEGP ?? 0} EGP/mo (base){panelExtra > 0 ? ` + $${panelExtra}/mo control panel` : ""}</div>
             </div>
           </div>
         )}
 
         <div className="mt-6 flex justify-between">
           <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className="rounded-lg border border-white/10 px-4 py-2 text-sm disabled:opacity-30">← Back</button>
-          {step < 4 ? (
+          {step < TOTAL_STEPS ? (
             <button onClick={() => setStep(step + 1)} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950">Next →</button>
           ) : (
             <button onClick={submit} disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950 disabled:opacity-50">{busy ? "Provisioning…" : "🚀 Create VPS"}</button>
