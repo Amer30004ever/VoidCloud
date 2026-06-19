@@ -847,6 +847,12 @@ model CloudDeployment {
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   apps          String[]      @default([])
   installedApps Json?
+  controlPanel              String?
+  controlPanelStatus        String?
+  controlPanelUrl           String?
+  controlPanelUser          String?
+  controlPanelPassword      String?
+  controlPanelInstalledAt   DateTime?
 
   @@index([userId, status])
 }

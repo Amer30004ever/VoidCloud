@@ -1,5 +1,14 @@
 import api from "./api";
 
+export interface ControlPanelStatus {
+  panel: string;
+  status: string;
+  url: string | null;
+  user: string | null;
+  password: string | null;
+  installedAt: string | null;
+}
+
 export interface CloudPlan {
   id: string;
   name: string;
@@ -130,6 +139,14 @@ export const cloudApi = {
       (await api.post(`/cloud/vps/${vpsId}/apps/install`, { apps })).data,
     status: async (vpsId: string): Promise<{ apps: string[]; installedApps: Record<string, { status: string; installedAt: string }> }> =>
       (await api.get(`/cloud/vps/${vpsId}/apps/status`)).data,
+  },
+  panels: {
+    list: async (): Promise<Array<{ id: string; name: string; description: string; priceUSD: number; defaultPort: number; pathSuffix: string }>> =>
+      (await api.get(`/cloud/control-panels`)).data,
+    install: async (vpsId: string, panel: string): Promise<ControlPanelStatus> =>
+      (await api.post(`/cloud/vps/${vpsId}/panel/install`, { panel })).data,
+    status: async (vpsId: string): Promise<ControlPanelStatus> =>
+      (await api.get(`/cloud/vps/${vpsId}/panel/status`)).data,
   },
   billing: {
     current: async () => (await api.get("/cloud/billing/current")).data,
