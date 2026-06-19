@@ -1,5 +1,14 @@
 import api from "./api";
 
+export interface ControlPanelStatus {
+  panel: string;
+  status: string;
+  url: string | null;
+  user: string | null;
+  password: string | null;
+  installedAt: string | null;
+}
+
 export interface CloudPlan {
   id: string;
   name: string;
