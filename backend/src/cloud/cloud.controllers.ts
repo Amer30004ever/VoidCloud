@@ -1558,3 +1558,95 @@ export class CloudReferralController {
       .then(() => ({ ok: true }));
   }
 }
+
+// ============ VPS Snapshots ============
+import { VpsSnapshotService, VpsAppsService } from './vps/vps-snapshot.service';
+import { VpsPanelService } from './vps/vps-panel.service';
+
+@ApiTags('cloud-vps-snapshots')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud')
+export class CloudVpsSnapshotController {
+  constructor(private svc: VpsSnapshotService) {}
+
+  @Get('vps/:id/snapshots')
+  list(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.svc.list(req.user.id, id);
+  }
+
+  @Post('vps/:id/snapshots')
+  create(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { name: string; description?: string },
+  ) {
+    return this.svc.create(req.user.id, id, String(body?.name ?? ''), body?.description);
+  }
+
+  @Post('snapshots/:snapshotId/restore')
+  restore(@Req() req: AuthedRequest, @Param('snapshotId') snapshotId: string) {
+    return this.svc.restore(req.user.id, snapshotId);
+  }
+
+  @Delete('snapshots/:snapshotId')
+  remove(@Req() req: AuthedRequest, @Param('snapshotId') snapshotId: string) {
+    return this.svc.remove(req.user.id, snapshotId);
+  }
+}
+
+// ============ VPS Apps ============
+@ApiTags('cloud-vps-apps')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud')
+export class CloudVpsAppsController {
+  constructor(private svc: VpsAppsService) {}
+
+  @Get('apps/catalog')
+  catalog() {
+    return this.svc.list();
+  }
+
+  @Post('vps/:id/apps/install')
+  install(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { apps: string[] },
+  ) {
+    return this.svc.install(req.user.id, id, Array.isArray(body?.apps) ? body.apps : []);
+  }
+
+  @Get('vps/:id/apps/status')
+  status(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.svc.status(req.user.id, id);
+  }
+}
+
+// ============ VPS Control Panel ============
+@ApiTags('cloud-vps-panel')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud')
+export class CloudVpsPanelController {
+  constructor(private svc: VpsPanelService) {}
+
+  @Get('control-panels')
+  list() {
+    return this.svc.list();
+  }
+
+  @Post('vps/:id/panel/install')
+  install(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { panel: string },
+  ) {
+    return this.svc.install(req.user.id, id, String(body?.panel ?? 'none'));
+  }
+
+  @Get('vps/:id/panel/status')
+  status(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.svc.status(req.user.id, id);
+  }
+}
