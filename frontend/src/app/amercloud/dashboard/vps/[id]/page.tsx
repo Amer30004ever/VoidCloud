@@ -80,7 +80,7 @@ export default function VpsDetailPage() {
       {msg && <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-xs text-emerald-200">{msg}</div>}
 
       <div className="mb-4 flex gap-1 border-b border-white/5 overflow-x-auto">
-        {(["overview", "usage", "terminal", "env", "domains", "backups", "snapshots", "apps", "alerts", "firewall", "activity"] as Tab[]).map((t) => (
+        {(["overview", "usage", "terminal", "env", "domains", "backups", "snapshots", "apps", "panel", "alerts", "firewall", "activity"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm capitalize whitespace-nowrap ${tab === t ? "border-b-2 border-cyan-400 text-white" : "text-white/50 hover:text-white"}`}>{t}</button>
         ))}
       </div>
