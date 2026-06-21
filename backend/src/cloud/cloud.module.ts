@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { MaintenanceMiddleware } from './maintenance/maintenance.middleware';
 import { CloudPlansService } from './cloud-plans.service';
 import { CloudDeploymentsService } from './cloud-deployments.service';
 import { CloudBillingService } from './cloud-billing.service';
