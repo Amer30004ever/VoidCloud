@@ -632,3 +632,18 @@ kubectl -n amer-portal exec deploy/backend -- \
 # 3) Env var on deploy (defaults to AmerAdmin2026! when unset)
 ADMIN_PASSWORD=YourNewPassword123!
 ```
+
+## Status & Maintenance
+
+- **Public status page**: `/status` (frontend) — overall status, active incidents, scheduled maintenance, 30-day uptime per service, JSON feed.
+- **Public API**:
+  - `GET /api/v1/status` — overall status payload
+  - `GET /api/v1/status/incidents` — recent incidents
+- **Admin API** (requires `ADMIN`/`SUPER_ADMIN`):
+  - `POST/PUT/DELETE /api/v1/cloud/admin/maintenance[/:id]`
+  - `POST /api/v1/cloud/admin/incidents`
+  - `POST /api/v1/cloud/admin/incidents/:id/updates`
+  - `PUT  /api/v1/cloud/admin/incidents/:id/resolve`
+- **Admin UI**: `/amercloud/admin/maintenance`
+- **Middleware**: while a maintenance window is active, non-admin API calls return `503 Service Unavailable` with a `Retry-After` header. Status, auth and admin routes are always reachable.
+- **Emails**: scheduled / started / completed maintenance and created / resolved incidents trigger branded emails via `CloudEmailService.maintenance(...)`.
