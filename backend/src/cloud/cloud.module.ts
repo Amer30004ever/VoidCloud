@@ -145,4 +145,8 @@ import { MaintenanceService } from './maintenance/maintenance.service';
     ReferralService,
   ],
 })
-export class CloudModule {}
+export class CloudModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(MaintenanceMiddleware).forRoutes('*');
+  }
+}
