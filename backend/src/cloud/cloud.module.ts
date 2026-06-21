@@ -93,6 +93,8 @@ import { MaintenanceService } from './maintenance/maintenance.service';
     CloudVpsSnapshotController,
     CloudVpsAppsController,
     CloudVpsPanelController,
+    CloudMaintenanceAdminController,
+    CloudStatusController,
   ],
   providers: [
     CloudPlansService,
