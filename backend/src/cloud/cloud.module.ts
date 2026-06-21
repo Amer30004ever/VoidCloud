@@ -62,6 +62,7 @@ import { VPSMigrationService } from './vps/vps-migration.service';
 import { ReferralService } from './referral/referral.service';
 import { VpsSnapshotService, VpsAppsService } from './vps/vps-snapshot.service';
 import { VpsPanelService } from './vps/vps-panel.service';
+import { MaintenanceService } from './maintenance/maintenance.service';
 
 @Module({
   imports: [AuthModule],
