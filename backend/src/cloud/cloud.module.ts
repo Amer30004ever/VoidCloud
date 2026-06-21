@@ -130,6 +130,7 @@ import { MaintenanceService } from './maintenance/maintenance.service';
     VpsSnapshotService,
     VpsAppsService,
     VpsPanelService,
+    MaintenanceService,
   ],
   exports: [
     CloudPlansService,
