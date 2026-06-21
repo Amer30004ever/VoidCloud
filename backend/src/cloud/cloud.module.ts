@@ -55,6 +55,8 @@ import {
   CloudVpsSnapshotController,
   CloudVpsAppsController,
   CloudVpsPanelController,
+  CloudMaintenanceAdminController,
+  CloudStatusController,
 } from './cloud.controllers';
 import { RateLimitService } from './rate-limit/rate-limit.service';
 import { WebhookService } from './webhook/webhook.service';
