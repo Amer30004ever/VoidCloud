@@ -125,3 +125,26 @@ backend/
 npm run test
 npm run test:e2e
 ```
+
+## Maintenance & Status
+
+Models: `Maintenance`, `Incident`, `IncidentUpdate` (see `prisma/schema.prisma`).
+Service: `src/cloud/maintenance/maintenance.service.ts`.
+Middleware: `src/cloud/maintenance/maintenance.middleware.ts` — blocks non-admin
+traffic with `503` + `Retry-After` while an active window exists; status,
+auth and admin routes are allowlisted.
+
+Endpoints:
+
+```
+GET    /api/v1/status
+GET    /api/v1/status/incidents
+GET    /api/v1/cloud/admin/maintenance?upcoming=true
+POST   /api/v1/cloud/admin/maintenance
+PUT    /api/v1/cloud/admin/maintenance/:id
+DELETE /api/v1/cloud/admin/maintenance/:id
+GET    /api/v1/cloud/admin/incidents
+POST   /api/v1/cloud/admin/incidents
+POST   /api/v1/cloud/admin/incidents/:id/updates
+PUT    /api/v1/cloud/admin/incidents/:id/resolve
+```

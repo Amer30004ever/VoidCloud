@@ -1322,3 +1322,43 @@ model CustomImageShare {
 
   @@unique([imageId, sharedWithEmail])
 }
+
+model Maintenance {
+  id               String   @id @default(cuid())
+  title            String
+  description      String
+  affectedServices String[] // VPS, API, Dashboard, Billing
+  startAt          DateTime
+  endAt            DateTime
+  status           String   // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  createdBy        String
+  createdAt        DateTime @default(now())
+
+  @@index([startAt])
+  @@index([status])
+}
+
+model Incident {
+  id          String           @id @default(cuid())
+  title       String
+  description String
+  severity    String           // DEGRADED, PARTIAL_OUTAGE, MAJOR_OUTAGE
+  status      String           // INVESTIGATING, IDENTIFIED, MONITORING, RESOLVED
+  updates     IncidentUpdate[]
+  createdAt   DateTime         @default(now())
+  resolvedAt  DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model IncidentUpdate {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  message    String
+  status     String
+  createdAt  DateTime @default(now())
+
+  @@index([incidentId])
+}

@@ -111,4 +111,13 @@ export class CloudEmailService {
       `<p>Deployment <b>${name}</b> failed.</p><pre>${reason}</pre>`,
     );
   }
+
+  maintenance(email: string, subject: string, body: string) {
+    const html = `<div style="font-family:system-ui,Arial,sans-serif;line-height:1.6;color:#0f172a">
+      <h2 style="margin:0 0 12px">${subject}</h2>
+      <pre style="white-space:pre-wrap;background:#f1f5f9;padding:12px;border-radius:8px">${body}</pre>
+      <p style="font-size:12px;color:#64748b">Follow live status at <a href="${this.frontend}/status">${this.frontend}/status</a>.</p>
+    </div>`;
+    return this.safeSend(email, subject, html, body);
+  }
 }

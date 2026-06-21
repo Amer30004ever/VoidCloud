@@ -1650,3 +1650,87 @@ export class CloudVpsPanelController {
     return this.svc.status(req.user.id, id);
   }
 }
+
+// ============ Maintenance & Status ============
+import {
+  MaintenanceService,
+  type CreateMaintenanceDto,
+  type CreateIncidentDto,
+} from './maintenance/maintenance.service';
+
+@ApiTags('cloud-admin-maintenance')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Roles(Role.ADMIN, Role.SUPER_ADMIN)
+@Controller('cloud/admin')
+export class CloudMaintenanceAdminController {
+  constructor(private svc: MaintenanceService) {}
+
+  @Get('maintenance')
+  listMaintenance(@Query('upcoming') upcoming?: string) {
+    return this.svc.listMaintenance({ upcoming: upcoming === 'true' });
+  }
+
+  @Post('maintenance')
+  createMaintenance(@Req() req: AuthedRequest, @Body() body: CreateMaintenanceDto) {
+    return this.svc.scheduleMaintenance(body, req.user.id);
+  }
+
+  @Put('maintenance/:id')
+  updateMaintenance(
+    @Param('id') id: string,
+    @Body() body: Partial<CreateMaintenanceDto> & { status?: string },
+  ) {
+    return this.svc.updateMaintenance(id, body);
+  }
+
+  @Delete('maintenance/:id')
+  deleteMaintenance(@Param('id') id: string) {
+    return this.svc.deleteMaintenance(id);
+  }
+
+  @Get('incidents')
+  listIncidents() {
+    return this.svc.listIncidents({ limit: 100 });
+  }
+
+  @Post('incidents')
+  createIncident(@Body() body: CreateIncidentDto) {
+    return this.svc.createIncident(body);
+  }
+
+  @Post('incidents/:id/updates')
+  addUpdate(
+    @Param('id') id: string,
+    @Body() body: { message: string; status: string },
+  ) {
+    return this.svc.addIncidentUpdate(
+      id,
+      String(body?.message ?? ''),
+      String(body?.status ?? 'INVESTIGATING'),
+    );
+  }
+
+  @Put('incidents/:id/resolve')
+  resolve(@Param('id') id: string, @Body() body: { message?: string }) {
+    return this.svc.resolveIncident(id, body?.message);
+  }
+}
+
+@ApiTags('status')
+@Controller('status')
+export class CloudStatusController {
+  constructor(private svc: MaintenanceService) {}
+
+  @Public()
+  @Get()
+  status() {
+    return this.svc.getStatusPage();
+  }
+
+  @Public()
+  @Get('incidents')
+  incidents() {
+    return this.svc.listIncidents({ limit: 50 });
+  }
+}

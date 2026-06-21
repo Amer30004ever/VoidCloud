@@ -202,7 +202,36 @@ export const cloudApi = {
     broadcast: async (body: { title: string; body: string; severity?: string; audience?: string }) =>
       (await api.post("/cloud/admin/announcements", body)).data,
     announcements: async () => (await api.get("/cloud/admin/announcements")).data,
+    // Maintenance
+    maintenance: {
+      list: async (upcoming?: boolean) =>
+        (await api.get("/cloud/admin/maintenance", { params: { upcoming } })).data,
+      create: async (body: { title: string; description: string; affectedServices: string[]; startAt: string; endAt: string }) =>
+        (await api.post("/cloud/admin/maintenance", body)).data,
+      update: async (id: string, body: Partial<{ title: string; description: string; affectedServices: string[]; startAt: string; endAt: string; status: string }>) =>
+        (await api.put(`/cloud/admin/maintenance/${id}`, body)).data,
+      remove: async (id: string) => api.delete(`/cloud/admin/maintenance/${id}`),
+    },
+    incidents: {
+      list: async () => (await api.get("/cloud/admin/incidents")).data,
+      create: async (body: { title: string; description: string; severity: string }) =>
+        (await api.post("/cloud/admin/incidents", body)).data,
+      addUpdate: async (id: string, body: { message: string; status: string }) =>
+        (await api.post(`/cloud/admin/incidents/${id}/updates`, body)).data,
+      resolve: async (id: string, message?: string) =>
+        (await api.put(`/cloud/admin/incidents/${id}/resolve`, { message })).data,
+    },
   },
+};
+
+export const statusApi = {
+  get: async (): Promise<{
+    status: "OPERATIONAL" | "DEGRADED" | "PARTIAL_OUTAGE" | "MAJOR_OUTAGE";
+    incidents: Array<{ id: string; title: string; description: string; severity: string; status: string; createdAt: string; resolvedAt: string | null; updates: Array<{ id: string; message: string; status: string; createdAt: string }> }>;
+    maintenance: Array<{ id: string; title: string; description: string; affectedServices: string[]; startAt: string; endAt: string; status: string }>;
+    uptime: Record<string, number>;
+  }> => (await api.get("/status")).data,
+  incidents: async () => (await api.get("/status/incidents")).data,
 };
 
 /* ============ Phase 2 helpers ============ */
