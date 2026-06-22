@@ -15,6 +15,10 @@ export interface UpdateScheduleDto {
   hour?: number | null;
   dayOfWeek?: number | null;
   dayOfMonth?: number | null;
+  offsiteProvider?: string | null;
+  offsiteBucket?: string | null;
+  offsiteAccessKey?: string | null;
+  offsiteSecretKey?: string | null;
 }
 
 @Injectable()
@@ -187,6 +191,10 @@ export class BackupServiceV2 implements OnModuleInit {
       hour: data.hour ?? 2,
       dayOfWeek: data.dayOfWeek ?? null,
       dayOfMonth: data.dayOfMonth ?? null,
+      offsiteProvider: data.offsiteProvider ?? null,
+      offsiteBucket: data.offsiteBucket ?? null,
+      offsiteAccessKey: data.offsiteAccessKey ?? null,
+      offsiteSecretKey: data.offsiteSecretKey ?? null,
     };
     return this.prisma.backupSchedule.upsert({
       where: { vpsId },

@@ -2,12 +2,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { cloudApi, type CloudDeployment, type VpsCurrentUsage } from "@/lib/cloud";
+import { cloudApi, cloudBackups, cloudSecurity, type CloudDeployment, type VpsCurrentUsage, type VpsBackup, type BackupSchedule, type VpsSecuritySettings } from "@/lib/cloud";
 import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 import { VpsResizeModal } from "@/components/cloud/VpsResizeModal";
 
-type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "snapshots" | "apps" | "panel" | "alerts" | "firewall" | "migration" | "activity";
+type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "security" | "snapshots" | "apps" | "panel" | "alerts" | "firewall" | "migration" | "activity";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
 
 export default function VpsDetailPage() {
@@ -80,7 +80,7 @@ export default function VpsDetailPage() {
       {msg && <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-xs text-emerald-200">{msg}</div>}
 
       <div className="mb-4 flex gap-1 border-b border-white/5 overflow-x-auto">
-        {(["overview", "usage", "terminal", "env", "domains", "backups", "snapshots", "apps", "panel", "alerts", "firewall", "activity"] as Tab[]).map((t) => (
+        {(["overview", "usage", "terminal", "env", "domains", "backups", "security", "snapshots", "apps", "panel", "alerts", "firewall", "activity"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm capitalize whitespace-nowrap ${tab === t ? "border-b-2 border-cyan-400 text-white" : "text-white/50 hover:text-white"}`}>{t}</button>
         ))}
       </div>
@@ -154,6 +154,8 @@ export default function VpsDetailPage() {
         {tab === "snapshots" && <SnapshotsTab vpsId={d.id} />}
         {tab === "apps" && <AppsTab vpsId={d.id} />}
         {tab === "panel" && <PanelTab vpsId={d.id} />}
+        {tab === "backups" && <BackupsTab vpsId={d.id} />}
+        {tab === "security" && <SecurityTab vpsId={d.id} />}
 
         {tab === "activity" && (
           <p className="text-sm text-white/60">VPS activity log is coming soon. Account-level audit events live under <span className="text-cyan-300">/amercloud/admin</span>.</p>
@@ -334,5 +336,205 @@ function PanelTab({ vpsId }: { vpsId: string }) {
         {busy ? "Installing…" : installed ? "Re-install / Switch panel" : "Install panel"}
       </button>
     </div>
+  );
+}
+
+function BackupsTab({ vpsId }: { vpsId: string }) {
+  const [list, setList] = useState<VpsBackup[]>([]);
+  const [sched, setSched] = useState<BackupSchedule | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  const load = () => {
+    cloudBackups.listForVps(vpsId).then(setList).catch(() => {});
+    cloudBackups.getSchedule(vpsId).then(setSched).catch(() => {});
+  };
+  useEffect(load, [vpsId]);
+
+  async function saveSched() {
+    if (!sched) return;
+    setBusy(true); setMsg("");
+    try { const s = await cloudBackups.updateSchedule(vpsId, sched); setSched(s); setMsg("Schedule saved"); }
+    catch { setMsg("Save failed"); } finally { setBusy(false); }
+  }
+  async function snapshotNow() {
+    setBusy(true);
+    try { await cloudBackups.create(vpsId); load(); } finally { setBusy(false); }
+  }
+
+  const s: BackupSchedule = sched ?? { vpsId, enabled: false, frequency: "DAILY", retention: 7, hour: 2 };
+  const set = (p: Partial<BackupSchedule>) => setSched({ ...s, ...p });
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-xl border border-white/10 bg-white/5 p-4">
+        <h3 className="mb-3 text-sm font-semibold uppercase text-white/60">Schedule</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Frequency">
+            <select className={input} value={s.enabled ? s.frequency : "NONE"} onChange={(e) => {
+              const v = e.target.value;
+              if (v === "NONE") set({ enabled: false });
+              else set({ enabled: true, frequency: v as BackupSchedule["frequency"] });
+            }}>
+              <option value="NONE">None</option>
+              <option value="DAILY">Daily</option>
+              <option value="WEEKLY">Weekly</option>
+              <option value="MONTHLY">Monthly</option>
+            </select>
+          </Field>
+          <Field label="Retention (days)">
+            <select className={input} value={s.retention} onChange={(e) => set({ retention: Number(e.target.value) })}>
+              {[3, 7, 14, 30].map((n) => <option key={n} value={n}>{n} days</option>)}
+            </select>
+          </Field>
+          <Field label="Time of day">
+            <select className={input} value={s.hour ?? 2} onChange={(e) => set({ hour: Number(e.target.value) })}>
+              {[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22].map((h) => (
+                <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Off-site storage">
+            <select className={input} value={s.offsiteProvider ?? "NONE"} onChange={(e) => {
+              const v = e.target.value;
+              set({ offsiteProvider: v === "NONE" ? null : (v as "S3" | "R2") });
+            }}>
+              <option value="NONE">None</option>
+              <option value="S3">AWS S3</option>
+              <option value="R2">Cloudflare R2</option>
+            </select>
+          </Field>
+        </div>
+        {s.offsiteProvider && (
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <Field label="Bucket"><input className={input} value={s.offsiteBucket ?? ""} onChange={(e) => set({ offsiteBucket: e.target.value })} /></Field>
+            <Field label="Access key"><input className={input} value={s.offsiteAccessKey ?? ""} onChange={(e) => set({ offsiteAccessKey: e.target.value })} /></Field>
+            <Field label="Secret key"><input type="password" className={input} value={s.offsiteSecretKey ?? ""} onChange={(e) => set({ offsiteSecretKey: e.target.value })} /></Field>
+          </div>
+        )}
+        <div className="mt-4 flex gap-2">
+          <button disabled={busy} onClick={saveSched} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">Save schedule</button>
+          <button disabled={busy} onClick={snapshotNow} className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">+ Backup now</button>
+          <span className="self-center text-xs text-white/50">Managed Backups add-on: <b className="text-white">$5/mo</b> (included in Business+).</span>
+        </div>
+        {msg && <p className="mt-2 text-xs text-emerald-300">{msg}</p>}
+      </section>
+
+      <section className="rounded-xl border border-white/10 bg-white/5 p-4">
+        <h3 className="mb-3 text-sm font-semibold uppercase text-white/60">Backups</h3>
+        {list.length === 0 && <p className="text-sm text-white/50">No backups yet.</p>}
+        {list.length > 0 && (
+          <table className="w-full text-sm">
+            <thead className="text-xs uppercase text-white/40">
+              <tr><th className="text-left py-2">Date</th><th className="text-left">Name</th><th className="text-left">Size</th><th className="text-left">Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              {list.map((b) => (
+                <tr key={b.id} className="border-t border-white/5">
+                  <td className="py-2">{new Date(b.createdAt).toLocaleString()}</td>
+                  <td>{b.name ?? "—"}</td>
+                  <td>{b.sizeMB} MB</td>
+                  <td><span className="rounded-md bg-white/10 px-2 py-0.5 text-xs">{b.status}</span></td>
+                  <td className="text-right space-x-2">
+                    <button onClick={async () => { if (confirm("Restore this backup? VPS will be overwritten.")) { await cloudBackups.restore(b.id); alert("Restore queued."); } }} className="text-xs text-cyan-300 hover:underline">Restore</button>
+                    <button onClick={async () => { if (confirm("Delete this backup?")) { await cloudBackups.remove(b.id); load(); } }} className="text-xs text-red-300 hover:underline">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function SecurityTab({ vpsId }: { vpsId: string }) {
+  const [s, setS] = useState<VpsSecuritySettings | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  useEffect(() => { cloudSecurity.get(vpsId).then(setS).catch(() => {}); }, [vpsId]);
+
+  const v: VpsSecuritySettings = s ?? { vpsId, wafEnabled: false, wafPreset: "OWASP", ddosTier: "BASIC", fimEnabled: false, fimPaths: ["/etc", "/var/www", "/usr/bin"] };
+  const set = (p: Partial<VpsSecuritySettings>) => setS({ ...v, ...p });
+
+  async function save() {
+    setBusy(true); setMsg("");
+    try { const r = await cloudSecurity.update(vpsId, v); setS(r); setMsg("Saved"); }
+    catch { setMsg("Save failed"); } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-xl border border-white/10 bg-white/5 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase text-white/60">Web Application Firewall</h3>
+          <Toggle checked={v.wafEnabled} onChange={(c) => set({ wafEnabled: c })} label="$10/mo" />
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Preset rules">
+            <select className={input} value={v.wafPreset} onChange={(e) => set({ wafPreset: e.target.value as VpsSecuritySettings["wafPreset"] })}>
+              <option value="OWASP">OWASP Top 10</option>
+              <option value="WORDPRESS">WordPress</option>
+              <option value="CUSTOM">Custom</option>
+            </select>
+          </Field>
+        </div>
+        {v.wafPreset === "CUSTOM" && (
+          <div className="mt-3">
+            <Field label="Custom rules (JSON)">
+              <textarea rows={5} className={input} value={typeof v.wafCustomRules === "string" ? v.wafCustomRules : JSON.stringify(v.wafCustomRules ?? [], null, 2)} onChange={(e) => {
+                try { set({ wafCustomRules: JSON.parse(e.target.value) }); }
+                catch { set({ wafCustomRules: e.target.value }); }
+              }} />
+            </Field>
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-white/10 bg-white/5 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase text-white/60">DDoS Protection</h3>
+          <span className="text-xs text-white/50">Status: <span className="text-emerald-300">Active</span></span>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => set({ ddosTier: "BASIC" })} className={`rounded-lg border px-3 py-2 text-sm ${v.ddosTier === "BASIC" ? "border-cyan-400 bg-cyan-400/10 text-cyan-200" : "border-white/10 bg-white/5"}`}>Basic (free)</button>
+          <button onClick={() => set({ ddosTier: "ADVANCED" })} className={`rounded-lg border px-3 py-2 text-sm ${v.ddosTier === "ADVANCED" ? "border-cyan-400 bg-cyan-400/10 text-cyan-200" : "border-white/10 bg-white/5"}`}>Advanced — $15/mo</button>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-white/10 bg-white/5 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase text-white/60">File Integrity Monitoring</h3>
+          <Toggle checked={v.fimEnabled} onChange={(c) => set({ fimEnabled: c })} label="$5/mo" />
+        </div>
+        <Field label="Critical paths (one per line)">
+          <textarea rows={4} className={input} value={v.fimPaths.join("\n")} onChange={(e) => set({ fimPaths: e.target.value.split("\n").map((x) => x.trim()).filter(Boolean) })} />
+        </Field>
+        <p className="mt-2 text-xs text-white/50">Alerts are sent on any change under the listed paths.</p>
+      </section>
+
+      <div className="flex gap-2">
+        <button disabled={busy} onClick={save} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">Save security settings</button>
+        {msg && <span className="self-center text-xs text-emerald-300">{msg}</span>}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs uppercase text-white/50">{label}</span>
+      {children}
+    </label>
+  );
+}
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (c: boolean) => void; label?: string }) {
+  return (
+    <button onClick={() => onChange(!checked)} className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs ${checked ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200" : "border-white/10 bg-white/5 text-white/60"}`}>
+      <span className={`inline-block h-3 w-3 rounded-full ${checked ? "bg-emerald-400" : "bg-white/30"}`} />
+      {checked ? "Enabled" : "Disabled"}{label && <span className="text-white/40">· {label}</span>}
+    </button>
   );
 }

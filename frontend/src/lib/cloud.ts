@@ -314,6 +314,19 @@ export interface BackupSchedule {
   hour?: number | null;
   dayOfWeek?: number | null;
   dayOfMonth?: number | null;
+  offsiteProvider?: "S3" | "R2" | null;
+  offsiteBucket?: string | null;
+  offsiteAccessKey?: string | null;
+  offsiteSecretKey?: string | null;
+}
+export interface VpsSecuritySettings {
+  vpsId: string;
+  wafEnabled: boolean;
+  wafPreset: "OWASP" | "WORDPRESS" | "CUSTOM";
+  wafCustomRules?: unknown;
+  ddosTier: "BASIC" | "ADVANCED";
+  fimEnabled: boolean;
+  fimPaths: string[];
 }
 export const cloudBackups = {
   listForVps: async (vpsId: string): Promise<VpsBackup[]> =>
@@ -332,6 +345,12 @@ export const cloudBackups = {
     (await api.get(`/cloud/vps/${vpsId}/backup-schedule`)).data,
   updateSchedule: async (vpsId: string, s: Partial<BackupSchedule>): Promise<BackupSchedule> =>
     (await api.put(`/cloud/vps/${vpsId}/backup-schedule`, s)).data,
+};
+export const cloudSecurity = {
+  get: async (vpsId: string): Promise<VpsSecuritySettings> =>
+    (await api.get(`/cloud/vps/${vpsId}/security`)).data,
+  update: async (vpsId: string, s: Partial<VpsSecuritySettings>): Promise<VpsSecuritySettings> =>
+    (await api.put(`/cloud/vps/${vpsId}/security`, s)).data,
 };
 
 export const cloudAudit = {

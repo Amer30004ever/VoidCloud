@@ -148,3 +148,9 @@ POST   /api/v1/cloud/admin/incidents
 POST   /api/v1/cloud/admin/incidents/:id/updates
 PUT    /api/v1/cloud/admin/incidents/:id/resolve
 ```
+
+## Security & Backup add-ons
+
+- `VpsSecuritySettings` model (Prisma) + `VpsSecurityService` + `CloudVpsSecurityController`.
+- `BackupSchedule` gains `offsiteProvider`, `offsiteBucket`, `offsiteAccessKey`, `offsiteSecretKey`.
+- Migration: `20260622000000_vps_security_backup_offsite`.
