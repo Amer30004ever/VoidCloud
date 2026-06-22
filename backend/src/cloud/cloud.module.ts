@@ -58,7 +58,9 @@ import {
   CloudVpsPanelController,
   CloudMaintenanceAdminController,
   CloudStatusController,
+  CloudVpsSecurityController,
 } from './cloud.controllers';
+import { VpsSecurityService } from './security/vps-security.service';
 import { RateLimitService } from './rate-limit/rate-limit.service';
 import { WebhookService } from './webhook/webhook.service';
 import { VPSMigrationService } from './vps/vps-migration.service';
