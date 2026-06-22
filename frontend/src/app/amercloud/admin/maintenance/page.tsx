@@ -21,6 +21,7 @@ export default function MaintenanceAdminPage() {
     setMaint(m); setIncidents(i);
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh(); }, [refresh]);
 
   const submitMaint = async (e: React.FormEvent) => {
