@@ -191,6 +191,10 @@ export class BackupServiceV2 implements OnModuleInit {
       hour: data.hour ?? 2,
       dayOfWeek: data.dayOfWeek ?? null,
       dayOfMonth: data.dayOfMonth ?? null,
+      offsiteProvider: data.offsiteProvider ?? null,
+      offsiteBucket: data.offsiteBucket ?? null,
+      offsiteAccessKey: data.offsiteAccessKey ?? null,
+      offsiteSecretKey: data.offsiteSecretKey ?? null,
     };
     return this.prisma.backupSchedule.upsert({
       where: { vpsId },
