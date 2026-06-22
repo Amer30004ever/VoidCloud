@@ -834,6 +834,7 @@ model CloudDeployment {
 
   backups       CloudBackup[]
   backupSchedule BackupSchedule?
+  security      VpsSecuritySettings?
   vpsAlertRules         VpsAlertRule[]
   vpsAlertNotifications VpsAlertNotification[]
   sshKeys       SSHKey[] @relation("VPSKeys")
