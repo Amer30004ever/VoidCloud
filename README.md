@@ -647,3 +647,10 @@ ADMIN_PASSWORD=YourNewPassword123!
 - **Admin UI**: `/amercloud/admin/maintenance`
 - **Middleware**: while a maintenance window is active, non-admin API calls return `503 Service Unavailable` with a `Retry-After` header. Status, auth and admin routes are always reachable.
 - **Emails**: scheduled / started / completed maintenance and created / resolved incidents trigger branded emails via `CloudEmailService.maintenance(...)`.
+
+## Automated Backups & Security (2026-06-22)
+
+- VPS detail → **Backups** tab: schedule (None/Daily/Weekly/Monthly), retention (3/7/14/30d), time of day, off-site storage (AWS S3 / Cloudflare R2), restore & delete.
+- VPS detail → **Security** tab: WAF (OWASP/WordPress/Custom rules), DDoS protection (Basic free / Advanced $15/mo), File Integrity Monitoring with custom paths.
+- Add-on pricing: Managed Backups $5/mo (included Business+), WAF $10/mo, Advanced DDoS $15/mo, FIM $5/mo.
+- New API: `GET/PUT /api/v1/cloud/vps/:id/security`; `BackupSchedule` extended with off-site fields.
