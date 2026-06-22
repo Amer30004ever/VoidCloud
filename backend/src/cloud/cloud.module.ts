@@ -100,6 +100,7 @@ import { MaintenanceService } from './maintenance/maintenance.service';
     CloudVpsPanelController,
     CloudMaintenanceAdminController,
     CloudStatusController,
+    CloudVpsSecurityController,
   ],
   providers: [
     CloudPlansService,
