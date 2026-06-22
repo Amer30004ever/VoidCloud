@@ -2,12 +2,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { cloudApi, type CloudDeployment, type VpsCurrentUsage } from "@/lib/cloud";
+import { cloudApi, cloudBackups, cloudSecurity, type CloudDeployment, type VpsCurrentUsage, type VpsBackup, type BackupSchedule, type VpsSecuritySettings } from "@/lib/cloud";
 import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 import { VpsResizeModal } from "@/components/cloud/VpsResizeModal";
 
-type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "snapshots" | "apps" | "panel" | "alerts" | "firewall" | "migration" | "activity";
+type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "security" | "snapshots" | "apps" | "panel" | "alerts" | "firewall" | "migration" | "activity";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
 
 export default function VpsDetailPage() {
