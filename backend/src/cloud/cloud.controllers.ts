@@ -1734,3 +1734,27 @@ export class CloudStatusController {
     return this.svc.listIncidents({ limit: 50 });
   }
 }
+
+import { VpsSecurityService, UpdateSecurityDto } from './security/vps-security.service';
+
+@ApiTags('cloud-vps-security')
+@ApiSecurity('bearer')
+@UseGuards(JwtAuthGuard)
+@Controller('cloud/vps')
+export class CloudVpsSecurityController {
+  constructor(private svc: VpsSecurityService) {}
+
+  @Get(':id/security')
+  get(@Req() req: AuthedRequest, @Param('id') id: string) {
+    return this.svc.get(id, req.user.id);
+  }
+
+  @Put(':id/security')
+  update(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: UpdateSecurityDto,
+  ) {
+    return this.svc.update(id, req.user.id, body);
+  }
+}
