@@ -15,6 +15,10 @@ export interface UpdateScheduleDto {
   hour?: number | null;
   dayOfWeek?: number | null;
   dayOfMonth?: number | null;
+  offsiteProvider?: string | null;
+  offsiteBucket?: string | null;
+  offsiteAccessKey?: string | null;
+  offsiteSecretKey?: string | null;
 }
 
 @Injectable()
