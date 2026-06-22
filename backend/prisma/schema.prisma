@@ -964,9 +964,26 @@ model BackupSchedule {
   hour        Int?
   dayOfWeek   Int?
   dayOfMonth  Int?
+  offsiteProvider  String?
+  offsiteBucket    String?
+  offsiteAccessKey String?
+  offsiteSecretKey String?
   lastRunAt   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model VpsSecuritySettings {
+  id             String   @id @default(cuid())
+  vpsId          String   @unique
+  vps            CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  wafEnabled     Boolean  @default(false)
+  wafPreset      String   @default("OWASP")
+  wafCustomRules Json?
+  ddosTier       String   @default("BASIC")
+  fimEnabled     Boolean  @default(false)
+  fimPaths       String[] @default(["/etc","/var/www","/usr/bin"])
+  updatedAt      DateTime @updatedAt @default(now())
 }
 
 model CloudAuditLog {
