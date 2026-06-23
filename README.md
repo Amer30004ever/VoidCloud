@@ -654,3 +654,29 @@ ADMIN_PASSWORD=YourNewPassword123!
 - VPS detail → **Security** tab: WAF (OWASP/WordPress/Custom rules), DDoS protection (Basic free / Advanced $15/mo), File Integrity Monitoring with custom paths.
 - Add-on pricing: Managed Backups $5/mo (included Business+), WAF $10/mo, Advanced DDoS $15/mo, FIM $5/mo.
 - New API: `GET/PUT /api/v1/cloud/vps/:id/security`; `BackupSchedule` extended with off-site fields.
+
+## Developer Tools & Scalability (added 2026-06-23)
+
+### CI/CD Integration (VPS → CI/CD tab)
+- **GitHub Actions**: connect repo (owner/repo), choose branch, auto-deploy on push, PR preview deploys
+- **GitLab CI**: connect repo URL + project access token, branch, auto-deploy on push
+- **Deploy Webhook**: per-VPS URL + secret with ready-to-paste curl / GitHub Actions / GitLab CI snippets; regenerate at any time
+
+### Managed Databases (`/amercloud/dashboard/databases`)
+| Engine | Plan | Price |
+|---|---|---|
+| PostgreSQL | 1 GB RAM, 10 GB storage | $10/mo |
+| MySQL | 1 GB RAM, 10 GB storage | $10/mo |
+| Redis | 512 MB RAM | $5/mo |
+
+Features: daily automated backups, optional Point-in-Time Recovery, vertical scale (plan change), horizontal scale (read replicas), connection string + credentials.
+
+### Staging Environments
+"Clone VPS" button on the VPS detail page. Creates an identical copy with a configurable `-staging` suffix on the same plan with a separate IP. Optional snapshot+restore to sync data from production.
+
+### Resource Scaling
+- Live CPU/RAM resize (no downtime when supported by the hypervisor) is shown in the existing Resize modal.
+- Multi-instance clustering via duplicate VPS deployments on the same plan.
+- **Load Balancer** ($5/mo flat): create a load balancer that distributes traffic across multiple VPS backends (round-robin or least-connections). Manage from VPS → Load Balancer tab.
+
+> Backend endpoints (`/cloud/vps/:id/cicd`, `/cloud/databases`, `/cloud/load-balancers`, `/cloud/vps/:id/clone`) currently use in-memory stubs; replace with Prisma models + Proxmox/HAProxy provisioning in the next phase.
