@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node frontend/node_modules/next/dist/bin/next dev frontend --hostname 0.0.0.0",
+    "dev": "npm run install:frontend && npm --prefix frontend run dev -- --hostname 0.0.0.0",
     "build": "npm run install:frontend && npm --prefix frontend run build",
     "build:dev": "npm run install:frontend && npm --prefix frontend run build",
     "start": "npm --prefix frontend run start",
