@@ -599,3 +599,70 @@ export const cloudSshKeys = {
     await api.delete(`/cloud/vps/${vpsId}/ssh-keys/${keyId}`);
   },
 };
+// ============ CI/CD ============
+export interface VpsCicdConfig {
+  vpsId: string;
+  githubRepo: string | null;
+  githubBranch: string;
+  autoDeployOnPush: boolean;
+  prPreview: boolean;
+  gitlabRepo: string | null;
+  gitlabToken: string | null;
+  gitlabBranch: string;
+  gitlabAutoDeploy: boolean;
+  webhookToken: string;
+  webhookSecret: string;
+  updatedAt: string;
+}
+export const cloudCicd = {
+  get: async (vpsId: string): Promise<VpsCicdConfig> =>
+    (await api.get(`/cloud/vps/${vpsId}/cicd`)).data,
+  update: async (vpsId: string, data: Partial<VpsCicdConfig>): Promise<VpsCicdConfig> =>
+    (await api.put(`/cloud/vps/${vpsId}/cicd`, data)).data,
+  regenerate: async (vpsId: string): Promise<VpsCicdConfig> =>
+    (await api.post(`/cloud/vps/${vpsId}/cicd/webhook/regenerate`)).data,
+};
+
+// ============ Managed Databases ============
+export type DbEngine = "POSTGRES" | "MYSQL" | "REDIS";
+export interface DbPlan { id: string; engine: DbEngine; name: string; ramMB: number; storageGB: number; priceUSD: number }
+export interface ManagedDb {
+  id: string; name: string; engine: DbEngine; planId: string;
+  host: string; port: number; username: string; password: string;
+  connectionString: string; status: string; pitrEnabled: boolean;
+  backupsEnabled: boolean; readReplicas: number; createdAt: string;
+}
+export interface DbBackup { id: string; dbId: string; createdAt: string; sizeMB: number; status: string }
+export const cloudDatabases = {
+  plans: async (): Promise<DbPlan[]> => (await api.get('/cloud/databases/plans')).data,
+  list: async (): Promise<ManagedDb[]> => (await api.get('/cloud/databases')).data,
+  get: async (id: string): Promise<ManagedDb | null> => (await api.get(`/cloud/databases/${id}`)).data,
+  create: async (data: { name: string; engine: DbEngine; planId: string; pitr?: boolean }): Promise<ManagedDb> =>
+    (await api.post('/cloud/databases', data)).data,
+  update: async (id: string, data: Partial<ManagedDb>): Promise<ManagedDb> =>
+    (await api.put(`/cloud/databases/${id}`, data)).data,
+  remove: async (id: string) => (await api.delete(`/cloud/databases/${id}`)).data,
+  backups: async (id: string): Promise<DbBackup[]> => (await api.get(`/cloud/databases/${id}/backups`)).data,
+};
+
+// ============ Load Balancer ============
+export interface LoadBalancer {
+  id: string; name: string; algorithm: 'ROUND_ROBIN' | 'LEAST_CONN';
+  backends: string[]; publicIp: string; status: string; priceUSD: number; createdAt: string;
+}
+export const cloudLoadBalancers = {
+  list: async (): Promise<LoadBalancer[]> => (await api.get('/cloud/load-balancers')).data,
+  create: async (data: { name: string; algorithm: 'ROUND_ROBIN' | 'LEAST_CONN'; backends: string[] }): Promise<LoadBalancer> =>
+    (await api.post('/cloud/load-balancers', data)).data,
+  update: async (id: string, data: Partial<LoadBalancer>): Promise<LoadBalancer> =>
+    (await api.put(`/cloud/load-balancers/${id}`, data)).data,
+  remove: async (id: string) => (await api.delete(`/cloud/load-balancers/${id}`)).data,
+};
+
+// ============ VPS Clone ============
+export const cloudVpsClone = {
+  clone: async (vpsId: string, opts: { suffix?: string; syncData?: boolean }) =>
+    (await api.post(`/cloud/vps/${vpsId}/clone`, opts)).data as {
+      jobId: string; sourceVpsId: string; newVpsName: string; syncData: boolean; status: string; message: string;
+    },
+};
