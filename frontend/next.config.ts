@@ -1,10 +1,9 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',  // ← REQUIRED for Docker deployment
+  output: 'standalone',
   turbopack: {
-    root: path.join(__dirname),
+    root: __dirname,
   },
 };
 
