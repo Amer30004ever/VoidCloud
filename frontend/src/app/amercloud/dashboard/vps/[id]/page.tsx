@@ -6,8 +6,12 @@ import { cloudApi, cloudBackups, cloudSecurity, type CloudDeployment, type VpsCu
 import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
 import { VpsTerminal } from "@/components/cloud/VpsTerminal";
 import { VpsResizeModal } from "@/components/cloud/VpsResizeModal";
+import { CICDPanel } from "@/components/cloud/CICDPanel";
+import { CloneVpsModal } from "@/components/cloud/CloneVpsModal";
+import { LoadBalancerPanel } from "@/components/cloud/LoadBalancerPanel";
 
-type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "security" | "snapshots" | "apps" | "panel" | "alerts" | "firewall" | "migration" | "activity";
+type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "security" | "cicd" | "loadbalancer" | "snapshots" | "apps" | "panel" | "alerts" | "firewall" | "migration" | "activity";
+
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
 
 export default function VpsDetailPage() {
@@ -22,6 +26,7 @@ export default function VpsDetailPage() {
   const [domainsText, setDomainsText] = useState("");
   const [msg, setMsg] = useState("");
   const [showResize, setShowResize] = useState(false);
+  const [showClone, setShowClone] = useState(false);
 
   useEffect(() => {
     cloudApi.deployments.get(id).then((x) => {
@@ -72,6 +77,7 @@ export default function VpsDetailPage() {
           <button
             onClick={async () => { try { const r = await cloudApi.deployments.resetRootPassword(d.id); setTempPw(r.rootPassword); setRevealPw(true); } catch { } }}
             className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10">🔑 Reset root password</button>
+          <button onClick={() => setShowClone(true)} className="rounded-lg border border-fuchsia-400/30 bg-fuchsia-400/10 px-3 py-2 text-sm text-fuchsia-200 hover:bg-fuchsia-400/20">⎘ Clone VPS</button>
           <button onClick={async () => { if (confirm("Delete this VPS? This is irreversible.")) { await cloudApi.deployments.remove(d.id); router.push("/amercloud/dashboard/vps"); } }}
             className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300 hover:bg-red-500/20">Delete</button>
         </div>
@@ -80,7 +86,7 @@ export default function VpsDetailPage() {
       {msg && <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-xs text-emerald-200">{msg}</div>}
 
       <div className="mb-4 flex gap-1 border-b border-white/5 overflow-x-auto">
-        {(["overview", "usage", "terminal", "env", "domains", "backups", "security", "snapshots", "apps", "panel", "alerts", "firewall", "activity"] as Tab[]).map((t) => (
+        {(["overview", "usage", "terminal", "env", "domains", "backups", "security", "cicd", "loadbalancer", "snapshots", "apps", "panel", "alerts", "firewall", "activity"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm capitalize whitespace-nowrap ${tab === t ? "border-b-2 border-cyan-400 text-white" : "text-white/50 hover:text-white"}`}>{t}</button>
         ))}
       </div>
@@ -156,12 +162,15 @@ export default function VpsDetailPage() {
         {tab === "panel" && <PanelTab vpsId={d.id} />}
         {tab === "backups" && <BackupsTab vpsId={d.id} />}
         {tab === "security" && <SecurityTab vpsId={d.id} />}
+        {tab === "cicd" && <CICDPanel vpsId={d.id} />}
+        {tab === "loadbalancer" && <LoadBalancerPanel />}
 
         {tab === "activity" && (
           <p className="text-sm text-white/60">VPS activity log is coming soon. Account-level audit events live under <span className="text-cyan-300">/amercloud/admin</span>.</p>
         )}
       </div>
       {showResize && <VpsResizeModal vpsId={d.id} onClose={() => setShowResize(false)} onDone={() => cloudApi.deployments.get(d.id).then(setD).catch(() => { })} />}
+      {showClone && <CloneVpsModal vpsId={d.id} vpsName={d.name} onClose={() => setShowClone(false)} />}
     </div>
   );
 }
