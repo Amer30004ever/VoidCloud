@@ -63,11 +63,14 @@
   },
   "dashboard": {
     "welcome": "مرحباً بك، {{name}}",
+    "welcome_back": "أهلاً بعودتك، {{name}}",
+    "welcome_subtitle": "أدر خوادم VPS والخطة والاستخدام من مكان واحد.",
+    "home": "الرئيسية",
     "resources": "الموارد المستخدمة",
     "cpu": "المعالج",
     "ram": "الذاكرة العشوائية",
     "storage": "التخزين",
-    "deployments": "التطبيقات المنشورة",
+    "deployments": "خوادم VPS",
     "create_new": "إنشاء تطبيق جديد",
     "billing": "الفواتير والدفع",
     "settings": "الإعدادات",
@@ -75,7 +78,52 @@
     "overview": "نظرة عامة",
     "api_keys": "مفاتيح API",
     "support": "الدعم الفني",
-    "notifications": "الإشعارات"
+    "notifications": "الإشعارات",
+    "images": "الصور",
+    "analytics": "التحليلات",
+    "backups": "النسخ الاحتياطي",
+    "databases": "قواعد البيانات",
+    "webhooks": "Webhooks",
+    "referral": "الإحالة",
+    "enterprise": "المؤسسات",
+    "crm": "واتساب CRM",
+    "back_to_user": "العودة للمستخدم",
+    "admin_panel": "لوحة الإدارة",
+    "new_vps": "خادم VPS جديد",
+    "your_vps": "خوادم VPS الخاصة بك",
+    "view_all": "عرض الكل",
+    "no_vps": "لا توجد خوادم VPS بعد.",
+    "no_vps_hint": "لا توجد خوادم VPS بعد. أنشئ أول خادم للبدء."
+  },
+  "notifications": {
+    "connected": "متصل",
+    "disconnected": "غير متصل",
+    "mark_all_read": "تعليم الكل كمقروء",
+    "empty": "لا توجد إشعارات"
+  },
+  "vps": {
+    "title": "خوادم VPS",
+    "new": "+ خادم جديد",
+    "loading": "جاري التحميل…",
+    "empty": "لا توجد خوادم VPS بعد.",
+    "name": "الاسم",
+    "ip": "عنوان IP",
+    "resources": "الموارد",
+    "open": "فتح"
+  },
+  "images": {
+    "title": "الصور",
+    "subtitle": "لقطات من VPS والصور المخصصة وسوق الصور العام.",
+    "mine": "صوري",
+    "marketplace": "السوق",
+    "load_error": "فشل تحميل الصور"
+  },
+  "crm": {
+    "title": "واتساب CRM",
+    "subtitle": "إدارة العملاء المحتملين والوارد والصفقات عبر MIP-WA-CRM المدمج مع AmerCloud.",
+    "open_full": "فتح CRM في تبويب جديد",
+    "not_configured": "لم يتم إعداد واتساب CRM. عيّن WA_CRM_FRONTEND_URL في الخادم.",
+    "features": "الوارد · العملاء · الصفقات · جهات الاتصال · المهام"
   },
   "deployments": {
     "create": "إنشاء تطبيق جديد",
@@ -126,6 +174,7 @@
     "pending": "قيد المعالجة"
   },
   "admin": {
+    "dashboard": "لوحة التحكم",
     "users": "المستخدمين",
     "plans": "خطط التسعير",
     "transactions": "المعاملات المالية",

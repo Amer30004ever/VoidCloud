@@ -32,8 +32,13 @@ export class ImageService {
     });
     if (!image) throw new NotFoundException('Image not found');
     if (image.userId === userId || image.isPublic) return image;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+    if (!user) throw new ForbiddenException();
     const share = await this.prisma.customImageShare.findFirst({
-      where: { imageId, sharedWithEmail: userId },
+      where: { imageId, sharedWithEmail: user.email },
     });
     if (!share) throw new ForbiddenException();
     return image;
@@ -90,20 +95,24 @@ export class ImageService {
       orderBy: { createdAt: 'desc' },
       include: { sourceVps: { select: { id: true, name: true } } },
     });
-    // Temporarily disable shared images due to Prisma schema mismatch
-    // const shared = await this.prisma.customImageShare.findMany({
-    //   where: { sharedWithEmail: userId },
-    //   include: {
-    //     image: {
-    //       include: { sourceVps: { select: { id: true, name: true } } },
-    //     },
-    //   },
-    // });
-    return owned;
-    // return [
-    //   ...owned,
-    //   ...shared.map((s: any) => ({ ...s.image, _shared: true })),
-    // ];
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+    const shared = user
+      ? await this.prisma.customImageShare.findMany({
+          where: { sharedWithEmail: user.email },
+          include: {
+            image: {
+              include: { sourceVps: { select: { id: true, name: true } } },
+            },
+          },
+        })
+      : [];
+    return [
+      ...owned,
+      ...shared.map((s) => ({ ...s.image, _shared: true })),
+    ];
   }
 
   listMarketplaceImages() {
@@ -150,13 +159,13 @@ export class ImageService {
       where: {
         imageId_sharedWithEmail: {
           imageId,
-          sharedWithEmail: target.id,
+          sharedWithEmail: target.email,
         },
       },
       update: { sharedAt: new Date() },
       create: {
         imageId,
-        sharedWithEmail: target.id,
+        sharedWithEmail: target.email,
         sharedBy: userId,
       },
     });

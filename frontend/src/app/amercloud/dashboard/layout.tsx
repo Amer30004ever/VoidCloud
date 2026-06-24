@@ -4,28 +4,17 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/api";
-import en from "@/locales/en.json";
-import ar from "@/locales/ar.json";
 import { NotificationBell } from "@/components/ui/NotificationBell";
-
-
-type Lang = "en" | "ar";
-
-function t(dict: unknown, path: string, fallback: string) {
-  return path.split(".").reduce<unknown>((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), dict) as string ?? fallback;
-}
+import { useLocale } from "@/contexts/LocaleContext";
 
 export default function CloudDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { lang, setLang, t } = useLocale();
   const [open, setOpen] = useState(true);
-  const [lang, setLang] = useState<Lang>(() => {
-    if (typeof window === "undefined") return "en";
-    return (localStorage.getItem("amer_lang") as Lang) || "en";
-  });
   const [role, setRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("");
   const isAdminArea = pathname.startsWith("/amercloud/admin");
-  const dict = lang === "ar" ? ar : en;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -34,40 +23,38 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
       router.replace("/amercloud/login");
       return;
     }
-    api.get("/auth/me").then((r) => setRole(r.data?.role ?? null)).catch(() => setRole(null));
+    api.get("/auth/me").then((r) => {
+      setRole(r.data?.role ?? null);
+      setUserName(r.data?.name?.split(" ")[0] ?? "");
+    }).catch(() => setRole(null));
   }, [router]);
-
-  useEffect(() => {
-    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-    document.documentElement.lang = lang;
-    if (typeof window !== "undefined") localStorage.setItem("amer_lang", lang);
-  }, [lang]);
 
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
 
   const NAV = useMemo(() => [
-    { href: "/amercloud/user/dashboard", label: t(dict, "dashboard.welcome", "Dashboard").replace(", {{name}}", "").replace("Welcome", "Dashboard"), icon: "🏠" },
-    { href: "/amercloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥️" },
-    { href: "/amercloud/dashboard/images", label: "Images", icon: "💿" },
-    { href: "/amercloud/dashboard/analytics", label: "Analytics", icon: "📈" },
-    { href: "/amercloud/dashboard/backups", label: "Backups", icon: "💾" },
-    { href: "/amercloud/dashboard/databases", label: "Databases", icon: "🗄️" },
-    { href: "/amercloud/dashboard/webhooks", label: "Webhooks", icon: "🪝" },
-    { href: "/amercloud/dashboard/referral", label: "Referral", icon: "🎁" },
-    { href: "/amercloud/dashboard/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💳" },
-    { href: "/amercloud/dashboard/enterprise", label: "Enterprise", icon: "🏢" },
-    { href: "/amercloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙️" },
-  ], [dict]);
+    { href: "/amercloud/user/dashboard", label: userName ? t("dashboard.welcome", "Welcome, {{name}}", { name: userName }) : t("dashboard.home", "Home"), icon: "🏠" },
+    { href: "/amercloud/dashboard/vps", label: t("dashboard.deployments", "VPS Instances"), icon: "🖥️" },
+    { href: "/amercloud/dashboard/crm", label: t("dashboard.crm", "WhatsApp CRM"), icon: "💬" },
+    { href: "/amercloud/dashboard/images", label: t("dashboard.images", "Images"), icon: "💿" },
+    { href: "/amercloud/dashboard/analytics", label: t("dashboard.analytics", "Analytics"), icon: "📈" },
+    { href: "/amercloud/dashboard/backups", label: t("dashboard.backups", "Backups"), icon: "💾" },
+    { href: "/amercloud/dashboard/databases", label: t("dashboard.databases", "Databases"), icon: "🗄️" },
+    { href: "/amercloud/dashboard/webhooks", label: t("dashboard.webhooks", "Webhooks"), icon: "🪝" },
+    { href: "/amercloud/dashboard/referral", label: t("dashboard.referral", "Referral"), icon: "🎁" },
+    { href: "/amercloud/dashboard/billing", label: t("dashboard.billing", "Billing"), icon: "💳" },
+    { href: "/amercloud/dashboard/enterprise", label: t("dashboard.enterprise", "Enterprise"), icon: "🏢" },
+    { href: "/amercloud/dashboard/settings", label: t("dashboard.settings", "Settings"), icon: "⚙️" },
+  ], [t, userName]);
 
   const ADMIN_NAV = useMemo(() => [
-    { href: "/amercloud/admin/dashboard", label: t(dict, "admin.dashboard", "Dashboard"), icon: "📊" },
-    { href: "/amercloud/admin/users", label: t(dict, "admin.users", "Users"), icon: "👤" },
-    { href: "/amercloud/admin/plans", label: t(dict, "admin.plans", "Plans"), icon: "💎" },
-    { href: "/amercloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥️" },
-    { href: "/amercloud/admin/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💰" },
-    { href: "/amercloud/admin/transactions", label: t(dict, "admin.transactions", "Transactions"), icon: "🧾" },
-    { href: "/amercloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙️" },
-  ], [dict]);
+    { href: "/amercloud/admin/dashboard", label: t("admin.dashboard", "Dashboard"), icon: "📊" },
+    { href: "/amercloud/admin/users", label: t("admin.users", "Users"), icon: "👤" },
+    { href: "/amercloud/admin/plans", label: t("admin.plans", "Plans"), icon: "💎" },
+    { href: "/amercloud/dashboard/vps", label: t("dashboard.deployments", "VPS Instances"), icon: "🖥️" },
+    { href: "/amercloud/admin/billing", label: t("dashboard.billing", "Billing"), icon: "💰" },
+    { href: "/amercloud/admin/transactions", label: t("admin.transactions", "Transactions"), icon: "🧾" },
+    { href: "/amercloud/dashboard/settings", label: t("dashboard.settings", "Settings"), icon: "⚙️" },
+  ], [t]);
 
   const logoHref = role
     ? (isAdmin ? "/amercloud/admin/dashboard" : "/amercloud/user/dashboard")
@@ -116,14 +103,14 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-white"
               >
                 <span>{isAdminArea ? "←" : "🛡️"}</span>
-                {open && <span>{isAdminArea ? "Back to user" : "Admin Panel"}</span>}
+                {open && <span>{isAdminArea ? t("dashboard.back_to_user", "Back to user") : t("dashboard.admin_panel", "Admin Panel")}</span>}
               </Link>
             </>
           )}
         </nav>
         <div className="border-t border-white/5 p-3">
           <button onClick={logout} className="w-full rounded-lg px-3 py-2 text-start text-sm text-white/60 hover:bg-white/5 hover:text-white">
-            🚪 {open && (t(dict, "dashboard.logout", "Sign out"))}
+            🚪 {open && t("dashboard.logout", "Sign out")}
           </button>
         </div>
       </aside>

@@ -11,3 +11,6 @@ data:
   FRONTEND_URL: https://amer-portal.cc.cd
   NEXT_PUBLIC_API_URL: https://api.amer-portal.cc.cd/api/v1
   CORS_ORIGINS: https://amer-portal.cc.cd,https://www.amer-portal.cc.cd
+  # Set after deploying MIP-WA-CRM (e.g. on a customer VPS)
+  WA_CRM_FRONTEND_URL: ""
+  WA_CRM_API_URL: ""

@@ -43,7 +43,7 @@ export default function AdminDashboard() {
       const list = Array.isArray(u) ? u : (u?.users ?? []);
       setActiveUsers(list.filter((x: any) => x.isActive !== false).length);
     }).catch(() => { });
-    cloudApi.deployments.list().then(setDeployments).catch(() => { });
+    cloudApi.admin.allVps().then(setDeployments).catch(() => { });
   }, []);
 
   async function testSmtp() {
@@ -68,7 +68,7 @@ export default function AdminDashboard() {
   const cards = [
     { label: "Total Users", value: stats?.users ?? activeUsers ?? "—", icon: "👤" },
     { label: "Active Plans", value: stats?.activeSubscriptions ?? "—", icon: "💎" },
-    { label: "Running VPS", value: stats?.deployments || runningDeployments || deployments.length || "—", icon: "🖥️" },
+    { label: "Running VPS", value: stats?.deployments ?? runningDeployments ?? "—", icon: "🖥️" },
     {
       label: "Revenue (paid)",
       value: stats

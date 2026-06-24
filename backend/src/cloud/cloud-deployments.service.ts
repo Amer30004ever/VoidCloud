@@ -39,7 +39,10 @@ export class CloudDeploymentsService {
 
   list(userId: string) {
     return this.prisma.cloudDeployment.findMany({
-      where: { userId },
+      where: {
+        userId,
+        status: { notIn: ['DELETED', 'TERMINATED'] },
+      },
       orderBy: { updatedAt: 'desc' },
     });
   }
@@ -161,12 +164,8 @@ export class CloudDeploymentsService {
       rootPassword: prov.rootPassword,
     });
 
-    // Best-effort legacy k8s provisioning (kept for backward compat, fire-and-forget)
-    this.provision(deployment.id, user.email).catch((e) =>
-      this.logger.warn(
-        `legacy k8s provision skipped for ${deployment.id}: ${e.message}`,
-      ),
-    );
+    // Legacy k8s provisioning is disabled for Proxmox VPS — it overwrote RUNNING with FAILED.
+    // Re-enable only when type explicitly requires in-cluster workloads.
 
     return {
       ...deployment,
@@ -248,14 +247,19 @@ export class CloudDeploymentsService {
   async remove(userId: string, id: string) {
     const d = await this.get(userId, id);
     if (d.proxmoxVMID) {
+      const node = d.proxmoxNode ?? undefined;
       try {
-        await this.proxmox.destroyContainer(
-          d.proxmoxVMID,
-          d.proxmoxNode ?? undefined,
+        await this.proxmox.destroyContainer(d.proxmoxVMID, node);
+        this.logger.log(
+          `Destroyed Proxmox LXC vmid=${d.proxmoxVMID} node=${node ?? 'default'}`,
         );
-      } catch (e: any) {
-        this.logger.warn(
-          `Proxmox destroy failed for vmid=${d.proxmoxVMID}: ${e.message}`,
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        this.logger.error(
+          `Proxmox destroy failed for vmid=${d.proxmoxVMID}: ${msg}`,
+        );
+        throw new BadRequestException(
+          `Failed to destroy VPS on Proxmox (vmid=${d.proxmoxVMID}). Container may still exist. ${msg}`,
         );
       }
     }
@@ -263,7 +267,7 @@ export class CloudDeploymentsService {
       await this.k8s.deleteNamespace(d.namespace).catch(() => undefined);
     return this.prisma.cloudDeployment.update({
       where: { id },
-      data: { status: 'DELETED' },
+      data: { status: 'DELETED', terminatedAt: new Date() },
     });
   }
 

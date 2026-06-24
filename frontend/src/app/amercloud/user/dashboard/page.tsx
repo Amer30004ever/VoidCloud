@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { cloudApi, CloudDeployment, CloudUsage } from "@/lib/cloud";
+import { useLocale } from "@/contexts/LocaleContext";
 
 export default function UserDashboard() {
+  const { t } = useLocale();
   const [usage, setUsage] = useState<CloudUsage | null>(null);
   const [deployments, setDeployments] = useState<CloudDeployment[]>([]);
   const [me, setMe] = useState<any>(null);
@@ -56,8 +58,12 @@ export default function UserDashboard() {
       )}
 
       <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 p-8 backdrop-blur-xl">
-        <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
-        <p className="mt-2 text-white/60">Manage your VPS instances, plan, and usage from one place.</p>
+        <h1 className="text-3xl font-bold">
+          {me?.name
+            ? `${t("dashboard.welcome_back", "Welcome back, {{name}}", { name: me.name.split(" ")[0] })} 👋`
+            : `${t("dashboard.welcome_back", "Welcome back", { name: "" }).replace(/,\s*$/, "")} 👋`}
+        </h1>
+        <p className="mt-2 text-white/60">{t("dashboard.welcome_subtitle", "Manage your VPS instances, plan, and usage from one place.")}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

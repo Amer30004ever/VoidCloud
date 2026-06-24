@@ -27,7 +27,7 @@ export class CloudAdminService {
           where: { subscriptionStatus: { in: ['ACTIVE', 'TRIALING'] as any } },
         }),
         this.prisma.cloudDeployment.count({
-          where: { status: { not: 'DELETED' } },
+          where: { status: 'RUNNING' },
         }),
         this.prisma.cloudInvoice.count(),
         this.prisma.cloudInvoice.aggregate({

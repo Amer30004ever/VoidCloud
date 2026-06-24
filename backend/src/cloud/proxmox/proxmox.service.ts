@@ -329,9 +329,17 @@ export class ProxmoxService {
       return;
     }
     try {
-      await this.pveRequest('POST', `/nodes/${node}/lxc/${vmid}/status/stop`);
+      await this.pveRequest(
+        'POST',
+        `/nodes/${node}/lxc/${vmid}/status/shutdown`,
+        { forceStop: 1 },
+      );
     } catch {
-      /* may already be stopped */
+      try {
+        await this.pveRequest('POST', `/nodes/${node}/lxc/${vmid}/status/stop`);
+      } catch {
+        /* may already be stopped */
+      }
     }
     await this.pveRequest('DELETE', `/nodes/${node}/lxc/${vmid}`, {
       purge: 1,

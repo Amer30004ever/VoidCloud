@@ -172,8 +172,18 @@ spec:
                   optional: true
             - name: PROXMOX_VERIFY_TLS
               value: "false"
-            - name: NODE_TLS_REJECT_UNAUTHORIZED
-              value: "0"
+            - name: WA_CRM_FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: amer-portal-config
+                  key: WA_CRM_FRONTEND_URL
+                  optional: true
+            - name: WA_CRM_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: amer-portal-config
+                  key: WA_CRM_API_URL
+                  optional: true
           ports:
             - containerPort: 3001
           resources:
