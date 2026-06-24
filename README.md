@@ -446,6 +446,24 @@ kubectl -n amer-portal rollout status deploy/frontend
 
 Full deploy guide: [kubernetes/README.md](kubernetes/README.md).
 
+### AmerCloud VPS ops (PowerShell, no UI)
+
+Homelab VPS provisioning and verification from `kubernetes/`:
+
+| Script | Purpose |
+|--------|---------|
+| `AmerCloud.ps1` | **Main entry** — `-Action Setup`, `Test`, `CreateVps`, `ListVps`, `DeleteVps`, `CleanStuck`, `ProxmoxPctList`, `FixProxmoxToken`, `All` |
+| `AmerCloud-Lib.ps1` | Shared helpers (backend pod, Proxmox SSH, DB queries) |
+| `AmerCloud-Setup-Backend.ps1` | Secrets + backend deployment + seed |
+| `AmerCloud-Test.ps1` | Health check (pods, API, DB, Proxmox) |
+| `proxmox.env.example` | Copy to `proxmox.env` (gitignored) with Proxmox token + admin creds |
+
+First-time: copy `kubernetes/proxmox.env.example` → `kubernetes/proxmox.env`, set `PROXMOX_TOKEN_SECRET`, then `.\kubernetes\AmerCloud.ps1 -Action Setup`.
+
+Verified 2026-06-24: VPS API creates LXC on Proxmox node `proxmox` (not the K8s worker name). Token `root@pam!Amer-Cloud` needs Administrator ACL (`-Action FixProxmoxToken`).
+
+See [kubernetes/amercloud-debugging-summary.md](kubernetes/amercloud-debugging-summary.md).
+
 ---
 
 ## CI/CD
@@ -474,6 +492,7 @@ Required secrets: `DOCKER_HUB_USERNAME`, `DOCKER_HUB_TOKEN`, `KUBECONFIG_B64`.
 | [backend/prisma/README.md](backend/prisma/README.md) | Migrations & seed |
 | [frontend/README.md](frontend/README.md) | UI development guide |
 | [kubernetes/README.md](kubernetes/README.md) | Production deployment guide |
+| [kubernetes/amercloud-debugging-summary.md](kubernetes/amercloud-debugging-summary.md) | AmerCloud VPS ops + homelab verification |
 | [kubernetes/users-management.md](kubernetes/users-management.md) | Cluster RBAC notes |
 | [.github/workflows/README.md](.github/workflows/README.md) | CI/CD reference |
 | [runner-cmd.md](runner-cmd.md) | Self-hosted runner commands |

@@ -90,18 +90,20 @@ export class ImageService {
       orderBy: { createdAt: 'desc' },
       include: { sourceVps: { select: { id: true, name: true } } },
     });
-    const shared = await this.prisma.customImageShare.findMany({
-      where: { sharedWithEmail: userId },
-      include: {
-        image: {
-          include: { sourceVps: { select: { id: true, name: true } } },
-        },
-      },
-    });
-    return [
-      ...owned,
-      ...shared.map((s: any) => ({ ...s.image, _shared: true })),
-    ];
+    // Temporarily disable shared images due to Prisma schema mismatch
+    // const shared = await this.prisma.customImageShare.findMany({
+    //   where: { sharedWithEmail: userId },
+    //   include: {
+    //     image: {
+    //       include: { sourceVps: { select: { id: true, name: true } } },
+    //     },
+    //   },
+    // });
+    return owned;
+    // return [
+    //   ...owned,
+    //   ...shared.map((s: any) => ({ ...s.image, _shared: true })),
+    // ];
   }
 
   listMarketplaceImages() {

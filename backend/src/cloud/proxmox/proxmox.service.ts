@@ -165,22 +165,39 @@ export class ProxmoxService {
             .map(([k, v]) => [k, String(v)]),
         ).toString()
       : undefined;
-    // Node fetch supports `dispatcher`/`agent` via undici in Node 22; pass through `--cap-add` style.
-    const res = await fetch(url, {
+    
+    // Use native https module for better TLS control
+    const options: https.RequestOptions = {
       method,
       headers: this.headers(),
-      body,
-      // @ts-expect-error: undici accepts dispatcher; node 22 fetch picks up our https.Agent via global symbol
       agent: this.agent,
+      rejectUnauthorized: process.env.PROXMOX_VERIFY_TLS === 'false' ? false : true,
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(url, options, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          if (!res.statusCode || res.statusCode >= 400) {
+            reject(new ServiceUnavailableException(
+              `Proxmox ${method} ${path} → ${res.statusCode} ${data.slice(0, 200)}`
+            ));
+            return;
+          }
+          try {
+            const json = JSON.parse(data);
+            resolve(json?.data as T);
+          } catch (e) {
+            reject(new ServiceUnavailableException(`Failed to parse Proxmox response: ${e}`));
+          }
+        });
+      });
+
+      req.on('error', reject);
+      if (body) req.write(body);
+      req.end();
     });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new ServiceUnavailableException(
-        `Proxmox ${method} ${path} → ${res.status} ${text.slice(0, 200)}`,
-      );
-    }
-    const json: any = await res.json();
-    return json?.data as T;
   }
 
   // ---------------- IP pool ----------------

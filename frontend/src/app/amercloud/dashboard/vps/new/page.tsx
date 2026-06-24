@@ -55,6 +55,7 @@ export default function NewVpsPage() {
   const totalUSD = (plan?.priceUSD ?? 0) + panelExtra;
 
   async function submit() {
+    if (busy) return;
     if (!name.trim() || !plan) { setErr("Name and plan are required"); setStep(1); return; }
     setBusy(true); setErr("");
     try {
@@ -194,7 +195,7 @@ export default function NewVpsPage() {
           {step < TOTAL_STEPS ? (
             <button onClick={() => setStep(step + 1)} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950">Next →</button>
           ) : (
-            <button onClick={submit} disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950 disabled:opacity-50">{busy ? "Provisioning…" : "🚀 Create VPS"}</button>
+            <button onClick={submit} disabled={busy} aria-busy={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Provisioning…" : "🚀 Create VPS"}</button>
           )}
         </div>
       </div>

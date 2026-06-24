@@ -1,7 +1,31 @@
 # 🚀 Amer Portal - Complete Production Deployment Documentation
 ## Zero to Hero: From Local Development to Global Availability
 
+> **Update (2026-06-24):** AmerCloud VPS homelab ops scripts added — see [AmerCloud PowerShell ops](#amercloud-vps-ops-powershell) and [amercloud-debugging-summary.md](amercloud-debugging-summary.md). VPS provisioning verified against Proxmox node `proxmox` (VMID 104, `pct list`).
+
 > **Update (2026-06-02):** Database bootstrap now uses **Prisma Migrate + seed** inside the backend container (`scripts/docker-entrypoint.sh`). The legacy `backend-init-script` ConfigMap and `init-db.sh` init container were removed. Backend deployment applies migrations on pod start. For local Docker, see [../README.md](../README.md) and [../backend/prisma/README.md](../backend/prisma/README.md).
+
+---
+
+## AmerCloud VPS ops (PowerShell)
+
+Run from `kubernetes/` after copying `proxmox.env.example` to `proxmox.env`:
+
+| Action | Command |
+|--------|---------|
+| First-time setup | `.\AmerCloud.ps1 -Action Setup` |
+| Health check | `.\AmerCloud.ps1 -Action Test` |
+| Create VPS (API) | `.\AmerCloud.ps1 -Action CreateVps` |
+| List VPS | `.\AmerCloud.ps1 -Action ListVps` |
+| Delete VPS | `.\AmerCloud.ps1 -Action DeleteVps -Id <uuid>` |
+| Clean stuck rows | `.\AmerCloud.ps1 -Action CleanStuck` |
+| Proxmox containers | `.\AmerCloud.ps1 -Action ProxmoxPctList` |
+| Fix token ACL | `.\AmerCloud.ps1 -Action FixProxmoxToken` |
+| Full pipeline | `.\AmerCloud.ps1 -Action All` |
+
+**Critical:** `PROXMOX_NODE` must be the Proxmox VE node name (`proxmox`), not the Kubernetes worker name. Backend deployment uses `kubectl replace --force` to avoid duplicate containers from manual `kubectl create deployment`.
+
+Details: [amercloud-debugging-summary.md](amercloud-debugging-summary.md)
 
 ---
 

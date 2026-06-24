@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: backend
   namespace: amer-portal
+  labels:
+    app: backend
 spec:
   replicas: 1
   selector:
@@ -133,7 +135,11 @@ spec:
                   key: PROXMOX_TOKEN_SECRET
                   optional: true
             - name: PROXMOX_NODE
-              value: "workernode01"
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: PROXMOX_NODE
+                  optional: true
             - name: PROXMOX_STORAGE
               valueFrom:
                 secretKeyRef:
@@ -141,7 +147,11 @@ spec:
                   key: PROXMOX_STORAGE
                   optional: true
             - name: PROXMOX_BRIDGE
-              value: "vmbr0"
+              valueFrom:
+                secretKeyRef:
+                  name: amer-portal-secrets
+                  key: PROXMOX_BRIDGE
+                  optional: true
             - name: PROXMOX_TEMPLATE
               valueFrom:
                 secretKeyRef:
@@ -160,6 +170,10 @@ spec:
                   name: amer-portal-secrets
                   key: PROXMOX_GATEWAY
                   optional: true
+            - name: PROXMOX_VERIFY_TLS
+              value: "false"
+            - name: NODE_TLS_REJECT_UNAUTHORIZED
+              value: "0"
           ports:
             - containerPort: 3001
           resources:
