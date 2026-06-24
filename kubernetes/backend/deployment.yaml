@@ -133,11 +133,7 @@ spec:
                   key: PROXMOX_TOKEN_SECRET
                   optional: true
             - name: PROXMOX_NODE
-              valueFrom:
-                secretKeyRef:
-                  name: amer-portal-secrets
-                  key: PROXMOX_NODE
-                  optional: true
+              value: "workernode01"
             - name: PROXMOX_STORAGE
               valueFrom:
                 secretKeyRef:
@@ -149,11 +145,7 @@ spec:
                 secretKeyRef:
                   name: amer-portal-secrets
                   key: PROXMOX_BRIDGE
-                  optional: true
-            - name: PROXMOX_TEMPLATE
-              valueFrom:
-                secretKeyRef:
-                  name: amer-portal-secrets
+                  on "vrb0"tal-secrets
                   key: PROXMOX_TEMPLATE
                   optional: true
             - name: PROXMOX_IP_POOL_CIDR
