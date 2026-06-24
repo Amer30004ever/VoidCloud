@@ -113,7 +113,7 @@ export function Pricing() {
     memory: 1024,
     storage: 2048,
   });
-  const [customPrice, setCustomPrice] = useState<any>(null);
+  const [customPrice, setCustomPrice] = useState<{ price: number; currency: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const calculateCustomPrice = async () => {

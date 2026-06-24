@@ -205,8 +205,8 @@ function SnapshotsTab({ vpsId }: { vpsId: string }) {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [busy, setBusy] = useState(false);
-  const refresh = () => cloudApi.snapshots.list(vpsId).then(setList).catch(() => {});
-  useEffect(() => { refresh(); }, [vpsId]);
+  const refresh = useCallback(() => cloudApi.snapshots.list(vpsId).then(setList).catch(() => {}), [vpsId]);
+  useEffect(() => { refresh(); }, [refresh]);
   async function create() {
     if (!name.trim()) return;
     setBusy(true);
