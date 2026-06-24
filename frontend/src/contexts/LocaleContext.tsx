@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   createContext,
@@ -29,11 +29,8 @@ interface LocaleContextValue {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
-
-  useEffect(() => {
-    setLangState(readStoredLang());
-  }, []);
+  // Initialize with stored language directly
+  const [lang, setLangState] = useState<Lang>(() => readStoredLang());
 
   const setLang = useCallback((next: Lang) => {
     setLangState(next);
