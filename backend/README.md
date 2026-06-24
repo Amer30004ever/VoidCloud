@@ -168,3 +168,14 @@ All endpoints are JWT-protected. Storage is in-memory pending Prisma models.
 - `GET/POST /cloud/load-balancers` and `PUT/DELETE /cloud/load-balancers/:id` — load balancer CRUD ($5/mo)
 
 Public webhook endpoint `/api/public/deploy/:webhookToken` is generated client-side but not yet implemented; add a TanStack server route or NestJS public controller in a follow-up.
+
+## Enterprise endpoints
+
+- `GET/PUT /cloud/enterprise` — feature flags (SOC2, HIPAA, SLA, VPC, dedicated HW, branding)
+- `GET /cloud/enterprise/soc2/report` — generate compliance report snapshot
+- `GET/POST/DELETE /cloud/enterprise/team[/:id]` — team members
+- `GET/PUT /cloud/enterprise/reseller` — white-label config
+- `GET/POST/DELETE /cloud/enterprise/api-keys[/:id]` — automation API keys
+- `POST /cloud/enterprise/bulk-provision` — bulk VPS provisioning job
+
+Stubs live in `src/cloud/enterprise/enterprise.controller.ts` (in-memory). Replace with Prisma + Proxmox bulk provisioning when wiring real backend.

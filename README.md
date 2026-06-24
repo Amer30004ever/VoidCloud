@@ -680,3 +680,18 @@ Features: daily automated backups, optional Point-in-Time Recovery, vertical sca
 - **Load Balancer** ($5/mo flat): create a load balancer that distributes traffic across multiple VPS backends (round-robin or least-connections). Manage from VPS → Load Balancer tab.
 
 > Backend endpoints (`/cloud/vps/:id/cicd`, `/cloud/databases`, `/cloud/load-balancers`, `/cloud/vps/:id/clone`) currently use in-memory stubs; replace with Prisma models + Proxmox/HAProxy provisioning in the next phase.
+
+## Enterprise (P3)
+
+Business & Enterprise tier features under `/amercloud/dashboard/enterprise`:
+- SOC2 compliance reporting (on-demand control evidence snapshot)
+- HIPAA toggle with BAA + encryption defaults
+- Custom SLA: 99.9% / 99.95% / 99.99%
+- Dedicated 24/7 support team with 1-2h response targets
+- Private networking (VPC) with custom CIDR
+- Dedicated hardware (single-tenant nodes)
+- Custom branding (logo + primary color)
+- Team management up to 10 (Business) / 100 (Enterprise)
+- White-label/reseller program with custom markup, bulk VPS provisioning and API keys for automation
+
+All endpoints live under `/cloud/enterprise/*` (see `backend/src/cloud/enterprise/enterprise.controller.ts`) and are currently in-memory stubs to be promoted to Prisma models alongside Proxmox integration.

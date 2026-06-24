@@ -74,6 +74,7 @@ import {
   CloudLoadBalancerController,
   CloudVpsCloneController,
 } from './devtools/devtools.controller';
+import { CloudEnterpriseController } from './enterprise/enterprise.controller';
 
 
 @Module({
@@ -112,6 +113,7 @@ import {
     CloudDatabasesController,
     CloudLoadBalancerController,
     CloudVpsCloneController,
+    CloudEnterpriseController,
   ],
   providers: [
     CloudPlansService,
