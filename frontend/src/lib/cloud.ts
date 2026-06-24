@@ -206,7 +206,36 @@ export const cloudApi = {
     broadcast: async (body: { title: string; body: string; severity?: string; audience?: string }) =>
       (await api.post("/cloud/admin/announcements", body)).data,
     announcements: async () => (await api.get("/cloud/admin/announcements")).data,
+    // Maintenance
+    maintenance: {
+      list: async (upcoming?: boolean) =>
+        (await api.get("/cloud/admin/maintenance", { params: { upcoming } })).data,
+      create: async (body: { title: string; description: string; affectedServices: string[]; startAt: string; endAt: string }) =>
+        (await api.post("/cloud/admin/maintenance", body)).data,
+      update: async (id: string, body: Partial<{ title: string; description: string; affectedServices: string[]; startAt: string; endAt: string; status: string }>) =>
+        (await api.put(`/cloud/admin/maintenance/${id}`, body)).data,
+      remove: async (id: string) => api.delete(`/cloud/admin/maintenance/${id}`),
+    },
+    incidents: {
+      list: async () => (await api.get("/cloud/admin/incidents")).data,
+      create: async (body: { title: string; description: string; severity: string }) =>
+        (await api.post("/cloud/admin/incidents", body)).data,
+      addUpdate: async (id: string, body: { message: string; status: string }) =>
+        (await api.post(`/cloud/admin/incidents/${id}/updates`, body)).data,
+      resolve: async (id: string, message?: string) =>
+        (await api.put(`/cloud/admin/incidents/${id}/resolve`, { message })).data,
+    },
   },
+};
+
+export const statusApi = {
+  get: async (): Promise<{
+    status: "OPERATIONAL" | "DEGRADED" | "PARTIAL_OUTAGE" | "MAJOR_OUTAGE";
+    incidents: Array<{ id: string; title: string; description: string; severity: string; status: string; createdAt: string; resolvedAt: string | null; updates: Array<{ id: string; message: string; status: string; createdAt: string }> }>;
+    maintenance: Array<{ id: string; title: string; description: string; affectedServices: string[]; startAt: string; endAt: string; status: string }>;
+    uptime: Record<string, number>;
+  }> => (await api.get("/status")).data,
+  incidents: async () => (await api.get("/status/incidents")).data,
 };
 
 /* ============ Phase 2 helpers ============ */
@@ -289,6 +318,19 @@ export interface BackupSchedule {
   hour?: number | null;
   dayOfWeek?: number | null;
   dayOfMonth?: number | null;
+  offsiteProvider?: "S3" | "R2" | null;
+  offsiteBucket?: string | null;
+  offsiteAccessKey?: string | null;
+  offsiteSecretKey?: string | null;
+}
+export interface VpsSecuritySettings {
+  vpsId: string;
+  wafEnabled: boolean;
+  wafPreset: "OWASP" | "WORDPRESS" | "CUSTOM";
+  wafCustomRules?: unknown;
+  ddosTier: "BASIC" | "ADVANCED";
+  fimEnabled: boolean;
+  fimPaths: string[];
 }
 export const cloudBackups = {
   listForVps: async (vpsId: string): Promise<VpsBackup[]> =>
@@ -307,6 +349,12 @@ export const cloudBackups = {
     (await api.get(`/cloud/vps/${vpsId}/backup-schedule`)).data,
   updateSchedule: async (vpsId: string, s: Partial<BackupSchedule>): Promise<BackupSchedule> =>
     (await api.put(`/cloud/vps/${vpsId}/backup-schedule`, s)).data,
+};
+export const cloudSecurity = {
+  get: async (vpsId: string): Promise<VpsSecuritySettings> =>
+    (await api.get(`/cloud/vps/${vpsId}/security`)).data,
+  update: async (vpsId: string, s: Partial<VpsSecuritySettings>): Promise<VpsSecuritySettings> =>
+    (await api.put(`/cloud/vps/${vpsId}/security`, s)).data,
 };
 
 export const cloudAudit = {
@@ -554,4 +602,134 @@ export const cloudSshKeys = {
   detach: async (vpsId: string, keyId: string): Promise<void> => {
     await api.delete(`/cloud/vps/${vpsId}/ssh-keys/${keyId}`);
   },
+};
+// ============ CI/CD ============
+export interface VpsCicdConfig {
+  vpsId: string;
+  githubRepo: string | null;
+  githubBranch: string;
+  autoDeployOnPush: boolean;
+  prPreview: boolean;
+  gitlabRepo: string | null;
+  gitlabToken: string | null;
+  gitlabBranch: string;
+  gitlabAutoDeploy: boolean;
+  webhookToken: string;
+  webhookSecret: string;
+  updatedAt: string;
+}
+export const cloudCicd = {
+  get: async (vpsId: string): Promise<VpsCicdConfig> =>
+    (await api.get(`/cloud/vps/${vpsId}/cicd`)).data,
+  update: async (vpsId: string, data: Partial<VpsCicdConfig>): Promise<VpsCicdConfig> =>
+    (await api.put(`/cloud/vps/${vpsId}/cicd`, data)).data,
+  regenerate: async (vpsId: string): Promise<VpsCicdConfig> =>
+    (await api.post(`/cloud/vps/${vpsId}/cicd/webhook/regenerate`)).data,
+};
+
+// ============ Managed Databases ============
+export type DbEngine = "POSTGRES" | "MYSQL" | "REDIS";
+export interface DbPlan { id: string; engine: DbEngine; name: string; ramMB: number; storageGB: number; priceUSD: number }
+export interface ManagedDb {
+  id: string; name: string; engine: DbEngine; planId: string;
+  host: string; port: number; username: string; password: string;
+  connectionString: string; status: string; pitrEnabled: boolean;
+  backupsEnabled: boolean; readReplicas: number; createdAt: string;
+}
+export interface DbBackup { id: string; dbId: string; createdAt: string; sizeMB: number; status: string }
+export const cloudDatabases = {
+  plans: async (): Promise<DbPlan[]> => (await api.get('/cloud/databases/plans')).data,
+  list: async (): Promise<ManagedDb[]> => (await api.get('/cloud/databases')).data,
+  get: async (id: string): Promise<ManagedDb | null> => (await api.get(`/cloud/databases/${id}`)).data,
+  create: async (data: { name: string; engine: DbEngine; planId: string; pitr?: boolean }): Promise<ManagedDb> =>
+    (await api.post('/cloud/databases', data)).data,
+  update: async (id: string, data: Partial<ManagedDb>): Promise<ManagedDb> =>
+    (await api.put(`/cloud/databases/${id}`, data)).data,
+  remove: async (id: string) => (await api.delete(`/cloud/databases/${id}`)).data,
+  backups: async (id: string): Promise<DbBackup[]> => (await api.get(`/cloud/databases/${id}/backups`)).data,
+};
+
+// ============ Load Balancer ============
+export interface LoadBalancer {
+  id: string; name: string; algorithm: 'ROUND_ROBIN' | 'LEAST_CONN';
+  backends: string[]; publicIp: string; status: string; priceUSD: number; createdAt: string;
+}
+export const cloudLoadBalancers = {
+  list: async (): Promise<LoadBalancer[]> => (await api.get('/cloud/load-balancers')).data,
+  create: async (data: { name: string; algorithm: 'ROUND_ROBIN' | 'LEAST_CONN'; backends: string[] }): Promise<LoadBalancer> =>
+    (await api.post('/cloud/load-balancers', data)).data,
+  update: async (id: string, data: Partial<LoadBalancer>): Promise<LoadBalancer> =>
+    (await api.put(`/cloud/load-balancers/${id}`, data)).data,
+  remove: async (id: string) => (await api.delete(`/cloud/load-balancers/${id}`)).data,
+};
+
+// ============ VPS Clone ============
+export const cloudVpsClone = {
+  clone: async (vpsId: string, opts: { suffix?: string; syncData?: boolean }) =>
+    (await api.post(`/cloud/vps/${vpsId}/clone`, opts)).data as {
+      jobId: string; sourceVpsId: string; newVpsName: string; syncData: boolean; status: string; message: string;
+    },
+};
+
+// ============ Enterprise ============
+export interface EnterpriseConfig {
+  orgId: string;
+  plan: 'BUSINESS' | 'ENTERPRISE';
+  soc2Enabled: boolean;
+  hipaaEnabled: boolean;
+  customSlaPercent: number;
+  dedicatedSupport: boolean;
+  supportResponseHours: number;
+  privateNetworking: boolean;
+  vpcCidr: string | null;
+  dedicatedHardware: boolean;
+  customDomainLimit: number;
+  teamMemberLimit: number;
+  advancedMonitoring: boolean;
+  customBranding: boolean;
+  brandLogoUrl: string | null;
+  brandPrimaryColor: string | null;
+  updatedAt: string;
+}
+export interface Soc2Report {
+  reportId: string; generatedAt: string; period: string;
+  controls: { id: string; name: string; status: string }[];
+  downloadUrl: string; note: string;
+}
+export interface TeamMember {
+  id: string; email: string;
+  role: 'OWNER' | 'ADMIN' | 'DEVELOPER' | 'BILLING' | 'VIEWER';
+  invitedAt: string; status: string;
+}
+export interface ResellerConfig {
+  orgId: string; enabled: boolean;
+  whitelabelDomain: string | null; brandName: string | null;
+  markupPercent: number;
+  customPriceTiers: { name: string; markupPercent: number }[];
+  bulkProvisioningEnabled: boolean;
+}
+export interface AutomationApiKey {
+  id: string; name: string; scopes: string[]; token: string;
+  createdAt: string; lastUsedAt: string | null;
+}
+export const cloudEnterprise = {
+  get: async (): Promise<EnterpriseConfig> => (await api.get('/cloud/enterprise')).data,
+  update: async (data: Partial<EnterpriseConfig>): Promise<EnterpriseConfig> =>
+    (await api.put('/cloud/enterprise', data)).data,
+  soc2Report: async (): Promise<Soc2Report> => (await api.get('/cloud/enterprise/soc2/report')).data,
+  team: async (): Promise<TeamMember[]> => (await api.get('/cloud/enterprise/team')).data,
+  addMember: async (email: string, role: TeamMember['role']): Promise<TeamMember> =>
+    (await api.post('/cloud/enterprise/team', { email, role })).data,
+  removeMember: async (id: string) => (await api.delete(`/cloud/enterprise/team/${id}`)).data,
+  reseller: async (): Promise<ResellerConfig> => (await api.get('/cloud/enterprise/reseller')).data,
+  updateReseller: async (data: Partial<ResellerConfig>): Promise<ResellerConfig> =>
+    (await api.put('/cloud/enterprise/reseller', data)).data,
+  apiKeys: async (): Promise<AutomationApiKey[]> => (await api.get('/cloud/enterprise/api-keys')).data,
+  createApiKey: async (name: string, scopes?: string[]): Promise<AutomationApiKey> =>
+    (await api.post('/cloud/enterprise/api-keys', { name, scopes })).data,
+  removeApiKey: async (id: string) => (await api.delete(`/cloud/enterprise/api-keys/${id}`)).data,
+  bulkProvision: async (planId: string, count: number, namePrefix?: string) =>
+    (await api.post('/cloud/enterprise/bulk-provision', { planId, count, namePrefix })).data as {
+      jobId: string; planId: string; count: number; namePrefix: string; status: string; message: string;
+    },
 };

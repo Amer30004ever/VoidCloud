@@ -659,3 +659,66 @@ kubectl -n amer-portal exec deploy/backend -- \
 # 3) Env var on deploy (defaults to AmerAdmin2026! when unset)
 ADMIN_PASSWORD=YourNewPassword123!
 ```
+
+## Status & Maintenance
+
+- **Public status page**: `/status` (frontend) — overall status, active incidents, scheduled maintenance, 30-day uptime per service, JSON feed.
+- **Public API**:
+  - `GET /api/v1/status` — overall status payload
+  - `GET /api/v1/status/incidents` — recent incidents
+- **Admin API** (requires `ADMIN`/`SUPER_ADMIN`):
+  - `POST/PUT/DELETE /api/v1/cloud/admin/maintenance[/:id]`
+  - `POST /api/v1/cloud/admin/incidents`
+  - `POST /api/v1/cloud/admin/incidents/:id/updates`
+  - `PUT  /api/v1/cloud/admin/incidents/:id/resolve`
+- **Admin UI**: `/amercloud/admin/maintenance`
+- **Middleware**: while a maintenance window is active, non-admin API calls return `503 Service Unavailable` with a `Retry-After` header. Status, auth and admin routes are always reachable.
+- **Emails**: scheduled / started / completed maintenance and created / resolved incidents trigger branded emails via `CloudEmailService.maintenance(...)`.
+
+## Automated Backups & Security (2026-06-22)
+
+- VPS detail → **Backups** tab: schedule (None/Daily/Weekly/Monthly), retention (3/7/14/30d), time of day, off-site storage (AWS S3 / Cloudflare R2), restore & delete.
+- VPS detail → **Security** tab: WAF (OWASP/WordPress/Custom rules), DDoS protection (Basic free / Advanced $15/mo), File Integrity Monitoring with custom paths.
+- Add-on pricing: Managed Backups $5/mo (included Business+), WAF $10/mo, Advanced DDoS $15/mo, FIM $5/mo.
+- New API: `GET/PUT /api/v1/cloud/vps/:id/security`; `BackupSchedule` extended with off-site fields.
+
+## Developer Tools & Scalability (added 2026-06-23)
+
+### CI/CD Integration (VPS → CI/CD tab)
+- **GitHub Actions**: connect repo (owner/repo), choose branch, auto-deploy on push, PR preview deploys
+- **GitLab CI**: connect repo URL + project access token, branch, auto-deploy on push
+- **Deploy Webhook**: per-VPS URL + secret with ready-to-paste curl / GitHub Actions / GitLab CI snippets; regenerate at any time
+
+### Managed Databases (`/amercloud/dashboard/databases`)
+| Engine | Plan | Price |
+|---|---|---|
+| PostgreSQL | 1 GB RAM, 10 GB storage | $10/mo |
+| MySQL | 1 GB RAM, 10 GB storage | $10/mo |
+| Redis | 512 MB RAM | $5/mo |
+
+Features: daily automated backups, optional Point-in-Time Recovery, vertical scale (plan change), horizontal scale (read replicas), connection string + credentials.
+
+### Staging Environments
+"Clone VPS" button on the VPS detail page. Creates an identical copy with a configurable `-staging` suffix on the same plan with a separate IP. Optional snapshot+restore to sync data from production.
+
+### Resource Scaling
+- Live CPU/RAM resize (no downtime when supported by the hypervisor) is shown in the existing Resize modal.
+- Multi-instance clustering via duplicate VPS deployments on the same plan.
+- **Load Balancer** ($5/mo flat): create a load balancer that distributes traffic across multiple VPS backends (round-robin or least-connections). Manage from VPS → Load Balancer tab.
+
+> Backend endpoints (`/cloud/vps/:id/cicd`, `/cloud/databases`, `/cloud/load-balancers`, `/cloud/vps/:id/clone`) currently use in-memory stubs; replace with Prisma models + Proxmox/HAProxy provisioning in the next phase.
+
+## Enterprise (P3)
+
+Business & Enterprise tier features under `/amercloud/dashboard/enterprise`:
+- SOC2 compliance reporting (on-demand control evidence snapshot)
+- HIPAA toggle with BAA + encryption defaults
+- Custom SLA: 99.9% / 99.95% / 99.99%
+- Dedicated 24/7 support team with 1-2h response targets
+- Private networking (VPC) with custom CIDR
+- Dedicated hardware (single-tenant nodes)
+- Custom branding (logo + primary color)
+- Team management up to 10 (Business) / 100 (Enterprise)
+- White-label/reseller program with custom markup, bulk VPS provisioning and API keys for automation
+
+All endpoints live under `/cloud/enterprise/*` (see `backend/src/cloud/enterprise/enterprise.controller.ts`) and are currently in-memory stubs to be promoted to Prisma models alongside Proxmox integration.

@@ -32,12 +32,8 @@ function resolve(theme: Theme): ResolvedTheme {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
+  const [theme, setThemeState] = useState<Theme>(() => readInitialTheme());
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("dark");
-
-  useEffect(() => {
-    setThemeState(readInitialTheme());
-  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");

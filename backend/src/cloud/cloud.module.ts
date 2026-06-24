@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { MaintenanceMiddleware } from './maintenance/maintenance.middleware';
 import { CloudPlansService } from './cloud-plans.service';
 import { CloudDeploymentsService } from './cloud-deployments.service';
 import { CloudBillingService } from './cloud-billing.service';
@@ -55,13 +56,26 @@ import {
   CloudVpsSnapshotController,
   CloudVpsAppsController,
   CloudVpsPanelController,
+  CloudMaintenanceAdminController,
+  CloudStatusController,
+  CloudVpsSecurityController,
 } from './cloud.controllers';
+import { VpsSecurityService } from './security/vps-security.service';
 import { RateLimitService } from './rate-limit/rate-limit.service';
 import { WebhookService } from './webhook/webhook.service';
 import { VPSMigrationService } from './vps/vps-migration.service';
 import { ReferralService } from './referral/referral.service';
 import { VpsSnapshotService, VpsAppsService } from './vps/vps-snapshot.service';
 import { VpsPanelService } from './vps/vps-panel.service';
+import { MaintenanceService } from './maintenance/maintenance.service';
+import {
+  CloudVpsCicdController,
+  CloudDatabasesController,
+  CloudLoadBalancerController,
+  CloudVpsCloneController,
+} from './devtools/devtools.controller';
+import { CloudEnterpriseController } from './enterprise/enterprise.controller';
+
 
 @Module({
   imports: [AuthModule],
@@ -92,6 +106,14 @@ import { VpsPanelService } from './vps/vps-panel.service';
     CloudVpsSnapshotController,
     CloudVpsAppsController,
     CloudVpsPanelController,
+    CloudMaintenanceAdminController,
+    CloudStatusController,
+    CloudVpsSecurityController,
+    CloudVpsCicdController,
+    CloudDatabasesController,
+    CloudLoadBalancerController,
+    CloudVpsCloneController,
+    CloudEnterpriseController,
   ],
   providers: [
     CloudPlansService,
@@ -127,6 +149,8 @@ import { VpsPanelService } from './vps/vps-panel.service';
     VpsSnapshotService,
     VpsAppsService,
     VpsPanelService,
+    MaintenanceService,
+    VpsSecurityService,
   ],
   exports: [
     CloudPlansService,
@@ -138,4 +162,8 @@ import { VpsPanelService } from './vps/vps-panel.service';
     ReferralService,
   ],
 })
-export class CloudModule {}
+export class CloudModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(MaintenanceMiddleware).forRoutes('*');
+  }
+}

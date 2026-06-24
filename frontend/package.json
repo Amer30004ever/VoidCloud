@@ -3,8 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node -e \"const fs=require('fs');const cp=require('child_process');if(!fs.existsSync('node_modules/next/dist/bin/next')) cp.execFileSync('npm',['ci','--include=dev','--no-audit','--no-fund'],{stdio:'inherit'});\"",
     "dev": "next dev",
+    "prebuild": "node -e \"const fs=require('fs');const cp=require('child_process');if(!fs.existsSync('node_modules/next/dist/bin/next')) cp.execFileSync('npm',['ci','--include=dev','--no-audit','--no-fund'],{stdio:'inherit'});\"",
     "build": "next build",
+    "postbuild": "node scripts/prepare-lovable-dist.mjs",
+    "prepare:dist": "node scripts/prepare-lovable-dist.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "jest --passWithNoTests"

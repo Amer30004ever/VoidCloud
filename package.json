@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node frontend/node_modules/next/dist/bin/next dev frontend --hostname 0.0.0.0",
-    "build": "npm --prefix frontend run build",
-    "build:dev": "npm --prefix frontend run build",
+    "postinstall": "npm run install:frontend",
+    "dev": "npm run install:frontend && npm --prefix frontend run dev -- --hostname 0.0.0.0",
+    "build": "npm run install:frontend && npm --prefix frontend run build",
+    "build:dev": "npm run install:frontend && npm --prefix frontend run build",
     "start": "npm --prefix frontend run start",
     "lint": "npm --prefix frontend run lint",
     "test": "npm --prefix frontend run test",
-    "install:frontend": "npm --prefix frontend install"
+    "install:frontend": "node -e \"const fs=require('fs');const cp=require('child_process');if(!fs.existsSync('frontend/node_modules/next/dist/bin/next')) cp.execFileSync('npm',['--prefix','frontend','ci','--include=dev','--no-audit','--no-fund'],{stdio:'inherit'});\""
   }
 }

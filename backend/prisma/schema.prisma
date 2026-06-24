@@ -834,6 +834,7 @@ model CloudDeployment {
 
   backups       CloudBackup[]
   backupSchedule BackupSchedule?
+  security      VpsSecuritySettings?
   vpsAlertRules         VpsAlertRule[]
   vpsAlertNotifications VpsAlertNotification[]
   sshKeys       SSHKey[] @relation("VPSKeys")
@@ -964,9 +965,26 @@ model BackupSchedule {
   hour        Int?
   dayOfWeek   Int?
   dayOfMonth  Int?
+  offsiteProvider  String?
+  offsiteBucket    String?
+  offsiteAccessKey String?
+  offsiteSecretKey String?
   lastRunAt   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model VpsSecuritySettings {
+  id             String   @id @default(cuid())
+  vpsId          String   @unique
+  vps            CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  wafEnabled     Boolean  @default(false)
+  wafPreset      String   @default("OWASP")
+  wafCustomRules Json?
+  ddosTier       String   @default("BASIC")
+  fimEnabled     Boolean  @default(false)
+  fimPaths       String[] @default(["/etc","/var/www","/usr/bin"])
+  updatedAt      DateTime @updatedAt @default(now())
 }
 
 model CloudAuditLog {
@@ -1321,4 +1339,44 @@ model CustomImageShare {
   user        User        @relation(fields: [sharedBy], references: [id])
 
   @@unique([imageId, sharedWithEmail])
+}
+
+model Maintenance {
+  id               String   @id @default(cuid())
+  title            String
+  description      String
+  affectedServices String[] // VPS, API, Dashboard, Billing
+  startAt          DateTime
+  endAt            DateTime
+  status           String   // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  createdBy        String
+  createdAt        DateTime @default(now())
+
+  @@index([startAt])
+  @@index([status])
+}
+
+model Incident {
+  id          String           @id @default(cuid())
+  title       String
+  description String
+  severity    String           // DEGRADED, PARTIAL_OUTAGE, MAJOR_OUTAGE
+  status      String           // INVESTIGATING, IDENTIFIED, MONITORING, RESOLVED
+  updates     IncidentUpdate[]
+  createdAt   DateTime         @default(now())
+  resolvedAt  DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model IncidentUpdate {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  message    String
+  status     String
+  createdAt  DateTime @default(now())
+
+  @@index([incidentId])
 }
