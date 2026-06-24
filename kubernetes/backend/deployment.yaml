@@ -141,11 +141,11 @@ spec:
                   key: PROXMOX_STORAGE
                   optional: true
             - name: PROXMOX_BRIDGE
+              value: "vmbr0"
+            - name: PROXMOX_TEMPLATE
               valueFrom:
                 secretKeyRef:
                   name: amer-portal-secrets
-                  key: PROXMOX_BRIDGE
-                  on "vrb0"tal-secrets
                   key: PROXMOX_TEMPLATE
                   optional: true
             - name: PROXMOX_IP_POOL_CIDR
