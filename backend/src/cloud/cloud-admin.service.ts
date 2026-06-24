@@ -336,4 +336,11 @@ export class CloudAdminService {
     });
     return { message: `Admin password reset successfully for ${email}` };
   }
+
+  async getClusterNodes() {
+    return this.prisma.user.findMany({
+      where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] as any } },
+      select: { id: true, email: true, name: true, role: true },
+    });
+  }
 }

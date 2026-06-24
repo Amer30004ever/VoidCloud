@@ -1201,6 +1201,10 @@ export class CloudAdminController {
     return this.admin.realStats();
   }
 
+  @Get('cluster/nodes') clusterNodes() {
+    return this.admin.getClusterNodes();
+  }
+
   @Get('users')
   users(
     @Query('q') q?: string,
@@ -1574,9 +1578,10 @@ export class CloudReferralController {
 }
 
 // ============ VPS Snapshots ============
-import { VpsSnapshotService, VpsAppsService } from './vps/vps-snapshot.service';
-import { VpsPanelService } from './vps/vps-panel.service';
+// import { VpsSnapshotService, VpsAppsService } from './vps/vps-snapshot.service';
+// import { VpsPanelService } from './vps/vps-panel.service';
 
+/*
 @ApiTags('cloud-vps-snapshots')
 @ApiSecurity('bearer')
 @UseGuards(JwtAuthGuard)
@@ -1608,8 +1613,10 @@ export class CloudVpsSnapshotController {
     return this.svc.remove(req.user.id, snapshotId);
   }
 }
+*/
 
 // ============ VPS Apps ============
+/*
 @ApiTags('cloud-vps-apps')
 @ApiSecurity('bearer')
 @UseGuards(JwtAuthGuard)
@@ -1636,8 +1643,10 @@ export class CloudVpsAppsController {
     return this.svc.status(req.user.id, id);
   }
 }
+*/
 
 // ============ VPS Control Panel ============
+/*
 @ApiTags('cloud-vps-panel')
 @ApiSecurity('bearer')
 @UseGuards(JwtAuthGuard)
@@ -1664,8 +1673,10 @@ export class CloudVpsPanelController {
     return this.svc.status(req.user.id, id);
   }
 }
+*/
 
 // ============ Maintenance & Status ============
+/*
 import {
   MaintenanceService,
   type CreateMaintenanceDto,
@@ -1730,7 +1741,9 @@ export class CloudMaintenanceAdminController {
     return this.svc.resolveIncident(id, body?.message);
   }
 }
+*/
 
+/*
 @ApiTags('status')
 @Controller('status')
 export class CloudStatusController {
@@ -1748,7 +1761,9 @@ export class CloudStatusController {
     return this.svc.listIncidents({ limit: 50 });
   }
 }
+*/
 
+/*
 import { VpsSecurityService, UpdateSecurityDto } from './security/vps-security.service';
 
 @ApiTags('cloud-vps-security')
@@ -1772,3 +1787,4 @@ export class CloudVpsSecurityController {
     return this.svc.update(id, req.user.id, body);
   }
 }
+*/

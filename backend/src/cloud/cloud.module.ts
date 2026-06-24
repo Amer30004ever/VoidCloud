@@ -1,6 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
-import { MaintenanceMiddleware } from './maintenance/maintenance.middleware';
+// import { MaintenanceMiddleware } from './maintenance/maintenance.middleware';
 import { CloudPlansService } from './cloud-plans.service';
 import { CloudDeploymentsService } from './cloud-deployments.service';
 import { CloudBillingService } from './cloud-billing.service';
@@ -53,21 +53,21 @@ import {
   CloudVpsMigrationController,
   AdminVpsMigrationController,
   CloudReferralController,
-  CloudVpsSnapshotController,
-  CloudVpsAppsController,
-  CloudVpsPanelController,
-  CloudMaintenanceAdminController,
-  CloudStatusController,
-  CloudVpsSecurityController,
+  // CloudVpsSnapshotController,
+  // CloudVpsAppsController,
+  // CloudVpsPanelController,
+  // CloudMaintenanceAdminController,
+  // CloudStatusController,
+  // CloudVpsSecurityController,
 } from './cloud.controllers';
-import { VpsSecurityService } from './security/vps-security.service';
+// import { VpsSecurityService } from './security/vps-security.service';
 import { RateLimitService } from './rate-limit/rate-limit.service';
 import { WebhookService } from './webhook/webhook.service';
 import { VPSMigrationService } from './vps/vps-migration.service';
 import { ReferralService } from './referral/referral.service';
-import { VpsSnapshotService, VpsAppsService } from './vps/vps-snapshot.service';
-import { VpsPanelService } from './vps/vps-panel.service';
-import { MaintenanceService } from './maintenance/maintenance.service';
+// import { VpsSnapshotService, VpsAppsService } from './vps/vps-snapshot.service';
+// import { VpsPanelService } from './vps/vps-panel.service';
+// import { MaintenanceService } from './maintenance/maintenance.service';
 import {
   CloudVpsCicdController,
   CloudDatabasesController,
@@ -103,12 +103,12 @@ import { CloudEnterpriseController } from './enterprise/enterprise.controller';
     CloudVpsMigrationController,
     AdminVpsMigrationController,
     CloudReferralController,
-    CloudVpsSnapshotController,
-    CloudVpsAppsController,
-    CloudVpsPanelController,
-    CloudMaintenanceAdminController,
-    CloudStatusController,
-    CloudVpsSecurityController,
+    // CloudVpsSnapshotController,
+    // CloudVpsAppsController,
+    // CloudVpsPanelController,
+    // CloudMaintenanceAdminController,
+    // CloudStatusController,
+    // CloudVpsSecurityController,
     CloudVpsCicdController,
     CloudDatabasesController,
     CloudLoadBalancerController,
@@ -146,11 +146,11 @@ import { CloudEnterpriseController } from './enterprise/enterprise.controller';
     WebhookService,
     VPSMigrationService,
     ReferralService,
-    VpsSnapshotService,
-    VpsAppsService,
-    VpsPanelService,
-    MaintenanceService,
-    VpsSecurityService,
+    // VpsSnapshotService,
+    // VpsAppsService,
+    // VpsPanelService,
+    // MaintenanceService,
+    // VpsSecurityService,
   ],
   exports: [
     CloudPlansService,
@@ -162,8 +162,8 @@ import { CloudEnterpriseController } from './enterprise/enterprise.controller';
     ReferralService,
   ],
 })
-export class CloudModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(MaintenanceMiddleware).forRoutes('*');
-  }
+export class CloudModule {
+  // configure(consumer: MiddlewareConsumer) {
+  //   consumer.apply(MaintenanceMiddleware).forRoutes('*');
+  // }
 }
