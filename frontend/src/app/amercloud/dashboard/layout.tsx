@@ -55,6 +55,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     { href: "/amercloud/dashboard/webhooks", label: "Webhooks", icon: "🪝" },
     { href: "/amercloud/dashboard/referral", label: "Referral", icon: "🎁" },
     { href: "/amercloud/dashboard/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💳" },
+    { href: "/amercloud/dashboard/enterprise", label: "Enterprise", icon: "🏢" },
     { href: "/amercloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙️" },
   ], [dict]);
 

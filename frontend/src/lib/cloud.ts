@@ -666,3 +666,66 @@ export const cloudVpsClone = {
       jobId: string; sourceVpsId: string; newVpsName: string; syncData: boolean; status: string; message: string;
     },
 };
+
+// ============ Enterprise ============
+export interface EnterpriseConfig {
+  orgId: string;
+  plan: 'BUSINESS' | 'ENTERPRISE';
+  soc2Enabled: boolean;
+  hipaaEnabled: boolean;
+  customSlaPercent: number;
+  dedicatedSupport: boolean;
+  supportResponseHours: number;
+  privateNetworking: boolean;
+  vpcCidr: string | null;
+  dedicatedHardware: boolean;
+  customDomainLimit: number;
+  teamMemberLimit: number;
+  advancedMonitoring: boolean;
+  customBranding: boolean;
+  brandLogoUrl: string | null;
+  brandPrimaryColor: string | null;
+  updatedAt: string;
+}
+export interface Soc2Report {
+  reportId: string; generatedAt: string; period: string;
+  controls: { id: string; name: string; status: string }[];
+  downloadUrl: string; note: string;
+}
+export interface TeamMember {
+  id: string; email: string;
+  role: 'OWNER' | 'ADMIN' | 'DEVELOPER' | 'BILLING' | 'VIEWER';
+  invitedAt: string; status: string;
+}
+export interface ResellerConfig {
+  orgId: string; enabled: boolean;
+  whitelabelDomain: string | null; brandName: string | null;
+  markupPercent: number;
+  customPriceTiers: { name: string; markupPercent: number }[];
+  bulkProvisioningEnabled: boolean;
+}
+export interface AutomationApiKey {
+  id: string; name: string; scopes: string[]; token: string;
+  createdAt: string; lastUsedAt: string | null;
+}
+export const cloudEnterprise = {
+  get: async (): Promise<EnterpriseConfig> => (await api.get('/cloud/enterprise')).data,
+  update: async (data: Partial<EnterpriseConfig>): Promise<EnterpriseConfig> =>
+    (await api.put('/cloud/enterprise', data)).data,
+  soc2Report: async (): Promise<Soc2Report> => (await api.get('/cloud/enterprise/soc2/report')).data,
+  team: async (): Promise<TeamMember[]> => (await api.get('/cloud/enterprise/team')).data,
+  addMember: async (email: string, role: TeamMember['role']): Promise<TeamMember> =>
+    (await api.post('/cloud/enterprise/team', { email, role })).data,
+  removeMember: async (id: string) => (await api.delete(`/cloud/enterprise/team/${id}`)).data,
+  reseller: async (): Promise<ResellerConfig> => (await api.get('/cloud/enterprise/reseller')).data,
+  updateReseller: async (data: Partial<ResellerConfig>): Promise<ResellerConfig> =>
+    (await api.put('/cloud/enterprise/reseller', data)).data,
+  apiKeys: async (): Promise<AutomationApiKey[]> => (await api.get('/cloud/enterprise/api-keys')).data,
+  createApiKey: async (name: string, scopes?: string[]): Promise<AutomationApiKey> =>
+    (await api.post('/cloud/enterprise/api-keys', { name, scopes })).data,
+  removeApiKey: async (id: string) => (await api.delete(`/cloud/enterprise/api-keys/${id}`)).data,
+  bulkProvision: async (planId: string, count: number, namePrefix?: string) =>
+    (await api.post('/cloud/enterprise/bulk-provision', { planId, count, namePrefix })).data as {
+      jobId: string; planId: string; count: number; namePrefix: string; status: string; message: string;
+    },
+};
