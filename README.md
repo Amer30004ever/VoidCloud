@@ -354,6 +354,20 @@ Copy `.env.example` to `.env` at the repo root.
 | `GITHUB_TOKEN`                 | Optional | GitHub REST API access |
 | `K8S_INSECURE_SKIP_TLS_VERIFY` | Dev only | Skip K8s API TLS verification |
 | `NODE_ENV`                     | Yes      | `development` \| `production` |
+| `PROXMOX_HOST`                 | Optional | Proxmox server URL for VPS provisioning |
+| `PROXMOX_TOKEN_ID`             | Optional | Proxmox API token ID (format: `username@realm!tokenid`) |
+| `PROXMOX_TOKEN_SECRET`         | Optional | Proxmox API token secret |
+| `PROXMOX_NODE`                 | Optional | Proxmox target node (default: `workernode01`) |
+| `PROXMOX_STORAGE`              | Optional | Proxmox storage name (default: `local-lvm`) |
+| `PROXMOX_BRIDGE`               | Optional | Proxmox network bridge (default: `vmbr0`) |
+| `PROXMOX_TEMPLATE`             | Optional | Proxmox template name (default: `ubuntu-22.04`) |
+| `PROXMOX_IP_POOL_CIDR`         | Optional | IP pool CIDR for VPS allocation (default: `10.51.100.0/24`) |
+| `PROXMOX_GATEWAY`              | Optional | Gateway IP for VPS network (default: `10.51.100.1`) |
+| `SMTP_HOST`                    | Optional | SMTP server host (default: `smtp.office365.com`) |
+| `SMTP_PORT`                    | Optional | SMTP server port (default: `587`) |
+| `SMTP_USER`                    | Optional | SMTP authentication username |
+| `SMTP_PASS`                    | Optional | SMTP authentication password (app password for Office365) |
+| `EMAIL_FROM`                   | Optional | From email address for notifications |
 
 Full reference: [.env.example](.env.example).
 
@@ -493,22 +507,35 @@ The forgot/reset flow is wired end-to-end:
 - Tokens: 32-byte CSPRNG, stored as SHA-256 hash, 30-minute TTL, single-use, prior unused tokens auto-invalidated on new request
 - Email: HTML + text via Nodemailer over Outlook SMTP
 
+**SMTP Configuration Steps (Microsoft/Outlook):**
+
+1. **Enable MFA on your Microsoft account** (if not already enabled)
+2. **Generate an App Password:**
+   - Go to https://account.live.com/proofs/AppPassword
+   - Sign in with your Microsoft account
+   - Click "New password"
+   - Enter a name (e.g., "AmerCloud SMTP")
+   - Copy the generated password (it will only be shown once)
+3. **Configure environment variables:**
+
 Required env vars on the backend pod (Kubernetes `amer-portal-secrets`):
 
 ```env
 SMTP_HOST=smtp.office365.com
 SMTP_PORT=587
 SMTP_USER=nova-cloud-2026@outlook.com
-SMTP_PASS=<app password from https://account.live.com/proofs/AppPassword>
+SMTP_PASS=<app password generated from Microsoft account>
 EMAIL_FROM="AmerCloud <nova-cloud-2026@outlook.com>"
 FRONTEND_URL=https://amer-portal.cc.cd
 ```
 
-Outlook/Office365 requires an **app password** (regular account passwords are blocked for SMTP when MFA is on). Then apply the migration that adds `password_reset_tokens`:
+4. **Apply the migration** that adds `password_reset_tokens`:
 
 ```bash
 cd backend && npx prisma migrate deploy
 ```
+
+**Current SMTP Status:** ✅ Configured with `nova-cloud-2026@outlook.com` on `smtp.office365.com:587`
 
 ### Password visibility toggle
 

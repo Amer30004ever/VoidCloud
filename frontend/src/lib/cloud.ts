@@ -100,6 +100,10 @@ export interface OsTemplate {
 export const cloudApi = {
   plans: {
     list: async () => (await api.get<CloudPlan[]>("/cloud/plans")).data,
+    calculateCustomPrice: async (body: { cpu: number; memory: number; storage: number }) =>
+      (await api.post("/cloud/plans/custom/calculate", body)).data,
+    createCustomPlan: async (body: { cpu: number; memory: number; storage: number; deploymentLimit?: number; customDomainLimit?: number }) =>
+      (await api.post("/cloud/plans/custom/create", body)).data,
   },
   templates: {
     list: async () => (await api.get<OsTemplate[]>("/cloud/templates")).data,

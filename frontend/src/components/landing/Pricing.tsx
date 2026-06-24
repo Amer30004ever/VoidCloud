@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { cloudApi } from "@/lib/cloud";
 
 type Plan = {
   name: string;
@@ -14,6 +15,7 @@ type Plan = {
   popular?: boolean;
   outline?: boolean;
   trialNote?: string;
+  custom?: boolean;
 };
 
 const plans: Plan[] = [
@@ -85,10 +87,59 @@ const plans: Plan[] = [
     cta: "Contact Sales →",
     href: "mailto:nova-cloud-2026@outlook.com?subject=Business%20Plan%20Inquiry",
   },
+  {
+    name: "Custom",
+    monthly: 0,
+    egp: 0,
+    for: "Build your own",
+    features: [
+      "Flexible CPU, RAM, Storage",
+      "Custom deployment limits",
+      "Pay only for what you need",
+      "Instant provisioning",
+      "No hidden fees",
+    ],
+    cta: "Configure →",
+    href: "#custom",
+    custom: true,
+  },
 ];
 
 export function Pricing() {
   const [yearly, setYearly] = useState(false);
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [customConfig, setCustomConfig] = useState({
+    cpu: 1,
+    memory: 1024,
+    storage: 2048,
+  });
+  const [customPrice, setCustomPrice] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const calculateCustomPrice = async () => {
+    setLoading(true);
+    try {
+      const result = await cloudApi.plans.calculateCustomPrice(customConfig);
+      setCustomPrice(result);
+    } catch (error) {
+      console.error("Failed to calculate custom price:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createCustomPlan = async () => {
+    setLoading(true);
+    try {
+      const plan = await cloudApi.plans.createCustomPlan(customConfig);
+      window.location.href = `/amercloud/register?plan=${plan.slug}`;
+    } catch (error) {
+      console.error("Failed to create custom plan:", error);
+      alert("Failed to create custom plan. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
@@ -159,18 +210,27 @@ export function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href={p.href}
-                className={`mt-6 block rounded-xl py-3 text-center text-sm font-semibold transition ${
-                  p.popular
-                    ? "bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-slate-950 hover:opacity-90"
-                    : p.outline
-                    ? "border border-white/20 hover:bg-white/10"
-                    : "bg-white/10 hover:bg-white/20"
-                }`}
-              >
-                {p.cta}
-              </Link>
+              {p.custom ? (
+                <button
+                  onClick={() => setShowCustomModal(true)}
+                  className={`mt-6 block w-full rounded-xl py-3 text-center text-sm font-semibold transition bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-slate-950 hover:opacity-90`}
+                >
+                  {p.cta}
+                </button>
+              ) : (
+                <Link
+                  href={p.href}
+                  className={`mt-6 block rounded-xl py-3 text-center text-sm font-semibold transition ${
+                    p.popular
+                      ? "bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-slate-950 hover:opacity-90"
+                      : p.outline
+                      ? "border border-white/20 hover:bg-white/10"
+                      : "bg-white/10 hover:bg-white/20"
+                  }`}
+                >
+                  {p.cta}
+                </Link>
+              )}
               {p.trialNote && (
                 <p className="mt-3 text-[11px] leading-snug text-white/40">{p.trialNote}</p>
               )}
@@ -184,6 +244,91 @@ export function Pricing() {
         <span>✓ No bandwidth overage</span>
         <span>✓ No hidden costs</span>
       </div>
+
+      {/* Custom Plan Modal */}
+      {showCustomModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-xl font-bold">Configure Custom Plan</h3>
+              <button
+                onClick={() => setShowCustomModal(false)}
+                className="text-white/50 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium">CPU Cores</label>
+                <input
+                  type="number"
+                  min="0.25"
+                  max="16"
+                  step="0.25"
+                  value={customConfig.cpu}
+                  onChange={(e) => setCustomConfig({ ...customConfig, cpu: parseFloat(e.target.value) })}
+                  className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">Memory (MB)</label>
+                <input
+                  type="number"
+                  min="256"
+                  max="32768"
+                  step="256"
+                  value={customConfig.memory}
+                  onChange={(e) => setCustomConfig({ ...customConfig, memory: parseInt(e.target.value) })}
+                  className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">Storage (MB)</label>
+                <input
+                  type="number"
+                  min="1024"
+                  max="1024000"
+                  step="1024"
+                  value={customConfig.storage}
+                  onChange={(e) => setCustomConfig({ ...customConfig, storage: parseInt(e.target.value) })}
+                  className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+                />
+              </div>
+
+              <button
+                onClick={calculateCustomPrice}
+                disabled={loading}
+                className="w-full rounded-lg bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20 disabled:opacity-50"
+              >
+                {loading ? "Calculating..." : "Calculate Price"}
+              </button>
+
+              {customPrice && (
+                <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-4">
+                  <div className="mb-2 text-sm font-medium">Estimated Monthly Cost</div>
+                  <div className="text-2xl font-bold">${customPrice.priceUSD}</div>
+                  <div className="text-sm text-white/60">or {customPrice.priceEGP.toLocaleString()} EGP</div>
+                  <div className="mt-3 space-y-1 text-xs text-white/50">
+                    <div>CPU: ${customPrice.breakdown.cpu.toFixed(2)}</div>
+                    <div>Memory: ${customPrice.breakdown.memory.toFixed(2)}</div>
+                    <div>Storage: ${customPrice.breakdown.storage.toFixed(2)}</div>
+                    <div>Base fee: ${customPrice.breakdown.base.toFixed(2)}</div>
+                  </div>
+                  <button
+                    onClick={createCustomPlan}
+                    disabled={loading}
+                    className="mt-4 w-full rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:opacity-90 disabled:opacity-50"
+                  >
+                    {loading ? "Creating..." : "Continue with Custom Plan"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

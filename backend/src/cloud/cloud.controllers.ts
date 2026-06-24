@@ -87,6 +87,20 @@ export class CloudPlansController {
   get(@Param('id') id: string) {
     return this.plans.get(id);
   }
+
+  @ApiSecurity('bearer')
+  @UseGuards(JwtAuthGuard)
+  @Post('custom/calculate')
+  calculateCustomPrice(@Body() body: { cpu: number; memory: number; storage: number }) {
+    return this.plans.calculateCustomPrice(body);
+  }
+
+  @ApiSecurity('bearer')
+  @UseGuards(JwtAuthGuard)
+  @Post('custom/create')
+  createCustomPlan(@Req() req: AuthedRequest, @Body() body: any) {
+    return this.plans.createCustomPlan(req.user.id, body);
+  }
 }
 
 @ApiTags('Cloud / Templates')

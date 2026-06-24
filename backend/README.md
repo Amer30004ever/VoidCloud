@@ -103,6 +103,43 @@ When `~/.kube/config` is mounted (Docker Compose) or in-cluster RBAC is configur
 
 If you see `HTTP protocol is not allowed when skipTLSVerify is not set`, your kubeconfig points at an HTTP API server. Use HTTPS or set `insecure-skip-tls-verify: true` on that cluster entry for local/dev clusters only.
 
+## Proxmox VPS Integration
+
+The backend includes Proxmox VPS provisioning capabilities for the AmerCloud customer portal.
+
+### Required Environment Variables
+
+| Variable | Required | Default | Purpose |
+|----------|----------|---------|---------|
+| `PROXMOX_HOST` | Yes | - | Proxmox server URL (e.g., `https://10.51.100.10:8006`) |
+| `PROXMOX_TOKEN_ID` | Yes | - | API token ID (format: `username@realm!tokenid`) |
+| `PROXMOX_TOKEN_SECRET` | Yes | - | API token secret |
+| `PROXMOX_NODE` | No | `workernode01` | Target Proxmox node |
+| `PROXMOX_STORAGE` | No | `local-lvm` | Storage name for VPS disks |
+| `PROXMOX_BRIDGE` | No | `vmbr0` | Network bridge for VPS networking |
+| `PROXMOX_TEMPLATE` | No | `ubuntu-22.04` | Default template for VPS creation |
+| `PROXMOX_IP_POOL_CIDR` | No | `10.51.100.0/24` | IP pool for VPS allocation |
+| `PROXMOX_GATEWAY` | No | `10.51.100.1` | Gateway IP for VPS network |
+
+### Setting Up Proxmox API Tokens
+
+1. Log in to Proxmox web UI
+2. Go to Datacenter → Permissions → API Tokens
+3. Create a new token or use existing one
+4. Copy the Token ID and Secret
+5. Add to Kubernetes secrets or environment variables
+
+### Current Status
+
+✅ Proxmox integration configured with:
+- Host: `https://10.51.100.10:8006`
+- Node: `workernode01`
+- Storage: `local-lvm`
+- Bridge: `vmbr0`
+- Template: `ubuntu-22.04`
+- IP Pool: `10.51.100.0/24`
+- Gateway: `10.51.100.1`
+
 ## Project structure
 
 ```
