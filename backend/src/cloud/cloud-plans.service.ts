@@ -101,6 +101,20 @@ export class CloudPlansService {
     return this.prisma.cloudPlan.delete({ where: { id } });
   }
 
+  /** Persist display order for admin drag-and-drop and VPS wizard plan list. */
+  async reorder(planIds: string[]) {
+    if (!planIds.length) return this.list(false);
+    await this.prisma.$transaction(
+      planIds.map((id, index) =>
+        this.prisma.cloudPlan.update({
+          where: { id },
+          data: { sortOrder: index },
+        }),
+      ),
+    );
+    return this.list(false);
+  }
+
   /**
    * Calculate price for custom plan based on resource usage
    * Pricing model (per month):

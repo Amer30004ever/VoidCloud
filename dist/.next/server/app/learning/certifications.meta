@@ -1,0 +1,18 @@
+{
+  "status": 307,
+  "headers": {
+    "location": "/learning?tab=certifications",
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/learning/layout,_N_T_/learning/certifications/layout,_N_T_/learning/certifications/page,_N_T_/learning/certifications"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/learning/certifications/__PAGE__",
+    "/learning/certifications",
+    "/learning",
+    "/_index",
+    "/_head"
+  ]
+}

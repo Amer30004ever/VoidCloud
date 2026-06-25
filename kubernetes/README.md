@@ -18,6 +18,7 @@ Run from `kubernetes/` after copying `proxmox.env.example` to `proxmox.env`:
 | Create VPS (API) | `.\AmerCloud.ps1 -Action CreateVps` |
 | List VPS | `.\AmerCloud.ps1 -Action ListVps` |
 | Delete VPS | `.\AmerCloud.ps1 -Action DeleteVps -Id <uuid>` |
+| VPS actions | `.\AmerCloud.ps1 -Action VpsAction -VpsAction start|stop|restart|reset-password|clone -Id <id>` |
 | Clean stuck rows | `.\AmerCloud.ps1 -Action CleanStuck` |
 | Proxmox containers | `.\AmerCloud.ps1 -Action ProxmoxPctList` |
 | Fix token ACL | `.\AmerCloud.ps1 -Action FixProxmoxToken` |

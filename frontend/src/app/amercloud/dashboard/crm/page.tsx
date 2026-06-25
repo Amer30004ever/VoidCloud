@@ -4,24 +4,29 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { useLocale } from "@/contexts/LocaleContext";
 
-interface CrmConfig {
+interface CrmFeature {
+  id: string;
+  name: string;
+  description: string;
   enabled: boolean;
-  frontendUrl: string;
-  apiUrl: string;
-  features: string[];
 }
 
 export default function CrmPage() {
   const { t } = useLocale();
-  const [cfg, setCfg] = useState<CrmConfig | null>(null);
+  const [features, setFeatures] = useState<CrmFeature[]>([]);
+  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
   useEffect(() => {
-    api.get<CrmConfig>("/crm/config")
-      .then((r) => setCfg(r.data))
+    api.get<CrmFeature[]>("/crm/features")
+      .then((r) => {
+        setFeatures(r.data);
+        setLoading(false);
+      })
       .catch((e: unknown) => {
-        const msg = e && typeof e === "object" && "message" in e ? String((e as Error).message) : "Failed to load CRM config";
+        const msg = e && typeof e === "object" && "message" in e ? String((e as Error).message) : "Failed to load CRM features";
         setErr(msg);
+        setLoading(false);
       });
   }, []);
 
@@ -33,46 +38,47 @@ export default function CrmPage() {
     );
   }
 
-  if (!cfg) {
+  if (loading) {
     return <p className="text-white/50">{t("common.loading", "Loading…")}</p>;
   }
 
-  if (!cfg.enabled || !cfg.frontendUrl) {
-    return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-amber-500/30 bg-amber-500/10 p-8 text-center">
-        <h1 className="text-2xl font-bold">{t("crm.title", "WhatsApp CRM")}</h1>
-        <p className="mt-3 text-white/70">{t("crm.not_configured", "WhatsApp CRM is not configured.")}</p>
-        <p className="mt-4 text-sm text-white/50">
-          Deploy MIP-WA-CRM on a VPS and set <code className="text-cyan-300">WA_CRM_FRONTEND_URL</code> on the AmerCloud backend.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold">{t("crm.title", "WhatsApp CRM")}</h1>
-          <p className="mt-1 text-sm text-white/60">{t("crm.subtitle", "MIP-WA-CRM integrated with AmerCloud")}</p>
-          <p className="mt-1 text-xs text-cyan-300/80">{t("crm.features", "Inbox · Leads · Deals")}</p>
-        </div>
-        <a
-          href={cfg.frontendUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950"
-        >
-          {t("crm.open_full", "Open CRM in new tab")}
-        </a>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">{t("crm.title", "WhatsApp CRM")}</h1>
+        <p className="mt-2 text-sm text-white/60">{t("crm.subtitle", "Integrated CRM features for managing WhatsApp communications")}</p>
       </div>
-      <div className="flex-1 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-        <iframe
-          title="WhatsApp CRM"
-          src={cfg.frontendUrl}
-          className="h-full w-full border-0 bg-slate-950"
-          allow="clipboard-read; clipboard-write"
-        />
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {features.map((feature) => (
+          <div
+            key={feature.id}
+            className="rounded-2xl border border-white/10 bg-white/5 p-6 transition-all hover:border-cyan-500/50 hover:bg-white/10"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white">{feature.name}</h3>
+                <p className="mt-2 text-sm text-white/60">{feature.description}</p>
+              </div>
+              {feature.enabled ? (
+                <span className="ml-3 rounded-full bg-green-500/20 px-2 py-1 text-xs font-medium text-green-400">
+                  {t("crm.enabled", "Enabled")}
+                </span>
+              ) : (
+                <span className="ml-3 rounded-full bg-gray-500/20 px-2 py-1 text-xs font-medium text-gray-400">
+                  {t("crm.disabled", "Disabled")}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/10 p-6">
+        <h3 className="text-lg font-semibold text-cyan-300">{t("crm.coming_soon", "Coming Soon")}</h3>
+        <p className="mt-2 text-sm text-white/70">
+          {t("crm.coming_soon_desc", "Full CRM interface with WhatsApp integration, lead management, and deal tracking will be available in future updates.")}
+        </p>
       </div>
     </div>
   );

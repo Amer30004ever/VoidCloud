@@ -192,6 +192,8 @@ export const cloudApi = {
     updatePlan: async (id: string, body: Partial<CloudPlan>) =>
       (await api.put<CloudPlan>(`/cloud/admin/plans/${id}`, body)).data,
     deletePlan: async (id: string) => api.delete(`/cloud/admin/plans/${id}`),
+    reorderPlans: async (planIds: string[]) =>
+      (await api.put<CloudPlan[]>('/cloud/admin/plans/reorder', { planIds })).data,
     transactions: async () => (await api.get("/cloud/admin/billing/transactions")).data,
     transactionsCsvUrl: () => {
       const base = (api.defaults?.baseURL || "").replace(/\/$/, "");

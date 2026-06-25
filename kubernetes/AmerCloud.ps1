@@ -9,6 +9,11 @@
 #   .\AmerCloud.ps1 -Action CreateVps
 #   .\AmerCloud.ps1 -Action ListVps
 #   .\AmerCloud.ps1 -Action DeleteVps -Id <deployment-id>
+#   .\AmerCloud.ps1 -Action VpsAction -VpsAction start|stop|restart|reset-password|clone -Id <id>
+#   .\AmerCloud.ps1 -Action VerifyAll -Id <id>   # create test + lifecycle + images + admin stats
+#   .\AmerCloud.ps1 -Action ImagesTest
+#   .\AmerCloud.ps1 -Action AdminStats
+#   .\AmerCloud.ps1 -Action DeployCrm
 #   .\AmerCloud.ps1 -Action CleanStuck
 #   .\AmerCloud.ps1 -Action ProxmoxPctList
 #   .\AmerCloud.ps1 -Action FixProxmoxToken
@@ -16,10 +21,12 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('Setup', 'Test', 'CreateVps', 'ListVps', 'DeleteVps', 'CleanStuck', 'ProxmoxPctList', 'FixProxmoxToken', 'All')]
+    [ValidateSet('Setup', 'Test', 'CreateVps', 'ListVps', 'DeleteVps', 'CleanStuck', 'ProxmoxPctList', 'FixProxmoxToken', 'VpsAction', 'VerifyAll', 'ImagesTest', 'AdminStats', 'DeployCrm', 'All')]
     [string]$Action = 'Test',
     [string]$Namespace = 'amer-portal',
     [string]$Id,
+    [ValidateSet('start', 'stop', 'restart', 'reset-password', 'clone', 'delete')]
+    [string]$VpsAction = 'start',
     [string]$VpsName,
     [int]$VpsStorage = 1024,
     [switch]$DryRun
@@ -85,6 +92,56 @@ function Invoke-CleanStuck {
     }
 }
 
+function Invoke-VpsLifecycle {
+    if (-not $Id) { throw 'VpsAction requires -Id <deployment-id>' }
+    Write-AmerCloudSection "VPS $VpsAction $Id"
+    Invoke-AmerCloudBackendScript -ScriptFileName 'vps-api.js' -NodeArgs @($VpsAction, $Id) -Namespace $Namespace
+    if ($VpsAction -eq 'delete') {
+        Write-AmerCloudSection 'Proxmox pct list (after delete)'
+        Invoke-AmerCloudProxmoxSsh 'pct list'
+    }
+}
+
+function Invoke-ImagesTest {
+    Write-AmerCloudSection 'Images API'
+    Invoke-AmerCloudBackendScript -ScriptFileName 'vps-api.js' -NodeArgs @('images') -Namespace $Namespace
+}
+
+function Invoke-AdminStats {
+    Write-AmerCloudSection 'Admin stats API'
+    Invoke-AmerCloudBackendScript -ScriptFileName 'vps-api.js' -NodeArgs @('admin-stats') -Namespace $Namespace
+}
+
+function Invoke-VerifyAll {
+    Write-AmerCloudSection 'Full VPS verify (create + lifecycle + images + stats)'
+    Invoke-CreateVps
+    $pod = Get-AmerCloudBackendPod -Namespace $Namespace
+    Get-Content (Join-Path $ScriptDir 'scripts\vps-api.js') -Raw |
+        kubectl exec -i -n $Namespace $pod -- sh -c 'cat > /tmp/vps-api.js' | Out-Null
+    $listJson = kubectl exec -n $Namespace $pod -- node /tmp/vps-api.js list 2>$null
+    $items = $listJson | ConvertFrom-Json
+    $vps = $items | Where-Object { $_.status -eq 'RUNNING' } | Select-Object -First 1
+    if (-not $vps) { $vps = $items | Select-Object -First 1 }
+    if (-not $vps) { throw 'No VPS returned from list' }
+    $vid = $vps.id
+    Write-Host "Using VPS id=$vid name=$($vps.name) status=$($vps.status)"
+    foreach ($act in @('stop', 'start', 'restart', 'reset-password')) {
+        $script:VpsAction = $act
+        Invoke-VpsLifecycle -Id $vid
+        Start-Sleep -Seconds 2
+    }
+    Invoke-ImagesTest
+    Invoke-AdminStats
+    Write-AmerCloudSection 'Optional: clone then delete clone'
+    $script:VpsAction = 'clone'
+    Invoke-VpsLifecycle -Id $vid
+}
+
+function Invoke-DeployCrm {
+    Write-AmerCloudSection 'Deploy MIP-WA-CRM to cluster'
+    & (Join-Path $ScriptDir 'AmerCloud-Deploy-Crm.ps1') -Namespace $Namespace
+}
+
 function Invoke-ProxmoxPctList {
     Write-AmerCloudSection 'Proxmox containers'
     Invoke-AmerCloudProxmoxSsh 'pct list'
@@ -102,6 +159,11 @@ switch ($Action) {
     'CreateVps'       { Invoke-CreateVps }
     'ListVps'         { Invoke-ListVps }
     'DeleteVps'       { Invoke-DeleteVps }
+    'VpsAction'       { Invoke-VpsLifecycle }
+    'VerifyAll'       { Invoke-VerifyAll }
+    'ImagesTest'      { Invoke-ImagesTest }
+    'AdminStats'      { Invoke-AdminStats }
+    'DeployCrm'       { Invoke-DeployCrm }
     'CleanStuck'      { Invoke-CleanStuck }
     'ProxmoxPctList'  { Invoke-ProxmoxPctList }
     'FixProxmoxToken' { Invoke-FixProxmoxToken }

@@ -1,184 +1,206 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import api from "@/lib/api";
-import { cloudApi, CloudDeployment, CloudUsage } from "@/lib/cloud";
+import { useCallback, useEffect, useState } from "react";
+import { cloudWebhooks, type WebhookDelivery, type WebhookEndpoint } from "@/lib/cloud";
+import { useLocale } from "@/contexts/LocaleContext";
 
 export default function WebhookManager() {
-  const [usage, setUsage] = useState<CloudUsage | null>(null);
-  const [deployments, setDeployments] = useState<CloudDeployment[]>([]);
-  const [me, setMe] = useState<any>(null);
-  const [now, setNow] = useState<number>(() => Date.now());
+  const { t } = useLocale();
+  const [endpoints, setEndpoints] = useState<WebhookEndpoint[]>([]);
+  const [events, setEvents] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
+  const [form, setForm] = useState({ name: "", url: "", events: [] as string[], enabled: true });
+  const [showForm, setShowForm] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setErr("");
+    try {
+      const [list, ev] = await Promise.all([cloudWebhooks.list(), cloudWebhooks.events()]);
+      setEndpoints(list);
+      setEvents(ev);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : t("webhooks.load_error", "Failed to load webhooks"));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
 
   useEffect(() => {
-    cloudApi.deployments.usage().then(setUsage).catch(() => { });
-    cloudApi.deployments.list().then(setDeployments).catch(() => { });
-    api.get("/auth/me").then((r) => setMe(r.data)).catch(() => { });
-  }, []);
+    refresh();
+  }, [refresh]);
 
   useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 60000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!selectedId) {
+      setDeliveries([]);
+      return;
+    }
+    cloudWebhooks.deliveries(selectedId).then(setDeliveries).catch(() => setDeliveries([]));
+  }, [selectedId]);
 
-  const trialDaysLeft = me?.trialEndsAt
-    ? Math.ceil((new Date(me.trialEndsAt).getTime() - now) / (1000 * 60 * 60 * 24))
-    : null;
-  const isTrialing = me?.subscriptionStatus === "TRIALING" && trialDaysLeft !== null;
-  const trialExpired = isTrialing && trialDaysLeft <= 0;
+  async function createEndpoint() {
+    if (!form.name.trim() || !form.url.trim() || !form.events.length) {
+      setErr(t("webhooks.form_required", "Name, URL, and at least one event are required"));
+      return;
+    }
+    setBusy(true);
+    setErr("");
+    try {
+      await cloudWebhooks.create(form);
+      setShowForm(false);
+      setForm({ name: "", url: "", events: [], enabled: true });
+      await refresh();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } }).response?.data?.message;
+      setErr(msg ?? t("webhooks.create_error", "Failed to create webhook"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleEnabled(ep: WebhookEndpoint) {
+    await cloudWebhooks.update(ep.id, { enabled: !ep.enabled });
+    await refresh();
+  }
+
+  async function removeEndpoint(id: string) {
+    if (!confirm(t("webhooks.delete_confirm", "Delete this webhook endpoint?"))) return;
+    await cloudWebhooks.remove(id);
+    if (selectedId === id) setSelectedId(null);
+    await refresh();
+  }
+
+  async function testEndpoint(id: string) {
+    setBusy(true);
+    try {
+      await cloudWebhooks.test(id);
+      if (selectedId === id) setDeliveries(await cloudWebhooks.deliveries(id));
+    } catch {
+      setErr(t("webhooks.test_error", "Test delivery failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function toggleEvent(ev: string) {
+    setForm((f) => ({
+      ...f,
+      events: f.events.includes(ev) ? f.events.filter((x) => x !== ev) : [...f.events, ev],
+    }));
+  }
 
   return (
     <div className="space-y-6">
-      {isTrialing && (
-        <div
-          className={`rounded-2xl border p-4 backdrop-blur-xl ${trialExpired
-              ? "border-red-500/30 bg-red-500/10 text-red-200"
-              : "border-amber-500/30 bg-amber-500/10 text-amber-200"
-            }`}
+      <div>
+        <h1 className="text-3xl font-bold">{t("webhooks.title", "Webhooks")}</h1>
+        <p className="mt-2 text-sm text-white/60">{t("webhooks.subtitle", "Send VPS and billing events to your own HTTPS endpoints.")}</p>
+      </div>
+
+      {err && <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{err}</div>}
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setShowForm(true)}
+          className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950"
         >
-          <div className="flex items-center justify-between gap-4">
-            <div className="text-sm">
-              {trialExpired
-                ? "❌ Your trial has expired. Your VPS has been suspended. Upgrade now to resume service."
-                : `⚠️ Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"}. Upgrade to keep your VPS running.`}
+          {t("webhooks.add", "+ Add webhook")}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <h2 className="mb-4 text-lg font-semibold">{t("webhooks.new", "New webhook")}</h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="block md:col-span-1">
+              <span className="mb-1 block text-xs uppercase text-white/60">{t("webhooks.name", "Name")}</span>
+              <input className={inp} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="deploy-notify" />
+            </label>
+            <label className="block md:col-span-1">
+              <span className="mb-1 block text-xs uppercase text-white/60">{t("webhooks.url", "URL")}</span>
+              <input className={inp} value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="https://example.com/hook" />
+            </label>
+          </div>
+          <div className="mt-4">
+            <span className="mb-2 block text-xs uppercase text-white/60">{t("webhooks.events", "Events")}</span>
+            <div className="flex flex-wrap gap-2">
+              {events.map((ev) => (
+                <button
+                  key={ev}
+                  type="button"
+                  onClick={() => toggleEvent(ev)}
+                  className={`rounded-full border px-3 py-1 text-xs ${form.events.includes(ev) ? "border-cyan-400 bg-cyan-400/20 text-cyan-200" : "border-white/10 bg-white/5 text-white/60"}`}
+                >
+                  {ev}
+                </button>
+              ))}
             </div>
-            <Link
-              href="/amercloud/dashboard/billing"
-              className="shrink-0 rounded-lg bg-white/10 px-4 py-2 text-xs font-semibold hover:bg-white/20"
-            >
-              Upgrade plan
-            </Link>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <button onClick={() => setShowForm(false)} className="rounded-lg border border-white/10 px-4 py-2 text-sm">{t("common.cancel", "Cancel")}</button>
+            <button onClick={createEndpoint} disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">
+              {t("common.create", "Create")}
+            </button>
           </div>
         </div>
       )}
 
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 p-8 backdrop-blur-xl">
-        <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
-        <p className="mt-2 text-white/60">Manage your VPS instances, plan, and usage from one place.</p>
-      </div>
-
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <PlanCard usage={usage} />
-        <Gauge label="CPU" used={usage?.used.cpu ?? 0} total={usage?.limits.cpuLimit ?? 1} unit="cores" />
-        <Gauge label="Memory" used={usage?.used.memory ?? 0} total={usage?.limits.memoryLimit ?? 1} unit="MB" />
-        <Gauge label="Storage" used={usage?.used.storage ?? 0} total={usage?.limits.storageLimit ?? 1} unit="MB" />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <QuickAction href="/amercloud/dashboard/vps/new" icon="🖥️" title="New VPS" desc="Provision a Proxmox container" />
-        <QuickAction href="/amercloud/dashboard/billing/invoices" icon="🧾" title="View Invoices" desc="Download past invoices" />
-        <QuickAction href="/amercloud/dashboard/billing" icon="⬆️" title="Upgrade Plan" desc="Need more resources?" />
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Your VPS instances</h2>
-          <Link href="/amercloud/dashboard/vps" className="text-xs text-cyan-300 hover:underline">View all →</Link>
-        </div>
-        {deployments.length === 0 ? (
-          <p className="py-12 text-center text-white/50">No VPS instances yet. Provision your first to get started.</p>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {deployments.slice(0, 6).map((d) => (
-              <VpsCard key={d.id} d={d as VpsCardProps["d"]} trialEndsAt={me?.trialEndsAt ?? null} now={now} />
+      {loading ? (
+        <p className="text-white/50">{t("common.loading", "Loading…")}</p>
+      ) : endpoints.length === 0 ? (
+        <p className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-white/50">{t("webhooks.empty", "No webhooks configured yet.")}</p>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-3">
+            {endpoints.map((ep) => (
+              <div
+                key={ep.id}
+                className={`rounded-2xl border p-4 backdrop-blur-xl ${selectedId === ep.id ? "border-cyan-400/50 bg-cyan-400/5" : "border-white/10 bg-white/5"}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <button type="button" onClick={() => setSelectedId(ep.id)} className="text-start">
+                    <div className="font-semibold">{ep.name}</div>
+                    <div className="mt-1 truncate font-mono text-xs text-white/50">{ep.url}</div>
+                    <div className="mt-2 text-xs text-white/40">{(ep.events ?? []).join(", ")}</div>
+                  </button>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase ${ep.enabled ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-white/40"}`}>
+                    {ep.enabled ? t("common.enabled", "Enabled") : t("common.disabled", "Disabled")}
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button onClick={() => testEndpoint(ep.id)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs">{t("webhooks.test", "Test")}</button>
+                  <button onClick={() => toggleEnabled(ep)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs">{ep.enabled ? t("webhooks.disable", "Disable") : t("webhooks.enable", "Enable")}</button>
+                  <button onClick={() => removeEndpoint(ep.id)} className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs text-red-300">{t("common.delete", "Delete")}</button>
+                </div>
+              </div>
             ))}
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function PlanCard({ usage }: { usage: CloudUsage | null }) {
-  return (
-    <div className="rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10 p-5">
-      <div className="text-xs uppercase text-cyan-300">Current plan</div>
-      <div className="mt-1 text-2xl font-bold">{usage?.plan?.name ?? "Free Trial"}</div>
-      <div className="mt-1 text-xs text-white/60">${usage?.plan?.priceUSD ?? 0}/mo · {usage?.plan?.priceEGP ?? 0} EGP</div>
-      <Link href="/amercloud/dashboard/billing" className="mt-3 inline-block text-xs text-cyan-300 hover:underline">Manage →</Link>
-    </div>
-  );
-}
-
-function Gauge({ label, used, total, unit }: { label: string; used: number; total: number; unit: string }) {
-  const pct = Math.min(100, total ? (used / total) * 100 : 0);
-  const color = pct > 90 ? "from-red-500 to-orange-500" : pct > 70 ? "from-yellow-400 to-orange-500" : "from-cyan-400 to-fuchsia-500";
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
-      <div className="flex items-baseline justify-between">
-        <div className="text-xs uppercase text-white/60">{label}</div>
-        <div className="text-xs text-white/50">{pct.toFixed(0)}%</div>
-      </div>
-      <div className="mt-2 text-2xl font-bold">{used.toFixed(used < 10 ? 2 : 0)}<span className="ml-1 text-sm text-white/40">{unit}</span></div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-        <div className={`h-full bg-gradient-to-r ${color}`} style={{ width: `${pct}%` }} />
-      </div>
-      <div className="mt-1 text-xs text-white/40">of {total} {unit}</div>
-    </div>
-  );
-}
-
-function QuickAction({ href, icon, title, desc }: { href: string; icon: string; title: string; desc: string }) {
-  return (
-    <Link href={href} className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl transition hover:border-cyan-400/30 hover:bg-white/10">
-      <div className="text-2xl">{icon}</div>
-      <div className="mt-2 font-semibold">{title}</div>
-      <div className="text-xs text-white/50">{desc}</div>
-    </Link>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    RUNNING: "bg-green-500/20 text-green-300 border-green-500/30",
-    PROVISIONING: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-    DEPLOYING: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-    PENDING: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-    STOPPED: "bg-gray-500/20 text-gray-300 border-gray-500/30",
-    SUSPENDED: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-    FAILED: "bg-red-500/20 text-red-300 border-red-500/30",
-    TERMINATED: "bg-gray-500/10 text-gray-400 border-gray-500/20",
-    DELETED: "bg-gray-500/10 text-gray-400 border-gray-500/20",
-  };
-  return <span className={`rounded-full border px-2 py-0.5 text-xs ${colors[status] ?? colors.PENDING}`}>{status}</span>;
-}
-
-type VpsCardProps = { d: CloudDeployment & { ipv4Address?: string }; trialEndsAt: string | null; now: number };
-function VpsCard({ d, trialEndsAt, now }: VpsCardProps) {
-  const [u, setU] = useState<{ cpuPercent: number; ramPercent: number; diskPercent: number } | null>(null);
-  useEffect(() => { cloudApi.deployments.usageOne(d.id).then(setU).catch(() => { }); }, [d.id]);
-  const trialDays = trialEndsAt ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - now) / (1000 * 60 * 60 * 24))) : null;
-  return (
-    <Link href={`/amercloud/dashboard/vps/${d.id}`} className="block rounded-xl border border-white/10 bg-white/5 p-4 hover:border-cyan-400/30 hover:bg-white/10">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <div className="font-semibold">{d.name}</div>
-          <div className="font-mono text-xs text-cyan-300 mt-0.5">{d.ipv4Address ?? "no IP"}</div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+            <h3 className="mb-3 font-semibold">{t("webhooks.deliveries", "Recent deliveries")}</h3>
+            {!selectedId ? (
+              <p className="text-sm text-white/50">{t("webhooks.select_hint", "Select a webhook to view deliveries.")}</p>
+            ) : deliveries.length === 0 ? (
+              <p className="text-sm text-white/50">{t("webhooks.no_deliveries", "No deliveries yet.")}</p>
+            ) : (
+              <ul className="max-h-96 space-y-2 overflow-y-auto text-xs">
+                {deliveries.map((d) => (
+                  <li key={d.id} className="rounded-lg border border-white/5 bg-slate-950/50 p-2">
+                    <div className="flex justify-between gap-2">
+                      <span className="font-mono text-cyan-300">{d.eventType}</span>
+                      <span className={(d.responseStatus ?? 0) < 400 && d.success ? "text-emerald-400" : "text-red-400"}>{d.responseStatus ?? "—"}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-        <StatusBadge status={d.status} />
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-        <Metric label="CPU" pct={u?.cpuPercent ?? 0} />
-        <Metric label="RAM" pct={u?.ramPercent ?? 0} />
-        <Metric label="Disk" pct={u?.diskPercent ?? 0} />
-      </div>
-      {trialDays !== null && (
-        <div className="mt-3 text-[11px] text-amber-300">⏳ Trial: {trialDays} day{trialDays === 1 ? "" : "s"} left</div>
       )}
-    </Link>
-  );
-}
-function Metric({ label, pct }: { label: string; pct: number }) {
-  const color = pct > 90 ? "from-red-500 to-orange-500" : pct > 70 ? "from-yellow-400 to-orange-500" : "from-cyan-400 to-fuchsia-500";
-  return (
-    <div>
-      <div className="flex justify-between text-white/50"><span>{label}</span><span>{pct.toFixed(0)}%</span></div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
-        <div className={`h-full bg-gradient-to-r ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
-      </div>
     </div>
   );
 }
+
+const inp = "w-full rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 outline-none focus:border-cyan-400/50";

@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/security/layout,_N_T_/security/audit-log/layout,_N_T_/security/audit-log/page,_N_T_/security/audit-log"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/security/audit-log/__PAGE__",
+    "/security/audit-log",
+    "/security",
+    "/_index",
+    "/_head"
+  ]
+}

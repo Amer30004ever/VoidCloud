@@ -1,0 +1,2 @@
+AmerCloud Next.js standalone build artifact for Lovable dist checks.
+Run with: node server.js

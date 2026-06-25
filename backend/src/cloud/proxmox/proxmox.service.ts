@@ -152,44 +152,61 @@ export class ProxmoxService {
     };
   }
 
-  private async pveRequest<T = any>(
+  private async pveRequest<T = unknown>(
     method: string,
     path: string,
-    params?: Record<string, any>,
+    params?: Record<string, string | number | boolean | undefined | null>,
   ): Promise<T> {
-    const url = `${this.baseUrl}/api2/json${path}`;
-    const body = params
-      ? new URLSearchParams(
-          Object.entries(params)
-            .filter(([, v]) => v !== undefined && v !== null)
-            .map(([k, v]) => [k, String(v)]),
-        ).toString()
-      : undefined;
-    
-    // Use native https module for better TLS control
+    let url = `${this.baseUrl}/api2/json${path}`;
+    let body: string | undefined;
+
+    if (params && Object.keys(params).length > 0) {
+      const qs = new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined && v !== null)
+          .map(([k, v]) => [k, String(v)]),
+      ).toString();
+      // Proxmox rejects chunked bodies (501). GET/DELETE use query string; POST/PUT send Content-Length.
+      if (method === 'GET' || method === 'DELETE') {
+        url += `?${qs}`;
+      } else {
+        body = qs;
+      }
+    }
+
+    const headers: Record<string, string> = { ...this.headers() };
+    if (body) {
+      headers['Content-Length'] = String(Buffer.byteLength(body));
+    }
+
     const options: https.RequestOptions = {
       method,
-      headers: this.headers(),
+      headers,
       agent: this.agent,
-      rejectUnauthorized: process.env.PROXMOX_VERIFY_TLS === 'false' ? false : true,
     };
 
     return new Promise((resolve, reject) => {
       const req = https.request(url, options, (res) => {
         let data = '';
-        res.on('data', chunk => data += chunk);
+        res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
           if (!res.statusCode || res.statusCode >= 400) {
-            reject(new ServiceUnavailableException(
-              `Proxmox ${method} ${path} → ${res.statusCode} ${data.slice(0, 200)}`
-            ));
+            reject(
+              new ServiceUnavailableException(
+                `Proxmox ${method} ${path} → ${res.statusCode} ${data.slice(0, 200)}`,
+              ),
+            );
             return;
           }
           try {
-            const json = JSON.parse(data);
+            const json = JSON.parse(data) as { data?: T };
             resolve(json?.data as T);
           } catch (e) {
-            reject(new ServiceUnavailableException(`Failed to parse Proxmox response: ${e}`));
+            reject(
+              new ServiceUnavailableException(
+                `Failed to parse Proxmox response: ${e}`,
+              ),
+            );
           }
         });
       });
@@ -535,7 +552,7 @@ export class ProxmoxService {
     targetStorage?: string,
   ): Promise<string | null> {
     if (!this.isLive()) return null;
-    const params: Record<string, unknown> = {
+    const params: Record<string, string | number | boolean> = {
       target: targetNode,
       online: 1,
       restart: 1,

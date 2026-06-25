@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cloudApi, type CloudPlan, type OsTemplate } from "@/lib/cloud";
+import { useLocale } from "@/contexts/LocaleContext";
 
 type EnvRow = { key: string; value: string };
 
@@ -10,6 +11,7 @@ type ControlPanel = { id: string; name: string; description: string; priceUSD: n
 
 export default function NewVpsPage() {
   const router = useRouter();
+  const { t } = useLocale();
   const [step, setStep] = useState(1);
   const TOTAL_STEPS = 5;
   const [plans, setPlans] = useState<CloudPlan[]>([]);
@@ -56,7 +58,7 @@ export default function NewVpsPage() {
 
   async function submit() {
     if (busy) return;
-    if (!name.trim() || !plan) { setErr("Name and plan are required"); setStep(1); return; }
+    if (!name.trim() || !plan) { setErr(t("vps_new.name_plan_required", "Name and plan are required")); setStep(1); return; }
     setBusy(true); setErr("");
     try {
       const envVars: Record<string, string> = {};
@@ -78,14 +80,14 @@ export default function NewVpsPage() {
       }
       router.push(`/amercloud/dashboard/vps/${created.id}`);
     } catch (e: any) {
-      setErr(e?.response?.data?.message ?? "Failed to create VPS");
+      setErr(e?.response?.data?.message ?? t("vps_new.create_failed", "Failed to create VPS"));
     } finally { setBusy(false); }
   }
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-2 text-3xl font-bold">New VPS</h1>
-      <p className="mb-6 text-white/60">Step {step} of {TOTAL_STEPS}</p>
+      <h1 className="mb-2 text-3xl font-bold">{t("vps_new.title", "New VPS")}</h1>
+      <p className="mb-6 text-white/60">{t("vps_new.step", "Step {{step}} of {{total}}", { step: String(step), total: String(TOTAL_STEPS) })}</p>
       <div className="mb-6 h-2 overflow-hidden rounded-full bg-white/10">
         <div className="h-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 transition-all" style={{ width: `${(step / TOTAL_STEPS) * 100}%` }} />
       </div>
@@ -95,25 +97,25 @@ export default function NewVpsPage() {
 
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Basic info</h2>
-            <Field label="VPS name (required)">
+            <h2 className="text-xl font-semibold">{t("vps_new.basic_info", "Basic info")}</h2>
+            <Field label={t("vps_new.vps_name", "VPS name (required)")}>
               <input className={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="my-vps-01" maxLength={40} />
             </Field>
-            <Field label="Plan">
+            <Field label={t("vps_new.plan", "Plan")}>
               <select className={input} value={planId} onChange={(e) => setPlanId(e.target.value)}>
                 {plans.map((p) => (
                   <option key={p.id} value={p.id}>{p.name} — {p.cpuLimit} CPU · {p.memoryLimit}MB RAM · {Math.ceil(p.storageLimit/1024)}GB · ${p.priceUSD}/mo</option>
                 ))}
               </select>
             </Field>
-            <Field label="OS Template">
+            <Field label={t("vps_new.os_template", "OS Template")}>
               <div className="grid gap-2 md:grid-cols-3">
-                {templates.map((t) => (
-                  <label key={t.id} className={`cursor-pointer rounded-lg border p-3 ${templateId === t.id ? "border-cyan-400 bg-cyan-400/10" : "border-white/10 bg-white/5 hover:bg-white/10"}`}>
-                    <input type="radio" name="tpl" className="sr-only" checked={templateId === t.id} onChange={() => setTemplateId(t.id)} />
-                    <div className="font-semibold text-sm">{t.label}</div>
-                    <div className="text-xs text-white/60 mt-1">{t.description}</div>
-                    {t.hasDocker && <div className="mt-2 text-[10px] uppercase text-cyan-300">Docker preinstalled</div>}
+                {templates.map((tm) => (
+                  <label key={tm.id} className={`cursor-pointer rounded-lg border p-3 ${templateId === tm.id ? "border-cyan-400 bg-cyan-400/10" : "border-white/10 bg-white/5 hover:bg-white/10"}`}>
+                    <input type="radio" name="tpl" className="sr-only" checked={templateId === tm.id} onChange={() => setTemplateId(tm.id)} />
+                    <div className="font-semibold text-sm">{tm.label}</div>
+                    <div className="text-xs text-white/60 mt-1">{tm.description}</div>
+                    {tm.hasDocker && <div className="mt-2 text-[10px] uppercase text-cyan-300">{t("vps_new.docker_preinstalled", "Docker preinstalled")}</div>}
                   </label>
                 ))}
               </div>
@@ -123,17 +125,18 @@ export default function NewVpsPage() {
 
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Resources</h2>
-            <p className="text-xs text-white/60">Auto-filled from your selected plan ({plan?.name ?? "—"}).</p>
-            <Row k="CPU cores" v={`${plan?.cpuLimit ?? "—"}`} />
-            <Row k="RAM" v={`${plan?.memoryLimit ?? "—"} MB`} />
-            <Row k="Storage" v={`${plan?.storageLimit ? Math.ceil(plan.storageLimit/1024) : "—"} GB`} />
-            <Row k="OS Template" v={tpl?.label ?? "—"} />
+            <h2 className="text-xl font-semibold">{t("vps_new.resources", "Resources")}</h2>
+            <p className="text-xs text-white/60">{t("vps_new.resources_hint", "Auto-filled from your selected plan ({{plan}}).", { plan: plan?.name ?? "—" })}</p>
+            <Row k={t("vps_new.cpu_cores", "CPU cores")} v={`${plan?.cpuLimit ?? "—"}`} />
+            <Row k={t("vps_new.ram", "RAM")} v={`${plan?.memoryLimit ?? "—"} MB`} />
+            <Row k={t("vps_new.storage", "Storage")} v={`${plan?.storageLimit ? Math.ceil(plan.storageLimit/1024) : "—"} GB`} />
+            <Row k={t("vps_new.os_template", "OS Template")} v={tpl?.label ?? "—"} />
           </div>
         )}
 
         {step === 3 && (
           <Collapsibles
+            t={t}
             envRows={envRows} setEnvRows={setEnvRows}
             domainsText={domainsText} setDomainsText={setDomainsText}
             autoSsl={autoSsl} setAutoSsl={setAutoSsl}
@@ -146,8 +149,8 @@ export default function NewVpsPage() {
 
         {step === 4 && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Control Panel</h2>
-            <p className="text-xs text-white/60">Optional. Install a web-based management panel after provisioning. Paid panels add to your monthly bill.</p>
+            <h2 className="text-xl font-semibold">{t("vps_new.control_panel", "Control Panel")}</h2>
+            <p className="text-xs text-white/60">{t("vps_new.control_panel_hint", "Optional. Install a web-based management panel after provisioning. Paid panels add to your monthly bill.")}</p>
             <div className="grid gap-2 md:grid-cols-2">
               {panels.map((p) => (
                 <label key={p.id} className={`cursor-pointer rounded-lg border p-3 ${panelId === p.id ? "border-cyan-400 bg-cyan-400/10" : "border-white/10 bg-white/5 hover:bg-white/10"}`}>
@@ -158,7 +161,7 @@ export default function NewVpsPage() {
                       <div className="text-xs text-white/60 mt-1">{p.description}</div>
                     </div>
                     <span className={`shrink-0 text-xs font-mono ${p.priceUSD > 0 ? "text-amber-300" : "text-emerald-300"}`}>
-                      {p.priceUSD > 0 ? `+$${p.priceUSD}/mo` : "Free"}
+                      {p.priceUSD > 0 ? `+$${p.priceUSD}/mo` : t("vps_new.free", "Free")}
                     </span>
                   </div>
                 </label>
@@ -169,33 +172,33 @@ export default function NewVpsPage() {
 
         {step === 5 && (
           <div className="space-y-3">
-            <h2 className="text-xl font-semibold">Review</h2>
+            <h2 className="text-xl font-semibold">{t("vps_new.review", "Review")}</h2>
             <div className="rounded-lg border border-white/10 bg-slate-950/50 p-4 text-sm space-y-1">
-              <Row k="Name" v={name} />
-              <Row k="Plan" v={plan?.name ?? "—"} />
-              <Row k="OS Template" v={tpl?.label ?? "—"} />
-              <Row k="Resources" v={`${plan?.cpuLimit} CPU · ${plan?.memoryLimit}MB · ${plan?.storageLimit ? Math.ceil(plan.storageLimit/1024) : 0}GB`} />
-              <Row k="Control panel" v={panel ? `${panel.name}${panelExtra > 0 ? ` (+$${panelExtra}/mo)` : ""}` : "None"} />
-              <Row k="Custom domains" v={domainsText || "—"} />
-              <Row k="Env vars" v={`${envRows.filter((r) => r.key).length} defined`} />
-              <Row k="SSH keys" v={sshKeys ? `${sshKeys.split(/\n/).filter(Boolean).length} key(s)` : "—"} />
-              <Row k="Hostname" v={hostname || name || "—"} />
-              <Row k="Post-provision script" v={postScript ? "yes" : "—"} />
+              <Row k={t("common.name", "Name")} v={name} />
+              <Row k={t("vps_new.plan", "Plan")} v={plan?.name ?? "—"} />
+              <Row k={t("vps_new.os_template", "OS Template")} v={tpl?.label ?? "—"} />
+              <Row k={t("vps_new.resources", "Resources")} v={`${plan?.cpuLimit} CPU · ${plan?.memoryLimit}MB · ${plan?.storageLimit ? Math.ceil(plan.storageLimit/1024) : 0}GB`} />
+              <Row k={t("vps_new.control_panel", "Control panel")} v={panel ? `${panel.name}${panelExtra > 0 ? ` (+$${panelExtra}/mo)` : ""}` : t("vps_new.none", "None")} />
+              <Row k={t("vps_new.custom_domains", "Custom domains")} v={domainsText || "—"} />
+              <Row k={t("vps_new.env_vars", "Env vars")} v={t("vps_new.defined", "{{count}} defined", { count: String(envRows.filter((r) => r.key).length) })} />
+              <Row k={t("vps_new.ssh_keys", "SSH keys")} v={sshKeys ? t("vps_new.keys_count", "{{count}} key(s)", { count: String(sshKeys.split(/\n/).filter(Boolean).length) }) : "—"} />
+              <Row k={t("vps_new.hostname", "Hostname")} v={hostname || name || "—"} />
+              <Row k={t("vps_new.post_script", "Post-provision script")} v={postScript ? t("vps_new.yes", "yes") : "—"} />
             </div>
             <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-4 text-sm">
-              <div className="text-xs uppercase text-cyan-300">Estimated cost</div>
+              <div className="text-xs uppercase text-cyan-300">{t("vps_new.estimated_cost", "Estimated cost")}</div>
               <div className="text-2xl font-bold">${totalUSD}/mo</div>
-              <div className="text-xs text-white/60">{plan?.priceEGP ?? 0} EGP/mo (base){panelExtra > 0 ? ` + $${panelExtra}/mo control panel` : ""}</div>
+              <div className="text-xs text-white/60">{t("vps_new.egp_base", "{{amount}} EGP/mo (base)", { amount: String(plan?.priceEGP ?? 0) })}{panelExtra > 0 ? t("vps_new.panel_extra", " + ${{amount}}/mo control panel", { amount: String(panelExtra) }) : ""}</div>
             </div>
           </div>
         )}
 
         <div className="mt-6 flex justify-between">
-          <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className="rounded-lg border border-white/10 px-4 py-2 text-sm disabled:opacity-30">← Back</button>
+          <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className="rounded-lg border border-white/10 px-4 py-2 text-sm disabled:opacity-30">← {t("common.back", "Back")}</button>
           {step < TOTAL_STEPS ? (
-            <button onClick={() => setStep(step + 1)} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950">Next →</button>
+            <button onClick={() => setStep(step + 1)} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950">{t("common.next", "Next")} →</button>
           ) : (
-            <button onClick={submit} disabled={busy} aria-busy={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Provisioning…" : "🚀 Create VPS"}</button>
+            <button onClick={submit} disabled={busy} aria-busy={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50">{busy ? t("vps_new.provisioning", "Provisioning…") : t("vps_new.create", "🚀 Create VPS")}</button>
           )}
         </div>
       </div>
@@ -204,6 +207,7 @@ export default function NewVpsPage() {
 }
 
 function Collapsibles(props: {
+  t: (key: string, fallback: string, vars?: Record<string, string>) => string;
   envRows: EnvRow[]; setEnvRows: (r: EnvRow[]) => void;
   domainsText: string; setDomainsText: (s: string) => void;
   autoSsl: boolean; setAutoSsl: (b: boolean) => void;
@@ -212,13 +216,13 @@ function Collapsibles(props: {
   customDns: string; setCustomDns: (s: string) => void;
   postScript: string; setPostScript: (s: string) => void;
 }) {
-  const { envRows, setEnvRows, domainsText, setDomainsText, autoSsl, setAutoSsl,
+  const { t, envRows, setEnvRows, domainsText, setDomainsText, autoSsl, setAutoSsl,
     sshKeys, setSshKeys, hostname, setHostname, customDns, setCustomDns, postScript, setPostScript } = props;
   return (
     <div className="space-y-3">
-      <h2 className="text-xl font-semibold">Advanced options</h2>
+      <h2 className="text-xl font-semibold">{t("vps_new.advanced", "Advanced options")}</h2>
 
-      <Group title="Environment variables">
+      <Group title={t("vps_new.env_vars", "Environment variables")}>
         <div className="space-y-2">
           {envRows.map((r, i) => (
             <div key={i} className="flex gap-2">
@@ -227,32 +231,32 @@ function Collapsibles(props: {
               <button onClick={() => setEnvRows(envRows.filter((_, j) => j !== i))} className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 text-sm text-red-300">×</button>
             </div>
           ))}
-          <button onClick={() => setEnvRows([...envRows, { key: "", value: "" }])} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs">+ Add variable</button>
+          <button onClick={() => setEnvRows([...envRows, { key: "", value: "" }])} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs">{t("vps_new.add_variable", "+ Add variable")}</button>
         </div>
       </Group>
 
-      <Group title="Custom domains">
+      <Group title={t("vps_new.custom_domains", "Custom domains")}>
         <textarea rows={2} className={input} placeholder="app.example.com, api.example.com" value={domainsText} onChange={(e) => setDomainsText(e.target.value)} />
         <label className="mt-2 flex items-center gap-2 text-sm">
           <input type="checkbox" checked={autoSsl} onChange={(e) => setAutoSsl(e.target.checked)} className="accent-cyan-400" />
-          Auto-provision SSL via Let&apos;s Encrypt
+          {t("vps_new.auto_ssl", "Auto-provision SSL via Let's Encrypt")}
         </label>
       </Group>
 
-      <Group title="SSH public keys">
+      <Group title={t("vps_new.ssh_keys", "SSH public keys")}>
         <textarea rows={3} className={input} placeholder="ssh-ed25519 AAAA... user@host" value={sshKeys} onChange={(e) => setSshKeys(e.target.value)} />
       </Group>
 
-      <Group title="Network">
-        <Field label="Hostname">
+      <Group title={t("vps_new.network", "Network")}>
+        <Field label={t("vps_new.hostname", "Hostname")}>
           <input className={input} value={hostname} onChange={(e) => setHostname(e.target.value)} placeholder="my-vps-01" />
         </Field>
-        <Field label="Custom DNS (comma separated)">
+        <Field label={t("vps_new.custom_dns", "Custom DNS (comma separated)")}>
           <input className={input} value={customDns} onChange={(e) => setCustomDns(e.target.value)} placeholder="1.1.1.1, 8.8.8.8" />
         </Field>
       </Group>
 
-      <Group title="Post-provision script">
+      <Group title={t("vps_new.post_script", "Post-provision script")}>
         <textarea rows={4} className={`${input} font-mono`} placeholder="#!/bin/bash&#10;apt-get update -y" value={postScript} onChange={(e) => setPostScript(e.target.value)} />
       </Group>
     </div>

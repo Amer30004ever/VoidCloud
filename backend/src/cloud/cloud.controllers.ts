@@ -1279,6 +1279,9 @@ export class CloudAdminController {
   @Get('plans') plansList() {
     return this.plans.list(false);
   }
+  @Put('plans/reorder') planReorder(@Body() body: { planIds?: string[] }) {
+    return this.plans.reorder(body?.planIds ?? []);
+  }
   @Post('plans') planCreate(@Body() body: any) {
     return this.plans.create(body);
   }
