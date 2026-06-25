@@ -31,15 +31,22 @@ export default function WebhookManager() {
   }, [t]);
 
   useEffect(() => {
-    refresh();
+    (async () => { await refresh(); })();
   }, [refresh]);
 
   useEffect(() => {
-    if (!selectedId) {
-      setDeliveries([]);
-      return;
-    }
-    cloudWebhooks.deliveries(selectedId).then(setDeliveries).catch(() => setDeliveries([]));
+    (async () => {
+      if (!selectedId) {
+        setDeliveries([]);
+        return;
+      }
+      try {
+        const data = await cloudWebhooks.deliveries(selectedId);
+        setDeliveries(data);
+      } catch {
+        setDeliveries([]);
+      }
+    })();
   }, [selectedId]);
 
   async function createEndpoint() {

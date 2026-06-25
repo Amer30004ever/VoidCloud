@@ -12,7 +12,7 @@ export default function AdminPlansPage() {
   const [savingOrder, setSavingOrder] = useState(false);
 
   async function load() { setPlans(await cloudApi.admin.plans()); }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { (async () => { await load(); })(); }, []);
 
   async function save() {
     if (!edit) return;
