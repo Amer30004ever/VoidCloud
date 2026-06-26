@@ -1151,7 +1151,7 @@ jobs:
       - name: Apply k8s manifests
         run: |
           set -e
-          NAMESPACE="${{ env.NAMESPACE }}"
+          NAMESPACE=${NAMESPACE}
           
           echo "📦 Applying manifests to namespace: ${NAMESPACE}"
           
@@ -1240,7 +1240,7 @@ jobs:
           chmod 600 $HOME/.kube/config
       - name: Validate & annotate secrets
         run: |
-          NAMESPACE="${{ env.NAMESPACE }}"
+          NAMESPACE=${NAMESPACE}
           if [ -f "kubernetes/validate-secrets.sh" ]; then
             bash kubernetes/validate-secrets.sh --namespace ${NAMESPACE} --annotate
           else
@@ -1289,7 +1289,7 @@ jobs:
           chmod 600 $HOME/.kube/config
       - name: Restart workloads
         run: |
-          NAMESPACE="${{ env.NAMESPACE }}"
+          NAMESPACE=${NAMESPACE}
           echo "🔄 Restarting workloads in namespace: ${NAMESPACE}"
           
           kubectl -n ${NAMESPACE} rollout restart deploy/backend
