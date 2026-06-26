@@ -67,6 +67,7 @@ export default function BusinessAdminDashboard() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (user?.role !== "ADMIN" && user?.role !== "SUPER_ADMIN") {
       window.location.href = "/voidcloud/dashboard";

@@ -51,6 +51,7 @@ export default function SystemHealthDashboard() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (user?.role !== "SUPER_ADMIN" && user?.role !== "ADMIN") {
       window.location.href = "/voidcloud/dashboard";

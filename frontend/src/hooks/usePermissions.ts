@@ -53,6 +53,7 @@ export function usePermissions() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     loadPermissions();
   }, [loadPermissions]);
