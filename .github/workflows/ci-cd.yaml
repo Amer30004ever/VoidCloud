@@ -61,7 +61,7 @@ env:
   DOCKER_HUB_USERNAME: amer30004ever
   DOCKER_HUB_REPO: voidcloud
   POSTGRES_IMAGE_NAME: amer30004ever/voidcloud-postgres
-  namespace: voidcloud
+  NAMESPACE: voidcloud
 
 jobs:
   # ============================================
