@@ -350,7 +350,7 @@ jobs:
       - name: Build frontend (Next.js build)
         run: cd frontend && npm run build
         env:
-          NEXT_PUBLIC_API_URL: https://api.amer-portal.cc.cd/api/v1
+          NEXT_PUBLIC_API_URL: https://api.voidcloud.cc.cd/api/v1
 
       - name: Run frontend tests
         run: cd frontend && npm test -- --watchAll=false --passWithNoTests
@@ -1105,8 +1105,8 @@ jobs:
           echo ""
           
           echo "🌐 Access URLs:"
-          echo "   https://amer-portal.cc.cd"
-          echo "   https://api.amer-portal.cc.cd/api/v1/health"
+          echo "   https://voidcloud.cc.cd"
+          echo "   https://api.voidcloud.cc.cd/api/v1/health"
           echo ""
           echo "🐘 PostgreSQL:"
           echo "   Service: postgres.${{ env.NAMESPACE }}.svc.cluster.local:5432"

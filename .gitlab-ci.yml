@@ -221,7 +221,7 @@ test-frontend:
   rules:
     - if: '$FRONTEND == "true"'
   variables:
-    NEXT_PUBLIC_API_URL: https://api.amer-portal.cc.cd/api/v1
+    NEXT_PUBLIC_API_URL: https://api.voidcloud.cc.cd/api/v1
   script:
     - cd frontend
     - npm ci
@@ -605,8 +605,8 @@ deploy-summary:
       kubectl get svc -n $NAMESPACE
       echo ""
       echo "🌐 Access URLs:"
-      echo "   https://amer-portal.cc.cd"
-      echo "   https://api.amer-portal.cc.cd/api/v1/health"
+      echo "   https://voidcloud.cc.cd"
+      echo "   https://api.voidcloud.cc.cd/api/v1/health"
       echo ""
       echo "========================================="
   allow_failure: true

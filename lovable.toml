@@ -8,4 +8,4 @@ install = "npm --prefix frontend install"
 output = "frontend/.next"
 
 [env]
-NEXT_PUBLIC_API_URL = "https://api.amer-portal.cc.cd/api/v1"
+NEXT_PUBLIC_API_URL = "https://api.voidcloud.cc.cd/api/v1"

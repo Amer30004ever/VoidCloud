@@ -31,12 +31,12 @@ Built with **NestJS 11**, **Next.js 16**, **PostgreSQL 15**, **Prisma 7**, and d
 
 | Surface       | Local                                   | Production                                |
 |---------------|-----------------------------------------|-------------------------------------------|
-| Web UI        | http://localhost:3000                   | https://amer-portal.cc.cd                 |
-| REST API      | http://localhost:3001/api/v1            | https://api.amer-portal.cc.cd/api/v1      |
-| Swagger Docs  | http://localhost:3001/api/docs          | https://api.amer-portal.cc.cd/api/docs    |
-| Health Check  | http://localhost:3001/api/v1/health     | https://api.amer-portal.cc.cd/api/v1/health |
-| WebSocket     | ws://localhost:3001                     | wss://api.amer-portal.cc.cd               |
-| WhatsApp Hook | http://localhost:3001/api/v1/webhook    | https://api.amer-portal.cc.cd/api/v1/webhook |
+| Web UI        | http://localhost:3000                   | https://voidcloud.cc.cd                 |
+| REST API      | http://localhost:3001/api/v1            | https://api.voidcloud.cc.cd/api/v1      |
+| Swagger Docs  | http://localhost:3001/api/docs          | https://api.voidcloud.cc.cd/api/docs    |
+| Health Check  | http://localhost:3001/api/v1/health     | https://api.voidcloud.cc.cd/api/v1/health |
+| WebSocket     | ws://localhost:3001                     | wss://api.voidcloud.cc.cd               |
+| WhatsApp Hook | http://localhost:3001/api/v1/webhook    | https://api.voidcloud.cc.cd/api/v1/webhook |
 
 ---
 
@@ -439,8 +439,8 @@ kubectl -n amer-portal rollout status deploy/frontend
 
 - Tunnel config: `kubernetes/cloudflare-tunnel-config.yaml`
 - Hostname routing:
-  - `amer-portal.cc.cd` → `frontend:3000`
-  - `api.amer-portal.cc.cd` → `backend:3001`
+  - `voidcloud.cc.cd` → `frontend:3000`
+  - `api.voidcloud.cc.cd` → `backend:3001`
 - Setup script: `kubernetes/setup-tunnel-fresh-final.ps1`
 - Linux guide: `kubernetes/cloudflare-linux.md`
 
@@ -545,7 +545,7 @@ SMTP_PORT=587
 SMTP_USER=nova-cloud-2026@outlook.com
 SMTP_PASS=<app password generated from Microsoft account>
 EMAIL_FROM="AmerCloud <nova-cloud-2026@outlook.com>"
-FRONTEND_URL=https://amer-portal.cc.cd
+FRONTEND_URL=https://voidcloud.cc.cd
 ```
 
 4. **Apply the migration** that adds `password_reset_tokens`:
@@ -570,7 +570,7 @@ All password inputs (`/amercloud/login`, `/register`, `/reset-password`) render 
 | POST | `/api/v1/auth/reset-password` | public | Consumes token, sets new password |
 | GET  | `/api/v1/auth/me` | Bearer JWT | Current user profile |
 
-Full Swagger UI at `https://api.amer-portal.cc.cd/api/docs` when the backend is running.
+Full Swagger UI at `https://api.voidcloud.cc.cd/api/docs` when the backend is running.
 
 ---
 
@@ -665,7 +665,7 @@ Default super-admin: `amer30004ever@hotmail.com`.
 
 ```bash
 # 1) API (must be authenticated as SUPER_ADMIN)
-curl -X POST https://api.amer-portal.cc.cd/api/v1/cloud/admin/reset-admin-password \
+curl -X POST https://api.voidcloud.cc.cd/api/v1/cloud/admin/reset-admin-password \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"newPassword":"YourNewPassword123!"}'
