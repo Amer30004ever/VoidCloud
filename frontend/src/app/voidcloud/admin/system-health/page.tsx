@@ -34,16 +34,6 @@ export default function SystemHealthDashboard() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  useEffect(() => {
-    if (user?.role !== "SUPER_ADMIN" && user?.role !== "ADMIN") {
-      window.location.href = "/voidcloud/dashboard";
-      return;
-    }
-    fetchHealthData();
-    const interval = setInterval(fetchHealthData, 30000); // Update every 30 seconds
-    return () => clearInterval(interval);
-  }, [user]);
-
   const fetchHealthData = async () => {
     try {
       const [healthRes, metricsRes] = await Promise.all([
@@ -60,6 +50,16 @@ export default function SystemHealthDashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user?.role !== "SUPER_ADMIN" && user?.role !== "ADMIN") {
+      window.location.href = "/voidcloud/dashboard";
+      return;
+    }
+    fetchHealthData();
+    const interval = setInterval(fetchHealthData, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, [user]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

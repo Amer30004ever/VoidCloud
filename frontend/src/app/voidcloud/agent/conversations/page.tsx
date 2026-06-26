@@ -48,12 +48,6 @@ export default function AgentConversationsPage() {
   const [sending, setSending] = useState(false);
   const [notes, setNotes] = useState<string>("");
 
-  useEffect(() => {
-    fetchConversations();
-    const interval = setInterval(fetchConversations, 5000);
-    return () => clearInterval(interval);
-  }, [filter]);
-
   const fetchConversations = async () => {
     try {
       const res = await fetch(`/api/v1/agent/conversations?filter=${filter}`);
@@ -67,6 +61,12 @@ export default function AgentConversationsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchConversations();
+    const interval = setInterval(fetchConversations, 5000);
+    return () => clearInterval(interval);
+  }, [filter]);
 
   const fetchConversationMessages = async (conversationId: string) => {
     try {
@@ -110,7 +110,7 @@ export default function AgentConversationsPage() {
     }
   };
 
-  const useQuickReply = (text: string) => {
+  const handleQuickReply = (text: string) => {
     setNewMessage(text);
   };
 
@@ -259,7 +259,7 @@ export default function AgentConversationsPage() {
                 {QUICK_REPLIES.map((reply) => (
                   <button
                     key={reply.id}
-                    onClick={() => useQuickReply(reply.text)}
+                    onClick={() => handleQuickReply(reply.text)}
                     className="rounded-full bg-white/5 px-3 py-1 text-sm text-white/70 hover:bg-white/10"
                   >
                     {reply.text}

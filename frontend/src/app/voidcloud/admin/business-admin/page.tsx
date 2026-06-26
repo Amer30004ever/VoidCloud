@@ -47,14 +47,6 @@ export default function BusinessAdminDashboard() {
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("AGENT");
 
-  useEffect(() => {
-    if (user?.role !== "ADMIN" && user?.role !== "SUPER_ADMIN") {
-      window.location.href = "/voidcloud/dashboard";
-      return;
-    }
-    fetchData();
-  }, [user]);
-
   const fetchData = async () => {
     try {
       const [statsRes, teamRes, convRes, vpsRes] = await Promise.all([
@@ -74,6 +66,14 @@ export default function BusinessAdminDashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user?.role !== "ADMIN" && user?.role !== "SUPER_ADMIN") {
+      window.location.href = "/voidcloud/dashboard";
+      return;
+    }
+    fetchData();
+  }, [user]);
 
   const addTeamMember = async () => {
     if (!newMemberEmail) return;
@@ -122,7 +122,7 @@ export default function BusinessAdminDashboard() {
         {["overview", "team", "conversations", "vps", "settings", "analytics"].map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab as any)}
+            onClick={() => setActiveTab(tab as "overview" | "team" | "conversations" | "vps" | "settings" | "analytics")}
             className={`px-4 py-2 capitalize whitespace-nowrap ${
               activeTab === tab
                 ? "border-b-2 border-cyan-400 text-white"

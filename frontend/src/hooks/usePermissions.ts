@@ -11,10 +11,6 @@ export function usePermissions() {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadPermissions();
-  }, []);
-
   const loadPermissions = async () => {
     try {
       // Check cache first
@@ -56,6 +52,10 @@ export function usePermissions() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadPermissions();
+  }, []);
 
   const hasPermission = (permission: string): boolean => {
     return permissions.includes(permission);

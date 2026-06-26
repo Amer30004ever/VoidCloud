@@ -35,13 +35,6 @@ export default function WhatsAppCRMDashboard() {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    fetchConversations();
-    // Poll for new messages every 5 seconds
-    const interval = setInterval(fetchConversations, 5000);
-    return () => clearInterval(interval);
-  }, [filter]);
-
   const fetchConversations = async () => {
     try {
       const res = await fetch(`/api/v1/crm/conversations?status=${filter}`);
@@ -55,6 +48,13 @@ export default function WhatsAppCRMDashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchConversations();
+    // Poll for new messages every 5 seconds
+    const interval = setInterval(fetchConversations, 5000);
+    return () => clearInterval(interval);
+  }, [filter]);
 
   const fetchConversationMessages = async (conversationId: string) => {
     try {
@@ -161,7 +161,7 @@ export default function WhatsAppCRMDashboard() {
             {["all", "open", "resolved", "pending"].map((status) => (
               <button
                 key={status}
-                onClick={() => setFilter(status as any)}
+                onClick={() => setFilter(status as "all" | "open" | "resolved" | "pending")}
                 className={`px-3 py-1 rounded-lg text-sm capitalize ${
                   filter === status
                     ? "bg-cyan-500 text-white"

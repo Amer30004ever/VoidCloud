@@ -6,7 +6,6 @@ interface AuditLogData {
   userEmail: string;
   action: string;
   resource: string;
-  resourceId?: string;
   details?: string;
   ipAddress?: string;
   userAgent?: string;
@@ -29,7 +28,6 @@ export class AuditService {
           userEmail: data.userEmail,
           action: data.action,
           resource: data.resource,
-          resourceId: data.resourceId,
           details: data.details,
           ipAddress: data.ipAddress,
           userAgent: data.userAgent,

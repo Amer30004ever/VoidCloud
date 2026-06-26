@@ -60,14 +60,6 @@ export default function SuperAdminDashboard() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user?.role !== "SUPER_ADMIN") {
-      window.location.href = "/voidcloud/dashboard";
-      return;
-    }
-    fetchData();
-  }, [user]);
-
   const fetchData = async () => {
     try {
       const [statsRes, usersRes, tenantsRes, vpsRes, auditRes] = await Promise.all([
@@ -90,6 +82,14 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  useEffect(() => {
+    if (user?.role !== "SUPER_ADMIN") {
+      window.location.href = "/voidcloud/dashboard";
+      return;
+    }
+    fetchData();
+  }, [user]);
+
   if (loading) return <div className="p-6 text-white/50">Loading Super Admin Dashboard...</div>;
 
   return (
@@ -103,7 +103,7 @@ export default function SuperAdminDashboard() {
         {["overview", "users", "tenants", "vps", "conversations", "audit", "settings"].map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab as any)}
+            onClick={() => setActiveTab(tab as "overview" | "users" | "tenants" | "vps" | "conversations" | "audit" | "settings")}
             className={`px-4 py-2 capitalize whitespace-nowrap ${
               activeTab === tab
                 ? "border-b-2 border-cyan-400 text-white"

@@ -63,10 +63,6 @@ export default function RolesManagementPage() {
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedTenant, setSelectedTenant] = useState<string>("");
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = async () => {
     try {
       const [rolesRes, permsRes, tenantsRes] = await Promise.all([
@@ -84,6 +80,10 @@ export default function RolesManagementPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const createRole = async () => {
     try {
@@ -152,7 +152,7 @@ export default function RolesManagementPage() {
         {["roles", "permissions", "tenants", "assignments"].map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab as any)}
+            onClick={() => setActiveTab(tab as "roles" | "permissions" | "tenants" | "assignments")}
             className={`px-4 py-2 capitalize ${
               activeTab === tab
                 ? "border-b-2 border-cyan-400 text-white"
