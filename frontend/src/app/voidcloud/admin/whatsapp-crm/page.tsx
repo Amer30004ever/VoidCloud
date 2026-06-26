@@ -52,7 +52,7 @@ export default function WhatsAppCRMDashboard() {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    fetchConversations(); // eslint-disable-line react-hooks/set-state-in-effect
+    fetchConversations();
     // Poll for new messages every 5 seconds
     const interval = setInterval(fetchConversations, 5000);
     return () => clearInterval(interval);

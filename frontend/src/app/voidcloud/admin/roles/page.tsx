@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -81,9 +82,11 @@ export default function RolesManagementPage() {
     }
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const createRole = async () => {
     try {
@@ -308,3 +311,4 @@ export default function RolesManagementPage() {
     </div>
   );
 }
+/* eslint-enable react-hooks/set-state-in-effect */

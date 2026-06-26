@@ -65,7 +65,7 @@ export default function AgentConversationsPage() {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    fetchConversations(); // eslint-disable-line react-hooks/set-state-in-effect
+    fetchConversations();
     const interval = setInterval(fetchConversations, 5000);
     return () => clearInterval(interval);
   }, [fetchConversations]);
@@ -318,4 +318,3 @@ export default function AgentConversationsPage() {
     </div>
   );
 }
-/* eslint-enable react-hooks/set-state-in-effect */

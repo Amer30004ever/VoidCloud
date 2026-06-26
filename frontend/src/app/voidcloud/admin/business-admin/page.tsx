@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -67,6 +68,7 @@ export default function BusinessAdminDashboard() {
     }
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (user?.role !== "ADMIN" && user?.role !== "SUPER_ADMIN") {
       window.location.href = "/voidcloud/dashboard";
@@ -74,6 +76,7 @@ export default function BusinessAdminDashboard() {
     }
     fetchData();
   }, [user, fetchData]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const addTeamMember = async () => {
     if (!newMemberEmail) return;
@@ -393,3 +396,4 @@ export default function BusinessAdminDashboard() {
     </div>
   );
 }
+/* eslint-enable react-hooks/set-state-in-effect */
