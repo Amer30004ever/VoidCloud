@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Conversation {
@@ -35,7 +35,7 @@ export default function WhatsAppCRMDashboard() {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
       const res = await fetch(`/api/v1/crm/conversations?status=${filter}`);
       if (res.ok) {
@@ -47,14 +47,14 @@ export default function WhatsAppCRMDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
 
   useEffect(() => {
     fetchConversations();
     // Poll for new messages every 5 seconds
     const interval = setInterval(fetchConversations, 5000);
     return () => clearInterval(interval);
-  }, [filter]);
+  }, [fetchConversations]);
 
   const fetchConversationMessages = async (conversationId: string) => {
     try {

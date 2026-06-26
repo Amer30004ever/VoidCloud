@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface HealthStatus {
@@ -34,7 +34,7 @@ export default function SystemHealthDashboard() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  const fetchHealthData = async () => {
+  const fetchHealthData = useCallback(async () => {
     try {
       const [healthRes, metricsRes] = await Promise.all([
         fetch("/api/v1/health/services"),
@@ -49,7 +49,7 @@ export default function SystemHealthDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (user?.role !== "SUPER_ADMIN" && user?.role !== "ADMIN") {
@@ -59,7 +59,7 @@ export default function SystemHealthDashboard() {
     fetchHealthData();
     const interval = setInterval(fetchHealthData, 30000); // Update every 30 seconds
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, fetchHealthData]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

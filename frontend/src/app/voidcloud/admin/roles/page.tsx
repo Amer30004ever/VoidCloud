@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface RbacRole {
@@ -63,7 +63,7 @@ export default function RolesManagementPage() {
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedTenant, setSelectedTenant] = useState<string>("");
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [rolesRes, permsRes, tenantsRes] = await Promise.all([
         fetch("/api/v1/rbac/roles"),
@@ -79,11 +79,11 @@ export default function RolesManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const createRole = async () => {
     try {

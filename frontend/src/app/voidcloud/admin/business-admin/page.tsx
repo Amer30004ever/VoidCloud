@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface BusinessStats {
@@ -47,7 +47,7 @@ export default function BusinessAdminDashboard() {
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("AGENT");
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [statsRes, teamRes, convRes, vpsRes] = await Promise.all([
         fetch("/api/v1/business/stats"),
@@ -65,7 +65,7 @@ export default function BusinessAdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (user?.role !== "ADMIN" && user?.role !== "SUPER_ADMIN") {
@@ -73,7 +73,7 @@ export default function BusinessAdminDashboard() {
       return;
     }
     fetchData();
-  }, [user]);
+  }, [user, fetchData]);
 
   const addTeamMember = async () => {
     if (!newMemberEmail) return;

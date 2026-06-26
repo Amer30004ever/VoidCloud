@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface SystemStats {
@@ -60,7 +60,7 @@ export default function SuperAdminDashboard() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [statsRes, usersRes, tenantsRes, vpsRes, auditRes] = await Promise.all([
         fetch("/api/v1/admin/system/stats"),
@@ -80,7 +80,7 @@ export default function SuperAdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (user?.role !== "SUPER_ADMIN") {
@@ -88,7 +88,7 @@ export default function SuperAdminDashboard() {
       return;
     }
     fetchData();
-  }, [user]);
+  }, [user, fetchData]);
 
   if (loading) return <div className="p-6 text-white/50">Loading Super Admin Dashboard...</div>;
 

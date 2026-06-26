@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface PermissionCache {
   permissions: string[];
@@ -11,7 +11,7 @@ export function usePermissions() {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadPermissions = async () => {
+  const loadPermissions = useCallback(async () => {
     try {
       // Check cache first
       const cached = localStorage.getItem('user_permissions');
@@ -51,11 +51,11 @@ export function usePermissions() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadPermissions();
-  }, []);
+  }, [loadPermissions]);
 
   const hasPermission = (permission: string): boolean => {
     return permissions.includes(permission);

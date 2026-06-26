@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Conversation {
@@ -48,7 +48,7 @@ export default function AgentConversationsPage() {
   const [sending, setSending] = useState(false);
   const [notes, setNotes] = useState<string>("");
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
       const res = await fetch(`/api/v1/agent/conversations?filter=${filter}`);
       if (res.ok) {
@@ -60,13 +60,13 @@ export default function AgentConversationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
 
   useEffect(() => {
     fetchConversations();
     const interval = setInterval(fetchConversations, 5000);
     return () => clearInterval(interval);
-  }, [filter]);
+  }, [fetchConversations]);
 
   const fetchConversationMessages = async (conversationId: string) => {
     try {
