@@ -190,6 +190,7 @@ model User {
 
   // RBAC & Multi-tenant relations
   userTenants         UserTenant[]
+  notifications       Notification[]
 
 
   // Cloud (HaaS) relations
@@ -244,6 +245,24 @@ model Conversation {
   updatedAt   DateTime          @updatedAt
 
   messages Message[]
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("info") // info, success, warning, error
+  category  String?
+  link      String?
+  metadata  Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+  @@map("notifications")
 }
 
 model Message {

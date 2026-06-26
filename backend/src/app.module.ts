@@ -30,6 +30,9 @@ import { WaCrmModule } from './crm/wa-crm.module';
 import { MailerModule } from './mailer/mailer.module';
 import { RbacModule } from './rbac/rbac.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
+import { AuditModule } from './audit/audit.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { RateLimitingModule } from './rate-limiting/rate-limiting.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { AppController } from './app.controller';
@@ -73,6 +76,9 @@ import { AppController } from './app.controller';
     WaCrmModule,
     RbacModule,
     WhatsAppModule,
+    AuditModule,
+    NotificationsModule,
+    RateLimitingModule,
   ],
   controllers: [AppController],
   providers: [
