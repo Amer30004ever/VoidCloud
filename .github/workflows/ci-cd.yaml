@@ -61,7 +61,7 @@ env:
   DOCKER_HUB_USERNAME: amer30004ever
   DOCKER_HUB_REPO: voidcloud
   POSTGRES_IMAGE_NAME: amer30004ever/voidcloud-postgres
-  NAMESPACE: voidcloud
+  namespace: voidcloud
 
 jobs:
   # ============================================
@@ -1162,11 +1162,7 @@ jobs:
           kubectl apply -f kubernetes/configmaps.yaml -n ${NAMESPACE}
           
           # Apply secrets - fail if there's an issue
-          if [ -f "kubernetes/secrets.yaml" ]; then
-            kubectl apply -f kubernetes/secrets.yaml -n ${NAMESPACE}
-          else
-            echo "⚠️ kubernetes/secrets.yaml not found; keeping existing cluster secrets"
-          fi
+          kubectl apply -f kubernetes/secrets.yaml -n ${NAMESPACE}
           
           # Apply PostgreSQL
           kubectl apply -f kubernetes/postgres/pv.yaml 2>/dev/null || echo "⚠️ PV may already exist"
@@ -1180,24 +1176,14 @@ jobs:
           kubectl apply -f kubernetes/backend/service.yaml -n ${NAMESPACE}
           
           # Apply Backend NodePort (for Cloudflare Tunnel)
-          if [ -f "kubernetes/backend/backend-nodeport.yaml" ]; then
-            kubectl apply -f kubernetes/backend/backend-nodeport.yaml -n ${NAMESPACE}
-            echo "✅ Backend NodePort service applied"
-          else
-            echo "⚠️ kubernetes/backend/backend-nodeport.yaml not found"
-          fi
+          kubectl apply -f kubernetes/backend/backend-nodeport.yaml -n ${NAMESPACE}
           
           # Apply Frontend
           kubectl apply -f kubernetes/frontend/deployment.yaml -n ${NAMESPACE}
           kubectl apply -f kubernetes/frontend/service.yaml -n ${NAMESPACE}
           
           # Apply Frontend NodePort (for Cloudflare Tunnel)
-          if [ -f "kubernetes/frontend/frontend-nodeport.yaml" ]; then
-            kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml -n ${NAMESPACE}
-            echo "✅ Frontend NodePort service applied"
-          else
-            echo "⚠️ kubernetes/frontend/frontend-nodeport.yaml not found"
-          fi
+          kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml -n ${NAMESPACE}
           
           # REMOVED: Ingress is not needed since we use Cloudflare Tunnel
           # kubectl apply -f kubernetes/ingress.yaml -n ${NAMESPACE} 2>/dev/null || true
