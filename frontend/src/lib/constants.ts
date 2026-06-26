@@ -1,10 +1,11 @@
-/** Base API URL - detects environment at runtime */
+/** Base API URL — reads NEXT_PUBLIC_API_URL baked at build time, falls back to runtime hostname detection */
 export const API_BASE_URL =
-  typeof window !== 'undefined'
-    ? (window.location.hostname.includes('amer-portal.cc.cd')
-        ? 'https://api.amer-portal.cc.cd/api/v1'
-        : 'http://localhost:3001/api/v1')
-    : (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1');
+  process.env.NEXT_PUBLIC_API_URL ??
+  (typeof window !== 'undefined'
+    ? window.location.hostname.includes('voidcloud.cc.cd')
+      ? 'https://api.voidcloud.cc.cd/api/v1'
+      : 'http://localhost:3001/api/v1'
+    : 'http://localhost:3001/api/v1');
 
 export const ROUTES = {
   login: "/login",
