@@ -35,17 +35,17 @@ async function bootstrap() {
         'http://127.0.0.1:3000',
         'http://localhost:3001',
         'http://127.0.0.1:3001',
-        'https://amer-portal.cc.cd',
-        'https://www.amer-portal.cc.cd',
-        'https://api.amer-portal.cc.cd',
+        'https://voidcloud.cc.cd',
+        'https://www.voidcloud.cc.cd',
+        'https://api.voidcloud.cc.cd',
         ...envOrigins,
       ].filter(Boolean),
     ),
   );
 
-  // Also allow any *.amer-portal.cc.cd subdomain (preview / staging)
+  // Also allow any *.voidcloud.cc.cd subdomain (preview / staging)
   const allowedOriginRegexes = [
-    /^https:\/\/([a-z0-9-]+\.)*amer-portal\.cc\.cd$/i,
+    /^https:\/\/([a-z0-9-]+\.)*voidcloud\.cc\.cd$/i,
   ];
 
   app.enableCors({

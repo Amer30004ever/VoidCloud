@@ -28,7 +28,7 @@ function VerifyInner() {
         {state === "loading" && <p>Hang tight while we confirm your email…</p>}
         {state === "ok" && (
           <>
-            <p>Your email is now verified. You can sign in to your AmerCloud account.</p>
+            <p>Your email is now verified. You can sign in to your VoidCloud account.</p>
             <Link href="/amercloud/login" className="block w-full rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 py-3 text-center font-semibold text-slate-950">
               Go to sign in →
             </Link>

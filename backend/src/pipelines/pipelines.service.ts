@@ -89,7 +89,7 @@ export class PipelinesService {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/vnd.github+json',
-        'User-Agent': 'amer-portal',
+        'User-Agent': 'void-portal',
       },
       body: JSON.stringify(body),
     });
@@ -225,7 +225,7 @@ export class PipelinesService {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/vnd.github+json',
-          'User-Agent': 'amer-portal',
+          'User-Agent': 'void-portal',
         },
       });
 
@@ -263,7 +263,7 @@ export class PipelinesService {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/vnd.github+json',
-          'User-Agent': 'amer-portal',
+          'User-Agent': 'void-portal',
         },
       });
 

@@ -291,7 +291,6 @@ export class ProxmoxService {
         .replace(/[^a-z0-9-]/g, '-')
         .slice(0, 60),
       ostemplate: cfg.ostemplate,
-      storage: cfg.storage,
       cores,
       memory: spec.ramMB,
       swap: Math.max(256, Math.floor(spec.ramMB / 2)),
@@ -408,7 +407,6 @@ export class ProxmoxService {
       vmid,
       hostname: spec.hostname,
       ostemplate: cfg.ostemplate,
-      storage: cfg.storage,
       cores: Math.max(1, Math.ceil(spec.cpuCores)),
       memory: spec.ramMB,
       swap: Math.max(256, Math.floor(spec.ramMB / 2)),

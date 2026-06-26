@@ -23,7 +23,7 @@ export function Navbar() {
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">
             ☁
           </span>
-          AmerCloud
+          VoidCloud
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">

@@ -14,6 +14,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { MailerService } from '../mailer/mailer.service';
 import { passwordResetEmail } from '../mailer/templates/password-reset';
+import { RbacService } from '../rbac/rbac.service';
 
 const RESET_TTL_MINUTES = 30;
 
@@ -25,6 +26,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private mailer: MailerService,
+    private rbacService: RbacService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -75,6 +77,10 @@ export class AuthService {
     }
 
     const payload = { email: user.email, sub: user.id, role: user.role };
+    
+    // Fetch user permissions from RBAC
+    const userPermissions = await this.rbacService.getUserPermissions(user.id);
+    
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -82,6 +88,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
+        permissions: userPermissions,
         mustChangePassword: user.mustChangePassword ?? false,
       },
     };

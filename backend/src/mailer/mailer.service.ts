@@ -5,13 +5,13 @@ import { Resend } from 'resend';
 /**
  * MailerService — sends transactional emails.
  *
- * Prefers SMTP (Outlook / Office 365 / any SMTP) when SMTP_HOST + SMTP_USER + SMTP_PASS are set.
- * Outlook example:
- *   SMTP_HOST=smtp.office365.com
+ * Prefers SMTP (Gmail / any SMTP) when SMTP_HOST + SMTP_USER + SMTP_PASS are set.
+ * Gmail example:
+ *   SMTP_HOST=smtp.gmail.com
  *   SMTP_PORT=587
- *   SMTP_USER=nova-cloud-2026@outlook.com
- *   SMTP_PASS=<app password>          # generate at account.live.com/proofs/AppPassword
- *   EMAIL_FROM="AmerCloud <nova-cloud-2026@outlook.com>"
+ *   SMTP_USER=support.voidcloud@gmail.com
+ *   SMTP_PASS=<app password>          # generate at https://myaccount.google.com/apppasswords
+ *   EMAIL_FROM="VoidCloud <support.voidcloud@gmail.com>"
  *
  * Falls back to Resend (RESEND_API_KEY) when SMTP is not configured.
  * Falls back to logging when neither is configured.
@@ -27,8 +27,8 @@ export class MailerService {
     this.from =
       process.env.EMAIL_FROM ||
       (process.env.SMTP_USER
-        ? `AmerCloud <${process.env.SMTP_USER}>`
-        : 'AmerCloud <nova-cloud-2026@outlook.com>');
+        ? `VoidCloud <${process.env.SMTP_USER}>`
+        : 'VoidCloud <support.voidcloud@gmail.com>');
 
     if (
       process.env.SMTP_HOST &&
@@ -129,8 +129,8 @@ export class MailerService {
 
   /** Send a test email to the admin's own address. */
   async sendTest(to: string) {
-    const subject = 'AmerCloud SMTP test email';
-    const html = `<p>This is a test from AmerCloud admin (${new Date().toISOString()}).</p><p>Transport: <b>${this.transporter ? 'SMTP' : this.resend ? 'Resend' : 'stub'}</b></p>`;
+    const subject = 'VoidCloud SMTP test email';
+    const html = `<p>This is a test from VoidCloud admin (${new Date().toISOString()}).</p><p>Transport: <b>${this.transporter ? 'SMTP' : this.resend ? 'Resend' : 'stub'}</b></p>`;
     await this.send(to, subject, html);
     return { ok: true };
   }

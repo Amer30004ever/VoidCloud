@@ -15,7 +15,7 @@ export function vpsReadyEmail(opts: {
   <div style="max-width:560px;margin:0 auto;padding:32px 24px">
     <div style="text-align:center;margin-bottom:24px">
       <div style="display:inline-block;width:48px;height:48px;line-height:48px;border-radius:12px;background:linear-gradient(135deg,#22d3ee,#d946ef);color:#0a0a0a;font-size:24px;font-weight:700">☁</div>
-      <h1 style="margin:12px 0 0;font-size:22px;color:#fff">AmerCloud</h1>
+      <h1 style="margin:12px 0 0;font-size:22px;color:#fff">VoidCloud</h1>
     </div>
     <div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:28px">
       <h2 style="margin:0 0 12px;font-size:20px;color:#fff">Your VPS is ready 🎉</h2>
@@ -28,7 +28,7 @@ export function vpsReadyEmail(opts: {
       </p>
       <p style="margin:0;font-size:12px;color:#64748b">For security, change the root password and disable password SSH once you've added your key.</p>
     </div>
-    <p style="text-align:center;font-size:12px;color:#64748b;margin-top:16px">© ${new Date().getFullYear()} AmerCloud · Support: nova-cloud-2026@outlook.com</p>
+    <p style="text-align:center;font-size:12px;color:#64748b;margin-top:16px">© ${new Date().getFullYear()} VoidCloud · Support: support.voidcloud@gmail.com</p>
   </div>
 </body></html>`;
   const text = `Your VPS "${opts.vpsName}" is ready.\nIPv4: ${opts.ipv4}${opts.rootPassword ? `\nRoot password (shown once): ${opts.rootPassword}` : ''}\nDashboard: ${opts.dashboardUrl}`;

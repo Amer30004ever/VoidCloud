@@ -76,7 +76,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
         <div className="flex items-center justify-between p-4">
           <Link href={logoHref} className={`flex items-center gap-2 font-bold ${open ? "" : "hidden"}`}>
             <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">☁</span>
-            AmerCloud
+            VoidCloud
           </Link>
           <button onClick={() => setOpen(!open)} className="rounded-md p-1 text-white/60 hover:bg-white/10">
             {open ? (lang === "ar" ? "▶" : "◀") : (lang === "ar" ? "◀" : "▶")}
@@ -117,12 +117,14 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
 
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-white/5 bg-slate-900/40 px-6 py-3 backdrop-blur-xl">
-          <div className="text-sm text-white/50">{pathname}</div>
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+            <div className="text-sm text-white/50">{pathname}</div>
+          </div>
           <div className="flex items-center gap-3">
             <button onClick={() => setLang(lang === "en" ? "ar" : "en")} className="rounded-md border border-white/10 px-3 py-1 text-xs">
               {lang === "en" ? "🇪🇬 العربية" : "🇬🇧 EN"}
             </button>
-            <NotificationBell />
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>

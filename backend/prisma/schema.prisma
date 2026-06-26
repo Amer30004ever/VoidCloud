@@ -14,6 +14,72 @@ enum Role {
   BILLING_MANAGER
 }
 
+// RBAC Models
+model RbacRole {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RbacRolePermission[]
+  userTenants UserTenant[]
+
+  @@map("rbac_roles")
+}
+
+model RbacPermission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  resource    String
+  action      String
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles RbacRolePermission[]
+
+  @@map("rbac_permissions")
+}
+
+model RbacRolePermission {
+  roleId       String
+  role         RbacRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("rbac_role_permissions")
+}
+
+// Multi-tenant Models
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  subdomain String   @unique
+  settings  Json?
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userTenants UserTenant[]
+  conversations Conversation[]
+
+  @@map("tenants")
+}
+
+model UserTenant {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      RbacRole @relation(fields: [roleId], references: [id])
+  joinedAt  DateTime @default(now())
+
+  @@id([userId, tenantId])
+  @@map("user_tenants")
+}
+
 enum MessageType {
   TEXT
   IMAGE
@@ -84,6 +150,14 @@ model User {
   documentVersions DocumentVersion[] @relation("DocumentVersionAuthor")
   documentCollaborators DocumentCollaborator[]
   
+  // CRM relations
+  crmLeads       CrmLead[]
+  crmContacts    CrmContact[]
+  crmCompanies   CrmCompany[]
+  crmDeals       CrmDeal[]
+  crmTasks       CrmTask[]
+  crmActivities  CrmActivity[]
+  
   // Learning & Career relations
   savedJobs           SavedJob[]
   pathEnrollments     PathEnrollment[]
@@ -113,6 +187,9 @@ model User {
   auditLogs           AuditLog[]
   adminAuditLogs      AuditLog[] @relation("AdminAuditActions")
   notes               Note[]
+
+  // RBAC & Multi-tenant relations
+  userTenants         UserTenant[]
 
 
   // Cloud (HaaS) relations
@@ -155,11 +232,14 @@ model Conversation {
   id          String            @id @default(uuid())
   userId      String
   user        User              @relation(fields: [userId], references: [id])
+  tenantId    String?
+  tenant      Tenant?           @relation(fields: [tenantId], references: [id])
   platform    String
   contactId   String?
   platformId  String?
   title       String?
   status      ConversationStatus @default(OPEN)
+  assignedTo  String?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
@@ -193,6 +273,119 @@ model WhatsappContact {
   phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// WhatsApp CRM Models
+model CrmLead {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String?
+  email       String?
+  phone       String?
+  source      String   @default("whatsapp") // whatsapp, manual, referral
+  status      String   @default("new") // new, contacted, qualified, lost, converted
+  value       Float?
+  currency    String   @default("USD")
+  notes       String?
+  assignedTo  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deals       CrmDeal[]
+  activities  CrmActivity[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model CrmContact {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  title       String?
+  notes       String?
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model CrmCompany {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  website     String?
+  industry    String?
+  size        String?
+  address     String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model CrmDeal {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leadId      String?
+  lead        CrmLead?  @relation(fields: [leadId], references: [id])
+  title       String
+  value       Float
+  currency    String   @default("USD")
+  stage       String   @default("prospecting") // prospecting, qualification, proposal, negotiation, closed_won, closed_lost
+  probability Int      @default(0)
+  expectedCloseDate DateTime?
+  actualCloseDate    DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([stage])
+}
+
+model CrmTask {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  dueDate     DateTime?
+  priority    String   @default("medium") // low, medium, high
+  status      String   @default("todo") // todo, in_progress, done, cancelled
+  relatedTo   String?  // lead, deal, contact
+  relatedId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model CrmActivity {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leadId      String?
+  lead        CrmLead?  @relation(fields: [leadId], references: [id])
+  type        String   // call, email, meeting, note, whatsapp_message
+  subject     String?
+  description String
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([leadId])
+  @@index([createdAt])
 }
 
 model WebhookLog {

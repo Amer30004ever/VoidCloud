@@ -28,6 +28,8 @@ import { NotesModule } from './notes/notes.module';
 import { CloudModule } from './cloud/cloud.module';
 import { WaCrmModule } from './crm/wa-crm.module';
 import { MailerModule } from './mailer/mailer.module';
+import { RbacModule } from './rbac/rbac.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { AppController } from './app.controller';
@@ -69,6 +71,8 @@ import { AppController } from './app.controller';
     NotesModule,
     CloudModule,
     WaCrmModule,
+    RbacModule,
+    WhatsAppModule,
   ],
   controllers: [AppController],
   providers: [

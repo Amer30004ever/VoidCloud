@@ -24,6 +24,11 @@ export default function NewVpsPage() {
   const [planId, setPlanId] = useState<string>("");
   const [templateId, setTemplateId] = useState<string>("debian-12");
   const [panelId, setPanelId] = useState<string>("none");
+  const [isCustom, setIsCustom] = useState(false);
+
+  const [customCpu, setCustomCpu] = useState(1);
+  const [customRam, setCustomRam] = useState(1024);
+  const [customStorage, setCustomStorage] = useState(20);
 
   const [envRows, setEnvRows] = useState<EnvRow[]>([]);
   const [domainsText, setDomainsText] = useState("");
@@ -54,7 +59,13 @@ export default function NewVpsPage() {
   const tpl = templates.find((t) => t.id === templateId);
   const panel = panels.find((p) => p.id === panelId);
   const panelExtra = panel?.priceUSD ?? 0;
-  const totalUSD = (plan?.priceUSD ?? 0) + panelExtra;
+  
+  const effectiveCpu = isCustom ? customCpu : plan?.cpuLimit ?? 1;
+  const effectiveRam = isCustom ? customRam : plan?.memoryLimit ?? 1024;
+  const effectiveStorage = isCustom ? customStorage * 1024 : plan?.storageLimit ?? 20480;
+  
+  const customPriceUSD = isCustom ? (customCpu * 5) + (customRam / 1024 * 10) + (customStorage * 0.5) : 0;
+  const totalUSD = (isCustom ? customPriceUSD : plan?.priceUSD ?? 0) + panelExtra;
 
   async function submit() {
     if (busy) return;
@@ -68,9 +79,9 @@ export default function NewVpsPage() {
         name: name.trim(),
         type: "DOCKER_IMAGE",
         source: tpl?.label ?? "debian-12",
-        cpu: plan.cpuLimit,
-        memory: plan.memoryLimit,
-        storage: plan.storageLimit,
+        cpu: effectiveCpu,
+        memory: effectiveRam,
+        storage: effectiveStorage,
         replicas: 1,
         customDomains,
         envVars,
@@ -102,11 +113,34 @@ export default function NewVpsPage() {
               <input className={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="my-vps-01" maxLength={40} />
             </Field>
             <Field label={t("vps_new.plan", "Plan")}>
-              <select className={input} value={planId} onChange={(e) => setPlanId(e.target.value)}>
-                {plans.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name} — {p.cpuLimit} CPU · {p.memoryLimit}MB RAM · {Math.ceil(p.storageLimit/1024)}GB · ${p.priceUSD}/mo</option>
-                ))}
-              </select>
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={isCustom} onChange={(e) => setIsCustom(e.target.checked)} className="accent-cyan-400" />
+                  <span className="text-sm">{t("vps_new.custom_config", "Custom configuration")}</span>
+                </label>
+                {!isCustom ? (
+                  <select className={input} value={planId} onChange={(e) => setPlanId(e.target.value)}>
+                    {plans.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name} — {p.cpuLimit} CPU · {p.memoryLimit}MB RAM · {Math.ceil(p.storageLimit/1024)}GB · ${p.priceUSD}/mo</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div>
+                      <label className="mb-1 block text-xs text-white/60">{t("vps_new.cpu_cores", "CPU cores")}</label>
+                      <input type="number" min={0.5} step={0.5} className={input} value={customCpu} onChange={(e) => setCustomCpu(Number(e.target.value))} />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-white/60">{t("vps_new.ram_mb", "RAM (MB)")}</label>
+                      <input type="number" min={512} step={512} className={input} value={customRam} onChange={(e) => setCustomRam(Number(e.target.value))} />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-white/60">{t("vps_new.storage_gb", "Storage (GB)")}</label>
+                      <input type="number" min={10} step={5} className={input} value={customStorage} onChange={(e) => setCustomStorage(Number(e.target.value))} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </Field>
             <Field label={t("vps_new.os_template", "OS Template")}>
               <div className="grid gap-2 md:grid-cols-3">
@@ -126,11 +160,17 @@ export default function NewVpsPage() {
         {step === 2 && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">{t("vps_new.resources", "Resources")}</h2>
-            <p className="text-xs text-white/60">{t("vps_new.resources_hint", "Auto-filled from your selected plan ({{plan}}).", { plan: plan?.name ?? "—" })}</p>
-            <Row k={t("vps_new.cpu_cores", "CPU cores")} v={`${plan?.cpuLimit ?? "—"}`} />
-            <Row k={t("vps_new.ram", "RAM")} v={`${plan?.memoryLimit ?? "—"} MB`} />
-            <Row k={t("vps_new.storage", "Storage")} v={`${plan?.storageLimit ? Math.ceil(plan.storageLimit/1024) : "—"} GB`} />
+            <p className="text-xs text-white/60">{isCustom ? t("vps_new.custom_resources_hint", "Custom configuration selected.") : t("vps_new.resources_hint", "Auto-filled from your selected plan ({{plan}}).", { plan: plan?.name ?? "—" })}</p>
+            <Row k={t("vps_new.cpu_cores", "CPU cores")} v={String(effectiveCpu)} />
+            <Row k={t("vps_new.ram", "RAM")} v={`${effectiveRam} MB`} />
+            <Row k={t("vps_new.storage", "Storage")} v={`${Math.ceil(effectiveStorage/1024)} GB`} />
             <Row k={t("vps_new.os_template", "OS Template")} v={tpl?.label ?? "—"} />
+            {isCustom && (
+              <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-3 text-sm">
+                <div className="text-xs text-cyan-300">{t("vps_new.estimated_cost", "Estimated cost")}</div>
+                <div className="text-lg font-bold">${customPriceUSD.toFixed(2)}/mo</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -175,9 +215,9 @@ export default function NewVpsPage() {
             <h2 className="text-xl font-semibold">{t("vps_new.review", "Review")}</h2>
             <div className="rounded-lg border border-white/10 bg-slate-950/50 p-4 text-sm space-y-1">
               <Row k={t("common.name", "Name")} v={name} />
-              <Row k={t("vps_new.plan", "Plan")} v={plan?.name ?? "—"} />
+              <Row k={t("vps_new.plan", "Plan")} v={isCustom ? t("vps_new.custom", "Custom") : plan?.name ?? "—"} />
               <Row k={t("vps_new.os_template", "OS Template")} v={tpl?.label ?? "—"} />
-              <Row k={t("vps_new.resources", "Resources")} v={`${plan?.cpuLimit} CPU · ${plan?.memoryLimit}MB · ${plan?.storageLimit ? Math.ceil(plan.storageLimit/1024) : 0}GB`} />
+              <Row k={t("vps_new.resources", "Resources")} v={`${effectiveCpu} CPU · ${effectiveRam}MB · ${Math.ceil(effectiveStorage/1024)}GB`} />
               <Row k={t("vps_new.control_panel", "Control panel")} v={panel ? `${panel.name}${panelExtra > 0 ? ` (+$${panelExtra}/mo)` : ""}` : t("vps_new.none", "None")} />
               <Row k={t("vps_new.custom_domains", "Custom domains")} v={domainsText || "—"} />
               <Row k={t("vps_new.env_vars", "Env vars")} v={t("vps_new.defined", "{{count}} defined", { count: String(envRows.filter((r) => r.key).length) })} />
@@ -187,8 +227,8 @@ export default function NewVpsPage() {
             </div>
             <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-4 text-sm">
               <div className="text-xs uppercase text-cyan-300">{t("vps_new.estimated_cost", "Estimated cost")}</div>
-              <div className="text-2xl font-bold">${totalUSD}/mo</div>
-              <div className="text-xs text-white/60">{t("vps_new.egp_base", "{{amount}} EGP/mo (base)", { amount: String(plan?.priceEGP ?? 0) })}{panelExtra > 0 ? t("vps_new.panel_extra", " + ${{amount}}/mo control panel", { amount: String(panelExtra) }) : ""}</div>
+              <div className="text-2xl font-bold">${totalUSD.toFixed(2)}/mo</div>
+              <div className="text-xs text-white/60">{isCustom ? t("vps_new.custom_pricing", "Custom pricing based on resources") : t("vps_new.egp_base", "{{amount}} EGP/mo (base)", { amount: String(plan?.priceEGP ?? 0) })}{panelExtra > 0 ? t("vps_new.panel_extra", " + ${{amount}}/mo control panel", { amount: String(panelExtra) }) : ""}</div>
             </div>
           </div>
         )}

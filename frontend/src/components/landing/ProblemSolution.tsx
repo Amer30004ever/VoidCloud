@@ -28,7 +28,7 @@ export function ProblemSolution() {
 
         <div className="rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/5 p-8 backdrop-blur-xl">
           <div className="mb-4 text-4xl">⚡</div>
-          <h3 className="mb-4 text-xl font-bold">AmerCloud Makes It Easy</h3>
+          <h3 className="mb-4 text-xl font-bold">VoidCloud Makes It Easy</h3>
           <ul className="space-y-3 text-white/80">
             {[
               "Deploy in 60 seconds",
