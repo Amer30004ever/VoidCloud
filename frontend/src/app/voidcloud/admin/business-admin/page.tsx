@@ -67,13 +67,12 @@ export default function BusinessAdminDashboard() {
     }
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (user?.role !== "ADMIN" && user?.role !== "SUPER_ADMIN") {
       window.location.href = "/voidcloud/dashboard";
       return;
     }
-    fetchData(); // eslint-disable-line react-hooks/set-state-in-effect
+    fetchData();
   }, [user, fetchData]);
 
   const addTeamMember = async () => {

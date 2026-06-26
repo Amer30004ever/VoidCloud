@@ -82,7 +82,7 @@ export default function RolesManagementPage() {
   }, []);
 
   useEffect(() => {
-    fetchData(); // eslint-disable-line react-hooks/set-state-in-effect
+    fetchData();
   }, [fetchData]);
 
   const createRole = async () => {

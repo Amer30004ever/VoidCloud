@@ -82,13 +82,12 @@ export default function SuperAdminDashboard() {
     }
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (user?.role !== "SUPER_ADMIN") {
       window.location.href = "/voidcloud/dashboard";
       return;
     }
-    fetchData(); // eslint-disable-line react-hooks/set-state-in-effect
+    fetchData();
   }, [user, fetchData]);
 
   if (loading) return <div className="p-6 text-white/50">Loading Super Admin Dashboard...</div>;

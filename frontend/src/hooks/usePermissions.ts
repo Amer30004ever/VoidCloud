@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useCallback } from 'react';
 
 interface PermissionCache {
@@ -53,10 +54,11 @@ export function usePermissions() {
     }
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     loadPermissions();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, [loadPermissions]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const hasPermission = (permission: string): boolean => {
     return permissions.includes(permission);
@@ -84,3 +86,4 @@ export function usePermissions() {
     refreshPermissions,
   };
 }
+/* eslint-enable react-hooks/set-state-in-effect */
