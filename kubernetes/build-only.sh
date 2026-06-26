@@ -22,7 +22,7 @@ else
 fi
 
 # Set variables
-DOCKER_HUB_REPO=${DOCKER_HUB_REPO:-amer-portal}
+DOCKER_HUB_REPO=${DOCKER_HUB_REPO:-voidcloud}
 BACKEND_IMAGE_TAG=${BACKEND_IMAGE_TAG:-latest}
 FRONTEND_IMAGE_TAG=${FRONTEND_IMAGE_TAG:-latest}
 
@@ -45,7 +45,7 @@ if [ -n "$DOCKER_HUB_USERNAME" ]; then
     BACKEND_IMAGE_FULL="$DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:$BACKEND_IMAGE_TAG"
     docker build -t "$BACKEND_IMAGE_FULL" -t "$DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-backend:$(date +%Y%m%d-%H%M%S)" .
 else
-    BACKEND_IMAGE_FULL="amer-portal-backend:$BACKEND_IMAGE_TAG"
+    BACKEND_IMAGE_FULL="voidcloud-backend:$BACKEND_IMAGE_TAG"
     docker build -t "$BACKEND_IMAGE_FULL" .
 fi
 
@@ -64,7 +64,7 @@ if [ -n "$DOCKER_HUB_USERNAME" ]; then
     FRONTEND_IMAGE_FULL="$DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:$FRONTEND_IMAGE_TAG"
     docker build -t "$FRONTEND_IMAGE_FULL" -t "$DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO-frontend:$(date +%Y%m%d-%H%M%S)" .
 else
-    FRONTEND_IMAGE_FULL="amer-portal-frontend:$FRONTEND_IMAGE_TAG"
+    FRONTEND_IMAGE_FULL="voidcloud-frontend:$FRONTEND_IMAGE_TAG"
     docker build -t "$FRONTEND_IMAGE_FULL" .
 fi
 

@@ -2,7 +2,7 @@
 # Portable version that works from any location
 
 param(
-    [string]$Namespace = "amer-portal",
+    [string]$Namespace = "voidcloud",
     [string]$Domain = "amer.homelab.com",
     [string]$ApiDomain = "",
     [string]$DockerHubUsername = "amer30004ever",
@@ -87,15 +87,15 @@ $secretsYamlContent = @"
 apiVersion: v1
 kind: Secret
 metadata:
-  name: amer-portal-secrets
+  name: voidcloud-secrets
   namespace: $Namespace
 type: Opaque
 stringData:
   # Database credentials
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
-  POSTGRES_DB: amer_portal
-  DATABASE_URL: postgresql://postgres:postgres@postgres:5432/amer_portal
+  POSTGRES_DB: voidcloud
+  DATABASE_URL: postgresql://postgres:postgres@postgres:5432/voidcloud
   
   # JWT Secret
   JWT_SECRET: $jwtSecret
@@ -116,7 +116,7 @@ type: Opaque
 stringData:
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
-  POSTGRES_DB: amer_portal
+  POSTGRES_DB: voidcloud
 "@
 
 $secretsYamlContent | Out-File -FilePath $secretsFile -Encoding utf8
@@ -169,7 +169,7 @@ if (Test-Path $configmapsFile) {
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: amer-portal-config
+  name: voidcloud-config
   namespace: $Namespace
 data:
   NODE_ENV: production
@@ -394,7 +394,7 @@ Write-Host ""
 Write-Host "Check status: .\Status.ps1" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Secrets created:" -ForegroundColor Cyan
-Write-Host "  - amer-portal-secrets" -ForegroundColor Green
+Write-Host "  - voidcloud-secrets" -ForegroundColor Green
 if (Test-Path $dockerhubSecretFile) {
     Write-Host "  - dockerhub-secret" -ForegroundColor Green
 }

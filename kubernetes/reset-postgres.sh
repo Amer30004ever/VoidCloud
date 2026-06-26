@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # reset-postgres.sh — Linux equivalent of Reset-Postgres.ps1
 # DESTRUCTIVE: wipes the postgres PVC/PV and on-disk data so the postgres
-# image re-runs initdb with the password currently stored in amer-portal-secrets.
+# image re-runs initdb with the password currently stored in voidcloud-secrets.
 # Symptom this fixes:
 #   FATAL: password authentication failed for user "postgres"
 # Root cause: the postgres image only honors POSTGRES_PASSWORD on first init
@@ -10,9 +10,9 @@
 
 set -euo pipefail
 
-NAMESPACE="amer-portal"
+NAMESPACE="voidcloud"
 DATA_NODE="workernode01"
-DATA_PATH="/mnt/homelab/volumes/amer-portal/postgres"
+DATA_PATH="/mnt/homelab/volumes/voidcloud/postgres"
 SKIP_NODE_WIPE="false"
 
 while [[ $# -gt 0 ]]; do
@@ -41,14 +41,14 @@ done
 kubectl apply -f "$MANIFEST" -n "$NAMESPACE" >/dev/null
 ok "Postgres manifest applied."
 
-step "Validating amer-portal-secrets..."
-PW=$(kubectl -n "$NAMESPACE" get secret amer-portal-secrets -o jsonpath='{.data.POSTGRES_PASSWORD}' \
+step "Validating voidcloud-secrets..."
+PW=$(kubectl -n "$NAMESPACE" get secret voidcloud-secrets -o jsonpath='{.data.POSTGRES_PASSWORD}' \
        | base64 -d)
-USER=$(kubectl -n "$NAMESPACE" get secret amer-portal-secrets -o jsonpath='{.data.POSTGRES_USER}' \
+USER=$(kubectl -n "$NAMESPACE" get secret voidcloud-secrets -o jsonpath='{.data.POSTGRES_USER}' \
        | base64 -d)
-DB=$(kubectl -n "$NAMESPACE" get secret amer-portal-secrets -o jsonpath='{.data.POSTGRES_DB}' \
+DB=$(kubectl -n "$NAMESPACE" get secret voidcloud-secrets -o jsonpath='{.data.POSTGRES_DB}' \
        | base64 -d)
-DBURL=$(kubectl -n "$NAMESPACE" get secret amer-portal-secrets -o jsonpath='{.data.DATABASE_URL}' \
+DBURL=$(kubectl -n "$NAMESPACE" get secret voidcloud-secrets -o jsonpath='{.data.DATABASE_URL}' \
        | base64 -d)
 [[ -n "$PW" ]] || die "POSTGRES_PASSWORD missing"
 [[ "$DBURL" == *":$PW@"* ]] || die "DATABASE_URL password does NOT match POSTGRES_PASSWORD"

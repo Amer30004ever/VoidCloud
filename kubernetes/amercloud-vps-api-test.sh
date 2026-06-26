@@ -11,7 +11,7 @@ set -euo pipefail
 set +H
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NAMESPACE="${NAMESPACE:-amer-portal}"
+NAMESPACE="${NAMESPACE:-voidcloud}"
 DRY_RUN="false"
 
 while [[ $# -gt 0 ]]; do
@@ -19,7 +19,7 @@ while [[ $# -gt 0 ]]; do
     --namespace) NAMESPACE="$2"; shift 2;;
     --dry-run)   DRY_RUN="true"; shift;;
     -h|--help)
-      echo "Usage: $0 [--namespace amer-portal] [--dry-run]"
+      echo "Usage: $0 [--namespace voidcloud] [--dry-run]"
       exit 0;;
     *) echo "Unknown arg: $1" >&2; exit 2;;
   esac
@@ -83,4 +83,4 @@ fi
 
 echo ""
 echo "Check Proxmox containers: ssh root@10.51.100.10 'pct list'"
-echo "Check DB: kubectl exec -n $NAMESPACE deploy/postgres -- psql postgresql://postgres:postgres@localhost:5432/amer_portal -c 'SELECT name, status, \"ipv4Address\", \"proxmoxVMID\" FROM \"CloudDeployment\" ORDER BY \"createdAt\" DESC LIMIT 5;'"
+echo "Check DB: kubectl exec -n $NAMESPACE deploy/postgres -- psql postgresql://postgres:postgres@localhost:5432/voidcloud -c 'SELECT name, status, \"ipv4Address\", \"proxmoxVMID\" FROM \"CloudDeployment\" ORDER BY \"createdAt\" DESC LIMIT 5;'"

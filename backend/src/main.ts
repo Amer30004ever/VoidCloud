@@ -85,7 +85,7 @@ async function bootstrap() {
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'JWT',
     )
-    .setContact('AmerCloud Team', 'https://amer-portal.cc.cd', 'support@amer-portal.cc.cd')
+    .setContact('AmerCloud Team', 'https://voidcloud.cc.cd', 'support@voidcloud.cc.cd')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

@@ -88,7 +88,7 @@ export default function DashboardPage() {
       })),
     ];
 
-    exportToCsv(`amer-portal-dashboard-${new Date().toISOString().slice(0, 10)}`, rows);
+    exportToCsv(`voidcloud-dashboard-${new Date().toISOString().slice(0, 10)}`, rows);
   };
 
   const handleExportPdf = () => {

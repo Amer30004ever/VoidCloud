@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# AmerCloud comprehensive health check for the amer-portal namespace.
-# Usage: bash kubernetes/amercloud-test.sh [--namespace amer-portal]
+# AmerCloud comprehensive health check for the voidcloud namespace.
+# Usage: bash kubernetes/amercloud-test.sh [--namespace voidcloud]
 
 set -euo pipefail
 set +H
 
-NAMESPACE="amer-portal"
+NAMESPACE="voidcloud"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --namespace) NAMESPACE="$2"; shift 2;;
     -h|--help)
-      echo "Usage: $0 [--namespace amer-portal]"
+      echo "Usage: $0 [--namespace voidcloud]"
       exit 0;;
     *) echo "Unknown arg: $1" >&2; exit 2;;
   esac
@@ -63,7 +63,7 @@ done
 section "5. Database — CloudPlan count"
 if [[ -n "$POSTGRES_POD" ]]; then
   kubectl exec -n "$NAMESPACE" "$POSTGRES_POD" -- sh -c \
-    "psql postgresql://postgres:postgres@localhost:5432/amer_portal -c 'SELECT name, slug, \"cpuLimit\", \"memoryLimit\" FROM \"CloudPlan\" ORDER BY \"sortOrder\";'" \
+    "psql postgresql://postgres:postgres@localhost:5432/voidcloud -c 'SELECT name, slug, \"cpuLimit\", \"memoryLimit\" FROM \"CloudPlan\" ORDER BY \"sortOrder\";'" \
     || echo "CloudPlan query failed"
 else
   kubectl exec -n "$NAMESPACE" "$BACKEND_POD" -- sh -c \
@@ -74,7 +74,7 @@ fi
 section "6. Database — CloudDeployment status"
 if [[ -n "$POSTGRES_POD" ]]; then
   kubectl exec -n "$NAMESPACE" "$POSTGRES_POD" -- sh -c \
-    "psql postgresql://postgres:postgres@localhost:5432/amer_portal -c 'SELECT id, name, status, \"statusMessage\", \"createdAt\" FROM \"CloudDeployment\" ORDER BY \"createdAt\" DESC LIMIT 10;'" \
+    "psql postgresql://postgres:postgres@localhost:5432/voidcloud -c 'SELECT id, name, status, \"statusMessage\", \"createdAt\" FROM \"CloudDeployment\" ORDER BY \"createdAt\" DESC LIMIT 10;'" \
     || echo "CloudDeployment query failed"
 fi
 

@@ -23,7 +23,7 @@
 param(
     [ValidateSet('Setup', 'Test', 'CreateVps', 'ListVps', 'DeleteVps', 'CleanStuck', 'ProxmoxPctList', 'FixProxmoxToken', 'VpsAction', 'VerifyAll', 'ImagesTest', 'AdminStats', 'DeployCrm', 'All')]
     [string]$Action = 'Test',
-    [string]$Namespace = 'amer-portal',
+    [string]$Namespace = 'voidcloud',
     [string]$Id,
     [ValidateSet('start', 'stop', 'restart', 'reset-password', 'clone', 'delete')]
     [string]$VpsAction = 'start',

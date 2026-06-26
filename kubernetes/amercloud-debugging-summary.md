@@ -54,7 +54,7 @@ Legacy wrappers still work: `AmerCloud-Setup-Backend.ps1`, `AmerCloud-Test.ps1`,
 ## Issues found and fixed
 
 1. **Duplicate backend container** — `kubectl create deployment` + `kubectl apply` merged two containers → EADDRINUSE. Fix: `kubectl replace --force` (now in setup scripts).
-2. **Missing PROXMOX_TOKEN_ID in pod** — inline env from manual deploy omitted token → stub mode. Fix: use `amer-portal-secrets` via manifest.
+2. **Missing PROXMOX_TOKEN_ID in pod** — inline env from manual deploy omitted token → stub mode. Fix: use `voidcloud-secrets` via manifest.
 3. **Wrong PROXMOX_NODE** — was `workernode01` (K8s node); must be `proxmox` (PVE node).
 4. **Proxmox token 403** — token had zero ACLs. Fix: `.\AmerCloud.ps1 -Action FixProxmoxToken`.
 5. **TLS cert error on Proxmox API** — deployed image uses `fetch` without agent. Fix: `NODE_TLS_REJECT_UNAUTHORIZED=0` in deployment (or rebuild backend with `proxmox.service.ts` https fix).

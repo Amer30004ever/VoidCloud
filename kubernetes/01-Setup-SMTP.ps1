@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 # 01-Setup-SMTP.ps1
-# Creates the smtp-secret in the amer-portal namespace, applies pending Prisma
+# Creates the smtp-secret in the voidcloud namespace, applies pending Prisma
 # migrations, and restarts the backend so it picks up the new SMTP credentials.
 #
 # Prompts for the Microsoft App Password (NOT your account password). Generate
@@ -8,12 +8,12 @@
 
 [CmdletBinding()]
 param(
-    [string]$Namespace   = "amer-portal",
+    [string]$Namespace   = "voidcloud",
     [string]$SmtpHost    = "smtp.office365.com",
     [int]   $SmtpPort    = 587,
     [string]$SmtpUser    = "nova-cloud-2026@outlook.com",
     [string]$EmailFrom   = "nova-cloud-2026@outlook.com",
-    [string]$FrontendUrl = "https://amer-portal.cc.cd",
+    [string]$FrontendUrl = "https://voidcloud.cc.cd",
     [string]$Deployment  = "backend"
 )
 

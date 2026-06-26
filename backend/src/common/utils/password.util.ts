@@ -18,7 +18,7 @@ export async function hashPassword(password: string): Promise<string> {
 
 export function encryptSecret(value: string): string {
   const key =
-    process.env.SECRETS_ENCRYPTION_KEY ?? 'amer-portal-default-key-change-me';
+    process.env.SECRETS_ENCRYPTION_KEY ?? 'voidcloud-default-key-change-me';
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(
     'aes-256-cbc',
@@ -34,7 +34,7 @@ export function encryptSecret(value: string): string {
 
 export function decryptSecret(payload: string): string {
   const key =
-    process.env.SECRETS_ENCRYPTION_KEY ?? 'amer-portal-default-key-change-me';
+    process.env.SECRETS_ENCRYPTION_KEY ?? 'voidcloud-default-key-change-me';
   const [ivHex, encryptedHex] = payload.split(':');
   const iv = Buffer.from(ivHex, 'hex');
   const encrypted = Buffer.from(encryptedHex, 'hex');

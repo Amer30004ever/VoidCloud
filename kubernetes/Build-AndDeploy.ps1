@@ -30,9 +30,9 @@ if (-not $env:DOCKER_HUB_USERNAME -or -not $env:DOCKER_HUB_TOKEN) {
 }
 
 # Set defaults
-if (-not $env:NAMESPACE) { $env:NAMESPACE = "amer-portal" }
+if (-not $env:NAMESPACE) { $env:NAMESPACE = "voidcloud" }
 if (-not $env:DOMAIN) { $env:DOMAIN = "amer.homelab.com" }
-if (-not $env:DOCKER_HUB_REPO) { $env:DOCKER_HUB_REPO = "amer-portal" }
+if (-not $env:DOCKER_HUB_REPO) { $env:DOCKER_HUB_REPO = "voidcloud" }
 if (-not $env:BACKEND_IMAGE_TAG) { $env:BACKEND_IMAGE_TAG = "latest" }
 if (-not $env:FRONTEND_IMAGE_TAG) { $env:FRONTEND_IMAGE_TAG = "latest" }
 
@@ -78,8 +78,8 @@ if (Test-Path "backend/deployment.yaml") {
     }
     
     # Update image
-    (Get-Content "backend/deployment.yaml") -replace 'image:.*amer-portal-backend.*', "image: $backendImage" | Set-Content "backend/deployment.yaml"
-    (Get-Content "backend/deployment.yaml") -replace 'image:.*/amer-portal-backend:.*', "image: $backendImage" | Set-Content "backend/deployment.yaml"
+    (Get-Content "backend/deployment.yaml") -replace 'image:.*voidcloud-backend.*', "image: $backendImage" | Set-Content "backend/deployment.yaml"
+    (Get-Content "backend/deployment.yaml") -replace 'image:.*/voidcloud-backend:.*', "image: $backendImage" | Set-Content "backend/deployment.yaml"
     
     # Ensure imagePullPolicy is Always
     $content = Get-Content "backend/deployment.yaml"
@@ -101,8 +101,8 @@ if (Test-Path "frontend/deployment.yaml") {
         Write-Host "✅ Created backup: frontend/deployment.yaml.bak" -ForegroundColor Green
     }
     
-    (Get-Content "frontend/deployment.yaml") -replace 'image:.*amer-portal-frontend.*', "image: $frontendImage" | Set-Content "frontend/deployment.yaml"
-    (Get-Content "frontend/deployment.yaml") -replace 'image:.*/amer-portal-frontend:.*', "image: $frontendImage" | Set-Content "frontend/deployment.yaml"
+    (Get-Content "frontend/deployment.yaml") -replace 'image:.*voidcloud-frontend.*', "image: $frontendImage" | Set-Content "frontend/deployment.yaml"
+    (Get-Content "frontend/deployment.yaml") -replace 'image:.*/voidcloud-frontend:.*', "image: $frontendImage" | Set-Content "frontend/deployment.yaml"
     
     $content = Get-Content "frontend/deployment.yaml"
     if ($content -match 'imagePullPolicy:') {

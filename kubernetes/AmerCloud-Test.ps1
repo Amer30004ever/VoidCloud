@@ -1,6 +1,6 @@
 # AmerCloud health check - pods, API, DB, Proxmox connectivity.
 param(
-    [string]$Namespace = 'amer-portal'
+    [string]$Namespace = 'voidcloud'
 )
 
 $ErrorActionPreference = 'Continue'

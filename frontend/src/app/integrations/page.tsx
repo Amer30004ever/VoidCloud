@@ -135,7 +135,7 @@ function EmailTab({ isLoading }: { isLoading: boolean }) {
             <div className="mb-3 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">From:</span>
-                <span className="text-foreground">noreply@amer-portal.cc</span>
+                <span className="text-foreground">noreply@voidcloud.cc</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Recipients:</span>

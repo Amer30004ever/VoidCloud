@@ -6,7 +6,7 @@
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Namespace = if ($env:NAMESPACE) { $env:NAMESPACE } else { "amer-portal" }
+$Namespace = if ($env:NAMESPACE) { $env:NAMESPACE } else { "voidcloud" }
 
 $EnvFile = Join-Path $ScriptDir "proxmox.env"
 if (Test-Path $EnvFile) {
@@ -20,10 +20,10 @@ if (Test-Path $EnvFile) {
 }
 
 $Defaults = @{
-    DATABASE_URL         = "postgresql://postgres:postgres@postgres:5432/amer_portal"
+    DATABASE_URL         = "postgresql://postgres:postgres@postgres:5432/voidcloud"
     POSTGRES_USER        = "postgres"
     POSTGRES_PASSWORD    = "postgres"
-    POSTGRES_DB          = "amer_portal"
+    POSTGRES_DB          = "voidcloud"
     JWT_SECRET           = "YzI2ODVjYzktMWJlOC00MWJlLWI5YTItNDAxOWMwMjgzMGRi"
     PROXMOX_HOST         = "https://10.51.100.10:8006"
     PROXMOX_TOKEN_ID     = "root@pam!Amer-Cloud"
@@ -48,8 +48,8 @@ Write-Host "`n==> Ensuring namespace $Namespace" -ForegroundColor Cyan
 kubectl get namespace $Namespace 2>$null | Out-Null
 if ($LASTEXITCODE -ne 0) { kubectl create namespace $Namespace }
 
-Write-Host "`n==> Creating/updating amer-portal-secrets" -ForegroundColor Cyan
-kubectl create secret generic amer-portal-secrets -n $Namespace `
+Write-Host "`n==> Creating/updating voidcloud-secrets" -ForegroundColor Cyan
+kubectl create secret generic voidcloud-secrets -n $Namespace `
     --from-literal=DATABASE_URL=$env:DATABASE_URL `
     --from-literal=JWT_SECRET=$env:JWT_SECRET `
     --from-literal=POSTGRES_USER=$env:POSTGRES_USER `

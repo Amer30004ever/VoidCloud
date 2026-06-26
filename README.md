@@ -416,7 +416,7 @@ The cluster runs **on Proxmox + k3s/Talos** (your choice), exposed to the intern
 
 ### Layers
 
-1. **Namespace:** `amer-portal` (`kubernetes/namespace.yaml`)
+1. **Namespace:** `voidcloud` (`kubernetes/namespace.yaml`)
 2. **Database:** Postgres `StatefulSet` + `PersistentVolumeClaim` (`kubernetes/postgres/`)
 3. **Backend:** `Deployment` + `Service` (`kubernetes/backend/`)
 4. **Frontend:** `Deployment` + `Service` (`kubernetes/frontend/`)
@@ -431,8 +431,8 @@ The cluster runs **on Proxmox + k3s/Talos** (your choice), exposed to the intern
 ./kubernetes/build-and-deploy.ps1            # Windows
 ./kubernetes/build-only.sh && ./kubernetes/push-only.sh   # Linux
 kubectl apply -f kubernetes/
-kubectl -n amer-portal rollout status deploy/backend
-kubectl -n amer-portal rollout status deploy/frontend
+kubectl -n voidcloud rollout status deploy/backend
+kubectl -n voidcloud rollout status deploy/frontend
 ```
 
 ### Cloudflare Tunnel
@@ -537,7 +537,7 @@ The forgot/reset flow is wired end-to-end:
    - Copy the generated password (it will only be shown once)
 3. **Configure environment variables:**
 
-Required env vars on the backend pod (Kubernetes `amer-portal-secrets`):
+Required env vars on the backend pod (Kubernetes `voidcloud-secrets`):
 
 ```env
 SMTP_HOST=smtp.office365.com
@@ -671,7 +671,7 @@ curl -X POST https://api.voidcloud.cc.cd/api/v1/cloud/admin/reset-admin-password
   -d '{"newPassword":"YourNewPassword123!"}'
 
 # 2) kubectl (one-shot CLI inside the running pod)
-kubectl -n amer-portal exec deploy/backend -- \
+kubectl -n voidcloud exec deploy/backend -- \
   env ADMIN_PASSWORD='YourNewPassword123!' \
   npx ts-node scripts/reset-admin-password.ts
 

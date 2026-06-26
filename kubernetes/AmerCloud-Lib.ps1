@@ -2,7 +2,7 @@
 param()
 
 $Script:AmerCloudScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Script:AmerCloudNamespace = if ($env:NAMESPACE) { $env:NAMESPACE } else { 'amer-portal' }
+$Script:AmerCloudNamespace = if ($env:NAMESPACE) { $env:NAMESPACE } else { 'voidcloud' }
 
 function Import-AmerCloudEnv {
     param([string]$EnvFile = (Join-Path $Script:AmerCloudScriptDir 'proxmox.env'))
@@ -77,7 +77,7 @@ function Invoke-AmerCloudPostgresQuery {
     $pod = Get-AmerCloudPostgresPod -Namespace $Namespace
     if (-not $pod) { Write-Host 'Postgres pod not found'; return }
     $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Sql))
-    kubectl exec -n $Namespace $pod -- sh -c "echo $b64 | base64 -d | psql postgresql://postgres:postgres@localhost:5432/amer_portal"
+    kubectl exec -n $Namespace $pod -- sh -c "echo $b64 | base64 -d | psql postgresql://postgres:postgres@localhost:5432/voidcloud"
 }
 
 function Invoke-AmerCloudPostgresQueryFile {

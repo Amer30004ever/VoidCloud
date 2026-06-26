@@ -37,12 +37,12 @@ export const metadata: Metadata = {
       },
     ],
   },
-  alternates: { canonical: "https://amer-portal.cc.cd" },
+  alternates: { canonical: "https://voidcloud.cc.cd" },
   openGraph: {
     title: "AmerCloud | Egyptian Kubernetes Hosting",
     description:
       "Deploy apps in seconds on managed Kubernetes. Pay with Fawry, InstaPay, or Stripe.",
-    url: "https://amer-portal.cc.cd",
+    url: "https://voidcloud.cc.cd",
     type: "website",
   },
 };

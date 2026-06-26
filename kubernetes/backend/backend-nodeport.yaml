@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: backend-nodeport
-  namespace: amer-portal
+  namespace: voidcloud
 spec:
   type: NodePort
   selector:
@@ -10,4 +10,4 @@ spec:
   ports:
     - port: 3001
       targetPort: 3001
-      nodePort: 31111  # Cloudflare tunnel routes api.amer-portal.cc.cd here
+      nodePort: 31111  # Cloudflare tunnel routes api.voidcloud.cc.cd here

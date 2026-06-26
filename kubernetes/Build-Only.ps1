@@ -21,7 +21,7 @@ if (Test-Path $envFile) {
 }
 
 # Set defaults
-if (-not $env:DOCKER_HUB_REPO) { $env:DOCKER_HUB_REPO = "amer-portal" }
+if (-not $env:DOCKER_HUB_REPO) { $env:DOCKER_HUB_REPO = "voidcloud" }
 if (-not $env:BACKEND_IMAGE_TAG) { $env:BACKEND_IMAGE_TAG = "latest" }
 if (-not $env:FRONTEND_IMAGE_TAG) { $env:FRONTEND_IMAGE_TAG = "latest" }
 
@@ -46,7 +46,7 @@ if ($env:DOCKER_HUB_USERNAME) {
     $timestampTag = "$($env:DOCKER_HUB_USERNAME)/$($env:DOCKER_HUB_REPO)-backend:$timestamp"
     docker build -t $backendImage -t $timestampTag .
 } else {
-    $backendImage = "amer-portal-backend:$($env:BACKEND_IMAGE_TAG)"
+    $backendImage = "voidcloud-backend:$($env:BACKEND_IMAGE_TAG)"
     docker build -t $backendImage .
 }
 
@@ -68,7 +68,7 @@ if ($env:DOCKER_HUB_USERNAME) {
     $timestampTag = "$($env:DOCKER_HUB_USERNAME)/$($env:DOCKER_HUB_REPO)-frontend:$timestamp"
     docker build -t $frontendImage -t $timestampTag .
 } else {
-    $frontendImage = "amer-portal-frontend:$($env:FRONTEND_IMAGE_TAG)"
+    $frontendImage = "voidcloud-frontend:$($env:FRONTEND_IMAGE_TAG)"
     docker build -t $frontendImage .
 }
 

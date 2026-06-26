@@ -1,8 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: amer-portal-ingress
-  namespace: amer-portal
+  name: voidcloud-ingress
+  namespace: voidcloud
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
@@ -14,7 +14,7 @@ spec:
     - hosts:
         - amer.homelab.com
         - api.amer.homelab.com
-      secretName: amer-portal-tls
+      secretName: voidcloud-tls
   rules:
     - host: amer.homelab.com
       http:

@@ -52,7 +52,7 @@
 │  │ 🏢 Running Namespaces (Public)                                     │    │
 │  │                                                                     │    │
 │  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │    │
-│  │  │ amer-portal │ │   drawio    │ │   harbor    │ │   jaeger    │   │    │
+│  │  │ voidcloud │ │   drawio    │ │   harbor    │ │   jaeger    │   │    │
 │  │  │    ✅ 6 pods │ │   ✅ 2 pods │ │   ✅ 8 pods │ │   ✅ 3 pods │   │    │
 │  │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘   │    │
 │  │  ┌─────────────┐ ┌─────────────┐                                   │    │
@@ -106,7 +106,7 @@ Data Source:
   - kubectl get pods --all-namespaces
 
 Example Output:
-  amer-portal: 6 pods (✅ Healthy)
+  voidcloud: 6 pods (✅ Healthy)
   drawio: 2 pods (✅ Healthy)
   harbor: 8 pods (✅ Healthy)
   jaeger: 3 pods (✅ Healthy)
@@ -200,7 +200,7 @@ Example Output:
 │                                                                             │
 │  Namespace      │ 00-04 │ 04-08 │ 08-12 │ 12-16 │ 16-20 │ 20-24 │ Average │
 │  ───────────────┼───────┼───────┼───────┼───────┼───────┼───────┼─────────│
-│  amer-portal    │ ████  │ ████  │ ██████│ ██████│ ██████│ ████  │   65%   │
+│  voidcloud    │ ████  │ ████  │ ██████│ ██████│ ██████│ ████  │   65%   │
 │  harbor         │ ████  │ ████  │ ████  │ ██████│ ██████│ ████  │   55%   │
 │  traefik        │ ████  │ ██████│ ██████│ ██████│ ██████│ ██████│   70%   │
 │  jaeger         │ ██    │ ██    │ ████  │ ████  │ ██    │ ██    │   35%   │
@@ -266,10 +266,10 @@ Example Output:
 │                                                                             │
 │  Pod Name                    │ Namespace    │ Status    │ Restarts │ Age    │
 │  ────────────────────────────┼──────────────┼───────────┼──────────┼────────│
-│  backend-6958f7bcd5-6hllw    │ amer-portal  │ Running   │ 0        │ 15d    │
-│  frontend-76c5f6c787-km95x   │ amer-portal  │ Running   │ 0        │ 15d    │
-│  postgres-dfc9bdff4-kwk7l    │ amer-portal  │ Running   │ 0        │ 15d    │
-│  cloudflare-tunnel-xxx       │ amer-portal  │ Running   │ 1        │ 5d     │
+│  backend-6958f7bcd5-6hllw    │ voidcloud  │ Running   │ 0        │ 15d    │
+│  frontend-76c5f6c787-km95x   │ voidcloud  │ Running   │ 0        │ 15d    │
+│  postgres-dfc9bdff4-kwk7l    │ voidcloud  │ Running   │ 0        │ 15d    │
+│  cloudflare-tunnel-xxx       │ voidcloud  │ Running   │ 1        │ 5d     │
 │  traefik-657c94988f-2vgqd    │ traefik      │ Running   │ 2        │ 33h    │
 │                                                                             │
 │  [View All] [Filter] [Export]                                              │
@@ -328,15 +328,15 @@ Example Output:
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
 │  │ 🔴 ERROR  2026-05-26 13:45:22 │ Failed to connect to database      │    │
 │  │           backend-xxx         │ Connection timeout after 30s        │    │
-│  │           amer-portal         │                                     │    │
+│  │           voidcloud         │                                     │    │
 │  ├─────────────────────────────────────────────────────────────────────┤    │
 │  │ 🟡 WARN   2026-05-26 13:30:15 │ High memory usage                   │    │
 │  │           frontend-xxx        │ Memory: 85% (Limit: 512Mi)          │    │
-│  │           amer-portal         │                                     │    │
+│  │           voidcloud         │                                     │    │
 │  ├─────────────────────────────────────────────────────────────────────┤    │
 │  │ 🔵 INFO   2026-05-26 13:15:33 │ Scaled replicas                     │    │
 │  │           frontend-xxx        │ From 1 to 3 replicas                │    │
-│  │           amer-portal         │                                     │    │
+│  │           voidcloud         │                                     │    │
 │  └─────────────────────────────────────────────────────────────────────┘    │
 │                                                                             │
 │  📊 Pattern Detection: 5 similar errors detected in last hour              │

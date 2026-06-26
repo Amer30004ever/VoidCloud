@@ -11,17 +11,17 @@ set -euo pipefail
 set +H
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NAMESPACE="${NAMESPACE:-amer-portal}"
+NAMESPACE="${NAMESPACE:-voidcloud}"
 
 if [[ -f "$SCRIPT_DIR/proxmox.env" ]]; then
   # shellcheck disable=SC1091
   source "$SCRIPT_DIR/proxmox.env"
 fi
 
-: "${DATABASE_URL:=postgresql://postgres:postgres@postgres:5432/amer_portal}"
+: "${DATABASE_URL:=postgresql://postgres:postgres@postgres:5432/voidcloud}"
 : "${POSTGRES_USER:=postgres}"
 : "${POSTGRES_PASSWORD:=postgres}"
-: "${POSTGRES_DB:=amer_portal}"
+: "${POSTGRES_DB:=voidcloud}"
 : "${JWT_SECRET:=YzI2ODVjYzktMWJlOC00MWJlLWI5YTItNDAxOWMwMjgzMGRi}"
 : "${PROXMOX_HOST:=https://10.51.100.10:8006}"
 : "${PROXMOX_TOKEN_ID:=root@pam!Amer-Cloud}"
@@ -39,8 +39,8 @@ step() { printf '\n\033[36m==> %s\033[0m\n' "$*"; }
 step "Ensuring namespace $NAMESPACE exists"
 kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$NAMESPACE"
 
-step "Creating/updating amer-portal-secrets"
-kubectl create secret generic amer-portal-secrets -n "$NAMESPACE" \
+step "Creating/updating voidcloud-secrets"
+kubectl create secret generic voidcloud-secrets -n "$NAMESPACE" \
   --from-literal=DATABASE_URL="$DATABASE_URL" \
   --from-literal=JWT_SECRET="$JWT_SECRET" \
   --from-literal=POSTGRES_USER="$POSTGRES_USER" \

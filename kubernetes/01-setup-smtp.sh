@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 01-setup-smtp.sh
-# Creates the smtp-secret in the amer-portal namespace, applies pending Prisma
+# Creates the smtp-secret in the voidcloud namespace, applies pending Prisma
 # migrations, and restarts the backend so it picks up the new SMTP credentials.
 #
 # Prompts for the Microsoft App Password (NOT your account password). Generate
@@ -8,12 +8,12 @@
 
 set -euo pipefail
 
-NAMESPACE="${NAMESPACE:-amer-portal}"
+NAMESPACE="${NAMESPACE:-voidcloud}"
 SMTP_HOST="${SMTP_HOST:-smtp.office365.com}"
 SMTP_PORT="${SMTP_PORT:-587}"
 SMTP_USER="${SMTP_USER:-nova-cloud-2026@outlook.com}"
 EMAIL_FROM="${EMAIL_FROM:-nova-cloud-2026@outlook.com}"
-FRONTEND_URL="${FRONTEND_URL:-https://amer-portal.cc.cd}"
+FRONTEND_URL="${FRONTEND_URL:-https://voidcloud.cc.cd}"
 DEPLOYMENT="${DEPLOYMENT:-backend}"
 
 echo ""

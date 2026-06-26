@@ -29,7 +29,7 @@ export class CloudAccountService {
   ) {}
 
   private get frontend() {
-    return (process.env.FRONTEND_URL || 'https://amer-portal.cc.cd').replace(
+    return (process.env.FRONTEND_URL || 'https://voidcloud.cc.cd').replace(
       /\/$/,
       '',
     );

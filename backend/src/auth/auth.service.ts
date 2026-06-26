@@ -152,7 +152,7 @@ export class AuthService {
     });
 
     const frontend = (
-      process.env.FRONTEND_URL || 'https://amer-portal.cc.cd'
+      process.env.FRONTEND_URL || 'https://voidcloud.cc.cd'
     ).replace(/\/$/, '');
     const verifyUrl = `${frontend}/amercloud/verify-email?token=${rawVerifyToken}`;
 
@@ -230,7 +230,7 @@ export class AuthService {
     });
 
     const frontend = (
-      process.env.FRONTEND_URL || 'https://amer-portal.cc.cd'
+      process.env.FRONTEND_URL || 'https://voidcloud.cc.cd'
     ).replace(/\/$/, '');
     const verifyUrl = `${frontend}/amercloud/verify-email?token=${rawToken}`;
     try {
@@ -301,7 +301,7 @@ export class AuthService {
     });
 
     const frontend = (
-      process.env.FRONTEND_URL || 'https://amer-portal.cc.cd'
+      process.env.FRONTEND_URL || 'https://voidcloud.cc.cd'
     ).replace(/\/$/, '');
     const resetUrl = `${frontend}/amercloud/reset-password?token=${rawToken}`;
     const { html, text } = passwordResetEmail(

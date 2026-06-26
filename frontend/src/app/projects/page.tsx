@@ -27,9 +27,9 @@ export default function ProjectsPage() {
             description="Set up a new DevOps project workspace."
             className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             fields={[
-              { name: "name", label: "Project Name", placeholder: "amer-portal", required: true },
+              { name: "name", label: "Project Name", placeholder: "voidcloud", required: true },
               { name: "repository", label: "Repository URL", placeholder: "https://github.com/org/repo" },
-              { name: "namespace", label: "Namespace", placeholder: "amer-portal" },
+              { name: "namespace", label: "Namespace", placeholder: "voidcloud" },
             ]}
             onSubmit={async (values) => {
               await projectsApi.create({

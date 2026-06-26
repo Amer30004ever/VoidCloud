@@ -1,12 +1,12 @@
 #!/usr/bin/env pwsh
 # Validate-Secrets.ps1
-# Verifies postgres-secret and amer-portal-secrets agree, and can optionally
+# Verifies postgres-secret and voidcloud-secrets agree, and can optionally
 # patch deployment pod-template annotations so secret changes trigger restarts.
 
 [CmdletBinding()]
 param(
-  [string]$Namespace = "amer-portal",
-  [string]$AppSecret = "amer-portal-secrets",
+  [string]$Namespace = "voidcloud",
+  [string]$AppSecret = "voidcloud-secrets",
   [string]$PostgresSecret = "postgres-secret",
   [switch]$Annotate
 )

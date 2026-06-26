@@ -1,6 +1,6 @@
 # Wrapper for VPS API test — use .\AmerCloud.ps1 -Action CreateVps instead.
 param(
-    [string]$Namespace = 'amer-portal',
+    [string]$Namespace = 'voidcloud',
     [switch]$DryRun
 )
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path

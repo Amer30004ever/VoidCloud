@@ -28,7 +28,7 @@ if [ -z "$DOCKER_HUB_USERNAME" ] || [ -z "$DOCKER_HUB_TOKEN" ]; then
 fi
 
 # Set variables
-DOCKER_HUB_REPO=${DOCKER_HUB_REPO:-amer-portal}
+DOCKER_HUB_REPO=${DOCKER_HUB_REPO:-voidcloud}
 BACKEND_IMAGE_TAG=${BACKEND_IMAGE_TAG:-latest}
 FRONTEND_IMAGE_TAG=${FRONTEND_IMAGE_TAG:-latest}
 

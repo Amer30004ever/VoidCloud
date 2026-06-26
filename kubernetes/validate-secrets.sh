@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # validate-secrets.sh — Linux equivalent of Validate-Secrets.ps1
-# Verifies amer-portal-secrets is internally consistent (DATABASE_URL matches
+# Verifies voidcloud-secrets is internally consistent (DATABASE_URL matches
 # POSTGRES_{USER,PASSWORD,DB}) and that postgres-secret (if present) agrees.
 # With --annotate, patches deployment/{postgres,backend} pod-template with a
 # secret-checksum annotation so a secret change triggers a pod restart.
 
 set -euo pipefail
 
-NAMESPACE="amer-portal"
-APP_SECRET="amer-portal-secrets"
+NAMESPACE="voidcloud"
+APP_SECRET="voidcloud-secrets"
 PG_SECRET="postgres-secret"
 ANNOTATE="false"
 

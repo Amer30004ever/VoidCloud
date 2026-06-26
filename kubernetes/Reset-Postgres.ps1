@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 # Reset-Postgres.ps1
 # FULL reset: wipes PVC, PV, on-disk data, and re-applies secrets so
-# postgres re-initialises with the password currently in amer-portal-secrets.
+# postgres re-initialises with the password currently in voidcloud-secrets.
 #
 # Symptom this fixes:
 #   FATAL: password authentication failed for user "postgres"
@@ -14,9 +14,9 @@
 
 [CmdletBinding()]
 param(
-  [string]$Namespace  = "amer-portal",
+  [string]$Namespace  = "voidcloud",
   [string]$DataNode   = "workernode01",
-  [string]$DataPath   = "/mnt/homelab/volumes/amer-portal/postgres",
+  [string]$DataPath   = "/mnt/homelab/volumes/voidcloud/postgres",
   [switch]$SkipNodeWipe   # set if you've already cleared the host dir
 )
 
@@ -43,19 +43,19 @@ kubectl apply -f $postgresDeployment -n $Namespace | Out-Null
 Ok "Postgres deployment manifest applied."
 
 # --- 0. sanity: secret must exist and have a password -----------------------
-Step "Validating amer-portal-secrets..."
-$pwB64 = kubectl -n $Namespace get secret amer-portal-secrets -o jsonpath='{.data.POSTGRES_PASSWORD}' 2>$null
+Step "Validating voidcloud-secrets..."
+$pwB64 = kubectl -n $Namespace get secret voidcloud-secrets -o jsonpath='{.data.POSTGRES_PASSWORD}' 2>$null
 if (-not $pwB64) {
-  Warn "amer-portal-secrets.POSTGRES_PASSWORD is missing. Re-apply secrets.yaml first."
+  Warn "voidcloud-secrets.POSTGRES_PASSWORD is missing. Re-apply secrets.yaml first."
   exit 1
 }
 $pw = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($pwB64))
 $user = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(
-  (kubectl -n $Namespace get secret amer-portal-secrets -o jsonpath='{.data.POSTGRES_USER}')))
+  (kubectl -n $Namespace get secret voidcloud-secrets -o jsonpath='{.data.POSTGRES_USER}')))
 $db = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(
-  (kubectl -n $Namespace get secret amer-portal-secrets -o jsonpath='{.data.POSTGRES_DB}')))
+  (kubectl -n $Namespace get secret voidcloud-secrets -o jsonpath='{.data.POSTGRES_DB}')))
 $dbUrl = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(
-  (kubectl -n $Namespace get secret amer-portal-secrets -o jsonpath='{.data.DATABASE_URL}')))
+  (kubectl -n $Namespace get secret voidcloud-secrets -o jsonpath='{.data.DATABASE_URL}')))
 if ($dbUrl -notmatch [Regex]::Escape(":$pw@")) {
   Warn "DATABASE_URL password does NOT match POSTGRES_PASSWORD in the secret."
   Warn "Fix kubernetes/secrets.yaml so both use the same password, re-apply, then re-run."

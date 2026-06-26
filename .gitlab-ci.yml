@@ -7,7 +7,7 @@
 #   DOCKER_HUB_TOKEN          (protected, masked)
 #   KUBECONFIG_B64            (protected, masked) — base64 kubeconfig
 #   PG_DATA_NODE              (optional, default: workernode01)
-#   PG_DATA_PATH              (optional, default: /mnt/homelab/volumes/amer-portal/postgres)
+#   PG_DATA_PATH              (optional, default: /mnt/homelab/volumes/voidcloud/postgres)
 #
 # Manual jobs (run from CI > Pipelines > Run pipeline, set MODE variable):
 #   MODE=auto                 (default) — detect changes, build + deploy
@@ -28,9 +28,9 @@
 #   MODE=k8s-full-reset       reset-postgres -> apply -> validate -> redeploy
 
 variables:
-  DOCKER_HUB_REPO: amer-portal
-  POSTGRES_IMAGE_NAME: ${DOCKER_HUB_USERNAME}/amer-portal-postgres
-  NAMESPACE: amer-portal
+  DOCKER_HUB_REPO: voidcloud
+  POSTGRES_IMAGE_NAME: ${DOCKER_HUB_USERNAME}/voidcloud-postgres
+  namespace: voidcloud
   MODE:
     value: "auto"
     description: "auto | test-backend-only | test-frontend-only | test-both | build-backend-only | build-frontend-only | build-both | build-postgres | full-ci-backend | full-ci-frontend | full-ci-both | full-ci-all | apply-manifests | validate-secrets | reset-postgres | k8s-full-reset"
@@ -532,7 +532,7 @@ reset-postgres:
       bash kubernetes/reset-postgres.sh \
         --namespace $NAMESPACE \
         --node "${PG_DATA_NODE:-workernode01}" \
-        --path "${PG_DATA_PATH:-/mnt/homelab/volumes/amer-portal/postgres}"
+        --path "${PG_DATA_PATH:-/mnt/homelab/volumes/voidcloud/postgres}"
 
 redeploy-after-reset:
   <<: *k8s-runner

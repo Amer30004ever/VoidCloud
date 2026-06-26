@@ -9,7 +9,7 @@
 #   ./02-verify-smtp.sh you@example.com     # also send a test email
 set -euo pipefail
 
-NAMESPACE="${NAMESPACE:-amer-portal}"
+NAMESPACE="${NAMESPACE:-voidcloud}"
 DEPLOYMENT="${DEPLOYMENT:-backend}"
 TO="${1:-}"
 

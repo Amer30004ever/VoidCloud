@@ -10,7 +10,7 @@
 
 [CmdletBinding()]
 param(
-    [string]$Namespace  = "amer-portal",
+    [string]$Namespace  = "voidcloud",
     [string]$Deployment = "backend",
     [string]$To         = ""
 )
