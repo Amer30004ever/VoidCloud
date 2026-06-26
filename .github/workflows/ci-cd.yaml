@@ -61,6 +61,7 @@ env:
   DOCKER_HUB_USERNAME: amer30004ever
   DOCKER_HUB_REPO: voidcloud
   POSTGRES_IMAGE_NAME: amer30004ever/voidcloud-postgres
+  NAMESPACE: voidcloud
 
 jobs:
   # ============================================
@@ -600,7 +601,6 @@ jobs:
       - name: Remove old postgres images from nodes
         if: github.event.inputs.force_pull == 'true' || github.event_name == 'push'
         run: |
-          NAMESPACE="voidcloud"
           echo "🗑️ Removing old PostgreSQL images from cluster nodes..."
           NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
           for NODE in $NODES; do
@@ -610,8 +610,8 @@ jobs:
 
       - name: Deploy PostgreSQL
         run: |
-          NAMESPACE="voidcloud"
           echo "🐘 Deploying PostgreSQL..."
+          NAMESPACE="voidcloud"
           
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
           
@@ -684,7 +684,6 @@ jobs:
       - name: Remove old backend images from nodes
         if: github.event.inputs.force_pull == 'true' || github.event_name == 'push'
         run: |
-          NAMESPACE="voidcloud"
           echo "🗑️ Removing old Amer Portal backend images from cluster nodes..."
           NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
           for NODE in $NODES; do
@@ -694,8 +693,8 @@ jobs:
 
       - name: Deploy Backend
         run: |
-          NAMESPACE="voidcloud"
           echo "🚀 Deploying backend..."
+          NAMESPACE="voidcloud"
           
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
           
@@ -711,7 +710,6 @@ jobs:
           kubectl rollout status deployment/backend -n ${NAMESPACE} --timeout=180s
           
           echo "✅ Backend deployment complete!"
-
   # ============================================
   # RUN DATABASE MIGRATIONS
   # ============================================
@@ -737,11 +735,10 @@ jobs:
 
       - name: Run Prisma Migrations
         run: |
-          NAMESPACE="voidcloud"
           echo "🔄 Running database migrations..."
+          NAMESPACE="voidcloud"
           kubectl -n ${NAMESPACE} exec deploy/backend -- npx prisma migrate deploy
           echo "✅ Migrations completed successfully"
-
   # ============================================
   # DEPLOY FRONTEND (Self-Hosted Runner)
   # ============================================
@@ -788,7 +785,6 @@ jobs:
       - name: Remove old frontend images from nodes
         if: github.event.inputs.force_pull == 'true' || github.event_name == 'push'
         run: |
-          NAMESPACE="voidcloud"
           echo "🗑️ Removing old Amer Portal frontend images from cluster nodes..."
           NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
           for NODE in $NODES; do
@@ -798,14 +794,13 @@ jobs:
 
       - name: Deploy Frontend
         run: |
-          NAMESPACE="voidcloud"
           echo "🚀 Deploying frontend..."
+          NAMESPACE="voidcloud"
           
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
           
           kubectl apply -f kubernetes/frontend/service.yaml 2>/dev/null || true
-          kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml 2>/dev/null || true
-          kubectl apply -f kubernetes/frontend/deployment.yaml
+          kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml 2>/dev/null || true          kubectl apply -f kubernetes/frontend/deployment.yaml
           
           kubectl patch deployment frontend -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"Always"}]}}}}'
           
@@ -840,8 +835,8 @@ jobs:
 
       - name: Full Deploy
         run: |
-          NAMESPACE="voidcloud"
           echo "🚀 Performing full deployment..."
+          NAMESPACE="voidcloud"
           
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
           
@@ -909,8 +904,8 @@ jobs:
 
       - name: Restart Backend
         run: |
-          NAMESPACE="voidcloud"
           echo "🔄 Restarting backend..."
+          NAMESPACE="voidcloud"
           if [ "${{ github.event.inputs.force_pull }}" == "true" ]; then
             NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
             for NODE in $NODES; do
@@ -938,8 +933,8 @@ jobs:
 
       - name: Restart Frontend
         run: |
-          NAMESPACE="voidcloud"
           echo "🔄 Restarting frontend..."
+          NAMESPACE="voidcloud"
           if [ "${{ github.event.inputs.force_pull }}" == "true" ]; then
             NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
             for NODE in $NODES; do
@@ -967,8 +962,8 @@ jobs:
 
       - name: Restart All
         run: |
-          NAMESPACE="voidcloud"
           echo "🔄 Restarting all deployments..."
+          NAMESPACE="voidcloud"
           if [ "${{ github.event.inputs.force_pull }}" == "true" ]; then
             NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
             for NODE in $NODES; do
@@ -1083,7 +1078,6 @@ jobs:
 
       - name: Deployment Summary
         run: |
-          NAMESPACE="voidcloud"
           echo ""
           echo "========================================="
           echo "🎉 CI/CD Pipeline Complete!"
@@ -1112,6 +1106,7 @@ jobs:
           echo ""
           
           echo "🏥 Current Cluster Status:"
+          NAMESPACE="voidcloud"
           kubectl get pods -n ${NAMESPACE}
           echo ""
           kubectl get svc -n ${NAMESPACE}
@@ -1129,7 +1124,6 @@ jobs:
       - name: Save build info
         if: always()
         run: |
-          NAMESPACE="voidcloud"
           mkdir -p build-info
           echo "postgres_deployed=${{ needs.deploy-postgres.result == 'success' }}" > build-info/build.txt
           echo "backend_deployed=${{ needs.deploy-backend.result == 'success' }}" >> build-info/build.txt
@@ -1145,7 +1139,6 @@ jobs:
         with:
           name: build-info
           path: build-info/
-
   # ============================================
   # K8S OPS — apply manifests / validate secrets / reset postgres
   # ============================================
