@@ -2,40 +2,63 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-
-const NAV = [
-  { href: "/amercloud/dashboard", label: "Dashboard", icon: "🏠" },
-  { href: "/amercloud/dashboard/deployments", label: "Deployments", icon: "🚀" },
-  { href: "/amercloud/dashboard/billing", label: "Billing", icon: "💳" },
-  { href: "/amercloud/dashboard/billing/invoices", label: "Invoices", icon: "🧾" },
-  { href: "/amercloud/dashboard/settings", label: "Settings", icon: "⚙️" },
-  { href: "/amercloud/dashboard/settings/api-keys", label: "API Keys", icon: "🔑" },
-  { href: "/amercloud/dashboard/settings/team", label: "Team", icon: "👥" },
-];
-
-const ADMIN_NAV = [
-  { href: "/amercloud/admin", label: "Overview", icon: "📊" },
-  { href: "/amercloud/admin/users", label: "Users", icon: "👤" },
-  { href: "/amercloud/admin/plans", label: "Plans", icon: "💎" },
-  { href: "/amercloud/admin/billing", label: "Transactions", icon: "💰" },
-];
+import { useEffect, useMemo, useState } from "react";
+import api from "@/lib/api";
+import { NotificationBell } from "@/components/ui/NotificationBell";
+import { useLocale } from "@/contexts/LocaleContext";
 
 export default function CloudDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { lang, setLang, t } = useLocale();
   const [open, setOpen] = useState(true);
-  const [lang, setLang] = useState<"en" | "ar">("en");
+  const [role, setRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("");
   const isAdminArea = pathname.startsWith("/amercloud/admin");
 
   useEffect(() => {
-    const t = typeof window !== "undefined" && localStorage.getItem("amer_portal_token");
-    if (!t) router.replace("/amercloud/login");
+    if (typeof window === "undefined") return;
+    const tok = localStorage.getItem("amer_portal_token") || sessionStorage.getItem("amer_portal_token");
+    if (!tok) {
+      router.replace("/amercloud/login");
+      return;
+    }
+    api.get("/auth/me").then((r) => {
+      setRole(r.data?.role ?? null);
+      setUserName(r.data?.name?.split(" ")[0] ?? "");
+    }).catch(() => setRole(null));
   }, [router]);
 
-  useEffect(() => {
-    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-  }, [lang]);
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+
+  const NAV = useMemo(() => [
+    { href: "/amercloud/user/dashboard", label: userName ? t("dashboard.welcome", "Welcome, {{name}}", { name: userName }) : t("dashboard.home", "Home"), icon: "🏠" },
+    { href: "/amercloud/dashboard/vps", label: t("dashboard.deployments", "VPS Instances"), icon: "🖥️" },
+    { href: "/amercloud/dashboard/crm", label: t("dashboard.crm", "WhatsApp CRM"), icon: "💬" },
+    { href: "/amercloud/dashboard/images", label: t("dashboard.images", "Images"), icon: "💿" },
+    { href: "/amercloud/dashboard/analytics", label: t("dashboard.analytics", "Analytics"), icon: "📈" },
+    { href: "/amercloud/dashboard/backups", label: t("dashboard.backups", "Backups"), icon: "💾" },
+    { href: "/amercloud/dashboard/databases", label: t("dashboard.databases", "Databases"), icon: "🗄️" },
+    { href: "/amercloud/dashboard/webhooks", label: t("dashboard.webhooks", "Webhooks"), icon: "🪝" },
+    { href: "/amercloud/dashboard/referral", label: t("dashboard.referral", "Referral"), icon: "🎁" },
+    { href: "/amercloud/dashboard/billing", label: t("dashboard.billing", "Billing"), icon: "💳" },
+    { href: "/amercloud/dashboard/enterprise", label: t("dashboard.enterprise", "Enterprise"), icon: "🏢" },
+    { href: "/amercloud/dashboard/settings", label: t("dashboard.settings", "Settings"), icon: "⚙️" },
+  ], [t, userName]);
+
+  const ADMIN_NAV = useMemo(() => [
+    { href: "/amercloud/admin/dashboard", label: t("admin.dashboard", "Dashboard"), icon: "📊" },
+    { href: "/amercloud/admin/users", label: t("admin.users", "Users"), icon: "👤" },
+    { href: "/amercloud/admin/plans", label: t("admin.plans", "Plans"), icon: "💎" },
+    { href: "/amercloud/dashboard/vps", label: t("dashboard.deployments", "VPS Instances"), icon: "🖥️" },
+    { href: "/amercloud/admin/billing", label: t("dashboard.billing", "Billing"), icon: "💰" },
+    { href: "/amercloud/admin/transactions", label: t("admin.transactions", "Transactions"), icon: "🧾" },
+    { href: "/amercloud/dashboard/settings", label: t("dashboard.settings", "Settings"), icon: "⚙️" },
+  ], [t]);
+
+  const logoHref = role
+    ? (isAdmin ? "/amercloud/admin/dashboard" : "/amercloud/user/dashboard")
+    : "/amercloud";
 
   function logout() {
     localStorage.removeItem("amer_portal_token");
@@ -46,17 +69,17 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
   return (
     <div className="flex min-h-screen bg-slate-950 text-white">
       <aside
-        className={`flex flex-col border-r border-white/5 bg-slate-900/60 backdrop-blur-xl transition-all ${
-          open ? "w-64" : "w-16"
-        }`}
+        className={`flex flex-col border-white/5 bg-slate-900/60 backdrop-blur-xl transition-all ${
+          lang === "ar" ? "border-l" : "border-r"
+        } ${open ? "w-64" : "w-16"}`}
       >
         <div className="flex items-center justify-between p-4">
-          <Link href="/amercloud" className={`flex items-center gap-2 font-bold ${open ? "" : "hidden"}`}>
+          <Link href={logoHref} className={`flex items-center gap-2 font-bold ${open ? "" : "hidden"}`}>
             <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">☁</span>
-            AmerCloud
+            VoidCloud
           </Link>
           <button onClick={() => setOpen(!open)} className="rounded-md p-1 text-white/60 hover:bg-white/10">
-            {open ? "◀" : "▶"}
+            {open ? (lang === "ar" ? "▶" : "◀") : (lang === "ar" ? "◀" : "▶")}
           </button>
         </div>
         <nav className="flex-1 space-y-1 px-2">
@@ -72,30 +95,36 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
               {open && <span>{it.label}</span>}
             </Link>
           ))}
-          <div className="my-3 border-t border-white/5" />
-          <Link
-            href={isAdminArea ? "/amercloud/dashboard" : "/amercloud/admin"}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-white"
-          >
-            <span>{isAdminArea ? "←" : "🛡️"}</span>
-            {open && <span>{isAdminArea ? "Back to user" : "Admin panel"}</span>}
-          </Link>
+          {isAdmin && (
+            <>
+              <div className="my-3 border-t border-white/5" />
+              <Link
+                href={isAdminArea ? "/amercloud/user/dashboard" : "/amercloud/admin/dashboard"}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-white"
+              >
+                <span>{isAdminArea ? "←" : "🛡️"}</span>
+                {open && <span>{isAdminArea ? t("dashboard.back_to_user", "Back to user") : t("dashboard.admin_panel", "Admin Panel")}</span>}
+              </Link>
+            </>
+          )}
         </nav>
         <div className="border-t border-white/5 p-3">
-          <button onClick={logout} className="w-full rounded-lg px-3 py-2 text-left text-sm text-white/60 hover:bg-white/5 hover:text-white">
-            🚪 {open && "Sign out"}
+          <button onClick={logout} className="w-full rounded-lg px-3 py-2 text-start text-sm text-white/60 hover:bg-white/5 hover:text-white">
+            🚪 {open && t("dashboard.logout", "Sign out")}
           </button>
         </div>
       </aside>
 
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-white/5 bg-slate-900/40 px-6 py-3 backdrop-blur-xl">
-          <div className="text-sm text-white/50">{pathname}</div>
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+            <div className="text-sm text-white/50">{pathname}</div>
+          </div>
           <div className="flex items-center gap-3">
             <button onClick={() => setLang(lang === "en" ? "ar" : "en")} className="rounded-md border border-white/10 px-3 py-1 text-xs">
-              {lang === "en" ? "🇪🇬 AR" : "🇬🇧 EN"}
+              {lang === "en" ? "🇪🇬 العربية" : "🇬🇧 EN"}
             </button>
-            <button className="rounded-md border border-white/10 px-3 py-1 text-xs" title="Notifications">🔔</button>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>

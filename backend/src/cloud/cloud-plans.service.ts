@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomBytes, createHash } from 'crypto';
 
@@ -25,8 +29,20 @@ export interface PlanInput {
   sortOrder?: number;
 }
 
+export interface CustomPlanInput {
+  cpu: number;
+  memory: number;
+  storage: number;
+  deploymentLimit?: number;
+  customDomainLimit?: number;
+}
+
 const slugify = (s: string) =>
-  s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  s
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
 @Injectable()
 export class CloudPlansService {
@@ -83,6 +99,84 @@ export class CloudPlansService {
   async remove(id: string) {
     await this.get(id);
     return this.prisma.cloudPlan.delete({ where: { id } });
+  }
+
+  /** Persist display order for admin drag-and-drop and VPS wizard plan list. */
+  async reorder(planIds: string[]) {
+    if (!planIds.length) return this.list(false);
+    await this.prisma.$transaction(
+      planIds.map((id, index) =>
+        this.prisma.cloudPlan.update({
+          where: { id },
+          data: { sortOrder: index },
+        }),
+      ),
+    );
+    return this.list(false);
+  }
+
+  /**
+   * Calculate price for custom plan based on resource usage
+   * Pricing model (per month):
+   * - CPU: $2 per core
+   * - Memory: $1 per GB
+   * - Storage: $0.10 per GB
+   * - Base fee: $5
+   */
+  calculateCustomPrice(input: CustomPlanInput) {
+    const cpuPrice = input.cpu * 2;
+    const memoryPrice = (input.memory / 1024) * 1; // Convert MB to GB
+    const storagePrice = (input.storage / 1024) * 0.10; // Convert MB to GB
+    const baseFee = 5;
+    
+    const totalUSD = cpuPrice + memoryPrice + storagePrice + baseFee;
+    const totalEGP = totalUSD * 50; // Approximate EGP conversion
+    
+    return {
+      priceUSD: Math.max(5, Math.round(totalUSD * 100) / 100),
+      priceEGP: Math.max(250, Math.round(totalEGP)),
+      breakdown: {
+        cpu: cpuPrice,
+        memory: memoryPrice,
+        storage: storagePrice,
+        base: baseFee
+      }
+    };
+  }
+
+  /**
+   * Create a custom plan for a user (one-time use)
+   */
+  async createCustomPlan(userId: string, input: CustomPlanInput) {
+    const pricing = this.calculateCustomPrice(input);
+    
+    // Generate a unique slug for this custom plan
+    const customSlug = `custom-${userId.slice(0, 8)}-${Date.now()}`;
+    
+    return this.prisma.cloudPlan.create({
+      data: {
+        name: `Custom Plan (${input.cpu} CPU, ${input.memory}MB RAM, ${input.storage}MB Storage)`,
+        slug: customSlug,
+        description: 'Custom configuration based on your requirements',
+        priceUSD: pricing.priceUSD,
+        priceEGP: pricing.priceEGP,
+        interval: 'monthly',
+        cpuLimit: input.cpu,
+        memoryLimit: input.memory,
+        storageLimit: input.storage,
+        deploymentLimit: input.deploymentLimit ?? 1,
+        customDomainLimit: input.customDomainLimit ?? 0,
+        apiRequestLimit: 10000,
+        teamMemberLimit: 1,
+        databaseSizeLimit: 0,
+        redisLimit: null,
+        trialDays: 0,
+        features: ['Custom Configuration', 'Flexible Resources'],
+        isActive: true,
+        isPopular: false,
+        sortOrder: 999, // Always show custom plans last
+      },
+    });
   }
 }
 

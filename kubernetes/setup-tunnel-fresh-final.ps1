@@ -6,9 +6,9 @@ Write-Host "========================================" -ForegroundColor Blue
 Write-Host ""
 
 # Configuration
-$namespace = "amer-portal"
-$defaultDomain = "amer-portal.cc.cd"
-$defaultApiDomain = "api.amer-portal.cc.cd"
+$namespace = "voidcloud"
+$defaultDomain = "voidcloud.cc.cd"
+$defaultApiDomain = "api.voidcloud.cc.cd"
 
 # Function to check if cloudflared is installed
 function Test-CloudflaredInstalled {

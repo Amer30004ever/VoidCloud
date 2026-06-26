@@ -2,7 +2,7 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
-import { MessageSquare, Mail, Webhook, Plus, CheckCircle, XCircle, Clock, Settings, Loader2, ExternalLink, AlertTriangle } from "lucide-react";
+import { MessageSquare, Mail, Webhook, Settings, Loader2, ExternalLink, AlertTriangle } from "lucide-react";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { AddItemButton } from "@/components/ui/create-item-dialog";
@@ -15,9 +15,9 @@ function IntegrationsPageContent() {
   const validTabs = ["slack", "email", "webhooks", "jira", "pagerduty"] as const;
   type IntegrationTab = (typeof validTabs)[number];
   const [localTab, setLocalTab] = useState<IntegrationTab>("slack");
+  const [isLoading] = useState(false);
   const activeTab: IntegrationTab =
     tabParam && validTabs.includes(tabParam as IntegrationTab) ? (tabParam as IntegrationTab) : localTab;
-  const [isLoading, setIsLoading] = useState(false);
 
   const tabs = [
     { id: "slack" as const, label: "Slack", icon: MessageSquare },
@@ -40,11 +40,10 @@ function IntegrationsPageContent() {
           <button
             key={tab.id}
             onClick={() => setLocalTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === tab.id
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === tab.id
                 ? "border-b-2 border-primary text-primary"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <tab.icon className="h-4 w-4" />
             {tab.label}
@@ -112,7 +111,7 @@ function EmailTab({ isLoading }: { isLoading: boolean }) {
           onSubmit={() => Promise.resolve()}
         />
       </div>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -136,7 +135,7 @@ function EmailTab({ isLoading }: { isLoading: boolean }) {
             <div className="mb-3 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">From:</span>
-                <span className="text-foreground">noreply@amer-portal.cc</span>
+                <span className="text-foreground">noreply@voidcloud.cc</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Recipients:</span>
@@ -153,7 +152,7 @@ function EmailTab({ isLoading }: { isLoading: boolean }) {
               <span className="rounded-full bg-yellow-500/10 px-2 py-1 text-xs text-yellow-500">Reports</span>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -238,7 +237,7 @@ function JiraTab({ isLoading }: { isLoading: boolean }) {
           onSubmit={() => Promise.resolve()}
         />
       </div>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -278,7 +277,7 @@ function JiraTab({ isLoading }: { isLoading: boolean }) {
               <span className="rounded-full bg-green-500/10 px-2 py-1 text-xs text-green-500">Sprints</span>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -315,7 +314,7 @@ function PagerDutyTab({ isLoading }: { isLoading: boolean }) {
           onSubmit={() => Promise.resolve()}
         />
       </div>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -359,7 +358,7 @@ function PagerDutyTab({ isLoading }: { isLoading: boolean }) {
               <span className="rounded-full bg-orange-500/10 px-2 py-1 text-xs text-orange-500">High</span>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">

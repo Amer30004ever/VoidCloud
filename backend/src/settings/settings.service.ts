@@ -15,7 +15,10 @@ import {
   ResetPasswordDto,
   UpdateUserDto,
 } from './dto/create-user.dto';
-import { generateRandomPassword, hashPassword } from '../common/utils/password.util';
+import {
+  generateRandomPassword,
+  hashPassword,
+} from '../common/utils/password.util';
 
 const userSelect = {
   id: true,
@@ -34,7 +37,13 @@ export class SettingsService {
 
   constructor(private prisma: PrismaService) {}
 
-  private async logAudit(action: string, userId?: string, userEmail?: string, resource?: string, details?: unknown) {
+  private async logAudit(
+    action: string,
+    userId?: string,
+    userEmail?: string,
+    resource?: string,
+    details?: unknown,
+  ) {
     try {
       await this.prisma.auditLog.create({
         data: {
@@ -46,7 +55,9 @@ export class SettingsService {
         },
       });
     } catch (error) {
-      this.logger.warn(`Audit log failed: ${error instanceof Error ? error.message : error}`);
+      this.logger.warn(
+        `Audit log failed: ${error instanceof Error ? error.message : error}`,
+      );
     }
   }
 
@@ -59,13 +70,18 @@ export class SettingsService {
   }
 
   async getUser(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id }, select: userSelect });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: userSelect,
+    });
     if (!user) throw new NotFoundException('User not found');
     return { user };
   }
 
   async createUser(dto: CreateUserDto, actorId?: string) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
     if (existing) throw new ConflictException('User already exists');
 
     let plainPassword = dto.password;
@@ -79,7 +95,9 @@ export class SettingsService {
       mustChangePassword = true;
     } else {
       if (!plainPassword || plainPassword.length < 8) {
-        throw new BadRequestException('Password must be at least 8 characters for manual mode');
+        throw new BadRequestException(
+          'Password must be at least 8 characters for manual mode',
+        );
       }
     }
 
@@ -95,12 +113,16 @@ export class SettingsService {
       select: userSelect,
     });
 
-    await this.logAudit('USER_CREATED', actorId, undefined, user.email, { role: user.role, mustChangePassword });
+    await this.logAudit('USER_CREATED', actorId, undefined, user.email, {
+      role: user.role,
+      mustChangePassword,
+    });
 
     return {
       success: true,
       user,
-      temporaryPassword: dto.passwordMode !== PasswordMode.MANUAL ? plainPassword : undefined,
+      temporaryPassword:
+        dto.passwordMode !== PasswordMode.MANUAL ? plainPassword : undefined,
       mustChangePassword,
     };
   }
@@ -146,12 +168,15 @@ export class SettingsService {
       select: userSelect,
     });
 
-    await this.logAudit('USER_PASSWORD_RESET', actorId, user.email, user.id, { mustChangePassword });
+    await this.logAudit('USER_PASSWORD_RESET', actorId, user.email, user.id, {
+      mustChangePassword,
+    });
 
     return {
       success: true,
       user,
-      temporaryPassword: dto.passwordMode !== PasswordMode.MANUAL ? plainPassword : undefined,
+      temporaryPassword:
+        dto.passwordMode !== PasswordMode.MANUAL ? plainPassword : undefined,
       mustChangePassword,
     };
   }
@@ -177,7 +202,10 @@ export class SettingsService {
   }
 
   async deleteUser(id: string, actorId?: string) {
-    const user = await this.prisma.user.findUnique({ where: { id }, select: userSelect });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: userSelect,
+    });
     if (!user) throw new NotFoundException('User not found');
     await this.prisma.user.delete({ where: { id } });
     await this.logAudit('USER_DELETED', actorId, user.email, id);
@@ -193,8 +221,15 @@ export class SettingsService {
     return { roles };
   }
 
-  async createRole(roleData: { name: string; description: string; permissions: string[] }) {
-    return { success: true, role: { id: roleData.name.toUpperCase(), ...roleData } };
+  async createRole(roleData: {
+    name: string;
+    description: string;
+    permissions: string[];
+  }) {
+    return {
+      success: true,
+      role: { id: roleData.name.toUpperCase(), ...roleData },
+    };
   }
 
   async updateRole(id: string, roleData: Record<string, unknown>) {
@@ -218,7 +253,11 @@ export class SettingsService {
     return { apiKeys };
   }
 
-  async generateApiKey(keyData: { name: string; userId: string; expiresAt?: string }) {
+  async generateApiKey(keyData: {
+    name: string;
+    userId: string;
+    expiresAt?: string;
+  }) {
     const rawKey = `pk_${crypto.randomBytes(24).toString('hex')}`;
     const apiKey = await this.prisma.apiKey.create({
       data: {
@@ -229,7 +268,13 @@ export class SettingsService {
         expiresAt: keyData.expiresAt ? new Date(keyData.expiresAt) : undefined,
       },
     });
-    await this.logAudit('API_KEY_CREATED', keyData.userId, undefined, apiKey.id, { name: keyData.name });
+    await this.logAudit(
+      'API_KEY_CREATED',
+      keyData.userId,
+      undefined,
+      apiKey.id,
+      { name: keyData.name },
+    );
     return {
       success: true,
       apiKey: {

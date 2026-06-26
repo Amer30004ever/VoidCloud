@@ -23,6 +23,7 @@ export default function BookmarksPage() {
           <div className="rounded-lg border border-border bg-card p-4 hover:border-primary/40 transition">
             <div className="flex items-start gap-3">
               {host && (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=32`} alt="" className="h-6 w-6 rounded" />
               )}
               <div className="min-w-0 flex-1">

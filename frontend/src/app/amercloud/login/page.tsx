@@ -1,54 +1,86 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/set-state-in-effect, react-hooks/exhaustive-deps, react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
+import { useLocale } from "@/contexts/LocaleContext";
 
 function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
+  const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [needs2FA, setNeeds2FA] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setErr("");
     try {
-      const { data } = await api.post("/auth/login", { email, password });
+      const body: Record<string, string> = { email, password };
+      if (needs2FA && twoFactorToken) body.twoFactorToken = twoFactorToken.trim();
+      const { data } = await api.post("/auth/login", body);
+      if (data?.requires2FA) {
+        setNeeds2FA(true);
+        setBusy(false);
+        return;
+      }
       const token = data.access_token ?? data.token;
       if (token) {
         if (remember) localStorage.setItem("amer_portal_token", token);
         else sessionStorage.setItem("amer_portal_token", token);
       }
-      router.push(params.get("redirect") || "/amercloud/dashboard");
-    } catch (e: any) {
-      setErr(e.response?.data?.message ?? "Login failed");
+      const role = data.user?.role;
+      const redirect = params.get("redirect");
+      if (redirect) {
+        router.push(redirect);
+      } else if (role === "ADMIN") {
+        router.push("/amercloud/admin/dashboard");
+      } else {
+        router.push("/amercloud/user/dashboard");
+      }
+    } catch (e: unknown) {
+      const status = (e as { response?: { status?: number; data?: { message?: string } } }).response?.status;
+      const message = (e as { response?: { data?: { message?: string } } }).response?.data?.message;
+      setErr(status === 401 ? (message ?? t("auth.invalid_credentials", "Invalid credentials. Please try again.")) : t("auth.api_unreachable", "Portal API is unreachable. Please check backend health and try again."));
     } finally { setBusy(false); }
   }
 
   return (
-    <AuthShell title="Welcome back" subtitle="Sign in to your AmerCloud account">
+    <AuthShell title={t("auth.login_title", "Welcome back")} subtitle={t("auth.login_subtitle", "Sign in to your AmerCloud account")}>
       <form onSubmit={submit} className="space-y-4">
         {err && <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{err}</div>}
-        <Input label="Email" type="email" value={email} onChange={setEmail} required />
-        <Input label="Password" type="password" value={password} onChange={setPassword} required />
+        <Input label={t("common.email", "Email")} type="email" value={email} onChange={setEmail} required />
+        <Input label={t("common.password", "Password")} type="password" value={password} onChange={setPassword} required />
+        {needs2FA && (
+          <Input label={t("auth.two_factor_code", "Two-factor code (or recovery code)")} type="text" value={twoFactorToken} onChange={setTwoFactorToken} required placeholder="123456" />
+        )}
         <label className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-2">
             <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-            Remember me
+            {t("auth.remember_me", "Remember me")}
           </span>
-          <Link href="/amercloud/forgot-password" className="text-cyan-300 hover:underline">Forgot password?</Link>
+          <Link href="/amercloud/forgot-password" className="text-cyan-300 hover:underline">{t("auth.forgot_password", "Forgot password?")}</Link>
         </label>
         <button disabled={busy} className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 py-3 font-semibold text-slate-950 disabled:opacity-60">
-          {busy ? "Signing in…" : "Sign in"}
+          {busy ? t("auth.signing_in", "Signing in…") : t("auth.sign_in", "Sign in")}
         </button>
         <p className="text-center text-sm text-white/60">
-          New to AmerCloud? <Link href="/amercloud/register" className="text-cyan-300 hover:underline">Create account</Link>
+          {t("auth.new_to", "New to AmerCloud?")} <Link href="/amercloud/register" className="text-cyan-300 hover:underline">{t("auth.create_account", "Create account")}</Link>
+        </p>
+        <p className="text-center text-xs text-white/50">
+          {t("auth.verify_email_prompt", "Didn't get the verification email?")}{" "}
+          <button
+            type="button"
+            onClick={() => { if (email) api.post("/auth/resend-verification", { email }).catch(() => {}); }}
+            className="text-cyan-300 hover:underline"
+          >{t("auth.resend", "Resend")}</button>
         </p>
       </form>
     </AuthShell>

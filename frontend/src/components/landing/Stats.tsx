@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 
 const stats = [
-  { value: 500, suffix: "+", label: "Deployments" },
-  { value: 98, suffix: "%", label: "Uptime SLA" },
-  { value: 50, suffix: "ms", label: "Avg Response (Egypt)" },
+  { value: 50, suffix: "+", label: "Deployments in beta" },
+  { value: 99.9, suffix: "%", label: "Uptime SLA", decimals: 1 },
+  { value: 50, prefix: "<", suffix: "ms", label: "Avg Response (Egypt)" },
   { value: 24, suffix: "/7", label: "Support" },
 ];
 
@@ -17,7 +17,7 @@ function useCountUp(target: number, start: boolean, duration = 1500) {
     let raf = 0;
     const step = (t: number) => {
       const p = Math.min(1, (t - startTime) / duration);
-      setV(Math.floor(target * (1 - Math.pow(1 - p, 3))));
+      setV(target * (1 - Math.pow(1 - p, 3)));
       if (p < 1) raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
@@ -26,12 +26,28 @@ function useCountUp(target: number, start: boolean, duration = 1500) {
   return v;
 }
 
-function Stat({ value, suffix, label, visible }: { value: number; suffix: string; label: string; visible: boolean }) {
+function Stat({
+  value,
+  suffix,
+  prefix,
+  label,
+  decimals,
+  visible,
+}: {
+  value: number;
+  suffix: string;
+  prefix?: string;
+  label: string;
+  decimals?: number;
+  visible: boolean;
+}) {
   const v = useCountUp(value, visible);
+  const display = decimals ? v.toFixed(decimals) : Math.floor(v).toString();
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur-xl">
       <div className="bg-gradient-to-r from-cyan-400 to-fuchsia-500 bg-clip-text text-4xl font-bold text-transparent">
-        {v}
+        {prefix}
+        {display}
         {suffix}
       </div>
       <div className="mt-2 text-sm text-white/60">{label}</div>
@@ -56,16 +72,6 @@ export function Stats() {
 
   return (
     <section ref={ref} className="mx-auto max-w-7xl px-6 py-20">
-      <p className="mb-6 text-center text-sm uppercase tracking-widest text-white/40">
-        Trusted by developers from
-      </p>
-      <div className="mb-12 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-2xl font-bold text-white/40">
-        <span>Google</span>
-        <span>Microsoft</span>
-        <span>Stripe</span>
-        <span>Fawry</span>
-        <span>InstaPay</span>
-      </div>
       <div className="grid gap-4 md:grid-cols-4">
         {stats.map((s) => (
           <Stat key={s.label} {...s} visible={visible} />

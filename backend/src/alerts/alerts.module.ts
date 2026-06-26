@@ -5,9 +5,9 @@ import { KubernetesModule } from '../kubernetes/kubernetes.module';
 import { LogsModule } from '../logs/logs.module';
 
 @Module({
-    imports: [KubernetesModule, LogsModule],
-    providers: [AlertsService],
-    controllers: [AlertsController],
-    exports: [AlertsService],
+  imports: [KubernetesModule, LogsModule],
+  providers: [AlertsService],
+  controllers: [AlertsController],
+  exports: [AlertsService],
 })
-export class AlertsModule { }
+export class AlertsModule {}

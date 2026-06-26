@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: amer-portal
+  namespace: voidcloud
 spec:
   replicas: 1
   selector:
@@ -20,17 +20,17 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: amer-portal-secrets
+                  name: voidcloud-secrets
                   key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: amer-portal-secrets
+                  name: voidcloud-secrets
                   key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: amer-portal-secrets
+                  name: voidcloud-secrets
                   key: POSTGRES_DB
           ports:
             - containerPort: 5432

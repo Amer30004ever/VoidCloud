@@ -1,9 +1,22 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiSecurity } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { NotesService, NoteInput } from './notes.service';
 
-interface AuthedRequest { user: { id: string } }
+interface AuthedRequest {
+  user: { id: string };
+}
 
 @ApiTags('Notes')
 @ApiSecurity('bearer')
@@ -28,7 +41,11 @@ export class NotesController {
   }
 
   @Put(':id')
-  update(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: Partial<NoteInput>) {
+  update(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: Partial<NoteInput>,
+  ) {
     return this.notes.update(req.user.id, id, body);
   }
 

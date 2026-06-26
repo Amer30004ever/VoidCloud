@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import { ClusterService } from './cluster.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -80,7 +89,11 @@ export class ClusterController {
     @Query('type') type?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.clusterService.getEvents(namespace, type, limit ? parseInt(limit) : 50);
+    return this.clusterService.getEvents(
+      namespace,
+      type,
+      limit ? parseInt(limit) : 50,
+    );
   }
 
   @Get('helm-releases')
@@ -97,7 +110,10 @@ export class ClusterController {
 
   @Delete('helm-releases/:name')
   @ApiOperation({ summary: 'Uninstall Helm release' })
-  async uninstallHelmRelease(@Param('name') name: string, @Query('namespace') namespace: string) {
+  async uninstallHelmRelease(
+    @Param('name') name: string,
+    @Query('namespace') namespace: string,
+  ) {
     return this.clusterService.uninstallHelmRelease(name, namespace);
   }
 

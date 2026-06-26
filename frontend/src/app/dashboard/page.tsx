@@ -3,8 +3,8 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { HomelabSections } from "@/components/dashboard/HomelabSections";
 import { PageHeader } from "@/components/ui/page-header";
-import { GitBranch, Rocket, Server, Layers, Loader2, AlertTriangle, FileText, Play, ArrowRight, Activity, Cpu, HardDrive, Scale, RefreshCw, Trash2, Settings, TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, AlertCircle, Download } from "lucide-react";
-import { useStats, usePublicStats, useFailedPods, useRecentDeployments, useRecentActivity, usePodStatus, useServiceStatus, useClusterHealth } from "@/hooks/useStats";
+import { GitBranch, Rocket, Server, Layers, Loader2, AlertTriangle, FileText, Play, ArrowRight, Activity, Cpu, HardDrive, Scale, RefreshCw, Trash2, Settings, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, Download } from "lucide-react";
+import { useStats, useFailedPods, useRecentDeployments, useRecentActivity, usePodStatus, useServiceStatus, useClusterHealth } from "@/hooks/useStats";
 import type { ClusterHealthData } from "@/lib/stats";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -88,7 +88,7 @@ export default function DashboardPage() {
       })),
     ];
 
-    exportToCsv(`amer-portal-dashboard-${new Date().toISOString().slice(0, 10)}`, rows);
+    exportToCsv(`voidcloud-dashboard-${new Date().toISOString().slice(0, 10)}`, rows);
   };
 
   const handleExportPdf = () => {

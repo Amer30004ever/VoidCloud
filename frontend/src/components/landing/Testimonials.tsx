@@ -1,7 +1,7 @@
 const items = [
   {
     quote:
-      "AmerCloud saved us months of Kubernetes setup. Deployed our MVP in hours, not weeks.",
+      "VoidCloud saved us months of Kubernetes setup. Deployed our MVP in hours, not weeks.",
     author: "Ahmed K.",
     role: "CTO at Cairo Fintech",
   },

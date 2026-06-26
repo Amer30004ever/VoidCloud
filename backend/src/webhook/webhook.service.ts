@@ -7,7 +7,12 @@ export class WebhookService {
 
   constructor(private prisma: PrismaService) {}
 
-  async processWebhook(platform: string, eventType: string, payload: any, source?: string) {
+  async processWebhook(
+    platform: string,
+    eventType: string,
+    payload: any,
+    source?: string,
+  ) {
     try {
       // Log the webhook
       const webhookLog = await this.prisma.webhookLog.create({
@@ -40,25 +45,29 @@ export class WebhookService {
 
   async processPayload(platform: string, payload: any) {
     this.logger.log(`Processing payload for ${platform}`);
-    
+
     // Call the main processWebhook method with default values
     return this.processWebhook(platform, 'payload', payload, 'api');
   }
 
-  private async processWhatsAppWebhook(eventType: string, payload: any, webhookLogId: string) {
+  private async processWhatsAppWebhook(
+    eventType: string,
+    payload: any,
+    webhookLogId: string,
+  ) {
     // Handle WhatsApp specific webhook events
     this.logger.log(`Processing WhatsApp webhook: ${eventType}`);
-    
+
     if (eventType === 'message') {
       // Handle incoming messages
       const waId = payload.from;
       const messageText = payload.text?.body || '';
-      
+
       // Find or create contact
       let contact = await this.prisma.whatsappContact.findUnique({
         where: { waId },
       });
-      
+
       if (!contact && payload.profile?.name) {
         // Create contact if needed
         contact = await this.prisma.whatsappContact.create({
@@ -70,7 +79,7 @@ export class WebhookService {
           },
         });
       }
-      
+
       // Create conversation or get existing
       let conversation = await this.prisma.conversation.findFirst({
         where: {
@@ -78,7 +87,7 @@ export class WebhookService {
           contactId: waId,
         },
       });
-      
+
       if (!conversation) {
         conversation = await this.prisma.conversation.create({
           data: {
@@ -89,7 +98,7 @@ export class WebhookService {
           },
         });
       }
-      
+
       // Create message
       await this.prisma.message.create({
         data: {

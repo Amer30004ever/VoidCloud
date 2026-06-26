@@ -13,8 +13,8 @@ export class GithubService {
 
   private getHeaders() {
     return {
-      'Authorization': `token ${this.githubToken}`,
-      'Accept': 'application/vnd.github.v3+json',
+      Authorization: `token ${this.githubToken}`,
+      Accept: 'application/vnd.github.v3+json',
     };
   }
 
@@ -23,13 +23,13 @@ export class GithubService {
       const response = await fetch(`${this.githubApiUrl}/user/repos`, {
         headers: this.getHeaders(),
       });
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const repos = await response.json();
-      
+
       return {
         repos: repos.map((repo: any) => ({
           id: repo.id,
@@ -54,16 +54,19 @@ export class GithubService {
 
   async getRepoDetails(owner: string, repo: string) {
     try {
-      const response = await fetch(`${this.githubApiUrl}/repos/${owner}/${repo}`, {
-        headers: this.getHeaders(),
-      });
-      
+      const response = await fetch(
+        `${this.githubApiUrl}/repos/${owner}/${repo}`,
+        {
+          headers: this.getHeaders(),
+        },
+      );
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const repoData = await response.json();
-      
+
       return {
         id: repoData.id,
         name: repoData.name,
@@ -97,15 +100,15 @@ export class GithubService {
         `${this.githubApiUrl}/repos/${owner}/${repo}/commits?per_page=${limit}`,
         {
           headers: this.getHeaders(),
-        }
+        },
       );
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const commits = await response.json();
-      
+
       return {
         commits: commits.map((commit: any) => ({
           sha: commit.sha,
@@ -126,16 +129,19 @@ export class GithubService {
 
   async getBranches(owner: string, repo: string) {
     try {
-      const response = await fetch(`${this.githubApiUrl}/repos/${owner}/${repo}/branches`, {
-        headers: this.getHeaders(),
-      });
-      
+      const response = await fetch(
+        `${this.githubApiUrl}/repos/${owner}/${repo}/branches`,
+        {
+          headers: this.getHeaders(),
+        },
+      );
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const branches = await response.json();
-      
+
       return {
         branches: branches.map((branch: any) => ({
           name: branch.name,
@@ -158,15 +164,15 @@ export class GithubService {
         `${this.githubApiUrl}/repos/${owner}/${repo}/pulls?state=${state}`,
         {
           headers: this.getHeaders(),
-        }
+        },
       );
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const prs = await response.json();
-      
+
       return {
         pullRequests: prs.map((pr: any) => ({
           id: pr.id,
@@ -196,15 +202,15 @@ export class GithubService {
         `${this.githubApiUrl}/repos/${owner}/${repo}/issues?state=${state}`,
         {
           headers: this.getHeaders(),
-        }
+        },
       );
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const issues = await response.json();
-      
+
       return {
         issues: issues.map((issue: any) => ({
           id: issue.id,
@@ -234,15 +240,15 @@ export class GithubService {
         `${this.githubApiUrl}/repos/${owner}/${repo}/actions/runs?per_page=${limit}`,
         {
           headers: this.getHeaders(),
-        }
+        },
       );
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const data = await response.json();
-      
+
       return {
         workflowRuns: data.workflow_runs.map((run: any) => ({
           id: run.id,
@@ -269,15 +275,15 @@ export class GithubService {
         `${this.githubApiUrl}/repos/${owner}/${repo}/actions/runs/${runId}`,
         {
           headers: this.getHeaders(),
-        }
+        },
       );
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const run = await response.json();
-      
+
       return {
         id: run.id,
         name: run.name,
@@ -293,7 +299,9 @@ export class GithubService {
         url: run.html_url,
       };
     } catch (error) {
-      this.logger.error(`Error fetching workflow run details: ${error.message}`);
+      this.logger.error(
+        `Error fetching workflow run details: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -305,9 +313,9 @@ export class GithubService {
         {
           method: 'POST',
           headers: this.getHeaders(),
-        }
+        },
       );
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
@@ -325,15 +333,15 @@ export class GithubService {
         `${this.githubApiUrl}/repos/${owner}/${repo}/hooks`,
         {
           headers: this.getHeaders(),
-        }
+        },
       );
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const hooks = await response.json();
-      
+
       return {
         webhooks: hooks.map((hook: any) => ({
           id: hook.id,
@@ -367,15 +375,15 @@ export class GithubService {
             events: webhookData.events || ['push'],
             active: true,
           }),
-        }
+        },
       );
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const hook = await response.json();
-      
+
       return {
         success: true,
         webhook: {
@@ -397,9 +405,9 @@ export class GithubService {
         {
           method: 'DELETE',
           headers: this.getHeaders(),
-        }
+        },
       );
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
@@ -414,10 +422,13 @@ export class GithubService {
   async getRepoAnalytics(owner: string, repo: string) {
     try {
       // Get basic repo stats
-      const repoResponse = await fetch(`${this.githubApiUrl}/repos/${owner}/${repo}`, {
-        headers: this.getHeaders(),
-      });
-      
+      const repoResponse = await fetch(
+        `${this.githubApiUrl}/repos/${owner}/${repo}`,
+        {
+          headers: this.getHeaders(),
+        },
+      );
+
       const repoData = await repoResponse.json();
 
       // Get contributors
@@ -425,9 +436,9 @@ export class GithubService {
         `${this.githubApiUrl}/repos/${owner}/${repo}/contributors`,
         {
           headers: this.getHeaders(),
-        }
+        },
       );
-      
+
       const contributors = await contributorsResponse.json();
 
       return {
@@ -453,13 +464,13 @@ export class GithubService {
       const response = await fetch(`${this.githubApiUrl}/user`, {
         headers: this.getHeaders(),
       });
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const user = await response.json();
-      
+
       return {
         id: user.id,
         login: user.login,
@@ -487,15 +498,15 @@ export class GithubService {
         `${this.githubApiUrl}/user/repos?type=${type}&sort=${sort}`,
         {
           headers: this.getHeaders(),
-        }
+        },
       );
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const repos = await response.json();
-      
+
       return {
         repos: repos.map((repo: any) => ({
           id: repo.id,
@@ -523,13 +534,13 @@ export class GithubService {
       const response = await fetch(`${this.githubApiUrl}/user/orgs`, {
         headers: this.getHeaders(),
       });
-      
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
 
       const orgs = await response.json();
-      
+
       return {
         organizations: orgs.map((org: any) => ({
           id: org.id,

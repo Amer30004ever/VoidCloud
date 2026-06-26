@@ -1,0 +1,22 @@
+{
+  "project": {
+    "name": "AmerCloud",
+    "description": "Kubernetes hosting with Egyptian payments",
+    "version": "2.0.0",
+    "environment": "production"
+  },
+  "rules": {
+    "enforceNeverList": true,
+    "requireApprovalForLockedFiles": true,
+    "autoCheckFileOrganization": true
+  },
+  "locks": {
+    "files": [
+      "frontend/src/components/landing/Integrations.tsx",
+      "frontend/src/components/landing/Pricing.tsx",
+      "lovable.toml",
+      "AGENTS.md"
+    ],
+    "reason": "Contains business-critical content or project rules"
+  }
+}

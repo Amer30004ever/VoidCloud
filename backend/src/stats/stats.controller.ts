@@ -73,7 +73,9 @@ export class StatsController {
 
   @Public()
   @Get('namespaces')
-  @ApiOperation({ summary: 'Get running namespaces count (excluding kube-system)' })
+  @ApiOperation({
+    summary: 'Get running namespaces count (excluding kube-system)',
+  })
   @ApiOkResponse({
     description: 'Returns count of running namespaces excluding kube-system',
     schema: { example: { count: 8 } },
@@ -152,7 +154,9 @@ export class StatsController {
 
   @Public()
   @Get('service-status')
-  @ApiOperation({ summary: 'Get service status (Harbor, Jaeger, Traefik, etc.)' })
+  @ApiOperation({
+    summary: 'Get service status (Harbor, Jaeger, Traefik, etc.)',
+  })
   @ApiOkResponse({
     description: 'Returns service status with health, uptime, and last issue',
     schema: {

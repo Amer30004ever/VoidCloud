@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import { GithubService } from './github.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -21,7 +30,10 @@ export class GithubController {
 
   @Get('repos/:owner/:repo')
   @ApiOperation({ summary: 'Get details for a specific repository' })
-  async getRepoDetails(@Param('owner') owner: string, @Param('repo') repo: string) {
+  async getRepoDetails(
+    @Param('owner') owner: string,
+    @Param('repo') repo: string,
+  ) {
     return this.githubService.getRepoDetails(owner, repo);
   }
 
@@ -32,12 +44,19 @@ export class GithubController {
     @Param('repo') repo: string,
     @Query('limit') limit?: string,
   ) {
-    return this.githubService.getCommits(owner, repo, limit ? parseInt(limit) : 10);
+    return this.githubService.getCommits(
+      owner,
+      repo,
+      limit ? parseInt(limit) : 10,
+    );
   }
 
   @Get('repos/:owner/:repo/branches')
   @ApiOperation({ summary: 'Get all branches for a repository' })
-  async getBranches(@Param('owner') owner: string, @Param('repo') repo: string) {
+  async getBranches(
+    @Param('owner') owner: string,
+    @Param('repo') repo: string,
+  ) {
     return this.githubService.getBranches(owner, repo);
   }
 
@@ -68,7 +87,11 @@ export class GithubController {
     @Param('repo') repo: string,
     @Query('limit') limit?: string,
   ) {
-    return this.githubService.getWorkflowRuns(owner, repo, limit ? parseInt(limit) : 10);
+    return this.githubService.getWorkflowRuns(
+      owner,
+      repo,
+      limit ? parseInt(limit) : 10,
+    );
   }
 
   @Get('repos/:owner/:repo/actions/:run_id')
@@ -78,7 +101,11 @@ export class GithubController {
     @Param('repo') repo: string,
     @Param('run_id') runId: string,
   ) {
-    return this.githubService.getWorkflowRunDetails(owner, repo, parseInt(runId));
+    return this.githubService.getWorkflowRunDetails(
+      owner,
+      repo,
+      parseInt(runId),
+    );
   }
 
   @Post('repos/:owner/:repo/actions/:run_id/rerun')
@@ -93,7 +120,10 @@ export class GithubController {
 
   @Get('repos/:owner/:repo/webhooks')
   @ApiOperation({ summary: 'Get webhooks for a repository' })
-  async getWebhooks(@Param('owner') owner: string, @Param('repo') repo: string) {
+  async getWebhooks(
+    @Param('owner') owner: string,
+    @Param('repo') repo: string,
+  ) {
     return this.githubService.getWebhooks(owner, repo);
   }
 
@@ -119,7 +149,10 @@ export class GithubController {
 
   @Get('repos/:owner/:repo/analytics')
   @ApiOperation({ summary: 'Get repository analytics' })
-  async getRepoAnalytics(@Param('owner') owner: string, @Param('repo') repo: string) {
+  async getRepoAnalytics(
+    @Param('owner') owner: string,
+    @Param('repo') repo: string,
+  ) {
     return this.githubService.getRepoAnalytics(owner, repo);
   }
 

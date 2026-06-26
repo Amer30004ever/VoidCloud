@@ -2,43 +2,65 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "system";
+type ResolvedTheme = "light" | "dark";
 
 interface ThemeContextType {
   theme: Theme;
+  resolvedTheme: ResolvedTheme;
+  setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-function applyTheme(theme: Theme) {
-  const root = document.documentElement;
-  root.classList.toggle("dark", theme === "dark");
-  localStorage.setItem("theme", theme);
-}
+const STORAGE_KEY = "amer-theme";
+const LEGACY_KEY = "theme";
 
 function readInitialTheme(): Theme {
-  if (typeof window === "undefined") return "light";
-  const savedTheme = localStorage.getItem("theme") as Theme | null;
-  return (
-    savedTheme ??
-    (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-  );
+  if (typeof window === "undefined") return "system";
+  const stored = (localStorage.getItem(STORAGE_KEY) ??
+    localStorage.getItem(LEGACY_KEY)) as Theme | null;
+  if (stored === "light" || stored === "dark" || stored === "system") return stored;
+  return "system";
+}
+
+function resolve(theme: Theme): ResolvedTheme {
+  if (theme !== "system") return theme;
+  if (typeof window === "undefined") return "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(readInitialTheme);
+  const [theme, setThemeState] = useState<Theme>(() => readInitialTheme());
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("dark");
 
   useEffect(() => {
-    applyTheme(theme);
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => {
+      const r = resolve(theme);
+      setResolvedTheme(r);
+      document.documentElement.classList.toggle("dark", r === "dark");
+    };
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
   }, [theme]);
 
+  const setTheme = (t: Theme) => {
+    setThemeState(t);
+    try {
+      localStorage.setItem(STORAGE_KEY, t);
+      localStorage.setItem(LEGACY_KEY, t === "system" ? resolve(t) : t);
+    } catch {}
+  };
+
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

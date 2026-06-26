@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
+
 
 const navLinks = [
   { href: "#features", label: "Features" },
   { href: "#pricing", label: "Pricing" },
   { href: "/amercloud/dashboard/deployments", label: "Deployments" },
   { href: "/docs", label: "Docs" },
-  { href: "mailto:support@amercloud.dev", label: "Support" },
+  { href: "mailto:nova-cloud-2026@outlook.com", label: "Support" },
 ];
 
 export function Navbar() {
@@ -21,7 +23,7 @@ export function Navbar() {
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">
             ☁
           </span>
-          AmerCloud
+          VoidCloud
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">
@@ -37,6 +39,11 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
+          <span className="hidden items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-xs text-emerald-300 lg:inline-flex">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+            Live
+          </span>
+          <ThemeToggle />
           <Link
             href="/amercloud/login"
             className="rounded-lg px-4 py-2 text-sm text-white/80 hover:text-white"

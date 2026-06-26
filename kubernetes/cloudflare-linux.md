@@ -17,8 +17,8 @@
 
 | Item | Value |
 |------|-------|
-| **Domain** | `amer-portal.cc.cd` |
-| **API Subdomain** | `api.amer-portal.cc.cd` |
+| **Domain** | `voidcloud.cc.cd` |
+| **API Subdomain** | `api.voidcloud.cc.cd` |
 | **Tunnel ID** | `b87510bf-f586-42aa-ab0c-b1a24206768a` |
 | **Account Tag** | `5974977c768416623e5ec8bf7ba6a070` |
 | **Worker Node IP** | `10.51.100.31` |
@@ -90,9 +90,9 @@ tunnel: b87510bf-f586-42aa-ab0c-b1a24206768a
 credentials-file: /etc/cloudflared/credentials.json
 metrics: 0.0.0.0:2000
 ingress:
-  - hostname: amer-portal.cc.cd
+  - hostname: voidcloud.cc.cd
     service: http://localhost:30088
-  - hostname: api.amer-portal.cc.cd
+  - hostname: api.voidcloud.cc.cd
     service: http://localhost:3001
   - service: http_status:404
 EOF
@@ -105,10 +105,10 @@ cat /etc/cloudflared/config.yaml
 
 ```bash
 # Scale down the Kubernetes tunnel deployment to 0 replicas
-kubectl scale deployment cloudflare-tunnel -n amer-portal --replicas=0 2>/dev/null
+kubectl scale deployment cloudflare-tunnel -n voidcloud --replicas=0 2>/dev/null
 
 # Verify tunnel pod is removed
-kubectl get pods -n amer-portal -l app=cloudflare-tunnel
+kubectl get pods -n voidcloud -l app=cloudflare-tunnel
 ```
 
 ### Step 6: Create Systemd Service
@@ -209,8 +209,8 @@ nc -zv 198.41.200.193 443
 ### Step 1: Verify Kubernetes Services are Running
 
 ```bash
-# Check all pods in amer-portal namespace
-kubectl get pods -n amer-portal
+# Check all pods in voidcloud namespace
+kubectl get pods -n voidcloud
 
 # Expected output:
 # NAME                         READY   STATUS    RESTARTS   AGE
@@ -219,7 +219,7 @@ kubectl get pods -n amer-portal
 # postgres-dfc9bdff4-kwk7l    1/1     Running   0          1h
 
 # Check services
-kubectl get svc -n amer-portal
+kubectl get svc -n voidcloud
 
 # Expected output:
 # NAME         TYPE        CLUSTER-IP      PORT(S)
@@ -246,13 +246,13 @@ curl http://localhost:3001/api/v1/health
 
 ```bash
 # Delete tunnel deployment (if exists)
-kubectl delete deployment cloudflare-tunnel -n amer-portal --ignore-not-found
+kubectl delete deployment cloudflare-tunnel -n voidcloud --ignore-not-found
 
 # Delete tunnel configmap
-kubectl delete configmap cloudflare-tunnel-config -n amer-portal --ignore-not-found
+kubectl delete configmap cloudflare-tunnel-config -n voidcloud --ignore-not-found
 
 # Delete tunnel secret
-kubectl delete secret cloudflare-tunnel-secret -n amer-portal --ignore-not-found
+kubectl delete secret cloudflare-tunnel-secret -n voidcloud --ignore-not-found
 ```
 
 ---
@@ -284,25 +284,25 @@ Expected status:
 - **Tunnel Name**: cluster
 - **Active replicas**: 1
 - **Status**: Healthy
-- **Routes**: 2 (amer-portal.cc.cd, api.amer-portal.cc.cd)
+- **Routes**: 2 (voidcloud.cc.cd, api.voidcloud.cc.cd)
 
 ### Step 3: Test Frontend Access
 
 ```bash
 # Test frontend via Cloudflare
-curl -I https://amer-portal.cc.cd
+curl -I https://voidcloud.cc.cd
 
 # Expected output: HTTP/2 200 OK
 
 # Or open in browser
-# https://amer-portal.cc.cd
+# https://voidcloud.cc.cd
 ```
 
 ### Step 4: Test API Login
 
 ```bash
 # Test login endpoint
-curl -X POST https://api.amer-portal.cc.cd/api/v1/auth/login \
+curl -X POST https://api.voidcloud.cc.cd/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@amer.dev","password":"AmerDevOps2026!"}'
 
@@ -314,7 +314,7 @@ curl -X POST https://api.amer-portal.cc.cd/api/v1/auth/login \
 
 ```bash
 # Test health check
-curl https://api.amer-portal.cc.cd/api/v1/health
+curl https://api.voidcloud.cc.cd/api/v1/health
 
 # Expected output:
 # {"status":"ok","uptime":1234.56,"timestamp":"2026-05-22T00:00:00.000Z"}
@@ -341,7 +341,7 @@ sudo systemctl restart cloudflared
 
 ```bash
 # Check if backend service is running
-kubectl get pods -n amer-portal -l app=backend
+kubectl get pods -n voidcloud -l app=backend
 
 # Check if NodePort is accessible
 curl http://localhost:3001/api/v1/health
@@ -354,8 +354,8 @@ sudo iptables -L OUTPUT -n -v | grep -i "198.41"
 
 ```bash
 # Check DNS resolution
-nslookup amer-portal.cc.cd
-dig amer-portal.cc.cd
+nslookup voidcloud.cc.cd
+dig voidcloud.cc.cd
 
 # Clear DNS cache
 sudo systemd-resolve --flush-caches
@@ -423,11 +423,11 @@ echo ""
 TUNNEL_ID="b87510bf-f586-42aa-ab0c-b1a24206768a"
 ACCOUNT_TAG="5974977c768416623e5ec8bf7ba6a070"
 TUNNEL_SECRET="eyJhIjoiNTk3NDk3N2M3Njg0MTY2MjNlNWVjOGJmN2JhNmEwNzAiLCJ0IjoiYjg3NTEwYmYtZjU4Ni00MmFhLWFiMGMtYjFhMjQyMDY3NjhhIiwiaWF0IjoiMjAyNi0wNS0yMVQxOToyMDoyM1oifQ=="
-DOMAIN="amer-portal.cc.cd"
-API_DOMAIN="api.amer-portal.cc.cd"
+DOMAIN="voidcloud.cc.cd"
+API_DOMAIN="api.voidcloud.cc.cd"
 FRONTEND_NODEPORT="30088"
 BACKEND_PORT="3001"
-NAMESPACE="amer-portal"
+NAMESPACE="voidcloud"
 
 # ============================================================
 # Step 1: Install cloudflared
@@ -635,7 +635,7 @@ sudo ./setup-cloudflare-tunnel.sh
 
 # 4. Verify the tunnel is working
 sudo systemctl status cloudflared
-curl https://api.amer-portal.cc.cd/api/v1/health
+curl https://api.voidcloud.cc.cd/api/v1/health
 ```
 
 ---
@@ -654,13 +654,13 @@ sudo journalctl -u cloudflared -f     # View logs
 ### Testing Commands
 ```bash
 # Test frontend
-curl -I https://amer-portal.cc.cd
+curl -I https://voidcloud.cc.cd
 
 # Test API health
-curl https://api.amer-portal.cc.cd/api/v1/health
+curl https://api.voidcloud.cc.cd/api/v1/health
 
 # Test login
-curl -X POST https://api.amer-portal.cc.cd/api/v1/auth/login \
+curl -X POST https://api.voidcloud.cc.cd/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@amer.dev","password":"AmerDevOps2026!"}'
 ```

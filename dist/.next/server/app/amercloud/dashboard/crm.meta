@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/amercloud/layout,_N_T_/amercloud/dashboard/layout,_N_T_/amercloud/dashboard/crm/layout,_N_T_/amercloud/dashboard/crm/page,_N_T_/amercloud/dashboard/crm"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/amercloud/dashboard/crm/__PAGE__",
+    "/amercloud/dashboard/crm",
+    "/amercloud/dashboard",
+    "/amercloud",
+    "/_index",
+    "/_head"
+  ]
+}

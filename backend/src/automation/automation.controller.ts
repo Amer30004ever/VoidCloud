@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Logger,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiSecurity } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AutomationService } from './automation.service';
@@ -76,7 +87,10 @@ export class AutomationController {
 
   @Put('workflows/:id')
   @ApiOperation({ summary: 'Update workflow template' })
-  async updateWorkflowTemplate(@Param('id') id: string, @Body() templateData: any) {
+  async updateWorkflowTemplate(
+    @Param('id') id: string,
+    @Body() templateData: any,
+  ) {
     return this.automationService.updateWorkflowTemplate(id, templateData);
   }
 

@@ -24,6 +24,7 @@ Central index for Amer DevOps Portal documentation.
 |-----|---------|
 | [../kubernetes/README.md](../kubernetes/README.md) | K8s + Cloudflare Tunnel production guide |
 | [../kubernetes/users-management.md](../kubernetes/users-management.md) | K8s user/RBAC notes |
+| [SMTP-SETUP.md](SMTP-SETUP.md) | Outlook SMTP secret + `01-Setup-SMTP` scripts |
 | [../.github/workflows/README.md](../.github/workflows/README.md) | CI/CD manual triggers |
 
 ## Planning

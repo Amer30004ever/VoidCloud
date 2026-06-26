@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/set-state-in-effect, react-hooks/exhaustive-deps, react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -9,18 +9,17 @@ export default function CloudDashboardHome() {
   const [usage, setUsage] = useState<CloudUsage | null>(null);
   const [deployments, setDeployments] = useState<CloudDeployment[]>([]);
   const [me, setMe] = useState<any>(null);
-
   useEffect(() => {
-    cloudApi.deployments.usage().then(setUsage).catch(() => {});
-    cloudApi.deployments.list().then(setDeployments).catch(() => {});
-    import("@/lib/api").then(({ default: api }) => api.get("/auth/me").then((r) => setMe(r.data)).catch(() => {}));
+    cloudApi.deployments.usage().then(setUsage).catch(() => { });
+    cloudApi.deployments.list().then(setDeployments).catch(() => { });
+    import("@/lib/api").then(({ default: api }) => api.get("/auth/me").then((r) => setMe(r.data)).catch(() => { }));
   }, []);
 
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 p-8 backdrop-blur-xl">
         <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
-        <p className="mt-2 text-white/60">Here's what's happening with your cloud today.</p>
+        <p className="mt-2 text-white/60">Here&apos;s what&apos;s happening with your cloud today.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -32,17 +31,17 @@ export default function CloudDashboardHome() {
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Recent deployments</h2>
-          <Link href="/amercloud/dashboard/deployments/new" className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">
-            + New deployment
+          <h2 className="text-lg font-semibold">Recent VPS instances</h2>
+          <Link href="/amercloud/dashboard/vps/new" className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">
+            + New VPS
           </Link>
         </div>
         {deployments.length === 0 ? (
-          <p className="py-12 text-center text-white/50">No deployments yet. Create your first to get started.</p>
+          <p className="py-12 text-center text-white/50">No VPS instances yet. Create your first to get started.</p>
         ) : (
           <div className="divide-y divide-white/5">
             {deployments.slice(0, 5).map((d) => (
-              <Link key={d.id} href={`/amercloud/dashboard/deployments/${d.id}`} className="flex items-center justify-between py-3 hover:bg-white/5">
+              <Link key={d.id} href={`/amercloud/dashboard/vps/${d.id}`} className="flex items-center justify-between py-3 hover:bg-white/5">
                 <div>
                   <div className="font-medium">{d.name}</div>
                   <div className="text-xs text-white/50">{d.subdomain}.amercloud.cc.cd</div>
@@ -55,7 +54,7 @@ export default function CloudDashboardHome() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <QuickAction href="/amercloud/dashboard/deployments/new" icon="🚀" title="New deployment" desc="Deploy from GitHub or Docker" />
+        <QuickAction href="/amercloud/dashboard/vps/new" icon="🖥️" title="New VPS" desc="Provision a Proxmox container" />
         <QuickAction href="/amercloud/dashboard/billing/invoices" icon="🧾" title="View invoices" desc="Download past invoices" />
         <QuickAction href="/amercloud/dashboard/billing" icon="⬆️" title="Upgrade plan" desc="Need more resources?" />
       </div>

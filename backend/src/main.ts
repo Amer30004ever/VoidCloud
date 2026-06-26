@@ -21,23 +21,45 @@ async function bootstrap() {
     }),
   );
 
-  // CORS - Allow multiple origins for development
-  const allowedOrigins = [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-	'https://amer-portal.cc.cd',
-	'https://api.amer-portal.cc.cd',
-  ].filter(Boolean);
+  // CORS - Allow configured origins + sensible defaults
+  const envOrigins = (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  const allowedOrigins = Array.from(
+    new Set(
+      [
+        process.env.FRONTEND_URL || 'http://localhost:3000',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+        // VoidCloud production domains
+        'https://voidcloud.cc.cd',
+        'https://www.voidcloud.cc.cd',
+        'https://api.voidcloud.cc.cd',
+        ...envOrigins,
+      ].filter(Boolean),
+    ),
+  );
+
+  // Allow any *.voidcloud.cc.cd subdomain (preview / staging)
+  const allowedOriginRegexes = [
+    /^https:\/\/([a-z0-9-]+\.)*voidcloud\.cc\.cd$/i,
+  ];
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl)
+      // Allow requests with no origin (curl, server-to-server, mobile)
       if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+
+      const allowed =
+        allowedOrigins.includes(origin) ||
+        allowedOriginRegexes.some((r) => r.test(origin)) ||
+        process.env.NODE_ENV !== 'production';
+
+      if (allowed) {
         callback(null, true);
       } else {
         logger.warn(`Blocked CORS request from origin: ${origin}`);
@@ -51,9 +73,9 @@ async function bootstrap() {
 
   // ── Swagger / OpenAPI ──────────────────────────────────────────────────────
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('MaVoid CRM API')
+    .setTitle('AmerCloud Portal API')
     .setDescription(
-      'WhatsApp CRM backend — Authentication, Webhooks, Conversations, Leads, Contacts, Deals, Tasks, Templates.',
+      'AmerCloud hosting platform — Authentication, Cloud Plans, VPS provisioning, Payments, and more.',
     )
     .setVersion('1.0.0')
     .addTag('Health', 'Service health check')
@@ -63,7 +85,7 @@ async function bootstrap() {
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'JWT',
     )
-    .setContact('MaVoid Team', '', 'support@mavoid.com')
+    .setContact('AmerCloud Team', 'https://voidcloud.cc.cd', 'support@voidcloud.cc.cd')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
@@ -73,12 +95,16 @@ async function bootstrap() {
       tagsSorter: 'alpha',
       operationsSorter: 'alpha',
     },
-    customSiteTitle: 'MaVoid CRM — API Docs',
+    customSiteTitle: 'AmerCloud Portal — API Docs',
   });
   // ──────────────────────────────────────────────────────────────────────────
 
   const port = process.env.PORT ?? 3001;
-  try { await seedCloud(); } catch (e) { logger.warn(`Cloud seed skipped: ${(e as Error).message}`); }
+  try {
+    await seedCloud();
+  } catch (e) {
+    logger.warn(`Cloud seed skipped: ${(e as Error).message}`);
+  }
   await app.listen(port);
   logger.log(`🚀 MaVoid CRM API running on http://localhost:${port}/api/v1`);
   logger.log(`📖 Swagger docs available at http://localhost:${port}/api/docs`);

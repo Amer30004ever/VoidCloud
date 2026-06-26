@@ -15,7 +15,9 @@ import { PlatformService } from '../platform/platform.service';
   namespace: '/metrics',
   cors: { origin: '*' },
 })
-export class MetricsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class MetricsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   private readonly logger = new Logger(MetricsGateway.name);
   private interval: NodeJS.Timeout | null = null;
 
@@ -32,7 +34,9 @@ export class MetricsGateway implements OnGatewayConnection, OnGatewayDisconnect 
           const payload = await this.platformService.getLiveMetricsSnapshot();
           this.server.emit('metrics', payload);
         } catch (error) {
-          this.logger.warn(`Metrics broadcast failed: ${error instanceof Error ? error.message : error}`);
+          this.logger.warn(
+            `Metrics broadcast failed: ${error instanceof Error ? error.message : error}`,
+          );
         }
       }, 5000);
     }

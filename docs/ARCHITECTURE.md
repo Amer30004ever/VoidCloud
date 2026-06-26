@@ -95,11 +95,11 @@ Global guards: `JwtAuthGuard`, `RolesGuard` (ADMIN for sensitive settings).
 
 ### Local — Docker Compose
 
-Three services: `postgres`, `backend`, `frontend` on bridge network `amer_portal_network`.
+Three services: `postgres`, `backend`, `frontend` on bridge network `voidcloud_network`.
 
 ### Production — Kubernetes
 
-Namespace `amer-portal`: Postgres, backend, frontend, Cloudflare Tunnel. Public traffic via Cloudflare edge; cluster not exposed directly. See [kubernetes/README.md](../kubernetes/README.md).
+Namespace `voidcloud`: Postgres, backend, frontend, Cloudflare Tunnel. Public traffic via Cloudflare edge; cluster not exposed directly. See [kubernetes/README.md](../kubernetes/README.md).
 
 ## Known technical debt
 

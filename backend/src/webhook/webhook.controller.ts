@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  HttpCode,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { WebhookService } from './webhook.service';
 
 @Controller('webhook')
@@ -10,17 +19,17 @@ export class WebhookController {
   @Get()
   verifyWebhook(@Query() query: any) {
     this.logger.log('Webhook verification request received');
-    
+
     // WhatsApp webhook verification
     const mode = query['hub.mode'];
     const token = query['hub.verify_token'];
     const challenge = query['hub.challenge'];
-    
+
     if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
       this.logger.log('Webhook verified successfully');
       return challenge;
     }
-    
+
     return 'Verification failed';
   }
 
@@ -28,12 +37,12 @@ export class WebhookController {
   @HttpCode(HttpStatus.OK)
   async handleWebhook(@Body() body: any) {
     this.logger.log('Webhook received');
-    
+
     try {
       // Detect platform from body structure
       let platform = 'unknown';
       let payload = body;
-      
+
       if (body.object === 'whatsapp_business_account') {
         platform = 'whatsapp';
         // Extract the actual message payload
@@ -41,9 +50,12 @@ export class WebhookController {
           payload = body.entry[0].changes[0].value;
         }
       }
-      
+
       // Call processPayload with both platform and payload
-      const result = await this.webhookService.processPayload(platform, payload);
+      const result = await this.webhookService.processPayload(
+        platform,
+        payload,
+      );
       return { status: 'success', result };
     } catch (error) {
       this.logger.error(`Error handling webhook: ${error.message}`);

@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/runbooks/layout,_N_T_/runbooks/page,_N_T_/runbooks"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/runbooks/__PAGE__",
+    "/runbooks",
+    "/_index",
+    "/_head"
+  ]
+}

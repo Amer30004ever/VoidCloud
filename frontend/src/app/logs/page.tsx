@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Loader2, FileText, Search, AlertTriangle, RefreshCw, Filter, Layers, Clock, Terminal, Radio } from "lucide-react";
@@ -28,7 +28,7 @@ export default function LogsPage() {
     },
   });
 
-  const fetchPodLogs = async () => {
+  const fetchPodLogs = useCallback(async () => {
     if (!selectedPod) return;
     setIsLoading(true);
     try {
@@ -43,7 +43,7 @@ export default function LogsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedNamespace, selectedPod]);
 
   const fetchCrashLogs = async () => {
     if (!selectedPod) return;
@@ -135,7 +135,7 @@ export default function LogsPage() {
       window.clearTimeout(timeoutId);
       if (streamRef.current) clearInterval(streamRef.current);
     };
-  }, [isStreaming, activeView, selectedNamespace, selectedPod]);
+  }, [isStreaming, activeView, selectedPod, fetchPodLogs]);
 
   return (
     <AppLayout>
@@ -159,7 +159,7 @@ export default function LogsPage() {
               <option value="monitoring">monitoring</option>
             </select>
           </div>
-          
+
           {activeView === 'multi-pod' ? (
             <div>
               <label className="mb-2 block text-sm font-medium text-foreground">Deployment</label>
@@ -216,9 +216,8 @@ export default function LogsPage() {
               <button
                 type="button"
                 onClick={() => setIsStreaming((s) => !s)}
-                className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm ${
-                  isStreaming ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"
-                }`}
+                className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm ${isStreaming ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"
+                  }`}
               >
                 <Radio className="h-4 w-4" />
                 {isStreaming ? "Live" : "Stream"}
@@ -331,9 +330,8 @@ export default function LogsPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <button
             onClick={() => setActiveView('pod')}
-            className={`flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 ${
-              activeView === 'pod' ? 'border-primary bg-primary/5' : ''
-            }`}
+            className={`flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 ${activeView === 'pod' ? 'border-primary bg-primary/5' : ''
+              }`}
           >
             <Terminal className="h-5 w-5 text-primary" />
             <div className="text-left">
@@ -343,9 +341,8 @@ export default function LogsPage() {
           </button>
           <button
             onClick={() => setActiveView('crash')}
-            className={`flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 ${
-              activeView === 'crash' ? 'border-primary bg-primary/5' : ''
-            }`}
+            className={`flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 ${activeView === 'crash' ? 'border-primary bg-primary/5' : ''
+              }`}
           >
             <AlertTriangle className="h-5 w-5 text-destructive" />
             <div className="text-left">
@@ -355,9 +352,8 @@ export default function LogsPage() {
           </button>
           <button
             onClick={() => setActiveView('previous')}
-            className={`flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 ${
-              activeView === 'previous' ? 'border-primary bg-primary/5' : ''
-            }`}
+            className={`flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 ${activeView === 'previous' ? 'border-primary bg-primary/5' : ''
+              }`}
           >
             <Clock className="h-5 w-5 text-amber-500" />
             <div className="text-left">
@@ -367,9 +363,8 @@ export default function LogsPage() {
           </button>
           <button
             onClick={() => setActiveView('multi-pod')}
-            className={`flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 ${
-              activeView === 'multi-pod' ? 'border-primary bg-primary/5' : ''
-            }`}
+            className={`flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 ${activeView === 'multi-pod' ? 'border-primary bg-primary/5' : ''
+              }`}
           >
             <Layers className="h-5 w-5 text-purple-500" />
             <div className="text-left">

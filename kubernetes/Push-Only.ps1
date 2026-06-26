@@ -25,7 +25,7 @@ if (-not $env:DOCKER_HUB_USERNAME -or -not $env:DOCKER_HUB_TOKEN) {
     exit 1
 }
 
-if (-not $env:DOCKER_HUB_REPO) { $env:DOCKER_HUB_REPO = "amer-portal" }
+if (-not $env:DOCKER_HUB_REPO) { $env:DOCKER_HUB_REPO = "voidcloud" }
 if (-not $env:BACKEND_IMAGE_TAG) { $env:BACKEND_IMAGE_TAG = "latest" }
 if (-not $env:FRONTEND_IMAGE_TAG) { $env:FRONTEND_IMAGE_TAG = "latest" }
 

@@ -2,7 +2,7 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
-import { Users, Shield, History, Key, Bell, CreditCard, Plus, Trash2, Edit, Loader2, Palette, Sun, Moon, Download, Upload } from "lucide-react";
+import { Users, Shield, History, Key, Bell, Trash2, Loader2, Palette, Sun, Moon, Download, Upload } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AddItemButton } from "@/components/ui/create-item-dialog";
 import { AddUserButton } from "@/components/users/create-user-dialog";
@@ -50,11 +50,10 @@ export default function SettingsPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === tab.id
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === tab.id
                 ? "border-b-2 border-primary text-primary"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <tab.icon className="h-4 w-4" />
             {tab.label}
@@ -246,7 +245,7 @@ function IntegrationsTab() {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-foreground">CI/CD Integrations</h3>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -336,7 +335,7 @@ function NotificationsTab() {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-foreground">Notification Settings</h3>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -353,7 +352,7 @@ function NotificationsTab() {
             </div>
             <p className="text-xs text-muted-foreground">Receive email notifications for important events</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-4 flex items-center justify-between">
               <h4 className="text-sm font-medium text-foreground">Slack Notifications</h4>
@@ -364,7 +363,7 @@ function NotificationsTab() {
             </div>
             <p className="text-xs text-muted-foreground">Receive Slack notifications for deployments and alerts</p>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-4 flex items-center justify-between">
               <h4 className="text-sm font-medium text-foreground">Alert Notifications</h4>
@@ -389,7 +388,7 @@ function ThemeTab() {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-foreground">Theme Customization</h3>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -401,9 +400,8 @@ function ThemeTab() {
             <div className="grid gap-3 sm:grid-cols-3">
               <button
                 onClick={() => setTheme("light")}
-                className={`flex items-center gap-3 rounded-lg border p-4 transition-colors ${
-                  theme === "light" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
-                }`}
+                className={`flex items-center gap-3 rounded-lg border p-4 transition-colors ${theme === "light" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+                  }`}
               >
                 <Sun className="h-5 w-5 text-yellow-500" />
                 <div className="text-left">
@@ -411,12 +409,11 @@ function ThemeTab() {
                   <p className="text-xs text-muted-foreground">Always light mode</p>
                 </div>
               </button>
-              
+
               <button
                 onClick={() => setTheme("dark")}
-                className={`flex items-center gap-3 rounded-lg border p-4 transition-colors ${
-                  theme === "dark" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
-                }`}
+                className={`flex items-center gap-3 rounded-lg border p-4 transition-colors ${theme === "dark" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+                  }`}
               >
                 <Moon className="h-5 w-5 text-blue-500" />
                 <div className="text-left">
@@ -424,12 +421,11 @@ function ThemeTab() {
                   <p className="text-xs text-muted-foreground">Always dark mode</p>
                 </div>
               </button>
-              
+
               <button
                 onClick={() => setTheme("system")}
-                className={`flex items-center gap-3 rounded-lg border p-4 transition-colors ${
-                  theme === "system" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
-                }`}
+                className={`flex items-center gap-3 rounded-lg border p-4 transition-colors ${theme === "system" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+                  }`}
               >
                 <Palette className="h-5 w-5 text-purple-500" />
                 <div className="text-left">
@@ -439,7 +435,7 @@ function ThemeTab() {
               </button>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <h4 className="mb-4 text-sm font-medium text-foreground">Accent Color</h4>
             <div className="flex gap-3">
@@ -447,17 +443,16 @@ function ThemeTab() {
                 <button
                   key={color}
                   onClick={() => setAccentColor(color)}
-                  className={`h-10 w-10 rounded-full border-2 transition-all ${
-                    accentColor === color
+                  className={`h-10 w-10 rounded-full border-2 transition-all ${accentColor === color
                       ? "border-primary scale-110"
                       : "border-border hover:border-primary/50"
-                  }`}
+                    }`}
                   style={{ backgroundColor: color }}
                 />
               ))}
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-4 flex items-center justify-between">
               <h4 className="text-sm font-medium text-foreground">Compact Mode</h4>
@@ -492,7 +487,7 @@ function BackupTab() {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-foreground">Backup & Restore</h3>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -511,7 +506,7 @@ function BackupTab() {
               {isBackingUp ? "Creating Backup..." : "Download Backup"}
             </button>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <h4 className="mb-4 text-sm font-medium text-foreground">Restore Backup</h4>
             <p className="mb-4 text-xs text-muted-foreground">Restore your workspace from a previously created backup file. This will overwrite current settings.</p>
@@ -526,7 +521,7 @@ function BackupTab() {
               </button>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <h4 className="mb-4 text-sm font-medium text-foreground">Recent Backups</h4>
             <div className="space-y-3">
@@ -544,7 +539,7 @@ function BackupTab() {
                   </button>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between rounded-lg border border-border p-4">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">backup-2026-05-29.json</p>
@@ -559,7 +554,7 @@ function BackupTab() {
                   </button>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between rounded-lg border border-border p-4">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">backup-2026-05-28.json</p>

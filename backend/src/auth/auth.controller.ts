@@ -19,6 +19,8 @@ import {
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Public } from './decorators/public.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -40,7 +42,12 @@ export class AuthController {
     description: 'User registered successfully',
     schema: {
       example: {
-        user: { id: 'uuid', email: 'user@example.com', name: 'John', role: 'AGENT' },
+        user: {
+          id: 'uuid',
+          email: 'user@example.com',
+          name: 'John',
+          role: 'AGENT',
+        },
         token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
       },
     },
@@ -62,7 +69,12 @@ export class AuthController {
     description: 'Login successful — returns JWT token',
     schema: {
       example: {
-        user: { id: 'uuid', email: 'user@example.com', name: 'John', role: 'AGENT' },
+        user: {
+          id: 'uuid',
+          email: 'user@example.com',
+          name: 'John',
+          role: 'AGENT',
+        },
         token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
       },
     },
@@ -73,29 +85,59 @@ export class AuthController {
   }
 
   /**
+   * POST /api/v1/auth/forgot-password
+   * Always returns 200 to avoid leaking which emails are registered.
+   */
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request a password reset email' })
+  @ApiOkResponse({ description: 'Reset email sent if account exists' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  /**
+   * POST /api/v1/auth/reset-password
+   * Consume a one-time reset token and set a new password.
+   */
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password using emailed token' })
+  @ApiOkResponse({ description: 'Password updated' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.password);
+  }
+
+  /** POST /api/v1/auth/verify-email — confirm email via emailed token */
+  @Public()
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify email via emailed token' })
+  async verifyEmail(@Body() body: { token: string }) {
+    return this.authService.verifyEmail(body?.token);
+  }
+
+  /** POST /api/v1/auth/resend-verification — resend the verification email */
+  @Public()
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend verification email' })
+  async resendVerification(@Body() body: { email: string }) {
+    return this.authService.resendVerification(body?.email ?? '');
+  }
+
+  /**
    * GET /api/v1/auth/me
    * Return the currently authenticated user
    */
   @Get('me')
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Get current authenticated user' })
-  @ApiOkResponse({
-    description: 'Current user profile',
-    schema: {
-      example: {
-        id: 'uuid',
-        email: 'user@example.com',
-        name: 'John',
-        role: 'AGENT',
-        isActive: true,
-        createdAt: '2026-05-12T13:00:00.000Z',
-      },
-    },
-  })
+  @ApiOkResponse({ description: 'Current user profile' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT token' })
   async me(@CurrentUser() user: { id: string }) {
     return this.authService.getMe(user.id);
   }
 }
-
-

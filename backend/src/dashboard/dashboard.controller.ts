@@ -23,6 +23,25 @@ export class DashboardController {
   }
 
   @Public()
+  @Get('system/smtp-status')
+  @ApiOperation({ summary: 'SMTP transport status' })
+  getSmtpStatus() {
+    const hasSmtp = !!(
+      process.env.SMTP_HOST &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASS
+    );
+    const hasResend = !!process.env.RESEND_API_KEY;
+    return {
+      configured: hasSmtp || hasResend,
+      transport: hasSmtp ? 'smtp' : hasResend ? 'resend' : 'none',
+      host: hasSmtp ? process.env.SMTP_HOST : null,
+      from: process.env.EMAIL_FROM ?? null,
+      status: hasSmtp || hasResend ? 'connected' : 'failed',
+    };
+  }
+
+  @Public()
   @Get('dashboard/metrics')
   @ApiOperation({ summary: 'Get dashboard metrics' })
   async getDashboardMetrics() {

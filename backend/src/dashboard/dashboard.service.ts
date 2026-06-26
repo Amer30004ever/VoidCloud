@@ -34,7 +34,10 @@ export class DashboardService {
       const namespaces = await this.kubernetesService.getNamespaces();
       const pods = await this.kubernetesService.getPods();
 
-      const namespaceMap = new Map<string, { namespace: string; podCount: number; status: ServiceState }>();
+      const namespaceMap = new Map<
+        string,
+        { namespace: string; podCount: number; status: ServiceState }
+      >();
       namespaces.forEach((ns) => {
         namespaceMap.set(ns, { namespace: ns, podCount: 0, status: 'healthy' });
       });
@@ -56,7 +59,9 @@ export class DashboardService {
       }
 
       return {
-        namespaces: Array.from(namespaceMap.values()).sort((a, b) => a.namespace.localeCompare(b.namespace)),
+        namespaces: Array.from(namespaceMap.values()).sort((a, b) =>
+          a.namespace.localeCompare(b.namespace),
+        ),
       };
     } catch (error) {
       this.logger.error(`Error fetching running namespaces: ${error.message}`);
@@ -69,7 +74,9 @@ export class DashboardService {
   }
 
   getRealtimeConfig() {
-    const wsUrl = process.env.METRICS_WS_URL ?? `ws://localhost:${process.env.PORT ?? 3001}/metrics`;
+    const wsUrl =
+      process.env.METRICS_WS_URL ??
+      `ws://localhost:${process.env.PORT ?? 3001}/metrics`;
     return {
       enabled: true,
       transport: 'websocket',
@@ -90,7 +97,8 @@ export class DashboardService {
           namespace: pod.metadata?.namespace,
           status: pod.status?.phase ?? 'Unknown',
           restarts: (pod.status?.containerStatuses || []).reduce(
-            (total: number, c: { restartCount?: number }) => total + (c.restartCount ?? 0),
+            (total: number, c: { restartCount?: number }) =>
+              total + (c.restartCount ?? 0),
             0,
           ),
           age: pod.metadata?.creationTimestamp,
@@ -123,7 +131,8 @@ export class DashboardService {
 
   async getRecentActivity() {
     try {
-      const recentDeployments = await this.statsService.getRecentDeployments(10);
+      const recentDeployments =
+        await this.statsService.getRecentDeployments(10);
       const events = recentDeployments.deployments.map((dep) => ({
         type: 'deployment',
         title: `Deployed ${dep.name}`,

@@ -1,7 +1,32 @@
 # 🚀 Amer Portal - Complete Production Deployment Documentation
 ## Zero to Hero: From Local Development to Global Availability
 
+> **Update (2026-06-24):** AmerCloud VPS homelab ops scripts added — see [AmerCloud PowerShell ops](#amercloud-vps-ops-powershell) and [amercloud-debugging-summary.md](amercloud-debugging-summary.md). VPS provisioning verified against Proxmox node `proxmox` (VMID 104, `pct list`).
+
 > **Update (2026-06-02):** Database bootstrap now uses **Prisma Migrate + seed** inside the backend container (`scripts/docker-entrypoint.sh`). The legacy `backend-init-script` ConfigMap and `init-db.sh` init container were removed. Backend deployment applies migrations on pod start. For local Docker, see [../README.md](../README.md) and [../backend/prisma/README.md](../backend/prisma/README.md).
+
+---
+
+## AmerCloud VPS ops (PowerShell)
+
+Run from `kubernetes/` after copying `proxmox.env.example` to `proxmox.env`:
+
+| Action | Command |
+|--------|---------|
+| First-time setup | `.\AmerCloud.ps1 -Action Setup` |
+| Health check | `.\AmerCloud.ps1 -Action Test` |
+| Create VPS (API) | `.\AmerCloud.ps1 -Action CreateVps` |
+| List VPS | `.\AmerCloud.ps1 -Action ListVps` |
+| Delete VPS | `.\AmerCloud.ps1 -Action DeleteVps -Id <uuid>` |
+| VPS actions | `.\AmerCloud.ps1 -Action VpsAction -VpsAction start|stop|restart|reset-password|clone -Id <id>` |
+| Clean stuck rows | `.\AmerCloud.ps1 -Action CleanStuck` |
+| Proxmox containers | `.\AmerCloud.ps1 -Action ProxmoxPctList` |
+| Fix token ACL | `.\AmerCloud.ps1 -Action FixProxmoxToken` |
+| Full pipeline | `.\AmerCloud.ps1 -Action All` |
+
+**Critical:** `PROXMOX_NODE` must be the Proxmox VE node name (`proxmox`), not the Kubernetes worker name. Backend deployment uses `kubectl replace --force` to avoid duplicate containers from manual `kubectl create deployment`.
+
+Details: [amercloud-debugging-summary.md](amercloud-debugging-summary.md)
 
 ---
 
@@ -12,8 +37,8 @@
 | **Document Version** | 2.1 |
 | **Last Updated** | 2026-06-02 |
 | **Status** | ✅ PRODUCTION READY |
-| **Domain** | https://amer-portal.cc.cd |
-| **API Endpoint** | https://api.amer-portal.cc.cd |
+| **Domain** | https://voidcloud.cc.cd |
+| **API Endpoint** | https://api.voidcloud.cc.cd |
 
 ---
 
@@ -50,10 +75,10 @@ Amer Portal is a full-stack web application deployed on Kubernetes, accessible g
 
 ### Access URLs
 ```
-🌐 Main Application:  https://amer-portal.cc.cd
-🔌 API Endpoint:      https://api.amer-portal.cc.cd
-💚 Health Check:      https://api.amer-portal.cc.cd/api/v1/health
-📚 Swagger Docs:      https://api.amer-portal.cc.cd/api/docs
+🌐 Main Application:  https://voidcloud.cc.cd
+🔌 API Endpoint:      https://api.voidcloud.cc.cd
+💚 Health Check:      https://api.voidcloud.cc.cd/api/v1/health
+📚 Swagger Docs:      https://api.voidcloud.cc.cd/api/docs
 ```
 
 ---
@@ -103,7 +128,7 @@ Amer Portal is a full-stack web application deployed on Kubernetes, accessible g
 │  │  │  └─────────────────┘  └───────┬─────────┘  └───────────────┘  │  │     │
 │  │  │                               │                                │  │     │
 │  │  │                    ┌──────────▼──────────┐                    │  │     │
-│  │  │                    │   amer-portal       │                    │  │     │
+│  │  │                    │   voidcloud       │                    │  │     │
 │  │  │                    │     Namespace       │                    │  │     │
 │  │  │                    │                     │                    │  │     │
 │  │  │    ┌───────────────┼───────────────┬───────────────┐         │  │     │
@@ -211,11 +236,11 @@ Amer Portal is a full-stack web application deployed on Kubernetes, accessible g
 ```bash
 # Create project directory
 cd E:\Courses\projects\proj
-mkdir amer-portal
-cd amer-portal
+mkdir voidcloud
+cd voidcloud
 
 # Project structure
-amer-portal/
+voidcloud/
 ├── backend/
 │   ├── Dockerfile
 │   ├── package.json
@@ -253,12 +278,12 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: amer_portal
+      POSTGRES_DB: voidcloud
 
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/amer_portal
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/voidcloud
     depends_on:
       postgres:
         condition: service_healthy
@@ -276,30 +301,30 @@ Legacy note: older revisions used `init-db.sh` before startup. That script was r
 
 ```powershell
 # Build all images
-cd E:\Courses\projects\proj\amer-portal
+cd E:\Courses\projects\proj\voidcloud
 
 # Build backend
-docker build -t amer-portal-backend:latest ./backend
+docker build -t voidcloud-backend:latest ./backend
 
 # Output:
 # [+] Building 45.2s (12/12) FINISHED
 # => [1/6] FROM node:18-alpine
 # => exporting to image
-# => => naming to docker.io/library/amer-portal-backend:latest
+# => => naming to docker.io/library/voidcloud-backend:latest
 
 # Build frontend
-docker build -t amer-portal-frontend:latest ./frontend
+docker build -t voidcloud-frontend:latest ./frontend
 
 # Output:
 # [+] Building 52.8s (14/14) FINISHED
-# => => naming to docker.io/library/amer-portal-frontend:latest
+# => => naming to docker.io/library/voidcloud-frontend:latest
 
 # Verify images
-docker images | findstr amer-portal
+docker images | findstr voidcloud
 
 # Output:
-# amer-portal-backend    latest    abc123def456   2 minutes ago   450MB
-# amer-portal-frontend   latest    def456abc789   1 minute ago    350MB
+# voidcloud-backend    latest    abc123def456   2 minutes ago   450MB
+# voidcloud-frontend   latest    def456abc789   1 minute ago    350MB
 ```
 
 ---
@@ -314,7 +339,7 @@ docker images | findstr amer-portal
 $envContent = @'
 DOCKER_HUB_USERNAME=amer30004ever
 DOCKER_HUB_TOKEN=dckr_pat_xxxxxxxxxxxxxxxxxxxxx
-DOCKER_HUB_REPO=amer-portal
+DOCKER_HUB_REPO=voidcloud
 '@
 
 $envContent | Out-File -FilePath "dockerhub.env" -Encoding utf8
@@ -335,7 +360,7 @@ param(
 )
 
 $DOCKER_HUB_USERNAME = "amer30004ever"
-$DOCKER_HUB_REPO = "amer-portal"
+$DOCKER_HUB_REPO = "voidcloud"
 
 Write-Host "Building and pushing images with tag: $Tag" -ForegroundColor Green
 
@@ -367,13 +392,13 @@ Write-Host "Images pushed successfully!" -ForegroundColor Green
 # Output:
 # Building and pushing images with tag: 20260522-133045
 # [+] Building 45.2s (12/12) FINISHED
-# => => naming to docker.io/amer30004ever/amer-portal-backend:20260522-133045
-# => => naming to docker.io/amer30004ever/amer-portal-backend:latest
+# => => naming to docker.io/amer30004ever/voidcloud-backend:20260522-133045
+# => => naming to docker.io/amer30004ever/voidcloud-backend:latest
 # 20260522-133045: digest: sha256:abc... size: 2450
 # latest: digest: sha256:abc... size: 2450
 # [+] Building 52.8s (14/14) FINISHED
-# => => naming to docker.io/amer30004ever/amer-portal-frontend:20260522-133045
-# => => naming to docker.io/amer30004ever/amer-portal-frontend:latest
+# => => naming to docker.io/amer30004ever/voidcloud-frontend:20260522-133045
+# => => naming to docker.io/amer30004ever/voidcloud-frontend:latest
 # Images pushed successfully!
 ```
 
@@ -384,10 +409,10 @@ Write-Host "Images pushed successfully!" -ForegroundColor Green
 docker images | findstr amer30004ever
 
 # Output:
-# amer30004ever/amer-portal-backend    20260522-133045   abc123   45 seconds ago   450MB
-# amer30004ever/amer-portal-backend    latest            abc123   45 seconds ago   450MB
-# amer30004ever/amer-portal-frontend   20260522-133045   def456   30 seconds ago   350MB
-# amer30004ever/amer-portal-frontend   latest            def456   30 seconds ago   350MB
+# amer30004ever/voidcloud-backend    20260522-133045   abc123   45 seconds ago   450MB
+# amer30004ever/voidcloud-backend    latest            abc123   45 seconds ago   450MB
+# amer30004ever/voidcloud-frontend   20260522-133045   def456   30 seconds ago   350MB
+# amer30004ever/voidcloud-frontend   latest            def456   30 seconds ago   350MB
 ```
 
 ---
@@ -573,7 +598,7 @@ kubectl get nodes
 
 ```powershell
 # Apply all deployments
-kubectl create namespace amer-portal
+kubectl create namespace voidcloud
 
 kubectl apply -f postgres-deployment.yaml
 # Output: secret/postgres-secret created
@@ -590,7 +615,7 @@ kubectl apply -f frontend-deployment.yaml
 # Output: service/frontend created
 
 # Verify all pods are running
-kubectl get pods -n amer-portal -w
+kubectl get pods -n voidcloud -w
 
 # Output:
 # NAME                         READY   STATUS    RESTARTS   AGE
@@ -686,7 +711,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: cloudflare-tunnel-secret
-  namespace: amer-portal
+  namespace: voidcloud
 type: Opaque
 stringData:
   credentials.json: |
@@ -700,24 +725,24 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cloudflare-tunnel-config
-  namespace: amer-portal
+  namespace: voidcloud
 data:
   config.yaml: |
     tunnel: b87510bf-f586-42aa-ab0c-b1a24206768a
     credentials-file: /etc/cloudflared/credentials.json
     metrics: 0.0.0.0:2000
     ingress:
-      - hostname: amer-portal.cc.cd
-        service: http://frontend.amer-portal.svc.cluster.local:3000
-      - hostname: api.amer-portal.cc.cd
-        service: http://backend.amer-portal.svc.cluster.local:3001
+      - hostname: voidcloud.cc.cd
+        service: http://frontend.voidcloud.svc.cluster.local:3000
+      - hostname: api.voidcloud.cc.cd
+        service: http://backend.voidcloud.svc.cluster.local:3001
       - service: http_status:404
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cloudflare-tunnel
-  namespace: amer-portal
+  namespace: voidcloud
 spec:
   replicas: 1
   selector:
@@ -786,14 +811,14 @@ kubectl apply -f cloudflare-tunnel-config.yaml
 # deployment.apps/cloudflare-tunnel created
 
 # Check tunnel pod
-kubectl get pods -n amer-portal -l app=cloudflare-tunnel
+kubectl get pods -n voidcloud -l app=cloudflare-tunnel
 
 # Output:
 # NAME                                  READY   STATUS    RESTARTS   AGE
 # cloudflare-tunnel-6ccbbc6996-scn6l   1/1     Running   0          30s
 
 # Check tunnel logs
-kubectl logs -n amer-portal -l app=cloudflare-tunnel --tail=20
+kubectl logs -n voidcloud -l app=cloudflare-tunnel --tail=20
 
 # Output:
 # 2026-05-21T19:20:23Z INF Starting tunnel tunnelID=b87510bf-f586-42aa-ab0c-b1a24206768a
@@ -808,24 +833,24 @@ kubectl logs -n amer-portal -l app=cloudflare-tunnel --tail=20
 
 ```powershell
 # Add DNS routes for your domains
-cloudflared tunnel route dns b87510bf-f586-42aa-ab0c-b1a24206768a amer-portal.cc.cd
+cloudflared tunnel route dns b87510bf-f586-42aa-ab0c-b1a24206768a voidcloud.cc.cd
 
 # Output:
-# 2026-05-21T19:20:19Z INF Added CNAME amer-portal.cc.cd which will route to this tunnel
+# 2026-05-21T19:20:19Z INF Added CNAME voidcloud.cc.cd which will route to this tunnel
 # tunnelID=b87510bf-f586-42aa-ab0c-b1a24206768a
 
-cloudflared tunnel route dns b87510bf-f586-42aa-ab0c-b1a24206768a api.amer-portal.cc.cd
+cloudflared tunnel route dns b87510bf-f586-42aa-ab0c-b1a24206768a api.voidcloud.cc.cd
 
 # Output:
-# 2026-05-21T19:20:23Z INF Added CNAME api.amer-portal.cc.cd which will route to this tunnel
+# 2026-05-21T19:20:23Z INF Added CNAME api.voidcloud.cc.cd which will route to this tunnel
 # tunnelID=b87510bf-f586-42aa-ab0c-b1a24206768a
 
 # Verify DNS routes
 cloudflared tunnel route dns show b87510bf-f586-42aa-ab0c-b1a24206768a
 
 # Output:
-# amer-portal.cc.cd
-# api.amer-portal.cc.cd
+# voidcloud.cc.cd
+# api.voidcloud.cc.cd
 ```
 
 ---
@@ -841,11 +866,11 @@ cloudflared tunnel route dns show b87510bf-f586-42aa-ab0c-b1a24206768a
 
 # Domain registration details:
 # Root domain: cc.cd
-# Subdomain prefix: amer-portal
-# Complete domain: amer-portal.cc.cd
+# Subdomain prefix: voidcloud
+# Complete domain: voidcloud.cc.cd
 
 # Registration output:
-# Domain amer-portal.cc.cd registered successfully!
+# Domain voidcloud.cc.cd registered successfully!
 # Status: Active
 # Expires: 2027-05-22
 ```
@@ -855,7 +880,7 @@ cloudflared tunnel route dns show b87510bf-f586-42aa-ab0c-b1a24206768a
 ```powershell
 # 1. Navigate to https://dash.cloudflare.com
 # 2. Click "Add a Site"
-# 3. Enter: amer-portal.cc.cd
+# 3. Enter: voidcloud.cc.cd
 # 4. Select Free plan
 # 5. Click "Add site"
 
@@ -868,7 +893,7 @@ cloudflared tunnel route dns show b87510bf-f586-42aa-ab0c-b1a24206768a
 
 ```powershell
 # At DNSHE dashboard:
-# 1. Click on amer-portal.cc.cd
+# 1. Click on voidcloud.cc.cd
 # 2. Click "Name servers" tab
 # 3. Change to "Custom Nameservers"
 # 4. Add Cloudflare nameservers:
@@ -885,22 +910,22 @@ cloudflared tunnel route dns show b87510bf-f586-42aa-ab0c-b1a24206768a
 
 ```powershell
 # Check DNS resolution
-nslookup amer-portal.cc.cd
+nslookup voidcloud.cc.cd
 
 # Output after propagation:
 # Server:  dale.ns.cloudflare.com
 # Address:  198.41.222.173
 # 
 # Non-authoritative answer:
-# Name:    amer-portal.cc.cd
+# Name:    voidcloud.cc.cd
 # Addresses:  198.41.192.107
 #             198.41.200.193
 
 # Check with external DNS tool
-Resolve-DnsName -Name amer-portal.cc.cd -Type A
+Resolve-DnsName -Name voidcloud.cc.cd -Type A
 
 # Output:
-# Name           : amer-portal.cc.cd
+# Name           : voidcloud.cc.cd
 # IPAddress      : 198.41.192.107
 # IPAddress      : 198.41.200.193
 ```
@@ -912,8 +937,8 @@ After tunnel creation, Cloudflare automatically creates these DNS records:
 ```
 # View DNS records in Cloudflare dashboard
 # Type    Name                    Content                                          Proxy
-# CNAME   amer-portal.cc.cd       b87510bf-f586-42aa-ab0c-b1a24206768a.cfargotunnel.com  Proxied
-# CNAME   api.amer-portal.cc.cd   b87510bf-f586-42aa-ab0c-b1a24206768a.cfargotunnel.com  Proxied
+# CNAME   voidcloud.cc.cd       b87510bf-f586-42aa-ab0c-b1a24206768a.cfargotunnel.com  Proxied
+# CNAME   api.voidcloud.cc.cd   b87510bf-f586-42aa-ab0c-b1a24206768a.cfargotunnel.com  Proxied
 ```
 
 ---
@@ -923,8 +948,8 @@ After tunnel creation, Cloudflare automatically creates these DNS records:
 ### 6.1 Verify All Kubernetes Pods
 
 ```powershell
-# Get all pods in amer-portal namespace
-kubectl get pods -n amer-portal
+# Get all pods in voidcloud namespace
+kubectl get pods -n voidcloud
 
 # Output:
 # NAME                                  READY   STATUS    RESTARTS   AGE
@@ -934,7 +959,7 @@ kubectl get pods -n amer-portal
 # postgres-dfc9bdff4-kwk7l             1/1     Running   0          15m
 
 # Verify services
-kubectl get svc -n amer-portal
+kubectl get svc -n voidcloud
 
 # Output:
 # NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
@@ -947,7 +972,7 @@ kubectl get svc -n amer-portal
 
 ```powershell
 # Check tunnel logs
-kubectl logs -n amer-portal -l app=cloudflare-tunnel --tail=10
+kubectl logs -n voidcloud -l app=cloudflare-tunnel --tail=10
 
 # Expected output:
 # INF Registered tunnel connection connIndex=0 ip=198.41.192.27 location=mrs05
@@ -956,7 +981,7 @@ kubectl logs -n amer-portal -l app=cloudflare-tunnel --tail=10
 # INF Registered tunnel connection connIndex=3 ip=198.41.200.73 location=mrs05
 
 # Check tunnel metrics
-kubectl port-forward -n amer-portal deployment/cloudflare-tunnel 2000:2000
+kubectl port-forward -n voidcloud deployment/cloudflare-tunnel 2000:2000
 
 # In another terminal:
 curl http://localhost:2000/metrics
@@ -971,7 +996,7 @@ curl http://localhost:2000/metrics
 
 ```powershell
 # Test main application
-curl https://amer-portal.cc.cd
+curl https://voidcloud.cc.cd
 
 # Expected output (HTML content):
 # <!DOCTYPE html>
@@ -981,7 +1006,7 @@ curl https://amer-portal.cc.cd
 #   ...
 
 # Test API health endpoint
-curl https://api.amer-portal.cc.cd/api/v1/health
+curl https://api.voidcloud.cc.cd/api/v1/health
 
 # Expected output:
 # {
@@ -991,7 +1016,7 @@ curl https://api.amer-portal.cc.cd/api/v1/health
 # }
 
 # Test API version endpoint
-curl https://api.amer-portal.cc.cd/api/v1/version
+curl https://api.voidcloud.cc.cd/api/v1/version
 
 # Expected output:
 # {
@@ -1004,7 +1029,7 @@ curl https://api.amer-portal.cc.cd/api/v1/version
 
 ```powershell
 # Test response time
-Measure-Command { Invoke-WebRequest -Uri "https://amer-portal.cc.cd" -UseBasicParsing }
+Measure-Command { Invoke-WebRequest -Uri "https://voidcloud.cc.cd" -UseBasicParsing }
 
 # Output example:
 # TotalMilliseconds : 247.5  (first request)
@@ -1012,7 +1037,7 @@ Measure-Command { Invoke-WebRequest -Uri "https://amer-portal.cc.cd" -UseBasicPa
 
 # Load test with multiple requests
 for ($i=1; $i -le 10; $i++) {
-    $time = Measure-Command { Invoke-WebRequest -Uri "https://api.amer-portal.cc.cd/api/v1/health" -UseBasicParsing }
+    $time = Measure-Command { Invoke-WebRequest -Uri "https://api.voidcloud.cc.cd/api/v1/health" -UseBasicParsing }
     Write-Host "Request $i : $($time.TotalMilliseconds)ms"
 }
 
@@ -1028,7 +1053,7 @@ for ($i=1; $i -le 10; $i++) {
 
 ```powershell
 # Open in default browser
-Start-Process "https://amer-portal.cc.cd"
+Start-Process "https://voidcloud.cc.cd"
 
 # Expected browser behavior:
 # 1. SSL padlock icon (secure connection)
@@ -1040,11 +1065,11 @@ Start-Process "https://amer-portal.cc.cd"
 
 ```powershell
 # Check SSL certificate
-$cert = (Invoke-WebRequest -Uri "https://amer-portal.cc.cd" -UseBasicParsing).BaseResponse.GetResponseStream()
+$cert = (Invoke-WebRequest -Uri "https://voidcloud.cc.cd" -UseBasicParsing).BaseResponse.GetResponseStream()
 Get-ChildItem Cert:\CurrentUser\Root | Where-Object { $_.Subject -like "*Cloudflare*" }
 
 # Check certificate details
-$uri = [System.Uri]"https://amer-portal.cc.cd"
+$uri = [System.Uri]"https://voidcloud.cc.cd"
 $webRequest = [System.Net.WebRequest]::Create($uri)
 $webRequest.ServerCertificateValidationCallback = {$true}
 $webRequest.GetResponse() | Out-Null
@@ -1055,7 +1080,7 @@ Write-Host "Certificate Issuer: $($cert.Issuer)" -ForegroundColor Green
 Write-Host "Valid Until: $($cert.GetExpirationDateString())" -ForegroundColor Green
 
 # Output:
-# Certificate Subject: CN=amer-portal.cc.cd, DNS=amer-portal.cc.cd, DNS=api.amer-portal.cc.cd
+# Certificate Subject: CN=voidcloud.cc.cd, DNS=voidcloud.cc.cd, DNS=api.voidcloud.cc.cd
 # Certificate Issuer: CN=Cloudflare Inc ECC CA-3, O=Cloudflare Inc., C=US
 # Valid Until: 2026-08-22 00:00:00Z
 ```
@@ -1072,16 +1097,16 @@ Write-Host "Valid Until: $($cert.GetExpirationDateString())" -ForegroundColor Gr
 # ============================================
 
 # Build images
-docker build -t amer-portal-backend:latest ./backend
-docker build -t amer-portal-frontend:latest ./frontend
+docker build -t voidcloud-backend:latest ./backend
+docker build -t voidcloud-frontend:latest ./frontend
 
 # Tag for Docker Hub
-docker tag amer-portal-backend:latest amer30004ever/amer-portal-backend:latest
-docker tag amer-portal-frontend:latest amer30004ever/amer-portal-frontend:latest
+docker tag voidcloud-backend:latest amer30004ever/voidcloud-backend:latest
+docker tag voidcloud-frontend:latest amer30004ever/voidcloud-frontend:latest
 
 # Push to Docker Hub
-docker push amer30004ever/amer-portal-backend:latest
-docker push amer30004ever/amer-portal-frontend:latest
+docker push amer30004ever/voidcloud-backend:latest
+docker push amer30004ever/voidcloud-frontend:latest
 
 # ============================================
 # DOCKER COMPOSE (Local Development)
@@ -1108,20 +1133,20 @@ docker-compose down -v
 # ============================================
 
 # Create namespace
-kubectl create namespace amer-portal
+kubectl create namespace voidcloud
 
 # List all pods in namespace
-kubectl get pods -n amer-portal
+kubectl get pods -n voidcloud
 
 # List all services
-kubectl get svc -n amer-portal
+kubectl get svc -n voidcloud
 
 # Describe pod (for troubleshooting)
-kubectl describe pod -n amer-portal <pod-name>
+kubectl describe pod -n voidcloud <pod-name>
 
 # View pod logs
-kubectl logs -n amer-portal <pod-name>
-kubectl logs -n amer-portal -l app=backend -f
+kubectl logs -n voidcloud <pod-name>
+kubectl logs -n voidcloud -l app=backend -f
 
 # ============================================
 # DEPLOYMENT MANAGEMENT
@@ -1134,42 +1159,42 @@ kubectl apply -f deployment.yaml
 kubectl delete -f deployment.yaml
 
 # Restart deployment
-kubectl rollout restart -n amer-portal deployment/backend
-kubectl rollout restart -n amer-portal deployment/frontend
+kubectl rollout restart -n voidcloud deployment/backend
+kubectl rollout restart -n voidcloud deployment/frontend
 
 # Check rollout status
-kubectl rollout status -n amer-portal deployment/backend
+kubectl rollout status -n voidcloud deployment/backend
 
 # Scale deployment
-kubectl scale -n amer-portal deployment/backend --replicas=3
-kubectl scale -n amer-portal deployment/frontend --replicas=3
+kubectl scale -n voidcloud deployment/backend --replicas=3
+kubectl scale -n voidcloud deployment/frontend --replicas=3
 
 # ============================================
 # SERVICE MANAGEMENT
 # ============================================
 
 # Expose deployment as service
-kubectl expose deployment backend -n amer-portal --port=3001 --target-port=3001
+kubectl expose deployment backend -n voidcloud --port=3001 --target-port=3001
 
 # Port forward for local testing
-kubectl port-forward -n amer-portal svc/frontend 3000:3000
-kubectl port-forward -n amer-portal svc/backend 3001:3001
+kubectl port-forward -n voidcloud svc/frontend 3000:3000
+kubectl port-forward -n voidcloud svc/backend 3001:3001
 
 # ============================================
 # SECRETS & CONFIGMAPS
 # ============================================
 
 # Create secret from literal
-kubectl create secret generic my-secret -n amer-portal --from-literal=key=value
+kubectl create secret generic my-secret -n voidcloud --from-literal=key=value
 
 # Create secret from file
-kubectl create secret generic cloudflare-tunnel-secret -n amer-portal --from-file=credentials.json
+kubectl create secret generic cloudflare-tunnel-secret -n voidcloud --from-file=credentials.json
 
 # View secret (base64 decoded)
-kubectl get secret cloudflare-tunnel-secret -n amer-portal -o jsonpath='{.data.credentials\.json}' | base64 -d
+kubectl get secret cloudflare-tunnel-secret -n voidcloud -o jsonpath='{.data.credentials\.json}' | base64 -d
 
 # Edit configmap
-kubectl edit configmap cloudflare-tunnel-config -n amer-portal
+kubectl edit configmap cloudflare-tunnel-config -n voidcloud
 ```
 
 ### 7.3 Cloudflare Tunnel Commands
@@ -1226,35 +1251,35 @@ cloudflared tunnel --url http://localhost:3000
 # ============================================
 
 # Check A records
-nslookup amer-portal.cc.cd
-Resolve-DnsName -Name amer-portal.cc.cd -Type A
+nslookup voidcloud.cc.cd
+Resolve-DnsName -Name voidcloud.cc.cd -Type A
 
 # Check CNAME records
-Resolve-DnsName -Name amer-portal.cc.cd -Type CNAME
+Resolve-DnsName -Name voidcloud.cc.cd -Type CNAME
 
 # Check nameservers
-Resolve-DnsName -Name amer-portal.cc.cd -Type NS
+Resolve-DnsName -Name voidcloud.cc.cd -Type NS
 
 # Flush DNS cache
 ipconfig /flushdns
 
 # Use specific DNS server
-nslookup amer-portal.cc.cd 8.8.8.8
-nslookup amer-portal.cc.cd 1.1.1.1
+nslookup voidcloud.cc.cd 8.8.8.8
+nslookup voidcloud.cc.cd 1.1.1.1
 
 # ============================================
 # CONNECTIVITY TESTS
 # ============================================
 
 # Test HTTP/HTTPS connectivity
-Test-NetConnection amer-portal.cc.cd -Port 443
-curl https://amer-portal.cc.cd -Method Head
+Test-NetConnection voidcloud.cc.cd -Port 443
+curl https://voidcloud.cc.cd -Method Head
 
 # Trace route
-tracert amer-portal.cc.cd
+tracert voidcloud.cc.cd
 
 # Check SSL certificate
-openssl s_client -connect amer-portal.cc.cd:443 -servername amer-portal.cc.cd
+openssl s_client -connect voidcloud.cc.cd:443 -servername voidcloud.cc.cd
 ```
 
 ---
@@ -1284,27 +1309,27 @@ Write-Host "=== Amer Portal Health Check ===" -ForegroundColor Blue
 Write-Host ""
 
 Write-Host "1. Kubernetes Pods:" -ForegroundColor Yellow
-kubectl get pods -n amer-portal
+kubectl get pods -n voidcloud
 
 Write-Host "`n2. Kubernetes Services:" -ForegroundColor Yellow
-kubectl get svc -n amer-portal
+kubectl get svc -n voidcloud
 
 Write-Host "`n3. Tunnel Pod Logs (last 5 lines):" -ForegroundColor Yellow
-kubectl logs -n amer-portal -l app=cloudflare-tunnel --tail=5
+kubectl logs -n voidcloud -l app=cloudflare-tunnel --tail=5
 
 Write-Host "`n4. DNS Resolution:" -ForegroundColor Yellow
-Resolve-DnsName amer-portal.cc.cd -ErrorAction SilentlyContinue
+Resolve-DnsName voidcloud.cc.cd -ErrorAction SilentlyContinue
 
 Write-Host "`n5. HTTP Endpoint Test:" -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "https://amer-portal.cc.cd/api/v1/health" -UseBasicParsing -TimeoutSec 5
+    $response = Invoke-WebRequest -Uri "https://voidcloud.cc.cd/api/v1/health" -UseBasicParsing -TimeoutSec 5
     Write-Host "✅ API is healthy (HTTP $($response.StatusCode))" -ForegroundColor Green
 } catch {
     Write-Host "❌ API is unreachable: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 Write-Host "`n6. SSL Certificate:" -ForegroundColor Yellow
-$uri = "https://amer-portal.cc.cd"
+$uri = "https://voidcloud.cc.cd"
 $webRequest = [System.Net.WebRequest]::Create($uri)
 $webRequest.ServerCertificateValidationCallback = {$true}
 try {
@@ -1336,7 +1361,7 @@ $confirm = Read-Host "Are you sure? (y/n)"
 if ($confirm -ne 'y') { exit }
 
 Write-Host "1. Deleting Kubernetes resources..." -ForegroundColor Yellow
-kubectl delete namespace amer-portal
+kubectl delete namespace voidcloud
 
 Write-Host "2. Deleting Cloudflare tunnel..." -ForegroundColor Yellow
 cloudflared tunnel delete cluster -f
@@ -1345,7 +1370,7 @@ Write-Host "3. Deleting local credentials..." -ForegroundColor Yellow
 Remove-Item "$env:USERPROFILE\.cloudflared\*.json" -Force
 
 Write-Host "4. Recreating namespace..." -ForegroundColor Yellow
-kubectl create namespace amer-portal
+kubectl create namespace voidcloud
 
 Write-Host "5. Re-deploying applications..." -ForegroundColor Yellow
 kubectl apply -f postgres-deployment.yaml
@@ -1356,8 +1381,8 @@ Write-Host "6. Recreating tunnel..." -ForegroundColor Yellow
 cloudflared tunnel login
 cloudflared tunnel create cluster
 $tunnelId = (cloudflared tunnel list | Select-String "cluster").ToString().Split()[0]
-cloudflared tunnel route dns $tunnelId amer-portal.cc.cd
-cloudflared tunnel route dns $tunnelId api.amer-portal.cc.cd
+cloudflared tunnel route dns $tunnelId voidcloud.cc.cd
+cloudflared tunnel route dns $tunnelId api.voidcloud.cc.cd
 
 Write-Host "7. Deploying tunnel..." -ForegroundColor Yellow
 kubectl apply -f cloudflare-tunnel-config.yaml
@@ -1382,7 +1407,7 @@ kubectl port-forward -n kubernetes-dashboard service/kubernetes-dashboard 8443:4
 
 # Metrics server
 kubectl top nodes
-kubectl top pods -n amer-portal
+kubectl top pods -n voidcloud
 
 # Output example:
 # NAME           CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%
@@ -1397,25 +1422,25 @@ kubectl top pods -n amer-portal
 # LOG COLLECTION SCRIPT
 # ============================================
 
-$logDir = "C:\logs\amer-portal\$(Get-Date -Format 'yyyyMMdd')"
+$logDir = "C:\logs\voidcloud\$(Get-Date -Format 'yyyyMMdd')"
 New-Item -Path $logDir -ItemType Directory -Force
 
 # Collect all logs
 Write-Host "Collecting logs to: $logDir" -ForegroundColor Green
 
-kubectl logs -n amer-portal deployment/backend > "$logDir\backend.log"
-kubectl logs -n amer-portal deployment/frontend > "$logDir\frontend.log"
-kubectl logs -n amer-portal deployment/postgres > "$logDir\postgres.log"
-kubectl logs -n amer-portal deployment/cloudflare-tunnel > "$logDir\tunnel.log"
+kubectl logs -n voidcloud deployment/backend > "$logDir\backend.log"
+kubectl logs -n voidcloud deployment/frontend > "$logDir\frontend.log"
+kubectl logs -n voidcloud deployment/postgres > "$logDir\postgres.log"
+kubectl logs -n voidcloud deployment/cloudflare-tunnel > "$logDir\tunnel.log"
 
 # Get pod status
-kubectl get pods -n amer-portal > "$logDir\pods.txt"
+kubectl get pods -n voidcloud > "$logDir\pods.txt"
 
 # Get service status
-kubectl get svc -n amer-portal > "$logDir\services.txt"
+kubectl get svc -n voidcloud > "$logDir\services.txt"
 
 # Get events
-kubectl get events -n amer-portal > "$logDir\events.txt"
+kubectl get events -n voidcloud > "$logDir\events.txt"
 
 Compress-Archive -Path "$logDir\*" -DestinationPath "$logDir\logs.zip"
 Write-Host "Logs collected and compressed to $logDir\logs.zip" -ForegroundColor Green
@@ -1455,21 +1480,21 @@ spec:
 # BACKUP SCRIPT
 # ============================================
 
-$backupDir = "C:\backups\amer-portal\$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+$backupDir = "C:\backups\voidcloud\$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 New-Item -Path $backupDir -ItemType Directory -Force
 
 # Backup Kubernetes resources
 Write-Host "Backing up Kubernetes resources..." -ForegroundColor Yellow
-kubectl get all -n amer-portal -o yaml > "$backupDir\all-resources.yaml"
-kubectl get configmap -n amer-portal -o yaml > "$backupDir\configmaps.yaml"
-kubectl get secret -n amer-portal -o yaml > "$backupDir\secrets.yaml"
+kubectl get all -n voidcloud -o yaml > "$backupDir\all-resources.yaml"
+kubectl get configmap -n voidcloud -o yaml > "$backupDir\configmaps.yaml"
+kubectl get secret -n voidcloud -o yaml > "$backupDir\secrets.yaml"
 
 # Backup tunnel credentials
 Copy-Item "$env:USERPROFILE\.cloudflared\*.json" $backupDir
 
 # Backup Docker images
-docker save amer30004ever/amer-portal-backend:latest | Out-File "$backupDir\backend-image.tar"
-docker save amer30004ever/amer-portal-frontend:latest | Out-File "$backupDir\frontend-image.tar"
+docker save amer30004ever/voidcloud-backend:latest | Out-File "$backupDir\backend-image.tar"
+docker save amer30004ever/voidcloud-frontend:latest | Out-File "$backupDir\frontend-image.tar"
 
 Write-Host "Backup completed to: $backupDir" -ForegroundColor Green
 ```
@@ -1485,13 +1510,13 @@ Write-Host "Backup completed to: $backupDir" -ForegroundColor Green
 | `DOCKER_HUB_USERNAME` | amer30004ever | Docker Hub registry username |
 | `CLOUDFLARE_ACCOUNT_TAG` | 5974977c768416623e5ec8bf7ba6a070 | Cloudflare account identifier |
 | `TUNNEL_ID` | b87510bf-f586-42aa-ab0c-b1a24206768a | Cloudflare tunnel identifier |
-| `DOMAIN` | amer-portal.cc.cd | Primary application domain |
-| `API_DOMAIN` | api.amer-portal.cc.cd | API endpoint domain |
+| `DOMAIN` | voidcloud.cc.cd | Primary application domain |
+| `API_DOMAIN` | api.voidcloud.cc.cd | API endpoint domain |
 
 ### B. File Structure Complete
 
 ```
-amer-portal/
+voidcloud/
 ├── backend/
 │   ├── Dockerfile
 │   ├── package.json
@@ -1561,8 +1586,8 @@ amer-portal/
 
 | Purpose | Contact |
 |---------|---------|
-| **Technical Support** | infrastructure@amer-portal.com |
-| **Security Issues** | security@amer-portal.com |
+| **Technical Support** | infrastructure@voidcloud.com |
+| **Security Issues** | security@voidcloud.com |
 | **Emergency** | +20 1210252836 |
 
 ---

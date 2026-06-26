@@ -100,7 +100,7 @@ export class AutomationService {
       const script = await this.prisma.script.findUnique({
         where: { id },
       });
-      
+
       if (!script) {
         throw new Error('Script not found');
       }
@@ -191,7 +191,7 @@ export class AutomationService {
       const template = await this.prisma.workflowTemplate.findUnique({
         where: { id },
       });
-      
+
       if (!template) {
         throw new Error('Workflow template not found');
       }

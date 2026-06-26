@@ -2,13 +2,12 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
-import { MessageSquare, Users, BookOpen, Plus, Send, Search, Clock, Pin, Archive, Loader2, GitPullRequest, CheckCircle, XCircle, AlertTriangle, Filter, Calendar, Edit } from "lucide-react";
+import { MessageSquare, Users, BookOpen, Send, Search, Pin, Archive, Loader2, GitPullRequest, CheckCircle, XCircle, AlertTriangle, Filter, Calendar, Edit } from "lucide-react";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { AddItemButton, IconAddButton } from "@/components/ui/create-item-dialog";
 import { TeamChatPanel } from "@/components/collaboration/TeamChatPanel";
 import { collaborationApi } from "@/lib/collaboration";
-import { useQueryClient } from "@tanstack/react-query";
 
 function CollaborationPageContent() {
   const searchParams = useSearchParams();
@@ -18,7 +17,8 @@ function CollaborationPageContent() {
   const [localTab, setLocalTab] = useState<CollaborationTab>("chat");
   const activeTab: CollaborationTab =
     tabParam && validTabs.includes(tabParam as CollaborationTab) ? (tabParam as CollaborationTab) : localTab;
-  const [isLoading, setIsLoading] = useState(false);
+
+  const [isLoading] = useState(false);
 
   const tabs = [
     { id: "chat" as const, label: "Team Chat", icon: MessageSquare },
@@ -41,11 +41,10 @@ function CollaborationPageContent() {
           <button
             key={tab.id}
             onClick={() => setLocalTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === tab.id
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === tab.id
                 ? "border-b-2 border-primary text-primary"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <tab.icon className="h-4 w-4" />
             {tab.label}
@@ -63,6 +62,7 @@ function CollaborationPageContent() {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function ChatTab({ isLoading, message, setMessage }: { isLoading: boolean; message: string; setMessage: (msg: string) => void }) {
   return (
     <div className="space-y-4">
@@ -91,7 +91,7 @@ function ChatTab({ isLoading, message, setMessage }: { isLoading: boolean; messa
               # alerts
             </button>
           </div>
-          
+
           <div className="mt-6">
             <h3 className="mb-2 text-sm font-semibold text-foreground">Direct Messages</h3>
             <div className="space-y-2">
@@ -121,7 +121,7 @@ function ChatTab({ isLoading, message, setMessage }: { isLoading: boolean; messa
               </button>
             </div>
           </div>
-          
+
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -140,7 +140,7 @@ function ChatTab({ isLoading, message, setMessage }: { isLoading: boolean; messa
                   <p className="text-sm text-muted-foreground">Hey team, just deployed the new version to production. Everything looks good!</p>
                 </div>
               </div>
-              
+
               <div className="flex gap-3">
                 <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 text-xs font-medium">
                   D
@@ -153,7 +153,7 @@ function ChatTab({ isLoading, message, setMessage }: { isLoading: boolean; messa
                   <p className="text-sm text-muted-foreground">Great! I&apos;ll check the monitoring dashboard to confirm.</p>
                 </div>
               </div>
-              
+
               <div className="flex gap-3">
                 <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 text-xs font-medium">
                   D
@@ -168,7 +168,7 @@ function ChatTab({ isLoading, message, setMessage }: { isLoading: boolean; messa
               </div>
             </div>
           )}
-          
+
           {/* Message Input */}
           <div className="mt-6 flex gap-2">
             <input
@@ -200,7 +200,7 @@ function ChannelsTab({ isLoading }: { isLoading: boolean }) {
           onSubmit={() => Promise.resolve()}
         />
       </div>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -222,7 +222,7 @@ function ChannelsTab({ isLoading }: { isLoading: boolean }) {
               </div>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -238,7 +238,7 @@ function ChannelsTab({ isLoading }: { isLoading: boolean }) {
               </div>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">
@@ -254,7 +254,7 @@ function ChannelsTab({ isLoading }: { isLoading: boolean }) {
               </div>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex-1">

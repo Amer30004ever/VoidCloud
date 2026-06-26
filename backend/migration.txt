@@ -9,37 +9,37 @@ npx prisma migrate dev --name add_collaboration_and_automation_models
 
 # bash
 
-docker build -t amer30004ever/amer-portal-backend:latest ./backend
-docker push amer30004ever/amer-portal-backend:latest
+docker build -t amer30004ever/voidcloud-backend:latest ./backend
+docker push amer30004ever/voidcloud-backend:latest
 
 # Finally, restart the Kubernetes pod to apply the migration:
 
 # bash
-kubectl -n amer-portal rollout restart deployment backend
+kubectl -n voidcloud rollout restart deployment backend
 
 #----------------
 
 Fix it by manually adding the missing column:
 
 bash
-kubectl -n amer-portal exec -it postgres-7bdc65497-lvm4z -- psql -U postgres -d amer_portal -c "ALTER TABLE \"User\" ADD COLUMN IF NOT EXISTS \"mustChangePassword\" BOOLEAN NOT NULL DEFAULT false;"
+kubectl -n voidcloud exec -it postgres-7bdc65497-lvm4z -- psql -U postgres -d voidcloud -c "ALTER TABLE \"User\" ADD COLUMN IF NOT EXISTS \"mustChangePassword\" BOOLEAN NOT NULL DEFAULT false;"
 Then restart the backend pod:
 
 bash
-kubectl -n amer-portal delete pod backend-6f999799db-6jmf8
+kubectl -n voidcloud delete pod backend-6f999799db-6jmf8
 Or, to completely reset and re-run all migrations (cleaner approach):
 
 bash
-kubectl -n amer-portal exec -it postgres-7bdc65497-lvm4z -- psql -U postgres -d amer_portal -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-kubectl -n amer-portal delete pod backend-6f99979
+kubectl -n voidcloud exec -it postgres-7bdc65497-lvm4z -- psql -U postgres -d voidcloud -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+kubectl -n voidcloud delete pod backend-6f99979
 
 #-----------------------------
 
 cd /mnt/e/Master_Mind/Amer_Brain/Repossitories/GitHub/Amer30004ever/Amer-Devops-Poral
-docker build -t amer30004ever/amer-portal-backend:latest ./backend
-docker push amer30004ever/amer-portal-backend:latest
-docker build -t amer30004ever/amer-portal-frontend:latest ./frontend
-docker push amer30004ever/amer-portal-frontend:latest
+docker build -t amer30004ever/voidcloud-backend:latest ./backend
+docker push amer30004ever/voidcloud-backend:latest
+docker build -t amer30004ever/voidcloud-frontend:latest ./frontend
+docker push amer30004ever/voidcloud-frontend:latest
 
-kubectl -n amer-portal rollout restart deployment backend
-kubectl -n amer-portal rollout restart deployment frontend
+kubectl -n voidcloud rollout restart deployment backend
+kubectl -n voidcloud rollout restart deployment frontend

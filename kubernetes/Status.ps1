@@ -2,7 +2,7 @@
 # Portable version
 
 param(
-    [string]$Namespace = "amer-portal",
+    [string]$Namespace = "voidcloud",
     [switch]$Watch,
     [switch]$Logs,
     [string]$Pod = "backend"

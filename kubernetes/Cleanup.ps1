@@ -11,8 +11,8 @@ $ErrorActionPreference = "Continue"
 
 # Get the script's directory
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-$namespace = "amer-portal"
-$appName = "amer-portal"
+$namespace = "voidcloud"
+$appName = "voidcloud"
 
 Write-Host "========================================" -ForegroundColor Red
 Write-Host "Cleaning up Amer Devops Portal" -ForegroundColor Red

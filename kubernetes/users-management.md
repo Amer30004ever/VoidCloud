@@ -1,6 +1,6 @@
 # Add Another Admin User
 
-kubectl exec -n amer-portal deployment/postgres -- psql -U postgres -d amer_portal -c "
+kubectl exec -n voidcloud deployment/postgres -- psql -U postgres -d voidcloud -c "
 INSERT INTO \"User\" (id, email, password, name, role)
 VALUES (
     gen_random_uuid()::text,
@@ -13,7 +13,7 @@ VALUES (
 
 # Add a Regular (Non-Admin) User
 
-kubectl exec -n amer-portal deployment/postgres -- psql -U postgres -d amer_portal -c "
+kubectl exec -n voidcloud deployment/postgres -- psql -U postgres -d voidcloud -c "
 INSERT INTO \"User\" (id, email, password, name, role)
 VALUES (
     gen_random_uuid()::text,
@@ -26,7 +26,7 @@ VALUES (
 
 # View All Users
 
-kubectl exec -n amer-portal deployment/postgres -- psql -U postgres -d amer_portal -c "
+kubectl exec -n voidcloud deployment/postgres -- psql -U postgres -d voidcloud -c "
 SELECT email, name, role, TO_CHAR(\"createdAt\", 'YYYY-MM-DD HH24:MI:SS') as created
 FROM \"User\" 
 ORDER BY role DESC, \"createdAt\" DESC;
@@ -34,7 +34,7 @@ ORDER BY role DESC, \"createdAt\" DESC;
 # Delete a User (If Needed)
 
 # Delete a specific user by email
-kubectl exec -n amer-portal deployment/postgres -- psql -U postgres -d amer_portal -c "
+kubectl exec -n voidcloud deployment/postgres -- psql -U postgres -d voidcloud -c "
 DELETE FROM \"User\" WHERE email = 'user@amer.dev';
 "
 

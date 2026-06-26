@@ -10,6 +10,8 @@ import { LogsModule } from './logs/logs.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ClusterModule } from './cluster/cluster.module';
+import { AdminClusterModule } from './admin-cluster/admin-cluster.module';
+
 import { GithubModule } from './github/github.module';
 import { DocumentationModule } from './documentation/documentation.module';
 import { LearningModule } from './learning/learning.module';
@@ -24,6 +26,13 @@ import { MetricsModule } from './metrics/metrics.module';
 import { PipelinesModule } from './pipelines/pipelines.module';
 import { NotesModule } from './notes/notes.module';
 import { CloudModule } from './cloud/cloud.module';
+import { WaCrmModule } from './crm/wa-crm.module';
+import { MailerModule } from './mailer/mailer.module';
+import { RbacModule } from './rbac/rbac.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
+import { AuditModule } from './audit/audit.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { RateLimitingModule } from './rate-limiting/rate-limiting.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { AppController } from './app.controller';
@@ -35,6 +44,7 @@ import { AppController } from './app.controller';
 
     // Prisma (global — auto-available in all modules)
     PrismaModule,
+    MailerModule,
 
     // Feature modules
     AuthModule,
@@ -44,9 +54,11 @@ import { AppController } from './app.controller';
     InfrastructureModule,
     LogsModule,
     AlertsModule,
-    
+
     // New modules
     ClusterModule,
+    AdminClusterModule,
+
     GithubModule,
     DocumentationModule,
     LearningModule,
@@ -61,6 +73,12 @@ import { AppController } from './app.controller';
     PipelinesModule,
     NotesModule,
     CloudModule,
+    WaCrmModule,
+    RbacModule,
+    WhatsAppModule,
+    AuditModule,
+    NotificationsModule,
+    RateLimitingModule,
   ],
   controllers: [AppController],
   providers: [
@@ -70,5 +88,4 @@ import { AppController } from './app.controller';
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
-export class AppModule { }
-
+export class AppModule {}

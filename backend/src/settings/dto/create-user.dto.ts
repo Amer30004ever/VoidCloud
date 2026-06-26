@@ -1,4 +1,12 @@
-import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString, MinLength, ValidateIf } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 import { Role } from '@prisma/client';
 
 export enum PasswordMode {
@@ -45,7 +53,9 @@ export class ResetPasswordDto {
   @IsEnum(PasswordMode)
   passwordMode: PasswordMode;
 
-  @ValidateIf((dto: ResetPasswordDto) => dto.passwordMode === PasswordMode.MANUAL)
+  @ValidateIf(
+    (dto: ResetPasswordDto) => dto.passwordMode === PasswordMode.MANUAL,
+  )
   @IsString()
   @MinLength(8)
   password?: string;

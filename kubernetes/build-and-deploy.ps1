@@ -33,9 +33,9 @@ if (-not $env:DOCKER_HUB_USERNAME -or -not $env:DOCKER_HUB_TOKEN) {
 }
 
 # Set defaults
-$NAMESPACE = if ($env:NAMESPACE) { $env:NAMESPACE } else { "amer-portal" }
+$NAMESPACE = if ($env:NAMESPACE) { $env:NAMESPACE } else { "voidcloud" }
 $DOMAIN = if ($env:DOMAIN) { $env:DOMAIN } else { "amer.homelab.com" }
-$DOCKER_HUB_REPO = if ($env:DOCKER_HUB_REPO) { $env:DOCKER_HUB_REPO } else { "amer-portal" }
+$DOCKER_HUB_REPO = if ($env:DOCKER_HUB_REPO) { $env:DOCKER_HUB_REPO } else { "voidcloud" }
 $BACKEND_IMAGE_TAG = if ($env:BACKEND_IMAGE_TAG) { $env:BACKEND_IMAGE_TAG } else { "latest" }
 $FRONTEND_IMAGE_TAG = if ($env:FRONTEND_IMAGE_TAG) { $env:FRONTEND_IMAGE_TAG } else { "latest" }
 
@@ -79,8 +79,8 @@ if (Test-Path "backend\deployment.yaml") {
     }
     # Update image using PowerShell
     $content = Get-Content "backend\deployment.yaml" -Raw
-    $content = $content -replace "image:.*amer-portal-backend.*", "image: $BACKEND_IMAGE"
-    $content = $content -replace "image:.*/amer-portal-backend:.*", "image: $BACKEND_IMAGE"
+    $content = $content -replace "image:.*voidcloud-backend.*", "image: $BACKEND_IMAGE"
+    $content = $content -replace "image:.*/voidcloud-backend:.*", "image: $BACKEND_IMAGE"
     $content = $content -replace "imagePullPolicy:.*", "imagePullPolicy: Always"
     Set-Content "backend\deployment.yaml" $content -NoNewline
     Write-Host "${GREEN}✅ Updated backend\deployment.yaml with: $BACKEND_IMAGE${NC}"
@@ -93,8 +93,8 @@ if (Test-Path "frontend\deployment.yaml") {
         Write-Host "${GREEN}✅ Created backup: frontend\deployment.yaml.bak${NC}"
     }
     $content = Get-Content "frontend\deployment.yaml" -Raw
-    $content = $content -replace "image:.*amer-portal-frontend.*", "image: $FRONTEND_IMAGE"
-    $content = $content -replace "image:.*/amer-portal-frontend:.*", "image: $FRONTEND_IMAGE"
+    $content = $content -replace "image:.*voidcloud-frontend.*", "image: $FRONTEND_IMAGE"
+    $content = $content -replace "image:.*/voidcloud-frontend:.*", "image: $FRONTEND_IMAGE"
     $content = $content -replace "imagePullPolicy:.*", "imagePullPolicy: Always"
     Set-Content "frontend\deployment.yaml" $content -NoNewline
     Write-Host "${GREEN}✅ Updated frontend\deployment.yaml with: $FRONTEND_IMAGE${NC}"

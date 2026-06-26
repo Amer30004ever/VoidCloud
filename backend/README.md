@@ -103,6 +103,43 @@ When `~/.kube/config` is mounted (Docker Compose) or in-cluster RBAC is configur
 
 If you see `HTTP protocol is not allowed when skipTLSVerify is not set`, your kubeconfig points at an HTTP API server. Use HTTPS or set `insecure-skip-tls-verify: true` on that cluster entry for local/dev clusters only.
 
+## Proxmox VPS Integration
+
+The backend includes Proxmox VPS provisioning capabilities for the AmerCloud customer portal.
+
+### Required Environment Variables
+
+| Variable | Required | Default | Purpose |
+|----------|----------|---------|---------|
+| `PROXMOX_HOST` | Yes | - | Proxmox server URL (e.g., `https://10.51.100.10:8006`) |
+| `PROXMOX_TOKEN_ID` | Yes | - | API token ID (format: `username@realm!tokenid`) |
+| `PROXMOX_TOKEN_SECRET` | Yes | - | API token secret |
+| `PROXMOX_NODE` | No | `workernode01` | Target Proxmox node |
+| `PROXMOX_STORAGE` | No | `local-lvm` | Storage name for VPS disks |
+| `PROXMOX_BRIDGE` | No | `vmbr0` | Network bridge for VPS networking |
+| `PROXMOX_TEMPLATE` | No | `ubuntu-22.04` | Default template for VPS creation |
+| `PROXMOX_IP_POOL_CIDR` | No | `10.51.100.0/24` | IP pool for VPS allocation |
+| `PROXMOX_GATEWAY` | No | `10.51.100.1` | Gateway IP for VPS network |
+
+### Setting Up Proxmox API Tokens
+
+1. Log in to Proxmox web UI
+2. Go to Datacenter → Permissions → API Tokens
+3. Create a new token or use existing one
+4. Copy the Token ID and Secret
+5. Add to Kubernetes secrets or environment variables
+
+### Current Status
+
+✅ Proxmox integration configured with:
+- Host: `https://10.51.100.10:8006`
+- Node: `workernode01`
+- Storage: `local-lvm`
+- Bridge: `vmbr0`
+- Template: `ubuntu-22.04`
+- IP Pool: `10.51.100.0/24`
+- Gateway: `10.51.100.1`
+
 ## Project structure
 
 ```
@@ -125,3 +162,57 @@ backend/
 npm run test
 npm run test:e2e
 ```
+
+## Maintenance & Status
+
+Models: `Maintenance`, `Incident`, `IncidentUpdate` (see `prisma/schema.prisma`).
+Service: `src/cloud/maintenance/maintenance.service.ts`.
+Middleware: `src/cloud/maintenance/maintenance.middleware.ts` — blocks non-admin
+traffic with `503` + `Retry-After` while an active window exists; status,
+auth and admin routes are allowlisted.
+
+Endpoints:
+
+```
+GET    /api/v1/status
+GET    /api/v1/status/incidents
+GET    /api/v1/cloud/admin/maintenance?upcoming=true
+POST   /api/v1/cloud/admin/maintenance
+PUT    /api/v1/cloud/admin/maintenance/:id
+DELETE /api/v1/cloud/admin/maintenance/:id
+GET    /api/v1/cloud/admin/incidents
+POST   /api/v1/cloud/admin/incidents
+POST   /api/v1/cloud/admin/incidents/:id/updates
+PUT    /api/v1/cloud/admin/incidents/:id/resolve
+```
+
+## Security & Backup add-ons
+
+- `VpsSecuritySettings` model (Prisma) + `VpsSecurityService` + `CloudVpsSecurityController`.
+- `BackupSchedule` gains `offsiteProvider`, `offsiteBucket`, `offsiteAccessKey`, `offsiteSecretKey`.
+- Migration: `20260622000000_vps_security_backup_offsite`.
+
+## Developer Tools & Scalability endpoints (stubbed)
+
+All endpoints are JWT-protected. Storage is in-memory pending Prisma models.
+
+- `GET/PUT /cloud/vps/:vpsId/cicd` — read/update GitHub/GitLab + webhook config
+- `POST /cloud/vps/:vpsId/cicd/webhook/regenerate` — rotate token + secret
+- `POST /cloud/vps/:vpsId/clone` — body `{ suffix, syncData }`; returns clone job
+- `GET /cloud/databases/plans` — pricing for managed DBs
+- `GET/POST /cloud/databases` and `GET/PUT/DELETE /cloud/databases/:id` — managed PostgreSQL/MySQL/Redis CRUD
+- `GET /cloud/databases/:id/backups` — backup list (stub)
+- `GET/POST /cloud/load-balancers` and `PUT/DELETE /cloud/load-balancers/:id` — load balancer CRUD ($5/mo)
+
+Public webhook endpoint `/api/public/deploy/:webhookToken` is generated client-side but not yet implemented; add a TanStack server route or NestJS public controller in a follow-up.
+
+## Enterprise endpoints
+
+- `GET/PUT /cloud/enterprise` — feature flags (SOC2, HIPAA, SLA, VPC, dedicated HW, branding)
+- `GET /cloud/enterprise/soc2/report` — generate compliance report snapshot
+- `GET/POST/DELETE /cloud/enterprise/team[/:id]` — team members
+- `GET/PUT /cloud/enterprise/reseller` — white-label config
+- `GET/POST/DELETE /cloud/enterprise/api-keys[/:id]` — automation API keys
+- `POST /cloud/enterprise/bulk-provision` — bulk VPS provisioning job
+
+Stubs live in `src/cloud/enterprise/enterprise.controller.ts` (in-memory). Replace with Prisma + Proxmox bulk provisioning when wiring real backend.

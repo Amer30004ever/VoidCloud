@@ -10,11 +10,11 @@ export class DocumentationService {
   async getDocuments(category?: string, tag?: string) {
     try {
       const where: any = {};
-      
+
       if (category) {
         where.category = { name: category };
       }
-      
+
       if (tag) {
         where.tags = { some: { name: tag } };
       }
@@ -421,7 +421,11 @@ export class DocumentationService {
     }
   }
 
-  async searchDocuments(searchData: { query: string; category?: string; tags?: string[] }) {
+  async searchDocuments(searchData: {
+    query: string;
+    category?: string;
+    tags?: string[];
+  }) {
     try {
       const { query, category, tags } = searchData;
 
@@ -475,7 +479,7 @@ export class DocumentationService {
       // This would integrate with a document conversion service
       // For now, return the content as-is
       this.logger.log(`Exporting document ${id} to ${format}`);
-      
+
       return {
         format,
         content: document.content,

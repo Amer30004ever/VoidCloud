@@ -60,14 +60,17 @@ export class PlatformController {
   @Post('clusters')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Register cluster' })
-  createCluster(@Body() body: {
-    name: string;
-    context: string;
-    environment?: string;
-    kubeconfigPath?: string;
-    apiServer?: string;
-    isDefault?: boolean;
-  }) {
+  createCluster(
+    @Body()
+    body: {
+      name: string;
+      context: string;
+      environment?: string;
+      kubeconfigPath?: string;
+      apiServer?: string;
+      isDefault?: boolean;
+    },
+  ) {
     return this.platformService.createCluster(body);
   }
 

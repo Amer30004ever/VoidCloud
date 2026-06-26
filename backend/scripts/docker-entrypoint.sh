@@ -12,7 +12,7 @@ if [ -z "${DATABASE_URL}" ]; then
 fi
 
 : "${POSTGRES_USER:=postgres}"
-: "${POSTGRES_DB:=amer_portal}"
+: "${POSTGRES_DB:=voidcloud}"
 
 if [ -z "${POSTGRES_PASSWORD}" ]; then
   echo "ERROR: POSTGRES_PASSWORD is not set"
@@ -25,7 +25,7 @@ delay=2
 until PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "${POSTGRES_HOST}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -c 'SELECT 1' >/dev/null 2>&1; do
   if [ "$attempt" -ge 30 ]; then
     echo "ERROR: Postgres authentication/connectivity failed after ${attempt} attempts"
-    echo "Check that amer-portal-secrets.POSTGRES_PASSWORD matches the password stored in the Postgres data directory."
+    echo "Check that voidcloud-secrets.POSTGRES_PASSWORD matches the password stored in the Postgres data directory."
     exit 1
   fi
   echo "Postgres not ready/authenticated yet; retrying in ${delay}s (attempt ${attempt}/30)..."
