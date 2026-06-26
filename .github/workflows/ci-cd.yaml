@@ -1162,7 +1162,11 @@ jobs:
           kubectl apply -f kubernetes/configmaps.yaml -n ${NAMESPACE}
           
           # Apply secrets - fail if there's an issue
-          kubectl apply -f kubernetes/secrets.yaml -n ${NAMESPACE}
+          if [ -f "kubernetes/secrets.yaml" ]; then
+            kubectl apply -f kubernetes/secrets.yaml -n ${NAMESPACE}
+          else
+            echo "⚠️ kubernetes/secrets.yaml not found; keeping existing cluster secrets"
+          fi
           
           # Apply PostgreSQL
           kubectl apply -f kubernetes/postgres/pv.yaml 2>/dev/null || echo "⚠️ PV may already exist"
@@ -1176,14 +1180,24 @@ jobs:
           kubectl apply -f kubernetes/backend/service.yaml -n ${NAMESPACE}
           
           # Apply Backend NodePort (for Cloudflare Tunnel)
-          kubectl apply -f kubernetes/backend/backend-nodeport.yaml -n ${NAMESPACE}
+          if [ -f "kubernetes/backend/backend-nodeport.yaml" ]; then
+            kubectl apply -f kubernetes/backend/backend-nodeport.yaml -n ${NAMESPACE}
+            echo "✅ Backend NodePort service applied"
+          else
+            echo "⚠️ kubernetes/backend/backend-nodeport.yaml not found"
+          fi
           
           # Apply Frontend
           kubectl apply -f kubernetes/frontend/deployment.yaml -n ${NAMESPACE}
           kubectl apply -f kubernetes/frontend/service.yaml -n ${NAMESPACE}
           
           # Apply Frontend NodePort (for Cloudflare Tunnel)
-          kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml -n ${NAMESPACE}
+          if [ -f "kubernetes/frontend/frontend-nodeport.yaml" ]; then
+            kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml -n ${NAMESPACE}
+            echo "✅ Frontend NodePort service applied"
+          else
+            echo "⚠️ kubernetes/frontend/frontend-nodeport.yaml not found"
+          fi
           
           # REMOVED: Ingress is not needed since we use Cloudflare Tunnel
           # kubectl apply -f kubernetes/ingress.yaml -n ${NAMESPACE} 2>/dev/null || true
