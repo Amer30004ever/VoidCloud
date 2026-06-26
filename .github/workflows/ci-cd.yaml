@@ -61,7 +61,6 @@ env:
   DOCKER_HUB_USERNAME: amer30004ever
   DOCKER_HUB_REPO: voidcloud
   POSTGRES_IMAGE_NAME: amer30004ever/voidcloud-postgres
-  NAMESPACE: voidcloud
 
 jobs:
   # ============================================
@@ -601,6 +600,7 @@ jobs:
       - name: Remove old postgres images from nodes
         if: github.event.inputs.force_pull == 'true' || github.event_name == 'push'
         run: |
+          NAMESPACE="voidcloud"
           echo "🗑️ Removing old PostgreSQL images from cluster nodes..."
           NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
           for NODE in $NODES; do
@@ -610,9 +610,10 @@ jobs:
 
       - name: Deploy PostgreSQL
         run: |
+          NAMESPACE="voidcloud"
           echo "🐘 Deploying PostgreSQL..."
           
-          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
           
           # Apply PostgreSQL manifests
           kubectl apply -f kubernetes/postgres/pv.yaml 2>/dev/null || true
@@ -624,16 +625,16 @@ jobs:
           POSTGRES_IMG="${{ steps.deployment_info.outputs.postgres_image }}"
           if [ "$POSTGRES_IMG" != "latest" ] && [ "$POSTGRES_IMG" != "" ] && [ "$POSTGRES_IMG" != "null" ]; then
             echo "🔧 Updating PostgreSQL image to: $POSTGRES_IMG"
-            kubectl set image deployment/postgres -n ${{ env.NAMESPACE }} \
+            kubectl set image deployment/postgres -n ${NAMESPACE} \
               postgres=${{ env.POSTGRES_IMAGE_NAME }}:${POSTGRES_IMG}
           fi
           
           # Ensure imagePullPolicy is Always
-          kubectl patch deployment postgres -n ${{ env.NAMESPACE }} -p '{"spec":{"template":{"spec":{"containers":[{"name":"postgres","imagePullPolicy":"Always"}]}}}}' 2>/dev/null || true
+          kubectl patch deployment postgres -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"postgres","imagePullPolicy":"Always"}]}}}}' 2>/dev/null || true
           
           # Restart and wait for readiness
-          kubectl rollout restart deployment/postgres -n ${{ env.NAMESPACE }} 2>/dev/null || true
-          kubectl rollout status deployment/postgres -n ${{ env.NAMESPACE }} --timeout=120s 2>/dev/null || echo "⚠️ PostgreSQL rollout status check skipped (may not exist yet)"
+          kubectl rollout restart deployment/postgres -n ${NAMESPACE} 2>/dev/null || true
+          kubectl rollout status deployment/postgres -n ${NAMESPACE} --timeout=120s 2>/dev/null || echo "⚠️ PostgreSQL rollout status check skipped (may not exist yet)"
           
           echo "✅ PostgreSQL deployment complete!"
 
@@ -683,6 +684,7 @@ jobs:
       - name: Remove old backend images from nodes
         if: github.event.inputs.force_pull == 'true' || github.event_name == 'push'
         run: |
+          NAMESPACE="voidcloud"
           echo "🗑️ Removing old Amer Portal backend images from cluster nodes..."
           NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
           for NODE in $NODES; do
@@ -692,22 +694,24 @@ jobs:
 
       - name: Deploy Backend
         run: |
+          NAMESPACE="voidcloud"
           echo "🚀 Deploying backend..."
           
-          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
           
           kubectl apply -f kubernetes/backend/service.yaml 2>/dev/null || true
           kubectl apply -f kubernetes/backend/deployment.yaml
           
-          kubectl patch deployment backend -n ${{ env.NAMESPACE }} -p '{"spec":{"template":{"spec":{"containers":[{"name":"backend","imagePullPolicy":"Always"}]}}}}'
+          kubectl patch deployment backend -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"backend","imagePullPolicy":"Always"}]}}}}'
           
-          kubectl set image deployment/backend -n ${{ env.NAMESPACE }} \
+          kubectl set image deployment/backend -n ${NAMESPACE} \
             backend=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:${{ steps.deployment_info.outputs.backend_image }}
           
-          kubectl rollout restart deployment/backend -n ${{ env.NAMESPACE }}
-          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=180s
+          kubectl rollout restart deployment/backend -n ${NAMESPACE}
+          kubectl rollout status deployment/backend -n ${NAMESPACE} --timeout=180s
           
           echo "✅ Backend deployment complete!"
+
   # ============================================
   # RUN DATABASE MIGRATIONS
   # ============================================
@@ -733,9 +737,11 @@ jobs:
 
       - name: Run Prisma Migrations
         run: |
+          NAMESPACE="voidcloud"
           echo "🔄 Running database migrations..."
-          kubectl -n voidcloud exec deploy/backend -- npx prisma migrate deploy
+          kubectl -n ${NAMESPACE} exec deploy/backend -- npx prisma migrate deploy
           echo "✅ Migrations completed successfully"
+
   # ============================================
   # DEPLOY FRONTEND (Self-Hosted Runner)
   # ============================================
@@ -782,6 +788,7 @@ jobs:
       - name: Remove old frontend images from nodes
         if: github.event.inputs.force_pull == 'true' || github.event_name == 'push'
         run: |
+          NAMESPACE="voidcloud"
           echo "🗑️ Removing old Amer Portal frontend images from cluster nodes..."
           NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
           for NODE in $NODES; do
@@ -791,21 +798,22 @@ jobs:
 
       - name: Deploy Frontend
         run: |
+          NAMESPACE="voidcloud"
           echo "🚀 Deploying frontend..."
           
-          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
           
           kubectl apply -f kubernetes/frontend/service.yaml 2>/dev/null || true
           kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml 2>/dev/null || true
           kubectl apply -f kubernetes/frontend/deployment.yaml
           
-          kubectl patch deployment frontend -n ${{ env.NAMESPACE }} -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"Always"}]}}}}'
+          kubectl patch deployment frontend -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"Always"}]}}}}'
           
-          kubectl set image deployment/frontend -n ${{ env.NAMESPACE }} \
+          kubectl set image deployment/frontend -n ${NAMESPACE} \
             frontend=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${{ steps.deployment_info.outputs.frontend_image }}
           
-          kubectl rollout restart deployment/frontend -n ${{ env.NAMESPACE }}
-          kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=180s
+          kubectl rollout restart deployment/frontend -n ${NAMESPACE}
+          kubectl rollout status deployment/frontend -n ${NAMESPACE} --timeout=180s
           
           echo "✅ Frontend deployment complete!"
 
@@ -832,9 +840,10 @@ jobs:
 
       - name: Full Deploy
         run: |
+          NAMESPACE="voidcloud"
           echo "🚀 Performing full deployment..."
           
-          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
           
           kubectl apply -f kubernetes/configmaps.yaml 2>/dev/null || true
           kubectl apply -f kubernetes/secrets.yaml 2>/dev/null || true
@@ -848,37 +857,37 @@ jobs:
             kubectl apply -f kubernetes/postgres/service.yaml 2>/dev/null || true
             
             if [ "$POSTGRES_IMG" != "latest" ] && [ "$POSTGRES_IMG" != "" ] && [ "$POSTGRES_IMG" != "null" ]; then
-              kubectl set image deployment/postgres -n ${{ env.NAMESPACE }} \
+              kubectl set image deployment/postgres -n ${NAMESPACE} \
                 postgres=${{ env.POSTGRES_IMAGE_NAME }}:${POSTGRES_IMG} 2>/dev/null || true
             fi
           fi
           
-          kubectl wait --for=condition=ready pod -l app=postgres -n ${{ env.NAMESPACE }} --timeout=120s 2>/dev/null || true
+          kubectl wait --for=condition=ready pod -l app=postgres -n ${NAMESPACE} --timeout=120s 2>/dev/null || true
           
           kubectl apply -f kubernetes/backend/deployment.yaml
           kubectl apply -f kubernetes/backend/service.yaml
-          kubectl patch deployment backend -n ${{ env.NAMESPACE }} -p '{"spec":{"template":{"spec":{"containers":[{"name":"backend","imagePullPolicy":"Always"}]}}}}'
+          kubectl patch deployment backend -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"backend","imagePullPolicy":"Always"}]}}}}'
           
           BACKEND_IMG="${{ github.event.inputs.backend_image }}"
           if [ "$BACKEND_IMG" != "latest" ] && [ "$BACKEND_IMG" != "" ] && [ "$BACKEND_IMG" != "null" ]; then
-            kubectl set image deployment/backend -n ${{ env.NAMESPACE }} \
+            kubectl set image deployment/backend -n ${NAMESPACE} \
               backend=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-backend:${BACKEND_IMG}
           fi
           
-          kubectl wait --for=condition=ready pod -l app=backend -n ${{ env.NAMESPACE }} --timeout=120s
+          kubectl wait --for=condition=ready pod -l app=backend -n ${NAMESPACE} --timeout=120s
           
           kubectl apply -f kubernetes/frontend/deployment.yaml
           kubectl apply -f kubernetes/frontend/service.yaml
           kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml
-          kubectl patch deployment frontend -n ${{ env.NAMESPACE }} -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"Always"}]}}}}'
+          kubectl patch deployment frontend -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"Always"}]}}}}'
           
           FRONTEND_IMG="${{ github.event.inputs.frontend_image }}"
           if [ "$FRONTEND_IMG" != "latest" ] && [ "$FRONTEND_IMG" != "" ] && [ "$FRONTEND_IMG" != "null" ]; then
-            kubectl set image deployment/frontend -n ${{ env.NAMESPACE }} \
+            kubectl set image deployment/frontend -n ${NAMESPACE} \
               frontend=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${FRONTEND_IMG}
           fi
           
-          kubectl wait --for=condition=ready pod -l app=frontend -n ${{ env.NAMESPACE }} --timeout=120s
+          kubectl wait --for=condition=ready pod -l app=frontend -n ${NAMESPACE} --timeout=120s
           kubectl apply -f kubernetes/ingress.yaml 2>/dev/null || true
           
           echo "✅ Full deployment complete!"
@@ -900,6 +909,7 @@ jobs:
 
       - name: Restart Backend
         run: |
+          NAMESPACE="voidcloud"
           echo "🔄 Restarting backend..."
           if [ "${{ github.event.inputs.force_pull }}" == "true" ]; then
             NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
@@ -907,8 +917,8 @@ jobs:
               ssh -o StrictHostKeyChecking=no $NODE "sudo crictl images | grep 'voidcloud-backend' | awk '{print \$3}' | xargs -r sudo crictl rmi" 2>/dev/null || true
             done
           fi
-          kubectl rollout restart deployment/backend -n ${{ env.NAMESPACE }}
-          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
+          kubectl rollout restart deployment/backend -n ${NAMESPACE}
+          kubectl rollout status deployment/backend -n ${NAMESPACE} --timeout=120s
           echo "✅ Backend restarted!"
 
   manual-restart-frontend:
@@ -928,6 +938,7 @@ jobs:
 
       - name: Restart Frontend
         run: |
+          NAMESPACE="voidcloud"
           echo "🔄 Restarting frontend..."
           if [ "${{ github.event.inputs.force_pull }}" == "true" ]; then
             NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
@@ -935,8 +946,8 @@ jobs:
               ssh -o StrictHostKeyChecking=no $NODE "sudo crictl images | grep 'voidcloud-frontend' | awk '{print \$3}' | xargs -r sudo crictl rmi" 2>/dev/null || true
             done
           fi
-          kubectl rollout restart deployment/frontend -n ${{ env.NAMESPACE }}
-          kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=120s
+          kubectl rollout restart deployment/frontend -n ${NAMESPACE}
+          kubectl rollout status deployment/frontend -n ${NAMESPACE} --timeout=120s
           echo "✅ Frontend restarted!"
 
   manual-restart-all:
@@ -956,6 +967,7 @@ jobs:
 
       - name: Restart All
         run: |
+          NAMESPACE="voidcloud"
           echo "🔄 Restarting all deployments..."
           if [ "${{ github.event.inputs.force_pull }}" == "true" ]; then
             NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
@@ -963,10 +975,10 @@ jobs:
               ssh -o StrictHostKeyChecking=no $NODE "sudo crictl images | grep 'voidcloud' | awk '{print \$3}' | xargs -r sudo crictl rmi" 2>/dev/null || true
             done
           fi
-          kubectl rollout restart deployment -n ${{ env.NAMESPACE }}
-          kubectl rollout status deployment/postgres -n ${{ env.NAMESPACE }} --timeout=120s 2>/dev/null || true
-          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
-          kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=120s
+          kubectl rollout restart deployment -n ${NAMESPACE}
+          kubectl rollout status deployment/postgres -n ${NAMESPACE} --timeout=120s 2>/dev/null || true
+          kubectl rollout status deployment/backend -n ${NAMESPACE} --timeout=120s
+          kubectl rollout status deployment/frontend -n ${NAMESPACE} --timeout=120s
           echo "✅ All deployments restarted!"
 
   # ============================================
@@ -1071,6 +1083,7 @@ jobs:
 
       - name: Deployment Summary
         run: |
+          NAMESPACE="voidcloud"
           echo ""
           echo "========================================="
           echo "🎉 CI/CD Pipeline Complete!"
@@ -1099,9 +1112,9 @@ jobs:
           echo ""
           
           echo "🏥 Current Cluster Status:"
-          kubectl get pods -n ${{ env.NAMESPACE }}
+          kubectl get pods -n ${NAMESPACE}
           echo ""
-          kubectl get svc -n ${{ env.NAMESPACE }}
+          kubectl get svc -n ${NAMESPACE}
           echo ""
           
           echo "🌐 Access URLs:"
@@ -1109,13 +1122,14 @@ jobs:
           echo "   https://api.voidcloud.cc.cd/api/v1/health"
           echo ""
           echo "🐘 PostgreSQL:"
-          echo "   Service: postgres.${{ env.NAMESPACE }}.svc.cluster.local:5432"
+          echo "   Service: postgres.${NAMESPACE}.svc.cluster.local:5432"
           echo ""
           echo "========================================="
 
       - name: Save build info
         if: always()
         run: |
+          NAMESPACE="voidcloud"
           mkdir -p build-info
           echo "postgres_deployed=${{ needs.deploy-postgres.result == 'success' }}" > build-info/build.txt
           echo "backend_deployed=${{ needs.deploy-backend.result == 'success' }}" >> build-info/build.txt
@@ -1131,6 +1145,7 @@ jobs:
         with:
           name: build-info
           path: build-info/
+
   # ============================================
   # K8S OPS — apply manifests / validate secrets / reset postgres
   # ============================================
@@ -1151,7 +1166,7 @@ jobs:
       - name: Apply k8s manifests
         run: |
           set -e
-          NAMESPACE=${NAMESPACE}
+          NAMESPACE="voidcloud"
           
           echo "📦 Applying manifests to namespace: ${NAMESPACE}"
           
@@ -1240,7 +1255,7 @@ jobs:
           chmod 600 $HOME/.kube/config
       - name: Validate & annotate secrets
         run: |
-          NAMESPACE=${NAMESPACE}
+          NAMESPACE="voidcloud"
           if [ -f "kubernetes/validate-secrets.sh" ]; then
             bash kubernetes/validate-secrets.sh --namespace ${NAMESPACE} --annotate
           else
@@ -1266,8 +1281,8 @@ jobs:
         env:
           PG_DATA_NODE: ${{ vars.PG_DATA_NODE || 'workernode01' }}
           PG_DATA_PATH: ${{ vars.PG_DATA_PATH || '/mnt/homelab/volumes/voidcloud/postgres' }}
-          NAMESPACE: ${{ env.NAMESPACE }}
         run: |
+          NAMESPACE="voidcloud"
           if [ -f "kubernetes/reset-postgres.sh" ]; then
             bash kubernetes/reset-postgres.sh --namespace ${NAMESPACE} --node "$PG_DATA_NODE" --path "$PG_DATA_PATH"
           else
@@ -1289,7 +1304,7 @@ jobs:
           chmod 600 $HOME/.kube/config
       - name: Restart workloads
         run: |
-          NAMESPACE=${NAMESPACE}
+          NAMESPACE="voidcloud"
           echo "🔄 Restarting workloads in namespace: ${NAMESPACE}"
           
           kubectl -n ${NAMESPACE} rollout restart deploy/backend
