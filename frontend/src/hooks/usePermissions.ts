@@ -53,9 +53,9 @@ export function usePermissions() {
     }
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     loadPermissions();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, [loadPermissions]);
 
   const hasPermission = (permission: string): boolean => {

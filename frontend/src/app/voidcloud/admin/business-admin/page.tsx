@@ -73,7 +73,7 @@ export default function BusinessAdminDashboard() {
       window.location.href = "/voidcloud/dashboard";
       return;
     }
-    fetchData();
+    fetchData(); // eslint-disable-line react-hooks/set-state-in-effect
   }, [user, fetchData]);
 
   const addTeamMember = async () => {

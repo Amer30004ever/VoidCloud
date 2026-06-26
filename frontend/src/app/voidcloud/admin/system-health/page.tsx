@@ -51,13 +51,12 @@ export default function SystemHealthDashboard() {
     }
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (user?.role !== "SUPER_ADMIN" && user?.role !== "ADMIN") {
       window.location.href = "/voidcloud/dashboard";
       return;
     }
-    fetchHealthData();
+    fetchHealthData(); // eslint-disable-line react-hooks/set-state-in-effect
     const interval = setInterval(fetchHealthData, 30000); // Update every 30 seconds
     return () => clearInterval(interval);
   }, [user, fetchHealthData]);

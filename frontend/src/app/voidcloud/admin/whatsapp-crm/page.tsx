@@ -49,12 +49,12 @@ export default function WhatsAppCRMDashboard() {
     }
   }, [filter]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     fetchConversations();
     // Poll for new messages every 5 seconds
     const interval = setInterval(fetchConversations, 5000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, [fetchConversations]);
 
   const fetchConversationMessages = async (conversationId: string) => {

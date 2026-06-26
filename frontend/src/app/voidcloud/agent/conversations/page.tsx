@@ -62,11 +62,11 @@ export default function AgentConversationsPage() {
     }
   }, [filter]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     fetchConversations();
     const interval = setInterval(fetchConversations, 5000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, [fetchConversations]);
 
   const fetchConversationMessages = async (conversationId: string) => {

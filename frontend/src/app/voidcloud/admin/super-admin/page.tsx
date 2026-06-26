@@ -88,7 +88,7 @@ export default function SuperAdminDashboard() {
       window.location.href = "/voidcloud/dashboard";
       return;
     }
-    fetchData();
+    fetchData(); // eslint-disable-line react-hooks/set-state-in-effect
   }, [user, fetchData]);
 
   if (loading) return <div className="p-6 text-white/50">Loading Super Admin Dashboard...</div>;
