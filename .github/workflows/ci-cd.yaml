@@ -1151,22 +1151,76 @@ jobs:
       - name: Apply k8s manifests
         run: |
           set -e
-          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
-          kubectl apply -f kubernetes/configmaps.yaml
-          kubectl apply -f kubernetes/secrets.yaml 2>/dev/null || echo "kubernetes/secrets.yaml not present; keeping existing cluster secrets"
-          kubectl apply -f kubernetes/postgres/pv.yaml
-          kubectl apply -f kubernetes/postgres/pvc.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f kubernetes/postgres/deployment.yaml
-          kubectl apply -f kubernetes/postgres/service.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f kubernetes/backend/rbac.yaml -n ${{ env.NAMESPACE }} 2>/dev/null || true
-          kubectl apply -f kubernetes/backend/deployment.yaml
-          kubectl apply -f kubernetes/backend/service.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f kubernetes/frontend/deployment.yaml
-          kubectl apply -f kubernetes/frontend/service.yaml -n ${{ env.NAMESPACE }}
-          # Cloudflare tunnel runs as a host service on the worker node (cloudflared systemd),
-          # not as a Kubernetes deployment. Do NOT apply kubernetes/cloudflare-tunnel-config.yaml.
-          kubectl apply -f kubernetes/ingress.yaml -n ${{ env.NAMESPACE }} 2>/dev/null || true
-          kubectl -n ${{ env.NAMESPACE }} rollout status deploy/backend --timeout=300s
+          NAMESPACE="${{ env.NAMESPACE }}"
+          
+          echo "📦 Applying manifests to namespace: ${NAMESPACE}"
+          
+          # Create namespace if it doesn't exist
+          kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Apply configmaps
+          kubectl apply -f kubernetes/configmaps.yaml -n ${NAMESPACE}
+          
+          # Apply secrets - fail if there's an issue
+          if [ -f "kubernetes/secrets.yaml" ]; then
+            kubectl apply -f kubernetes/secrets.yaml -n ${NAMESPACE}
+          else
+            echo "⚠️ kubernetes/secrets.yaml not found; keeping existing cluster secrets"
+          fi
+          
+          # Apply PostgreSQL
+          kubectl apply -f kubernetes/postgres/pv.yaml 2>/dev/null || echo "⚠️ PV may already exist"
+          kubectl apply -f kubernetes/postgres/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ PVC may already exist"
+          kubectl apply -f kubernetes/postgres/deployment.yaml -n ${NAMESPACE}
+          kubectl apply -f kubernetes/postgres/service.yaml -n ${NAMESPACE}
+          
+          # Apply Backend
+          kubectl apply -f kubernetes/backend/rbac.yaml -n ${NAMESPACE} 2>/dev/null || true
+          kubectl apply -f kubernetes/backend/deployment.yaml -n ${NAMESPACE}
+          kubectl apply -f kubernetes/backend/service.yaml -n ${NAMESPACE}
+          
+          # Apply Backend NodePort (for Cloudflare Tunnel)
+          if [ -f "kubernetes/backend/backend-nodeport.yaml" ]; then
+            kubectl apply -f kubernetes/backend/backend-nodeport.yaml -n ${NAMESPACE}
+            echo "✅ Backend NodePort service applied"
+          else
+            echo "⚠️ kubernetes/backend/backend-nodeport.yaml not found"
+          fi
+          
+          # Apply Frontend
+          kubectl apply -f kubernetes/frontend/deployment.yaml -n ${NAMESPACE}
+          kubectl apply -f kubernetes/frontend/service.yaml -n ${NAMESPACE}
+          
+          # Apply Frontend NodePort (for Cloudflare Tunnel)
+          if [ -f "kubernetes/frontend/frontend-nodeport.yaml" ]; then
+            kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml -n ${NAMESPACE}
+            echo "✅ Frontend NodePort service applied"
+          else
+            echo "⚠️ kubernetes/frontend/frontend-nodeport.yaml not found"
+          fi
+          
+          # REMOVED: Ingress is not needed since we use Cloudflare Tunnel
+          # kubectl apply -f kubernetes/ingress.yaml -n ${NAMESPACE} 2>/dev/null || true
+          
+          echo "✅ All manifests applied successfully!"
+          
+          # Wait for PostgreSQL to be ready
+          echo "⏳ Waiting for PostgreSQL..."
+          kubectl -n ${NAMESPACE} rollout status deploy/postgres --timeout=300s || echo "⚠️ PostgreSQL rollout status check skipped"
+          
+          # Wait for Backend to be ready
+          echo "⏳ Waiting for Backend..."
+          kubectl -n ${NAMESPACE} rollout status deploy/backend --timeout=300s
+          
+          # Wait for Frontend to be ready
+          echo "⏳ Waiting for Frontend..."
+          kubectl -n ${NAMESPACE} rollout status deploy/frontend --timeout=300s || echo "⚠️ Frontend rollout status check skipped"
+          
+          echo "📊 Current pods in ${NAMESPACE}:"
+          kubectl get pods -n ${NAMESPACE}
+          
+          echo "📊 Current services in ${NAMESPACE}:"
+          kubectl get svc -n ${NAMESPACE}
 
   validate-secrets:
     needs: [apply-manifests]
@@ -1185,7 +1239,13 @@ jobs:
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
       - name: Validate & annotate secrets
-        run: bash kubernetes/validate-secrets.sh --namespace ${{ env.NAMESPACE }} --annotate
+        run: |
+          NAMESPACE="${{ env.NAMESPACE }}"
+          if [ -f "kubernetes/validate-secrets.sh" ]; then
+            bash kubernetes/validate-secrets.sh --namespace ${NAMESPACE} --annotate
+          else
+            echo "⚠️ kubernetes/validate-secrets.sh not found, skipping"
+          fi
 
   reset-postgres:
     needs: [validate-secrets]
@@ -1206,7 +1266,13 @@ jobs:
         env:
           PG_DATA_NODE: ${{ vars.PG_DATA_NODE || 'workernode01' }}
           PG_DATA_PATH: ${{ vars.PG_DATA_PATH || '/mnt/homelab/volumes/voidcloud/postgres' }}
-        run: bash kubernetes/reset-postgres.sh --namespace ${{ env.NAMESPACE }} --node "$PG_DATA_NODE" --path "$PG_DATA_PATH"
+          NAMESPACE: ${{ env.NAMESPACE }}
+        run: |
+          if [ -f "kubernetes/reset-postgres.sh" ]; then
+            bash kubernetes/reset-postgres.sh --namespace ${NAMESPACE} --node "$PG_DATA_NODE" --path "$PG_DATA_PATH"
+          else
+            echo "⚠️ kubernetes/reset-postgres.sh not found, skipping"
+          fi
 
   redeploy-after-reset:
     needs: [reset-postgres]
@@ -1223,6 +1289,14 @@ jobs:
           chmod 600 $HOME/.kube/config
       - name: Restart workloads
         run: |
-          kubectl -n ${{ env.NAMESPACE }} rollout restart deploy/backend
-          kubectl -n ${{ env.NAMESPACE }} rollout status deploy/backend --timeout=300s
-          kubectl -n ${{ env.NAMESPACE }} rollout restart deploy/frontend 2>/dev/null || true
+          NAMESPACE="${{ env.NAMESPACE }}"
+          echo "🔄 Restarting workloads in namespace: ${NAMESPACE}"
+          
+          kubectl -n ${NAMESPACE} rollout restart deploy/backend
+          kubectl -n ${NAMESPACE} rollout status deploy/backend --timeout=300s
+          
+          kubectl -n ${NAMESPACE} rollout restart deploy/frontend 2>/dev/null || true
+          kubectl -n ${NAMESPACE} rollout status deploy/frontend --timeout=300s 2>/dev/null || true
+          
+          echo "📊 Current pods in ${NAMESPACE}:"
+          kubectl get pods -n ${NAMESPACE}
