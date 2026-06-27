@@ -7,6 +7,6 @@ export default defineConfig({
     seed: 'ts-node --transpile-only prisma/seed.ts',
   },
   datasource: {
-    url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/amer_portal',
+    url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/voidcloud',
   },
 });

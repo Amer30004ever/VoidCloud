@@ -21,17 +21,6 @@ spec:
       # imagePullSecrets removed — images are public on Docker Hub.
       # Re-add this block only if you push to a private registry.
       serviceAccountName: voidcloud-backend
-      initContainers:
-        - name: prisma-migrate
-          image: amer30004ever/voidcloud-backend:latest  # Will be updated by script
-          imagePullPolicy: Always
-          command: ["sh", "-c", "npx prisma migrate deploy"]
-          env:
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: voidcloud-secrets
-                  key: DATABASE_URL
       containers:
         - name: backend
           image: amer30004ever/voidcloud-backend:latest  # Will be updated by script
