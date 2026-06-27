@@ -1,7 +1,7 @@
 "use client";
 
 const WHATSAPP_NUMBER =
-  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/[^\d]/g, "") || "201000000000";
+  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/[^\d]/g, "") || "201061365444";
 const WHATSAPP_MESSAGE = "Hi AmerCloud team, I have a question.";
 
 export function WhatsAppButton() {
