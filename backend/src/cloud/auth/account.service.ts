@@ -26,7 +26,7 @@ export class CloudAccountService {
   constructor(
     private prisma: PrismaService,
     private mailer: MailerService,
-  ) {}
+  ) { }
 
   private get frontend() {
     return (process.env.FRONTEND_URL || 'https://voidcloud.cc.cd').replace(
@@ -66,14 +66,14 @@ export class CloudAccountService {
 
     const url = `${this.frontend}/amercloud/dashboard/settings?confirmEmail=${token}`;
     const html = `<p>Hi ${user.name},</p>
-      <p>We received a request to change your AmerCloud account email to <b>${normalized}</b>.</p>
+      <p>We received a request to change your Void Cloud account email to <b>${normalized}</b>.</p>
       <p>If this was you, click the link below within 30 minutes to confirm:</p>
       <p><a href="${url}">Confirm email change</a></p>
       <p>If you did not request this, you can ignore this email — your address will not change.</p>`;
     try {
       await this.mailer.send(
         user.email,
-        'Confirm your AmerCloud email change',
+        'Confirm your Void Cloud email change',
         html,
       );
     } catch (e: any) {
@@ -124,12 +124,12 @@ export class CloudAccountService {
     });
 
     const html = `<p>Hi ${user.name},</p>
-      <p>This is a notification that your AmerCloud password was just changed.</p>
+      <p>This is a notification that your Void Cloud password was just changed.</p>
       <p>If you did not make this change, please reset your password immediately and contact support.</p>`;
     try {
       await this.mailer.send(
         user.email,
-        'Your AmerCloud password was changed',
+        'Your Void Cloud password was changed',
         html,
       );
     } catch (e: any) {

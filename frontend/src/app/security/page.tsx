@@ -1,6 +1,6 @@
 import { LegalPage } from "@/components/landing/LegalPage";
 
-export const metadata = { title: "Security — AmerCloud" };
+export const metadata = { title: "Security — Void Cloud" };
 
 export default function SecurityPage() {
   return (

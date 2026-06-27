@@ -1,6 +1,6 @@
 import { LegalPage } from "@/components/landing/LegalPage";
 
-export const metadata = { title: "Careers — AmerCloud" };
+export const metadata = { title: "Careers — Void Cloud" };
 
 export default function CareersPage() {
   return (
@@ -9,7 +9,7 @@ export default function CareersPage() {
       subtitle="Help us build the cloud platform Egypt deserves."
     >
       <p>
-        AmerCloud is a small, technical team. We don&apos;t have open roles posted right
+        Void Cloud is a small, technical team. We don&apos;t have open roles posted right
         now, but we&apos;re always interested in talking to:
       </p>
       <ul>

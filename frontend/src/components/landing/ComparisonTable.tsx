@@ -13,14 +13,14 @@ export function ComparisonTable() {
     <section className="mx-auto max-w-5xl px-6 py-20">
       <div className="mb-10 text-center">
         <h2 className="text-3xl font-bold md:text-4xl">How We Compare</h2>
-        <p className="mt-3 text-white/60">AmerCloud vs the big players.</p>
+        <p className="mt-3 text-white/60">Void Cloud vs the big players.</p>
       </div>
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
         <table className="w-full text-left text-sm">
           <thead className="bg-white/5">
             <tr>
               <th className="px-4 py-4 font-semibold text-white/70">Feature</th>
-              <th className="px-4 py-4 font-bold text-cyan-300">AmerCloud</th>
+              <th className="px-4 py-4 font-bold text-cyan-300">Void Cloud</th>
               <th className="px-4 py-4 font-semibold text-white/50">AWS (EKS)</th>
               <th className="px-4 py-4 font-semibold text-white/50">Vercel</th>
             </tr>

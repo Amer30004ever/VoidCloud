@@ -11,7 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class TwoFactorService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async status(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -26,7 +26,7 @@ export class TwoFactorService {
 
   async beginEnable(userId: string, userEmail: string) {
     const secret = speakeasy.generateSecret({
-      name: `AmerCloud (${userEmail})`,
+      name: `Void Cloud (${userEmail})`,
       length: 20,
     });
     await this.prisma.user.update({

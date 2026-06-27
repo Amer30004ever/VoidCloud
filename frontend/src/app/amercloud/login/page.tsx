@@ -25,7 +25,7 @@ function LoginInner() {
     try {
       const body: Record<string, string> = { email, password };
       if (needs2FA && twoFactorToken) body.twoFactorToken = twoFactorToken.trim();
-      const { data } = await api.post("/auth/login", body);
+      const { data } = await api.post("auth/login", body);
       if (data?.requires2FA) {
         setNeeds2FA(true);
         setBusy(false);
@@ -53,7 +53,7 @@ function LoginInner() {
   }
 
   return (
-    <AuthShell title={t("auth.login_title", "Welcome back")} subtitle={t("auth.login_subtitle", "Sign in to your AmerCloud account")}>
+    <AuthShell title={t("auth.login_title", "Welcome back")} subtitle={t("auth.login_subtitle", "Sign in to your Void Cloud account")}>
       <form onSubmit={submit} className="space-y-4">
         {err && <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{err}</div>}
         <Input label={t("common.email", "Email")} type="email" value={email} onChange={setEmail} required />
@@ -72,13 +72,13 @@ function LoginInner() {
           {busy ? t("auth.signing_in", "Signing in…") : t("auth.sign_in", "Sign in")}
         </button>
         <p className="text-center text-sm text-white/60">
-          {t("auth.new_to", "New to AmerCloud?")} <Link href="/amercloud/register" className="text-cyan-300 hover:underline">{t("auth.create_account", "Create account")}</Link>
+          {t("auth.new_to", "New to Void Cloud?")} <Link href="/amercloud/register" className="text-cyan-300 hover:underline">{t("auth.create_account", "Create account")}</Link>
         </p>
         <p className="text-center text-xs text-white/50">
           {t("auth.verify_email_prompt", "Didn't get the verification email?")}{" "}
           <button
             type="button"
-            onClick={() => { if (email) api.post("/auth/resend-verification", { email }).catch(() => {}); }}
+            onClick={() => { if (email) api.post("auth/resend-verification", { email }).catch(() => { }); }}
             className="text-cyan-300 hover:underline"
           >{t("auth.resend", "Resend")}</button>
         </p>
@@ -97,7 +97,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
         <Link href="/amercloud" className="mb-6 flex items-center gap-2 text-lg font-bold">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">☁</span>
-          AmerCloud
+          Void Cloud
         </Link>
         <h1 className="text-2xl font-bold">{title}</h1>
         {subtitle && <p className="mb-6 mt-1 text-sm text-white/60">{subtitle}</p>}
@@ -129,7 +129,7 @@ export function Input({ label, type = "text", value, onChange, required, placeho
             onClick={() => setShow((v) => !v)}
             tabIndex={-1}
             aria-label={show ? "Hide password" : "Show password"}
-            aria-pressed={show}
+            aria-pressed={show ? "true" : "false"}
             className="absolute inset-y-0 right-0 flex items-center px-3 text-white/50 hover:text-white"
           >
             {show ? (

@@ -73,9 +73,9 @@ async function bootstrap() {
 
   // ── Swagger / OpenAPI ──────────────────────────────────────────────────────
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('AmerCloud Portal API')
+    .setTitle('Void Cloud Portal API')
     .setDescription(
-      'AmerCloud hosting platform — Authentication, Cloud Plans, VPS provisioning, Payments, and more.',
+      'Void Cloud hosting platform — Authentication, Cloud Plans, VPS provisioning, Payments, and more.',
     )
     .setVersion('1.0.0')
     .addTag('Health', 'Service health check')
@@ -85,7 +85,7 @@ async function bootstrap() {
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'JWT',
     )
-    .setContact('AmerCloud Team', 'https://voidcloud.cc.cd', 'support@voidcloud.cc.cd')
+    .setContact('Void Cloud Team', 'https://voidcloud.cc.cd', 'support@voidcloud.cc.cd')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
@@ -95,7 +95,7 @@ async function bootstrap() {
       tagsSorter: 'alpha',
       operationsSorter: 'alpha',
     },
-    customSiteTitle: 'AmerCloud Portal — API Docs',
+    customSiteTitle: 'Void Cloud Portal — API Docs',
   });
   // ──────────────────────────────────────────────────────────────────────────
 
@@ -106,7 +106,7 @@ async function bootstrap() {
     logger.warn(`Cloud seed skipped: ${(e as Error).message}`);
   }
   await app.listen(port);
-  logger.log(`🚀 MaVoid CRM API running on http://localhost:${port}/api/v1`);
+  logger.log(`🚀 Void CRM API running on http://localhost:${port}/api/v1`);
   logger.log(`📖 Swagger docs available at http://localhost:${port}/api/docs`);
   logger.log(`🌐 CORS allowed origins: ${allowedOrigins.join(', ')}`);
 }

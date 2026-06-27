@@ -23,10 +23,10 @@ interface StatusData {
 }
 
 const STATUS_COPY: Record<Overall, { label: string; color: string }> = {
-  OPERATIONAL:    { label: "All systems operational",        color: "bg-green-500" },
-  DEGRADED:       { label: "Some systems degraded",          color: "bg-yellow-500" },
-  PARTIAL_OUTAGE: { label: "Partial outage",                 color: "bg-orange-500" },
-  MAJOR_OUTAGE:   { label: "Major outage",                   color: "bg-red-500" },
+  OPERATIONAL: { label: "All systems operational", color: "bg-green-500" },
+  DEGRADED: { label: "Some systems degraded", color: "bg-yellow-500" },
+  PARTIAL_OUTAGE: { label: "Partial outage", color: "bg-orange-500" },
+  MAJOR_OUTAGE: { label: "Major outage", color: "bg-red-500" },
 };
 
 export default function StatusPage() {
@@ -36,7 +36,7 @@ export default function StatusPage() {
 
   useEffect(() => {
     let cancel = false;
-    const load = () => statusApi.get().then(d => { if (!cancel) setData(d); }).catch(() => {});
+    const load = () => statusApi.get().then(d => { if (!cancel) setData(d); }).catch(() => { });
     load();
     const t = setInterval(load, 30_000);
     return () => { cancel = true; clearInterval(t); };
@@ -50,7 +50,7 @@ export default function StatusPage() {
       <div className="mx-auto max-w-4xl space-y-8">
         <header className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">AmerCloud Status</h1>
+            <h1 className="text-2xl font-bold">Void Cloud Status</h1>
             <p className="text-sm text-muted-foreground">Live service health and incident history</p>
           </div>
           <Link href="/" className="text-sm text-primary hover:underline">← Home</Link>
@@ -132,7 +132,7 @@ export default function StatusPage() {
           ) : (
             <form
               className="flex gap-2"
-              onSubmit={(e) => { e.preventDefault(); try { localStorage.setItem("amer.status.subscriber", email); } catch {} setSubscribed(true); }}
+              onSubmit={(e) => { e.preventDefault(); try { localStorage.setItem("amer.status.subscriber", email); } catch { } setSubscribed(true); }}
             >
               <input
                 type="email" required value={email} onChange={(e) => setEmail(e.target.value)}

@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { cloudApi, CloudPlan } from "@/lib/cloud";
 
-export default function AmerCloudLanding() {
+export default function VoidCloudLanding() {
   const [plans, setPlans] = useState<CloudPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    cloudApi.plans.list().then(setPlans).catch(() => {}).finally(() => setLoading(false));
+    cloudApi.plans.list().then(setPlans).catch(() => { }).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -21,7 +21,7 @@ export default function AmerCloudLanding() {
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">
               ☁
             </span>
-            AmerCloud
+            Void Cloud
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/amercloud/login" className="rounded-lg px-4 py-2 text-sm text-white/80 hover:text-white">
@@ -107,7 +107,7 @@ export default function AmerCloudLanding() {
               <p className="mt-2 text-white/70">Custom resources, dedicated infrastructure, SLA, SOC2 reports.</p>
             </div>
             <a
-              href="mailto:sales@amercloud.dev"
+              href="mailto:sales@voidcloud.dev"
               className="mt-4 inline-block rounded-xl border border-white/20 bg-white/10 px-6 py-3 font-semibold hover:bg-white/20 md:mt-0"
             >
               Contact sales →
@@ -117,7 +117,7 @@ export default function AmerCloudLanding() {
       </section>
 
       <footer className="border-t border-white/5 px-6 py-10 text-center text-sm text-white/40">
-        © {new Date().getFullYear()} AmerCloud · Built on Kubernetes &amp; Proxmox
+        © {new Date().getFullYear()} Void Cloud · Built on Kubernetes &amp; Proxmox
       </footer>
     </div>
   );
@@ -126,11 +126,10 @@ export default function AmerCloudLanding() {
 function PlanCard({ plan }: { plan: CloudPlan }) {
   return (
     <div
-      className={`relative rounded-2xl border p-6 backdrop-blur-xl transition ${
-        plan.isPopular
+      className={`relative rounded-2xl border p-6 backdrop-blur-xl transition ${plan.isPopular
           ? "border-cyan-400/50 bg-gradient-to-b from-cyan-500/10 to-fuchsia-500/5"
           : "border-white/10 bg-white/5 hover:border-white/20"
-      }`}
+        }`}
     >
       {plan.isPopular && (
         <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-3 py-1 text-xs font-bold text-slate-950">
@@ -155,11 +154,10 @@ function PlanCard({ plan }: { plan: CloudPlan }) {
       </ul>
       <Link
         href={`/amercloud/register?plan=${plan.slug}`}
-        className={`mt-6 block rounded-xl py-3 text-center font-semibold transition ${
-          plan.isPopular
+        className={`mt-6 block rounded-xl py-3 text-center font-semibold transition ${plan.isPopular
             ? "bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-slate-950 hover:opacity-90"
             : "border border-white/20 hover:bg-white/10"
-        }`}
+          }`}
       >
         {plan.priceUSD === 0 ? "Start free" : "Get started"}
       </Link>

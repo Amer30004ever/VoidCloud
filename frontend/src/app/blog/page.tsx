@@ -1,6 +1,6 @@
 import { LegalPage } from "@/components/landing/LegalPage";
 
-export const metadata = { title: "Blog — AmerCloud" };
+export const metadata = { title: "Blog — Void Cloud" };
 
 export default function BlogPage() {
   return (
@@ -9,7 +9,7 @@ export default function BlogPage() {
         We&apos;re drafting our first posts on running Kubernetes in Egypt, accepting
         Fawry payments from a Nest.js backend, and building a multi-tenant ingress on
         Traefik. Subscribe by emailing{" "}
-        <a href="mailto:nova-cloud-2026@outlook.com?subject=Subscribe%20to%20AmerCloud%20blog">
+        <a href="mailto:nova-cloud-2026@outlook.com?subject=Subscribe%20to%20Void%20Cloud%20blog">
           nova-cloud-2026@outlook.com
         </a>{" "}
         and we&apos;ll send the first issue when it ships.

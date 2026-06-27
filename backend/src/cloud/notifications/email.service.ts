@@ -11,7 +11,7 @@ import { vpsReadyEmail } from '../../mailer/templates/vps-ready';
 @Injectable()
 export class CloudEmailService {
   private readonly logger = new Logger(CloudEmailService.name);
-  constructor(private mailer: MailerService) {}
+  constructor(private mailer: MailerService) { }
 
   private get frontend() {
     return (process.env.FRONTEND_URL || 'https://voidcloud.cc.cd').replace(
@@ -40,7 +40,7 @@ export class CloudEmailService {
       name,
       `${this.frontend}/amercloud/dashboard`,
     );
-    return this.safeSend(email, 'Welcome to AmerCloud 🚀', html, text);
+    return this.safeSend(email, 'Welcome to Void Cloud 🚀', html, text);
   }
 
   invoice(email: string, amount: number, currency: string, invoiceId: string) {

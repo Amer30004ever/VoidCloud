@@ -44,7 +44,7 @@ const BACKOFF_MS = [1_000, 2_000, 4_000, 8_000, 16_000];
 export class WebhookService {
   private readonly logger = new Logger(WebhookService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   private validateUrl(url: string) {
     let u: URL;
@@ -129,7 +129,7 @@ export class WebhookService {
   async testEndpoint(userId: string, id: string) {
     await this.assertOwner(id, userId);
     return this.deliverWebhook(id, 'webhook.test', {
-      message: 'This is a test event from AmerCloud',
+      message: 'This is a test event from Void Cloud',
       timestamp: new Date().toISOString(),
     });
   }
@@ -204,10 +204,10 @@ export class WebhookService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'AmerCloud-Webhooks/1.0',
-          'X-AmerCloud-Event': eventType,
-          'X-AmerCloud-Delivery': `${webhookId}-${ts}-${attempt}`,
-          ...(signature ? { 'X-AmerCloud-Signature': signature } : {}),
+          'User-Agent': 'VoidCloud-Webhooks/1.0',
+          'X-VoidCloud-Event': eventType,
+          'X-VoidCloud-Delivery': `${webhookId}-${ts}-${attempt}`,
+          ...(signature ? { 'X-VoidCloud-Signature': signature } : {}),
         },
         body,
         signal: controller.signal,

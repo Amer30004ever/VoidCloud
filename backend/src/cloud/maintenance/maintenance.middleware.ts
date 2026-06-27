@@ -17,7 +17,7 @@ export class MaintenanceMiddleware implements NestMiddleware {
   constructor(
     private maintenance: MaintenanceService,
     private jwt: JwtService,
-  ) {}
+  ) { }
 
   async use(req: Request, res: Response, next: NextFunction) {
     if (req.method === 'GET' && req.path.startsWith('/api/v1/status')) return next();
@@ -39,7 +39,7 @@ export class MaintenanceMiddleware implements NestMiddleware {
       : 3600;
     res.setHeader('Retry-After', String(retryAfterSec));
     throw new ServiceUnavailableException({
-      message: 'AmerCloud is undergoing scheduled maintenance.',
+      message: 'Void Cloud is undergoing scheduled maintenance.',
       maintenance: status,
     });
   }

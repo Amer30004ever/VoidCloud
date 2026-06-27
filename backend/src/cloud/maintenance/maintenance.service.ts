@@ -29,7 +29,7 @@ export class MaintenanceService {
   constructor(
     private prisma: PrismaService,
     private email: CloudEmailService,
-  ) {}
+  ) { }
 
   /** Returns active maintenance window state, used by middleware/UI. */
   async isMaintenanceMode(): Promise<{
@@ -69,7 +69,7 @@ export class MaintenanceService {
       },
     });
     // Notify users (fire & forget)
-    this.notifyMaintenanceScheduled(m).catch(() => {});
+    this.notifyMaintenanceScheduled(m).catch(() => { });
     return m;
   }
 
@@ -88,10 +88,10 @@ export class MaintenanceService {
       },
     });
     if (data.status === 'IN_PROGRESS' && existing.status !== 'IN_PROGRESS') {
-      this.notifyMaintenanceStarted(updated).catch(() => {});
+      this.notifyMaintenanceStarted(updated).catch(() => { });
     }
     if (data.status === 'COMPLETED' && existing.status !== 'COMPLETED') {
-      this.notifyMaintenanceCompleted(updated).catch(() => {});
+      this.notifyMaintenanceCompleted(updated).catch(() => { });
     }
     return updated;
   }
@@ -125,7 +125,7 @@ export class MaintenanceService {
       },
       include: { updates: { orderBy: { createdAt: 'desc' } } },
     });
-    this.notifyIncidentCreated(incident).catch(() => {});
+    this.notifyIncidentCreated(incident).catch(() => { });
     return incident;
   }
 
@@ -157,7 +157,7 @@ export class MaintenanceService {
       data: { status: 'RESOLVED', resolvedAt: new Date() },
       include: { updates: { orderBy: { createdAt: 'desc' } } },
     });
-    this.notifyIncidentResolved(updated).catch(() => {});
+    this.notifyIncidentResolved(updated).catch(() => { });
     return updated;
   }
 
@@ -221,37 +221,37 @@ export class MaintenanceService {
       take: 200,
     });
     for (const u of users) {
-      await this.email.maintenance(u.email, subject, body).catch(() => {});
+      await this.email.maintenance(u.email, subject, body).catch(() => { });
     }
   }
 
   private async notifyMaintenanceScheduled(m: { title: string; description: string; startAt: Date; endAt: Date }) {
     return this.notifyAffected(
-      `[AmerCloud] Scheduled maintenance: ${m.title}`,
+      `[Void Cloud] Scheduled maintenance: ${m.title}`,
       `Maintenance scheduled from ${m.startAt.toISOString()} to ${m.endAt.toISOString()}.\n\n${m.description}`,
     );
   }
   private async notifyMaintenanceStarted(m: { title: string; description: string }) {
     return this.notifyAffected(
-      `[AmerCloud] Maintenance started: ${m.title}`,
+      `[Void Cloud] Maintenance started: ${m.title}`,
       `Maintenance has started.\n\n${m.description}`,
     );
   }
   private async notifyMaintenanceCompleted(m: { title: string }) {
     return this.notifyAffected(
-      `[AmerCloud] Maintenance completed: ${m.title}`,
+      `[Void Cloud] Maintenance completed: ${m.title}`,
       `Maintenance has been completed. All systems should be operational.`,
     );
   }
   private async notifyIncidentCreated(i: { title: string; severity: string; description: string }) {
     return this.notifyAffected(
-      `[AmerCloud] Incident (${i.severity}): ${i.title}`,
+      `[Void Cloud] Incident (${i.severity}): ${i.title}`,
       `A new incident has been reported.\n\n${i.description}`,
     );
   }
   private async notifyIncidentResolved(i: { title: string }) {
     return this.notifyAffected(
-      `[AmerCloud] Incident resolved: ${i.title}`,
+      `[Void Cloud] Incident resolved: ${i.title}`,
       `The incident has been resolved.`,
     );
   }

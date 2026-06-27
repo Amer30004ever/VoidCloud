@@ -27,7 +27,7 @@ export class AuthService {
     private jwtService: JwtService,
     private mailer: MailerService,
     private rbacService: RbacService,
-  ) {}
+  ) { }
 
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -77,10 +77,10 @@ export class AuthService {
     }
 
     const payload = { email: user.email, sub: user.id, role: user.role };
-    
+
     // Fetch user permissions from RBAC
     const userPermissions = await this.rbacService.getUserPermissions(user.id);
-    
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -163,14 +163,14 @@ export class AuthService {
       const w = welcomeEmail(user.name, `${frontend}/amercloud/dashboard`);
       const v = verifyEmailTemplate(user.name, verifyUrl);
       this.mailer
-        .send(user.email, 'Welcome to AmerCloud 🚀', w.html, w.text)
+        .send(user.email, 'Welcome to Void Cloud 🚀', w.html, w.text)
         .catch((e) =>
           this.logger.warn(
             `welcome email failed for ${user.email}: ${e?.message ?? e}`,
           ),
         );
       this.mailer
-        .send(user.email, 'Verify your AmerCloud email', v.html, v.text)
+        .send(user.email, 'Verify your Void Cloud email', v.html, v.text)
         .catch((e) =>
           this.logger.warn(
             `verify email failed for ${user.email}: ${e?.message ?? e}`,
@@ -239,7 +239,7 @@ export class AuthService {
       const { html, text } = verifyEmailTemplate(user.name, verifyUrl);
       await this.mailer.send(
         user.email,
-        'Verify your AmerCloud email',
+        'Verify your Void Cloud email',
         html,
         text,
       );
@@ -313,7 +313,7 @@ export class AuthService {
     try {
       await this.mailer.send(
         user.email,
-        'Reset your AmerCloud password',
+        'Reset your Void Cloud password',
         html,
         text,
       );

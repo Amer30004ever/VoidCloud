@@ -8,6 +8,10 @@ const api = axios.create({
 
 // Attach JWT token from localStorage on every request
 api.interceptors.request.use((config) => {
+  if (config.url?.startsWith("/")) {
+    config.url = config.url.slice(1);
+  }
+
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("amer_portal_token");
     if (token) {
