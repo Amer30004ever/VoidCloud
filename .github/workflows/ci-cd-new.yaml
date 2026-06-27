@@ -463,7 +463,7 @@ jobs:
       - name: Build frontend image for testing
         run: |
           cd frontend
-          docker build -t frontend-test:latest .
+          docker build --build-arg NEXT_PUBLIC_API_URL=https://api.voidcloud.cc.cd/api/v1 -t frontend-test:latest .
 
       - name: Test frontend container starts
         run: |
@@ -548,8 +548,8 @@ jobs:
         run: |
           cd frontend
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-          docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest .
-          docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${TIMESTAMP} .
+          docker build --build-arg NEXT_PUBLIC_API_URL=https://api.voidcloud.cc.cd/api/v1 -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest .
+          docker build --build-arg NEXT_PUBLIC_API_URL=https://api.voidcloud.cc.cd/api/v1 -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${TIMESTAMP} .
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
           echo "BUILT=true" >> $GITHUB_OUTPUT
 
