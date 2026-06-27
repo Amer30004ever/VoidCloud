@@ -1,8 +1,24 @@
 <# Checks a list of endpoints (Windows PowerShell)
 Usage: .\check-endpoints.ps1
 #>
+<# Checks a list of endpoints (Windows PowerShell)
+Usage:
+    .\check-endpoints.ps1
+    .\check-endpoints.ps1 -Help
+#>
 [CmdletBinding()]
-param()
+param(
+    [switch]$Help
+)
+
+function Show-Help {
+    Write-Host "Usage: .\check-endpoints.ps1 [-Help]"
+    Write-Host "Checks the main public endpoints for the AmerCloud backend."
+}
+. "$PSScriptRoot\_ps_ops_helpers.ps1"
+Parse-HelpSwitch -Usage "Usage: .\check-endpoints.ps1 [-Help]"
+
+if ($Help) { Show-Help; return }
 
 $Hosts = @(
     'https://voidcloud.cc.cd',

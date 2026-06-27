@@ -1,7 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NAMESPACE=${1:-voidcloud}
+function show_help() {
+  cat <<'EOF'
+Usage: ./scripts/ops/kubectl-troubleshoot.sh [namespace] [-h|--help]
+
+Options:
+  namespace    Kubernetes namespace to inspect (default: voidcloud).
+  -h, --help   Show this help message.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      show_help
+      exit 0
+      ;;
+    *)
+      if [[ -z "${NAMESPACE:-}" ]]; then
+        NAMESPACE=$1
+        shift
+      else
+        echo "Unknown option: $1" >&2
+        show_help
+        exit 1
+      fi
+      ;;
+  esac
+done
+
+NAMESPACE=${NAMESPACE:-voidcloud}
 
 echo "Namespace: $NAMESPACE"
 
