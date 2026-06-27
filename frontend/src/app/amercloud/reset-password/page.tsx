@@ -55,8 +55,8 @@ function ResetPasswordInner() {
               {err}
             </div>
           )}
-          <Input label="New password" type="password" value={password} onChange={setPassword} required />
-          <Input label="Confirm password" type="password" value={confirm} onChange={setConfirm} required />
+          <Input label="New password" type="password" value={password} onValueChange={setPassword} required />
+          <Input label="Confirm password" type="password" value={confirm} onValueChange={setConfirm} required />
           <button
             disabled={busy || !token}
             className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 py-3 font-semibold text-slate-950 disabled:opacity-60"

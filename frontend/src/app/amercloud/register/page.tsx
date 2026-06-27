@@ -94,10 +94,10 @@ function RegisterInner() {
       <form onSubmit={submit} className="space-y-4">
         {err && <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{err}</div>}
 
-        <Input label="Full name" value={name} onChange={setName} required />
-        <Input label="Email" type="email" value={email} onChange={setEmail} required />
-        <Input label="Phone (Egyptian)" type="tel" value={phone} onChange={setPhone} placeholder="+201012345678" />
-        <Input label="Password" type="password" value={password} onChange={setPassword} required />
+        <Input label="Full name" value={name} onValueChange={setName} required />
+        <Input label="Email" type="email" value={email} onValueChange={setEmail} required />
+        <Input label="Phone (Egyptian)" type="tel" value={phone} onValueChange={setPhone} placeholder="+201012345678" />
+        <Input label="Password" type="password" value={password} onValueChange={setPassword} required />
 
         {password && (
           <div className="space-y-1">
@@ -108,7 +108,7 @@ function RegisterInner() {
           </div>
         )}
 
-        <Input label="Confirm password" type="password" value={confirm} onChange={setConfirm} required />
+        <Input label="Confirm password" type="password" value={confirm} onValueChange={setConfirm} required />
 
         <div>
           <label className="mb-2 block text-sm text-white/70">Select plan</label>

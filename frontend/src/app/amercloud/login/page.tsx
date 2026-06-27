@@ -56,10 +56,10 @@ function LoginInner() {
     <AuthShell title={t("auth.login_title", "Welcome back")} subtitle={t("auth.login_subtitle", "Sign in to your Void Cloud account")}>
       <form onSubmit={submit} className="space-y-4">
         {err && <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{err}</div>}
-        <Input label={t("common.email", "Email")} type="email" value={email} onChange={setEmail} required />
-        <Input label={t("common.password", "Password")} type="password" value={password} onChange={setPassword} required />
+        <Input label={t("common.email", "Email")} type="email" value={email} onValueChange={setEmail} required />
+        <Input label={t("common.password", "Password")} type="password" value={password} onValueChange={setPassword} required />
         {needs2FA && (
-          <Input label={t("auth.two_factor_code", "Two-factor code (or recovery code)")} type="text" value={twoFactorToken} onChange={setTwoFactorToken} required placeholder="123456" />
+          <Input label={t("auth.two_factor_code", "Two-factor code (or recovery code)")} type="text" value={twoFactorToken} onValueChange={setTwoFactorToken} required placeholder="123456" />
         )}
         <label className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-2">
@@ -107,7 +107,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
   );
 }
 
-export function Input({ label, type = "text", value, onChange, required, placeholder }: any) {
+export function Input({ label, type = "text", value, onValueChange, required, placeholder }: any) {
   const isPassword = type === "password";
   const [show, setShow] = useState(false);
   const effectiveType = isPassword ? (show ? "text" : "password") : type;
@@ -118,7 +118,7 @@ export function Input({ label, type = "text", value, onChange, required, placeho
         <input
           type={effectiveType}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onValueChange?.(e.target.value)}
           required={required}
           placeholder={placeholder}
           className={`w-full rounded-lg border border-white/10 bg-slate-950/60 px-4 py-3 outline-none transition focus:border-cyan-400/50 ${isPassword ? "pr-12" : ""}`}
@@ -129,7 +129,7 @@ export function Input({ label, type = "text", value, onChange, required, placeho
             onClick={() => setShow((v) => !v)}
             tabIndex={-1}
             aria-label={show ? "Hide password" : "Show password"}
-            aria-pressed={show ? "true" : "false"}
+            aria-pressed={show}
             className="absolute inset-y-0 right-0 flex items-center px-3 text-white/50 hover:text-white"
           >
             {show ? (
