@@ -35,7 +35,6 @@ async function bootstrap() {
         'http://127.0.0.1:3000',
         'http://localhost:3001',
         'http://127.0.0.1:3001',
-        // VoidCloud production domains
         'https://voidcloud.cc.cd',
         'https://www.voidcloud.cc.cd',
         'https://api.voidcloud.cc.cd',
@@ -44,7 +43,7 @@ async function bootstrap() {
     ),
   );
 
-  // Allow any *.voidcloud.cc.cd subdomain (preview / staging)
+  // Also allow any *.voidcloud.cc.cd subdomain (preview / staging)
   const allowedOriginRegexes = [
     /^https:\/\/([a-z0-9-]+\.)*voidcloud\.cc\.cd$/i,
   ];
@@ -73,9 +72,9 @@ async function bootstrap() {
 
   // ── Swagger / OpenAPI ──────────────────────────────────────────────────────
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('AmerCloud Portal API')
+    .setTitle('MaVoid CRM API')
     .setDescription(
-      'AmerCloud hosting platform — Authentication, Cloud Plans, VPS provisioning, Payments, and more.',
+      'WhatsApp CRM backend — Authentication, Webhooks, Conversations, Leads, Contacts, Deals, Tasks, Templates.',
     )
     .setVersion('1.0.0')
     .addTag('Health', 'Service health check')
@@ -85,7 +84,7 @@ async function bootstrap() {
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'JWT',
     )
-    .setContact('AmerCloud Team', 'https://voidcloud.cc.cd', 'support@voidcloud.cc.cd')
+    .setContact('MaVoid Team', '', 'support@mavoid.com')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
@@ -95,7 +94,7 @@ async function bootstrap() {
       tagsSorter: 'alpha',
       operationsSorter: 'alpha',
     },
-    customSiteTitle: 'AmerCloud Portal — API Docs',
+    customSiteTitle: 'MaVoid CRM — API Docs',
   });
   // ──────────────────────────────────────────────────────────────────────────
 
