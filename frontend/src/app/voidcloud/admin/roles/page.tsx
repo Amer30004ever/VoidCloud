@@ -1,7 +1,5 @@
 "use client";
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState, useCallback } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface RbacRole {
   id: string;
@@ -40,26 +38,16 @@ interface Tenant {
   }>;
 }
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-}
-
 export default function RolesManagementPage() {
-  const { user } = useAuth();
   const [roles, setRoles] = useState<RbacRole[]>([]);
   const [permissions, setPermissions] = useState<RbacPermission[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"roles" | "permissions" | "tenants" | "assignments">("roles");
-  
+
   // Form states
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDesc, setNewRoleDesc] = useState("");
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedTenant, setSelectedTenant] = useState<string>("");
@@ -84,7 +72,7 @@ export default function RolesManagementPage() {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -102,28 +90,6 @@ export default function RolesManagementPage() {
       }
     } catch (error) {
       console.error("Failed to create role:", error);
-    }
-  };
-
-  const assignPermissionToRole = async (roleId: string, permissionId: string) => {
-    try {
-      const res = await fetch(`/api/v1/rbac/roles/${roleId}/permissions/${permissionId}`, {
-        method: "POST",
-      });
-      if (res.ok) fetchData();
-    } catch (error) {
-      console.error("Failed to assign permission:", error);
-    }
-  };
-
-  const removePermissionFromRole = async (roleId: string, permissionId: string) => {
-    try {
-      const res = await fetch(`/api/v1/rbac/roles/${roleId}/permissions/${permissionId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) fetchData();
-    } catch (error) {
-      console.error("Failed to remove permission:", error);
     }
   };
 
@@ -150,17 +116,16 @@ export default function RolesManagementPage() {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold text-white mb-6">Roles & Permissions Management</h1>
-      
+
       <div className="flex gap-2 mb-6 border-b border-white/10">
         {["roles", "permissions", "tenants", "assignments"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as "roles" | "permissions" | "tenants" | "assignments")}
-            className={`px-4 py-2 capitalize ${
-              activeTab === tab
+            className={`px-4 py-2 capitalize ${activeTab === tab
                 ? "border-b-2 border-cyan-400 text-white"
                 : "text-white/50 hover:text-white"
-            }`}
+              }`}
           >
             {tab}
           </button>
@@ -311,4 +276,3 @@ export default function RolesManagementPage() {
     </div>
   );
 }
-/* eslint-enable react-hooks/set-state-in-effect */

@@ -15,4 +15,4 @@
 
 ## Project-Specific Knowledge
 - Backend admin reset scripts exist under `/backend/scripts/`.
-- Operational cluster wrappers live under `/scripts/ops/`.
+- Operational cluster wrappers live under `/mind/scripts/ops/`.

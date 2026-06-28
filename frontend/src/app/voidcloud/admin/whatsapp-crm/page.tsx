@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -165,11 +164,10 @@ export default function WhatsAppCRMDashboard() {
               <button
                 key={status}
                 onClick={() => setFilter(status as "all" | "open" | "resolved" | "pending")}
-                className={`px-3 py-1 rounded-lg text-sm capitalize ${
-                  filter === status
+                className={`px-3 py-1 rounded-lg text-sm capitalize ${filter === status
                     ? "bg-cyan-500 text-white"
                     : "bg-white/5 text-white/70 hover:bg-white/10"
-                }`}
+                  }`}
               >
                 {status}
               </button>
@@ -181,17 +179,15 @@ export default function WhatsAppCRMDashboard() {
             <div
               key={conv.id}
               onClick={() => selectConversation(conv)}
-              className={`p-4 border-b border-white/5 cursor-pointer hover:bg-white/5 ${
-                selectedConversation?.id === conv.id ? "bg-white/10" : ""
-              }`}
+              className={`p-4 border-b border-white/5 cursor-pointer hover:bg-white/5 ${selectedConversation?.id === conv.id ? "bg-white/10" : ""
+                }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium text-white">{conv.contactId}</span>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  conv.status === "OPEN" ? "bg-emerald-500/20 text-emerald-300" :
-                  conv.status === "RESOLVED" ? "bg-blue-500/20 text-blue-300" :
-                  "bg-yellow-500/20 text-yellow-300"
-                }`}>
+                <span className={`text-xs px-2 py-1 rounded-full ${conv.status === "OPEN" ? "bg-emerald-500/20 text-emerald-300" :
+                    conv.status === "RESOLVED" ? "bg-blue-500/20 text-blue-300" :
+                      "bg-yellow-500/20 text-yellow-300"
+                  }`}>
                   {conv.status}
                 </span>
               </div>
@@ -247,11 +243,10 @@ export default function WhatsAppCRMDashboard() {
                   className={`flex ${msg.direction === "INBOUND" ? "justify-start" : "justify-end"}`}
                 >
                   <div
-                    className={`max-w-[70%] rounded-lg p-3 ${
-                      msg.direction === "INBOUND"
+                    className={`max-w-[70%] rounded-lg p-3 ${msg.direction === "INBOUND"
                         ? "bg-white/10 text-white"
                         : "bg-cyan-500 text-white"
-                    }`}
+                      }`}
                   >
                     <p>{msg.content}</p>
                     <p className="text-xs opacity-70 mt-1">
@@ -292,4 +287,3 @@ export default function WhatsAppCRMDashboard() {
     </div>
   );
 }
-/* eslint-enable react-hooks/set-state-in-effect */

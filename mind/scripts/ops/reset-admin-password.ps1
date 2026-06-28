@@ -61,9 +61,9 @@ if (-not $AdminPassword) {
 }
 
 function Run-InCluster {
-    Write-Host "Running reset inside cluster (voidcloud namespace)"
+  Write-Host "Running reset inside cluster (voidcloud namespace)"
 
-    $scriptBody = @'
+  $scriptBody = @'
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 
@@ -100,24 +100,25 @@ const pool = new Pool({ connectionString });
 })();
 '@
 
-    $scriptBody | & kubectl -n voidcloud exec -i deploy/backend -- /bin/sh -c "cd /app && export NODE_OPTIONS=''; ADMIN_EMAIL='$AdminEmail' ADMIN_PASSWORD='$AdminPassword' node -"
+  $scriptBody | & kubectl -n voidcloud exec -i deploy/backend -- /bin/sh -c "cd /app && export NODE_OPTIONS=''; ADMIN_EMAIL='$AdminEmail' ADMIN_PASSWORD='$AdminPassword' node -"
 }
 
 function Run-Local {
-    if (-not $env:DATABASE_URL) { Write-Error 'DATABASE_URL is required to run locally.'; exit 1 }
-    Write-Host "Running reset locally"
-    $env:ADMIN_EMAIL = $AdminEmail
-    $env:ADMIN_PASSWORD = $AdminPassword
-    & npx ts-node --transpile-only scripts/reset-admin-password.ts
+  if (-not $env:DATABASE_URL) { Write-Error 'DATABASE_URL is required to run locally.'; exit 1 }
+  Write-Host "Running reset locally"
+  $env:ADMIN_EMAIL = $AdminEmail
+  $env:ADMIN_PASSWORD = $AdminPassword
+  $ResetScript = Join-Path $RootDir '..\..\backend\scripts\reset-admin-password.ts'
+  & npx ts-node --transpile-only $ResetScript
 }
 
 # Detect kubectl + backend deployment
 if (Get-Command kubectl -ErrorAction SilentlyContinue) {
-    try {
-        $exists = & kubectl get deploy -n voidcloud backend -o name 2>$null
-        if ($exists) { Run-InCluster; exit 0 }
-    }
-    catch { }
+  try {
+    $exists = & kubectl get deploy -n voidcloud backend -o name 2>$null
+    if ($exists) { Run-InCluster; exit 0 }
+  }
+  catch { }
 }
 
 Run-Local

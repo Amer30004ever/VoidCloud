@@ -3,7 +3,7 @@ set -euo pipefail
 
 function show_help() {
   cat <<'EOF'
-Usage: ./scripts/ops/check-endpoints.sh [-h|--help]
+Usage: ./mind/scripts/ops/check-endpoints.sh [-h|--help]
 
 Options:
   -h, --help  Show this help message.

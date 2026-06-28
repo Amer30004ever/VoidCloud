@@ -3,7 +3,7 @@ set -euo pipefail
 
 function show_help() {
   cat <<'EOF'
-Usage: ./scripts/ops/generate-api-endpoints.sh [-h|--help]
+Usage: ./mind/scripts/ops/generate-api-endpoints.sh [-h|--help]
 
 Options:
   -h, --help  Show this help message.
@@ -24,9 +24,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-BACKEND_SRC="$ROOT_DIR/backend/src"
-OUTPUT="$ROOT_DIR/scripts/ops/api-endpoints.txt"
+REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+BACKEND_SRC="$REPO_ROOT/backend/src"
+OUTPUT="$REPO_ROOT/mind/scripts/ops/api-endpoints.txt"
 
 # Extract controller paths and method paths from TypeScript files.
 # This is a lightweight scanner and assumes simple decorator syntax.

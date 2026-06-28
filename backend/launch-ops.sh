@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-OPS_DIR="$ROOT_DIR/scripts/ops"
+OPS_DIR="$ROOT_DIR/mind/scripts/ops"
 CMD="${1:-run-all}"
 
 case "$CMD" in

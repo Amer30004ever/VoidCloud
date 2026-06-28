@@ -1,19 +1,19 @@
 <# Generate a full controller route map into api-endpoints.txt
-Usage: .\generate-api-endpoints.ps1
+Usage: .\mind\scripts\ops\generate-api-endpoints.ps1
 #>
 <# Generate a controller route map to api-endpoints.txt
 Usage:
-    .\generate-api-endpoints.ps1
-    .\generate-api-endpoints.ps1 -Help
+    .\mind\scripts\ops\generate-api-endpoints.ps1
+    .\mind\scripts\ops\generate-api-endpoints.ps1 -Help
 #>
 [CmdletBinding()]
 param(
-        [switch]$Help
+    [switch]$Help
 )
 
 function Show-Help {
-        Write-Host "Usage: .\generate-api-endpoints.ps1 [-Help]"
-        Write-Host "Scans backend controllers and writes a route map to scripts/ops/api-endpoints.txt."
+    Write-Host "Usage: .\generate-api-endpoints.ps1 [-Help]"
+    Write-Host "Scans backend controllers and writes a route map to mind/scripts/ops/api-endpoints.txt."
 }
 . "$PSScriptRoot\_ps_ops_helpers.ps1"
 Parse-HelpSwitch -Usage "Usage: .\generate-api-endpoints.ps1 [-Help]"
@@ -21,8 +21,8 @@ Parse-HelpSwitch -Usage "Usage: .\generate-api-endpoints.ps1 [-Help]"
 if ($Help) { Show-Help; return }
 
 $RootDir = Split-Path -Parent $PSScriptRoot
-$BackendSrc = Join-Path $RootDir '..\backend\src'
-$Output = Join-Path $RootDir 'api-endpoints.txt'
+$BackendSrc = Join-Path $RootDir '..\..\backend\src'
+$Output = Join-Path $RootDir 'ops\api-endpoints.txt'
 
 Write-Host "Scanning controllers in $BackendSrc"
 

@@ -3,7 +3,7 @@ set -euo pipefail
 
 function show_help() {
   cat <<'EOF'
-Usage: ./scripts/ops/kubectl-troubleshoot.sh [namespace] [-h|--help]
+Usage: ./mind/scripts/ops/kubectl-troubleshoot.sh [namespace] [-h|--help]
 
 Options:
   namespace    Kubernetes namespace to inspect (default: voidcloud).

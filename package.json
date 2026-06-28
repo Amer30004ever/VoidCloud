@@ -10,6 +10,7 @@
     "start": "npm --prefix frontend run start",
     "lint": "npm --prefix frontend run lint",
     "test": "npm --prefix frontend run test",
-    "install:frontend": "node -e \"const fs=require('fs');const cp=require('child_process');if(!fs.existsSync('frontend/node_modules/next/dist/bin/next')) cp.execFileSync('npm',['--prefix','frontend','ci','--include=dev','--no-audit','--no-fund'],{stdio:'inherit'});\""
+    "install:frontend": "node -e \"const fs=require('fs');const cp=require('child_process');if(!fs.existsSync('frontend/node_modules/next/dist/bin/next')) cp.execFileSync('npm',['--prefix','frontend','ci','--include=dev','--no-audit','--no-fund'],{stdio:'inherit'});\"",
+    "mind:update": "node mind/scripts/mind-helper.mjs"
   }
 }

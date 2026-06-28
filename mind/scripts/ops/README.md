@@ -11,51 +11,51 @@ Structure:
 
 Usage:
 - Unix/macOS (bash):
-	- Make scripts executable: `chmod +x scripts/ops/*.sh`
-	- Run a single script: `./scripts/ops/check-endpoints.sh`
-	- Run all checks: `./scripts/ops/run-all-checks.sh`
+	- Make scripts executable: `chmod +x mind/scripts/ops/*.sh`
+	- Run a single script: `./mind/scripts/ops/check-endpoints.sh`
+	- Run all checks: `./mind/scripts/ops/run-all-checks.sh`
 
 - Windows (PowerShell):
-	- Open PowerShell, then run: `./scripts/ops/check-endpoints.ps1`
-	- Run all checks: `./scripts/ops/run-all-checks.ps1`
+	- Open PowerShell, then run: `./mind/scripts/ops/check-endpoints.ps1`
+	- Run all checks: `./mind/scripts/ops/run-all-checks.ps1`
 
 Examples:
 
 Run endpoint checks (bash):
 ```
-./scripts/ops/check-endpoints.sh
+./mind/scripts/ops/check-endpoints.sh
 ```
 
 Run endpoint checks (PowerShell):
 ```
-.\scripts\ops\check-endpoints.ps1
+.\mind\scripts\ops\check-endpoints.ps1
 ```
 
 Generate full backend route map (bash):
 ```
-./scripts/ops/generate-api-endpoints.sh
+./mind/scripts/ops/generate-api-endpoints.sh
 ```
 
 Generate full backend route map (PowerShell):
 ```
-.\scripts\ops\generate-api-endpoints.ps1
+.\mind\scripts\ops\generate-api-endpoints.ps1
 ```
 
 Reset admin password (PowerShell example):
 ```
 $env:ADMIN_EMAIL='newadmin@mavoid.com'
 $env:ADMIN_PASSWORD='NewStrongP@ss!'
-.\scripts\ops\reset-admin-password.ps1
+.\mind\scripts\ops\reset-admin-password.ps1
 ```
 
 Run without arguments to prompt for missing values:
 ```
-.\scripts\ops\reset-admin-password.ps1
+.\mind\scripts\ops\reset-admin-password.ps1
 ```
 
 Run with explicit option arguments:
 ```
-.\scripts\ops\reset-admin-password.ps1 -AdminEmail 'admin@example.com' -AdminPassword 'NewPass123!'
+.\mind\scripts\ops\reset-admin-password.ps1 -AdminEmail 'admin@example.com' -AdminPassword 'NewPass123!'
 ```
 
 Security:

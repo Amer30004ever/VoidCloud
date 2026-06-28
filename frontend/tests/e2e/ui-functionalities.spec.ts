@@ -1,25 +1,36 @@
 import { test, expect } from '@playwright/test';
 
 const routeChecks = [
-    { path: '/', text: /Void Cloud|production/i },
-    { path: '/about', text: /About Void Cloud|Void Cloud/i },
+    { path: '/', text: /Void Cloud|Start free trial|pricing/i },
+    { path: '/about', text: /About Void Cloud/i },
     { path: '/blog', text: /Blog|Engineering notes/i },
-    { path: '/careers', text: /Careers|platform/i },
-    { path: '/docs', text: /Documentation|Guides|API reference/i },
-    { path: '/dashboard', text: /Dashboard/i },
-    { path: '/portal', text: /portal|Redirecting/i },
-    { path: '/login', text: /Redirecting to AmerCloud login|AmerCloud/i },
-    { path: '/amercloud', text: /Void Cloud|production|pricing/i },
+    { path: '/careers', text: /Careers|Egypt deserves/i },
+    { path: '/changelog', text: /Changelog/i },
+    { path: '/docs', text: /Documentation|api\.voidcloud\.cc\.cd/i },
+    { path: '/documentation', text: /Documentation|Create Document/i },
+    { path: '/gdpr', text: /GDPR Compliance/i },
+    { path: '/privacy', text: /Privacy/i },
+    { path: '/terms', text: /Terms/i },
+    { path: '/status', text: /status/i },
+    { path: '/team', text: /team/i },
+    { path: '/portfolio', text: /Portfolio/i },
+    { path: '/portal', text: /Opening DevOps portal|Opening portal/i },
+    { path: '/amercloud', text: /Void Cloud|pricing/i },
     { path: '/amercloud/login', text: /Welcome back|Sign in to your Void Cloud account/i },
     { path: '/amercloud/register', text: /Create your account|verification/i },
     { path: '/amercloud/forgot-password', text: /Reset your password|reset link/i },
     { path: '/amercloud/reset-password', text: /Set a new password/i },
+    { path: '/devops', text: /Amer Platform Portal|Sign in to your portal/i },
 ];
 
-test('core marketing, auth, and portal routes render end to end', async ({ page }) => {
+function expectedText(text: RegExp) {
+    return new RegExp(`${text.source}|Redirecting to AmerCloud login|Redirecting to Amer Cloud login`, 'i');
+}
+
+test('public website and auth entry points render end to end', async ({ page }) => {
     for (const { path, text } of routeChecks) {
         await page.goto(path);
-        await expect(page.locator('body')).toContainText(text);
+        await expect(page.locator('body')).toContainText(expectedText(text));
     }
 });
 

@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -107,11 +106,10 @@ export default function SuperAdminDashboard() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab as "overview" | "users" | "tenants" | "vps" | "conversations" | "audit" | "settings")}
-            className={`px-4 py-2 capitalize whitespace-nowrap ${
-              activeTab === tab
+            className={`px-4 py-2 capitalize whitespace-nowrap ${activeTab === tab
                 ? "border-b-2 border-cyan-400 text-white"
                 : "text-white/50 hover:text-white"
-            }`}
+              }`}
           >
             {tab}
           </button>
@@ -193,9 +191,8 @@ export default function SuperAdminDashboard() {
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className={`rounded-full px-3 py-1 text-xs ${
-                        u.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-300" : "bg-red-500/10 text-red-300"
-                      }`}>
+                      <span className={`rounded-full px-3 py-1 text-xs ${u.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-300" : "bg-red-500/10 text-red-300"
+                        }`}>
                         {u.status}
                       </span>
                     </td>
@@ -232,9 +229,8 @@ export default function SuperAdminDashboard() {
                     <td className="p-4 text-white">{t.name}</td>
                     <td className="p-4 font-mono text-cyan-300">{t.subdomain}</td>
                     <td className="p-4">
-                      <span className={`rounded-full px-3 py-1 text-xs ${
-                        t.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-300" : "bg-yellow-500/10 text-yellow-300"
-                      }`}>
+                      <span className={`rounded-full px-3 py-1 text-xs ${t.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-300" : "bg-yellow-500/10 text-yellow-300"
+                        }`}>
                         {t.status}
                       </span>
                     </td>
@@ -270,13 +266,12 @@ export default function SuperAdminDashboard() {
                   <tr key={vps.id} className="border-b border-white/5 hover:bg-white/5">
                     <td className="p-4 text-white">{vps.name}</td>
                     <td className="p-4">
-                      <span className={`rounded-full px-3 py-1 text-xs ${
-                        vps.status === "RUNNING" ? "bg-emerald-500/10 text-emerald-300" : "bg-yellow-500/10 text-yellow-300"
-                      }`}>
+                      <span className={`rounded-full px-3 py-1 text-xs ${vps.status === "RUNNING" ? "bg-emerald-500/10 text-emerald-300" : "bg-yellow-500/10 text-yellow-300"
+                        }`}>
                         {vps.status}
                       </span>
                     </td>
-                    <td className="p-4 text-white/70">{vps.cpu} CPU · {vps.memory}MB · {Math.ceil(vps.storage/1024)}GB</td>
+                    <td className="p-4 text-white/70">{vps.cpu} CPU · {vps.memory}MB · {Math.ceil(vps.storage / 1024)}GB</td>
                     <td className="p-4 text-cyan-300">{vps.tenantName}</td>
                     <td className="p-4">
                       <button className="text-cyan-300 hover:underline text-sm">View</button>
@@ -357,4 +352,3 @@ export default function SuperAdminDashboard() {
     </div>
   );
 }
-/* eslint-enable react-hooks/set-state-in-effect */

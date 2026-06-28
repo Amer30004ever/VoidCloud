@@ -5,7 +5,7 @@
 - /backend/ - Backend NestJS app and API
 - /frontend/ - Frontend application
 - /kubernetes/ - Kubernetes manifests and deployment scripts
-- /scripts/ - Operational scripts and helpers
+- /mind/scripts/ - Operational scripts and helpers
 - /docs/ - Architecture and documentation
 - /AGENTS.md - Agent instructions for this repo
 - /lovable.toml - Dev server configuration
@@ -16,7 +16,7 @@
 - /backend/ - Backend source, scripts, database, and deployment settings
 - /frontend/ - Frontend app source, build, and config
 - /kubernetes/ - Kubernetes deployment manifests and setup scripts
-- /scripts/ - Operational scripts for local and cluster tasks
+- /mind/scripts/ - Operational scripts for local and cluster tasks
 - /docs/ - Project documentation and architecture notes
 
 ## Important Files & Their Purposes
@@ -28,7 +28,7 @@
 - /mind/updates-log.md - Chronological log of updates made by the AI
 - /backend/scripts/reset-admin-password.ts - Backend helper for resetting admin password
 - /backend/scripts/reset-admin-password.js - Backend JS helper for deployed pod execution
-- /scripts/ops/reset-admin-password.ps1 - PowerShell wrapper for admin password reset
+- /mind/scripts/ops/reset-admin-password.ps1 - PowerShell wrapper for admin password reset
 
 ## Quick Access References
 - AI Context: /mind/chat-summary.md

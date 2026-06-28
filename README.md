@@ -670,10 +670,13 @@ curl -X POST https://api.voidcloud.cc.cd/api/v1/cloud/admin/reset-admin-password
   -H "Content-Type: application/json" \
   -d '{"newPassword":"YourNewPassword123!"}'
 
-# 2) kubectl (one-shot CLI inside the running pod)
+# 2) kubectl (one-shot CLI inside the running backend pod)
 kubectl -n voidcloud exec deploy/backend -- \
   env ADMIN_PASSWORD='YourNewPassword123!' \
   npx ts-node scripts/reset-admin-password.ts
+
+# 2b) Local helper wrapper from the repo root
+./mind/scripts/ops/reset-admin-password.sh
 
 # 3) Env var on deploy (defaults to AmerAdmin2026! when unset)
 ADMIN_PASSWORD=YourNewPassword123!

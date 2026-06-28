@@ -3,10 +3,12 @@ set -euo pipefail
 
 ADMIN_EMAIL=${ADMIN_EMAIL:-}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 function show_help() {
   cat <<'EOF'
-Usage: ./scripts/ops/reset-admin-password.sh [options]
+Usage: ./mind/scripts/ops/reset-admin-password.sh [options]
 
 Options:
   -e, --email <email>        Admin email address.
@@ -103,4 +105,4 @@ if [ -z "${DATABASE_URL:-}" ]; then
 fi
 
 echo "Running reset locally"
-ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PASSWORD="$ADMIN_PASSWORD" npx ts-node scripts/reset-admin-password.ts
+ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PASSWORD="$ADMIN_PASSWORD" npx ts-node "$REPO_ROOT/backend/scripts/reset-admin-password.ts"
