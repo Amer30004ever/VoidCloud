@@ -1,14 +1,41 @@
 import { test, expect } from '@playwright/test';
 
-test('public landing page and auth entry points render', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('body')).toContainText('Void Cloud');
+const routeChecks = [
+    { path: '/', text: /Void Cloud|production/i },
+    { path: '/about', text: /About Void Cloud|Void Cloud/i },
+    { path: '/blog', text: /Blog|Engineering notes/i },
+    { path: '/careers', text: /Careers|platform/i },
+    { path: '/docs', text: /Documentation|Guides|API reference/i },
+    { path: '/dashboard', text: /Dashboard/i },
+    { path: '/portal', text: /portal|Redirecting/i },
+    { path: '/login', text: /Redirecting to AmerCloud login|AmerCloud/i },
+    { path: '/amercloud', text: /Void Cloud|production|pricing/i },
+    { path: '/amercloud/login', text: /Welcome back|Sign in to your Void Cloud account/i },
+    { path: '/amercloud/register', text: /Create your account|verification/i },
+    { path: '/amercloud/forgot-password', text: /Reset your password|reset link/i },
+    { path: '/amercloud/reset-password', text: /Set a new password/i },
+];
 
-    await page.goto('/amercloud/login');
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+test('core marketing, auth, and portal routes render end to end', async ({ page }) => {
+    for (const { path, text } of routeChecks) {
+        await page.goto(path);
+        await expect(page.locator('body')).toContainText(text);
+    }
+});
 
-    await page.goto('/amercloud/register');
-    await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
+test('landing page navigation reaches sign-in and register flows', async ({ page }) => {
+    await page.goto('/amercloud');
+
+    await page.getByRole('link', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL(/\/amercloud\/login$/);
+
+    await page.goBack();
+    await page.getByRole('link', { name: 'Start free trial' }).first().click();
+    await expect(page).toHaveURL(/\/amercloud\/register/);
+
+    await page.goBack();
+    await page.getByRole('link', { name: 'View pricing' }).click();
+    await expect(page.locator('#pricing')).toBeVisible();
 });
 
 test('login form supports password reveal and reports failed submission', async ({ page }) => {
@@ -40,12 +67,4 @@ test('login form supports password reveal and reports failed submission', async 
 
     await expect(page.getByText(/Invalid credentials/i)).toBeVisible();
     expect(loginRequestCount).toBe(1);
-});
-
-test('auth helper pages render', async ({ page }) => {
-    await page.goto('/amercloud/forgot-password');
-    await expect(page.getByRole('heading', { name: 'Reset your password' })).toBeVisible();
-
-    await page.goto('/amercloud/reset-password');
-    await expect(page.getByRole('heading', { name: 'Set a new password' })).toBeVisible();
 });

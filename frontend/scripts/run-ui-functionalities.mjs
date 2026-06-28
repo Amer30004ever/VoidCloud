@@ -27,11 +27,10 @@ function run(command, extraArgs = []) {
 async function main() {
     if (mode === 'manual') {
         console.log('Manual UI checklist:');
-        console.log('1. Open http://127.0.0.1:3000/');
-        console.log('2. Verify landing page content and navigation links.');
-        console.log('3. Open /amercloud/login and test email/password entry, password reveal, and invalid login.');
-        console.log('4. Open /amercloud/register, /amercloud/forgot-password, and /amercloud/reset-password.');
-        console.log('5. Confirm each page renders its expected heading and form controls.');
+        console.log('1. Open http://127.0.0.1:3000/ and verify the landing hero, pricing section, and navigation links.');
+        console.log('2. Visit /about, /blog, /careers, /docs, /dashboard, /login, /portal, /amercloud, /amercloud/login, /amercloud/register, /amercloud/forgot-password, and /amercloud/reset-password.');
+        console.log('3. Test email/password entry, password reveal, and an invalid login on /amercloud/login.');
+        console.log('4. Confirm each page renders its expected heading and form controls without a crash.');
         return;
     }
 
