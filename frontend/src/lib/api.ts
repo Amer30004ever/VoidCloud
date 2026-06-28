@@ -21,14 +21,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Global 401 handler — redirect to login
+// Global 401 handler — redirect to login for protected routes only
 api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response?.status === 401 && typeof window !== "undefined") {
-      localStorage.removeItem("amer_portal_token");
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+      const requestUrl = typeof error.config?.url === "string" ? error.config.url : "";
+      const isAuthRoute = requestUrl.includes("auth/login") || requestUrl.includes("auth/register") || requestUrl.includes("auth/forgot-password") || requestUrl.includes("auth/reset-password");
+      const isAuthPage = window.location.pathname.includes("/amercloud/login") || window.location.pathname.includes("/amercloud/register") || window.location.pathname.includes("/amercloud/forgot-password") || window.location.pathname.includes("/amercloud/reset-password");
+
+      if (!isAuthRoute && !isAuthPage) {
+        localStorage.removeItem("amer_portal_token");
+        window.location.href = "/amercloud/login";
       }
     }
     return Promise.reject(error);

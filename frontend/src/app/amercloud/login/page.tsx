@@ -19,6 +19,21 @@ function LoginInner() {
   const [needs2FA, setNeeds2FA] = useState(false);
   const [twoFactorToken, setTwoFactorToken] = useState("");
 
+  function resolveAuthError(error: unknown, fallback: string) {
+    const response = (error as { response?: { status?: number; data?: { message?: string; error?: string; statusCode?: number } } }).response;
+    const detail = response?.data?.message ?? response?.data?.error;
+
+    if (response?.status === 401) {
+      return detail ?? fallback;
+    }
+
+    if (detail) {
+      return detail;
+    }
+
+    return fallback;
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setErr("");
@@ -46,9 +61,10 @@ function LoginInner() {
         router.push("/amercloud/user/dashboard");
       }
     } catch (e: unknown) {
+      const fallbackMessage = t("auth.api_unreachable", "Portal API is unreachable. Please check backend health and try again.");
       const status = (e as { response?: { status?: number; data?: { message?: string } } }).response?.status;
-      const message = (e as { response?: { data?: { message?: string } } }).response?.data?.message;
-      setErr(status === 401 ? (message ?? t("auth.invalid_credentials", "Invalid credentials. Please try again.")) : t("auth.api_unreachable", "Portal API is unreachable. Please check backend health and try again."));
+      const message = resolveAuthError(e, fallbackMessage);
+      setErr(status === 401 ? (message ?? t("auth.invalid_credentials", "Invalid credentials. Please try again.")) : message);
     } finally { setBusy(false); }
   }
 
@@ -116,6 +132,7 @@ export function Input({ label, type = "text", value, onValueChange, required, pl
       <span className="mb-1 block text-xs uppercase tracking-wide text-white/60">{label}</span>
       <div className="relative">
         <input
+          data-testid={isPassword ? "password-input" : undefined}
           type={effectiveType}
           value={value}
           onChange={(e) => onValueChange?.(e.target.value)}
@@ -129,7 +146,6 @@ export function Input({ label, type = "text", value, onValueChange, required, pl
             onClick={() => setShow((v) => !v)}
             tabIndex={-1}
             aria-label={show ? "Hide password" : "Show password"}
-            aria-pressed={show}
             className="absolute inset-y-0 right-0 flex items-center px-3 text-white/50 hover:text-white"
           >
             {show ? (
