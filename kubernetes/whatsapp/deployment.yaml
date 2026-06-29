@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whatsapp-service
+  namespace: voidcloud
+  labels:
+    app: whatsapp-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: whatsapp-service
+  template:
+    metadata:
+      labels:
+        app: whatsapp-service
+    spec:
+      containers:
+      - name: whatsapp-service
+        image: docker.io/voidcloud/whatsapp-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3007
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: NODE_ENV
+        - name: PORT
+          value: "3007"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: DATABASE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: JWT_SECRET
+        - name: WHATSAPP_APP_ID
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: WHATSAPP_APP_ID
+        - name: WHATSAPP_APP_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: WHATSAPP_APP_SECRET
+        - name: WHATSAPP_CLIENT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: WHATSAPP_CLIENT_TOKEN
+        - name: WHATSAPP_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: WHATSAPP_ACCESS_TOKEN
+        - name: WHATSAPP_PHONE_NUMBER_ID
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: WHATSAPP_PHONE_NUMBER_ID
+        - name: WHATSAPP_WABA_ID
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: WHATSAPP_WABA_ID
+        - name: WHATSAPP_VERIFY_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: WHATSAPP_VERIFY_TOKEN
+        - name: WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: WEBHOOK_SECRET
+        - name: WHATSAPP_SUPPORT_NUMBER
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: WHATSAPP_SUPPORT_NUMBER
+        - name: WHATSAPP_SUPPORT_NUMBER_FORMATTED
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: WHATSAPP_SUPPORT_NUMBER_FORMATTED
+        - name: WHATSAPP_WEBHOOK_URL
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: WHATSAPP_WEBHOOK_URL
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: REDIS_PORT
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: RABBITMQ_HOST
+        - name: RABBITMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: RABBITMQ_PORT
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3007
+          initialDelaySeconds: 30
+          periodSeconds: 10

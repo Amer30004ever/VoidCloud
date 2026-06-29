@@ -76,6 +76,38 @@ async function main() {
     } else {
       console.log(`Seeded admin user: ${ADMIN_EMAIL} (role=ADMIN, active=true)`);
     }
+
+    const plans = [
+      { name: 'Free Trial', slug: 'free', priceUSD: 0, priceEGP: 0, cpuLimit: 0.25, memoryLimit: 512, storageLimit: 10240, vpsLimit: 1, customDomainLimit: 0, sortOrder: 0, features: { whatsapp: true, crm: true } },
+      { name: 'Starter', slug: 'starter', priceUSD: 9, priceEGP: 270, cpuLimit: 0.5, memoryLimit: 1024, storageLimit: 20480, vpsLimit: 1, customDomainLimit: 1, sortOrder: 1, features: { whatsapp: true, crm: true } },
+      { name: 'Pro', slug: 'pro', priceUSD: 29, priceEGP: 870, cpuLimit: 2, memoryLimit: 4096, storageLimit: 51200, vpsLimit: 2, customDomainLimit: 3, sortOrder: 2, features: { whatsapp: true, crm: true, analytics: true } },
+      { name: 'Business', slug: 'business', priceUSD: 79, priceEGP: 2370, cpuLimit: 4, memoryLimit: 8192, storageLimit: 102400, vpsLimit: 5, customDomainLimit: 10, sortOrder: 3, features: { whatsapp: true, crm: true, analytics: true, priority: true } },
+      { name: 'Enterprise', slug: 'enterprise', priceUSD: 0, priceEGP: 0, cpuLimit: 16, memoryLimit: 32768, storageLimit: 512000, vpsLimit: 9999, customDomainLimit: 9999, sortOrder: 4, features: { whatsapp: true, crm: true, analytics: true, sla: true } },
+    ];
+
+    for (const plan of plans) {
+      await prisma.cloudPlan.upsert({
+        where: { slug: plan.slug },
+        update: { isActive: true },
+        create: plan,
+      });
+    }
+
+    const rbacRoles = [
+      { name: 'SUPER_ADMIN', description: 'Full system access' },
+      { name: 'ADMIN', description: 'Tenant-level management' },
+      { name: 'AGENT', description: 'Conversation management' },
+      { name: 'USER', description: 'VPS management' },
+    ];
+    for (const role of rbacRoles) {
+      await prisma.rbacRole.upsert({
+        where: { name: role.name },
+        update: {},
+        create: role,
+      });
+    }
+
+    console.log('Seeded cloud plans and RBAC roles');
   } finally {
     await prisma.$disconnect();
     await pool.end();

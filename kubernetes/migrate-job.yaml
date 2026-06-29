@@ -1,0 +1,30 @@
+# Void Cloud Microservices - Database Migration Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: voidcloud-db-migrate
+  namespace: voidcloud
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: docker.io/voidcloud/backend-migrate:latest
+          command: ["npx", "prisma", "migrate", "deploy"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: DATABASE_URL
+        - name: seed
+          image: docker.io/voidcloud/backend-migrate:latest
+          command: ["npx", "prisma", "db", "seed"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: DATABASE_URL
