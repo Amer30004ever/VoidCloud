@@ -541,7 +541,7 @@ jobs:
   # BUILD AND PUSH BACKEND
   # ============================================
   build-backend:
-    needs: [detect-changes, test-backend, test-backend-artifact]
+    needs: [detect-changes, test-backend]
     if: |
       needs.detect-changes.outputs.build_backend == 'true'
     runs-on: ubuntu-latest
