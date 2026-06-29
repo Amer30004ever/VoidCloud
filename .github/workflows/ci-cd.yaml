@@ -334,7 +334,7 @@ jobs:
           
           # Install dependencies and generate Prisma client from database directory first
           cd database
-          npm ci
+          npm install
           npx prisma generate
           cd ..
           
@@ -342,6 +342,8 @@ jobs:
             echo "Testing service: $SERVICE"
             cd services/$SERVICE
             npm ci
+            # Generate Prisma client for this service using shared schema
+            npx prisma generate --schema=../../database/prisma/schema.prisma
             npm run lint 2>/dev/null || echo "⚠️ No lint script found, skipping"
             npm run build
             cd ../../
