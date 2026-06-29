@@ -83,12 +83,12 @@ on:
           - vps                     # VPS service only
           - billing                 # Billing service only
           - crm                     # CRM service only
-          - whatsapp                # WhatsApp service only
           - email                   # Email service only
           - notification            # Notification service only
           - monitoring              # Monitoring service only
           - audit                   # Audit service only
           - analytics               # Analytics service only
+          - openwa                  # OpenWA service only
         default: 'none'
 
 env:
@@ -821,7 +821,7 @@ jobs:
           
           SERVICES_TO_DEPLOY="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_DEPLOY" == "all" ] || [ -z "$SERVICES_TO_DEPLOY" ]; then
-            SERVICES_TO_DEPLOY="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
+            SERVICES_TO_DEPLOY="auth user tenant vps billing crm email notification monitoring audit analytics"
           fi
           
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
@@ -847,17 +847,8 @@ jobs:
             --from-literal=PROXMOX_BRIDGE="${{ secrets.PROXMOX_BRIDGE }}" \
             --from-literal=PROXMOX_IP_POOL_CIDR="${{ secrets.PROXMOX_IP_POOL_CIDR }}" \
             --from-literal=PROXMOX_GATEWAY="${{ secrets.PROXMOX_GATEWAY }}" \
-            --from-literal=WHATSAPP_APP_ID="${{ secrets.WHATSAPP_APP_ID }}" \
-            --from-literal=WHATSAPP_APP_SECRET="${{ secrets.WHATSAPP_APP_SECRET }}" \
-            --from-literal=WHATSAPP_CLIENT_TOKEN="${{ secrets.WHATSAPP_CLIENT_TOKEN }}" \
-            --from-literal=WHATSAPP_ACCESS_TOKEN="${{ secrets.WHATSAPP_ACCESS_TOKEN }}" \
-            --from-literal=WHATSAPP_PHONE_NUMBER_ID="${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}" \
-            --from-literal=WHATSAPP_WABA_ID="${{ secrets.WHATSAPP_WABA_ID }}" \
-            --from-literal=WHATSAPP_VERIFY_TOKEN="${{ secrets.WHATSAPP_VERIFY_TOKEN }}" \
-            --from-literal=WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}" \
             --from-literal=WHATSAPP_SUPPORT_NUMBER="${{ secrets.WHATSAPP_SUPPORT_NUMBER }}" \
             --from-literal=WHATSAPP_SUPPORT_NUMBER_FORMATTED="${{ secrets.WHATSAPP_SUPPORT_NUMBER_FORMATTED }}" \
-            --from-literal=WHATSAPP_WEBHOOK_URL="${{ secrets.WHATSAPP_WEBHOOK_URL }}" \
             --dry-run=client -o yaml | kubectl apply -f -
           
           for SERVICE in $SERVICES_TO_DEPLOY; do
@@ -1379,13 +1370,19 @@ jobs:
           kubectl apply -f kubernetes/postgres/service.yaml -n ${NAMESPACE}
           
           # Apply Services
-          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
+          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             kubectl apply -f kubernetes/$SERVICE/deployment.yaml -n ${NAMESPACE} 2>/dev/null || true
             kubectl apply -f kubernetes/$SERVICE/service.yaml -n ${NAMESPACE} 2>/dev/null || true
           done
           
+          # Apply OpenWA
+          kubectl apply -f kubernetes/openwa/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ OpenWA PVC may already exist"
+          kubectl apply -f kubernetes/openwa/deployment.yaml -n ${NAMESPACE}
+          kubectl apply -f kubernetes/openwa/service.yaml -n ${NAMESPACE}
+          kubectl apply -f kubernetes/openwa/openwa-nodeport.yaml -n ${NAMESPACE}
+          
           # Apply Service NodePorts (for Cloudflare Tunnel)
-          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
+          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             if [ -f "kubernetes/$SERVICE/$SERVICE-nodeport.yaml" ]; then
               kubectl apply -f kubernetes/$SERVICE/$SERVICE-nodeport.yaml -n ${NAMESPACE}
               echo "✅ $SERVICE NodePort service applied"
@@ -1415,9 +1412,13 @@ jobs:
           
           # Wait for Services to be ready
           echo "⏳ Waiting for Services..."
-          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
+          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             kubectl -n ${NAMESPACE} rollout status deploy/$SERVICE-service --timeout=300s 2>/dev/null || echo "⚠️ $SERVICE rollout status check skipped"
           done
+          
+          # Wait for OpenWA to be ready
+          echo "⏳ Waiting for OpenWA..."
+          kubectl -n ${NAMESPACE} rollout status deploy/openwa --timeout=300s 2>/dev/null || echo "⚠️ OpenWA rollout status check skipped"
           
           # Wait for Frontend to be ready
           echo "⏳ Waiting for Frontend..."

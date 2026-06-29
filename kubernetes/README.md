@@ -6,7 +6,7 @@ Apply order is handled by CI/CD (`.gitlab-ci.yml` / `.github/workflows/ci-cd.yam
 namespace.yaml → secrets.yaml → configmaps.yaml
 → postgres/ redis/ rabbitmq/
 → cloudflare-tunnel-config.yaml ingress.yaml
-→ auth/ user/ tenant/ vps/ billing/ crm/ whatsapp/
+→ auth/ user/ tenant/ vps/ billing/ crm/ openwa/
 → email/ notification/ monitoring/ audit/ analytics/ frontend/
 → migrate-job.yaml
 ```
