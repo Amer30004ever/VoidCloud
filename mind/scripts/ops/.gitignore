@@ -1,4 +1,0 @@
-# Ignore local artifacts created by the ops scripts
-/tmp
-*.log
-.env.local

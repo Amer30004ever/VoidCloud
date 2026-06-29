@@ -1,17 +1,17 @@
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
-COPY prisma ./prisma/
+COPY services/auth/package*.json ./
+COPY database/prisma ./prisma/
 RUN npm ci
-COPY tsconfig*.json ./
-COPY src ./src/
+COPY services/auth/tsconfig*.json ./
+COPY services/auth/src ./src/
 RUN npm run build
 
-FROM node:18-alpine
+FROM node:20-alpine
 WORKDIR /app
-COPY package*.json ./
-COPY prisma ./prisma/
-RUN npm ci --omit=dev && npx prisma generate
+COPY services/auth/package*.json ./
+COPY database/prisma ./prisma/
+RUN npm ci --omit=dev && npx prisma generate --schema=./prisma/schema.prisma
 COPY --from=builder /app/dist ./dist
 EXPOSE 3001
 CMD ["node", "dist/main.js"]

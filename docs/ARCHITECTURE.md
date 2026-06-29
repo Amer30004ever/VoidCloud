@@ -1,106 +1,145 @@
-# Architecture
+# Void Cloud Architecture
 
-High-level design of the Amer DevOps Portal.
+## Current state (Phase 1 — Microservices extraction)
 
-## System context
-
-```mermaid
-flowchart TB
-  subgraph clients [Clients]
-    Browser[Web browser]
-    GH[GitHub webhooks]
-    WA[WhatsApp webhooks]
-  end
-
-  subgraph compose [Docker Compose / Kubernetes]
-    FE[Frontend Next.js :3000]
-    BE[Backend NestJS :3001]
-    PG[(PostgreSQL :5432)]
-    K8s[Kubernetes API]
-  end
-
-  Browser --> FE
-  Browser --> BE
-  FE -->|REST /api/v1| BE
-  FE -->|WebSocket metrics| BE
-  BE --> PG
-  BE --> K8s
-  GH --> BE
-  WA --> BE
+```
+                    Cloudflare Tunnel
+                           │
+              ┌────────────┴────────────┐
+              ▼                         ▼
+        frontend:3000            Traefik Ingress
+              │                         │
+              │         ┌───────────────┼───────────────┐
+              │         ▼               ▼               ▼
+              │    auth:3001      user:3002      … analytics:3012
+              │         │               │               │
+              └─────────┴───────────────┴───────────────┘
+                                    │
+                    ┌───────────────┼───────────────┐
+                    ▼               ▼               ▼
+              PostgreSQL         Redis          RabbitMQ
+              (single DB)      (cache/sessions)  (async events)
 ```
 
-## Backend modules
+All 12 services share **one PostgreSQL database** via Prisma (`database/prisma/schema.prisma`). This is normal for an early microservices migration: you split **application boundaries** first, database boundaries later.
 
-| Module | Responsibility |
-|--------|----------------|
-| `AuthModule` | Login, register, JWT, `@Public()` routes |
-| `DashboardModule` / `StatsModule` | Aggregated metrics, system status |
-| `InfrastructureModule` | Deployments, services, configmaps |
-| `ClusterModule` | Nodes, PVs, Helm, network policies |
-| `LogsModule` | Pod logs, search, SSE stream |
-| `AlertsModule` | Alert rules and firing alerts |
-| `GithubModule` | Repos, Actions, webhooks |
-| `PipelinesModule` | Workflow trigger, history, rollback |
-| `ProjectsModule` | User-owned project records |
-| `PlatformModule` | Observability, GitOps, topology, clusters |
-| `SettingsModule` | Users, roles, API keys, audit, backup |
-| `SecurityModule` | Image/deployment scans, app secrets |
-| `LearningModule` | Jobs, paths, CV, certifications |
-| `CollaborationModule` | Messages, channels, calendar |
-| `IntegrationsModule` | Slack, outbound webhooks |
-| `MetricsModule` | WebSocket gateway for live dashboard |
-| `WebhookModule` | WhatsApp / inbound webhooks |
+---
 
-Global guards: `JwtAuthGuard`, `RolesGuard` (ADMIN for sensitive settings).
+## Is the database also microservices?
 
-## Frontend architecture
+**Not yet — and that is intentional for your current stage.**
 
-- **App Router** under `src/app/` — one folder per major area
-- **AuthContext** — login state, token in `localStorage`, redirect to `/login`
-- **Lib layer** (`src/lib/*`) — typed fetch wrappers; no business logic in pages
-- **Hooks** — WebSocket subscriptions, shared data fetching patterns
+| Approach | When to use | Your status |
+|----------|-------------|-------------|
+| **Shared database** (now) | Early migration, no production users, fast iteration | ✅ Current |
+| **Database per service** | High scale, independent teams, strict isolation | 🔜 Phase 3 |
+| **Read replicas** | Read-heavy workloads (analytics, CRM lists) | 🔜 Phase 2 |
+| **CQRS + event store** | Complex domains, audit replay | 🔜 Phase 4 |
 
-## Data layer
+### Why shared DB is OK now
 
-- **Prisma** is the single source of truth for schema
-- Migrations in `backend/prisma/migrations/`
-- Seed creates/updates default admin (`prisma/seed.ts`)
-- Startup: `migrate deploy` → `db seed` → API (see `scripts/docker-entrypoint.sh`)
+- No production users yet — schema changes are cheap
+- One migration pipeline (`database/`) avoids 12 divergent schemas
+- Services already communicate via REST + RabbitMQ events (ready to decouple data later)
 
-## Real-time
+### When to split databases
 
-| Channel | Namespace | Purpose |
-|---------|-----------|---------|
-| Socket.IO | `/metrics` | Dashboard CPU/memory/network snapshots |
-| Socket.IO | `/chat` | Collaboration messaging |
+Split when you hit **one or more** of these:
 
-## External integrations
+1. **Team scale** — 3+ teams blocking each other on migrations
+2. **Load** — one service (e.g. WhatsApp) dominates I/O
+3. **Compliance** — tenant data must be physically isolated
+4. **Deploy independence** — CRM schema change must not risk VPS billing
 
-| Integration | Config | Notes |
-|-------------|--------|-------|
-| Kubernetes | `~/.kube/config` mount or in-cluster SA | Optional for local Docker |
-| GitHub | Token via settings / env | Actions, repos, webhooks |
-| WhatsApp | `WHATSAPP_*` env vars | Webhook verify + messaging |
-| Slack | Integrations API | Notify channels |
+---
 
-## Security model
+## Recommended roadmap
 
-- Passwords: bcrypt (cost 10) in DB
-- API: Bearer JWT (`Authorization` header)
-- Roles: `USER`, `ADMIN`, `AGENT`
-- `mustChangePassword` flag on user — force change on next login (settings flow)
-- App secrets stored encrypted server-side (`SecurityModule`)
+### Phase 2 — Production hardening (next 1–3 months)
 
-## Deployment topologies
+| Item | Purpose |
+|------|---------|
+| **API Gateway middleware** | Rate limiting, JWT validation at Traefik |
+| **Read replica** | Route analytics/reporting queries off primary |
+| **Redis session store** | Centralized auth sessions across auth pods |
+| **RabbitMQ event bus** | Replace direct service calls (use `shared/src/events`) |
+| **Observability stack** | Prometheus + Grafana + Loki (or Datadog) |
+| **Health dashboard** | `/voidcloud/admin/health` wired to all `/health` endpoints |
+| **Secrets manager** | External Secrets Operator or Vault (not plain K8s secrets in git) |
 
-### Local — Docker Compose
+### Phase 3 — Data decomposition (when you have paying tenants)
 
-Three services: `postgres`, `backend`, `frontend` on bridge network `voidcloud_network`.
+| Service | Own database | Notes |
+|---------|--------------|-------|
+| auth | `voidcloud_auth` | Users, tokens, 2FA |
+| tenant | `voidcloud_tenant` | Tenants, RBAC |
+| vps | `voidcloud_vps` | Deployments, Proxmox state |
+| billing | `voidcloud_billing` | Invoices, subscriptions |
+| crm | `voidcloud_crm` | Leads, deals (tenant-scoped) |
+| whatsapp | `voidcloud_whatsapp` | Conversations, messages |
+| audit | `voidcloud_audit` | Append-only logs (never shared) |
 
-### Production — Kubernetes
+Use **Saga pattern** via RabbitMQ for cross-service transactions (e.g. VPS create + invoice + notification).
 
-Namespace `voidcloud`: Postgres, backend, frontend, Cloudflare Tunnel. Public traffic via Cloudflare edge; cluster not exposed directly. See [kubernetes/README.md](../kubernetes/README.md).
+### Phase 4 — Multi-region & scale (large sites)
 
-## Known technical debt
+- **Tenant sharding** — route by `tenant_id` to dedicated DB/schema
+- **CDN + edge** — static assets, WAF at Cloudflare
+- **Proxmox multi-node** — VPS service already supports multiple nodes
+- **Kubernetes HPA** — auto-scale services by CPU/RabbitMQ queue depth
+- **Disaster recovery** — Postgres PITR backups to offsite storage
+- **Service mesh** (optional) — Istio/Linkerd for mTLS between pods
 
-See [ROADMAP.md](ROADMAP.md) for prioritized fixes (webhook path duplication, partial UI wiring, K8s HTTP kubeconfig, etc.).
+---
+
+## Event-driven communication (target)
+
+```
+auth ──► user.registered ──► RabbitMQ ──► email (welcome)
+                                      └──► audit (log)
+                                      └──► analytics (counter)
+
+vps ──► vps.created ──► billing (usage)
+                    └──► notification (WebSocket)
+                    └──► whatsapp (optional alert)
+```
+
+Event names are defined in `shared/src/events/index.ts`.
+
+---
+
+## Security layers
+
+1. **Edge:** Cloudflare Tunnel + WAF
+2. **Ingress:** Traefik TLS + rate limit middleware
+3. **Service:** JWT guards + role guards per service
+4. **Tenant:** Row-level isolation via `tenant_id` + RBAC
+5. **Audit:** All admin actions → audit-service
+
+---
+
+## CI/CD (only automated pipelines)
+
+- **GitHub:** `.github/workflows/ci-cd.yaml`
+- **GitLab:** `.gitlab-ci.yml`
+
+No manual deploy scripts. All builds use repo-root context:
+
+```bash
+docker build -f services/auth/Dockerfile -t voidcloud/auth-service:latest .
+```
+
+---
+
+## Folder rules
+
+| Path | Contains |
+|------|----------|
+| `frontend/` | Next.js only |
+| `services/*/` | One deployable microservice per folder |
+| `database/` | Schema, migrations, seed — **single source of truth** |
+| `shared/` | Cross-service TypeScript library |
+| `kubernetes/` | YAML manifests only |
+| `docs/` | Architecture, runbooks |
+
+Do **not** add monolithic backends or manual shell deploy scripts.
