@@ -5,6 +5,7 @@ COPY database/prisma ./prisma/
 RUN npm ci
 COPY services/analytics/tsconfig*.json ./
 COPY services/analytics/src ./src/
+RUN npx prisma generate --schema=./prisma/schema.prisma
 RUN npm run build
 
 FROM node:20-alpine
