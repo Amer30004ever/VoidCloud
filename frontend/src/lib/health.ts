@@ -1,44 +1,41 @@
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? 'https://api.voidcloud.cc.cd/api/v1';
+import { API_BASE_URL } from './constants';
 
-const SERVICES = [
-  { name: 'Auth', path: '/auth/health', port: 3001 },
-  { name: 'User', path: '/users', port: 3002 },
-  { name: 'Tenant', path: '/tenants', port: 3003 },
-  { name: 'VPS', path: '/vps', port: 3004 },
-  { name: 'Billing', path: '/billing/plans', port: 3005 },
-  { name: 'CRM', path: '/crm/leads', port: 3006 },
-  { name: 'WhatsApp', path: '/whatsapp/settings', port: 3007 },
-  { name: 'Email', path: '/email/templates', port: 3008 },
-  { name: 'Notification', path: '/notifications', port: 3009 },
-  { name: 'Monitoring', path: '/monitoring/health', port: 3010 },
-  { name: 'Audit', path: '/audit/logs', port: 3011 },
-  { name: 'Analytics', path: '/analytics/usage', port: 3012 },
-];
+const SERVICE_PATHS = [
+  { name: 'Auth', path: '/auth/me' },
+  { name: 'User', path: '/users' },
+  { name: 'Tenant', path: '/tenants' },
+  { name: 'VPS', path: '/vps' },
+  { name: 'Billing', path: '/billing/plans' },
+  { name: 'CRM', path: '/crm/leads' },
+  { name: 'WhatsApp', path: '/whatsapp/settings' },
+  { name: 'Email', path: '/email/templates' },
+  { name: 'Notification', path: '/notifications' },
+  { name: 'Monitoring', path: '/monitoring/health' },
+  { name: 'Audit', path: '/audit/logs' },
+  { name: 'Analytics', path: '/analytics/usage' },
+] as const;
 
-export async function checkAllServices() {
-  const checks = await Promise.all(
-    SERVICES.map(async (service) => {
+export type ServiceHealth = {
+  name: string;
+  status: 'healthy' | 'unhealthy';
+};
+
+/** Probe microservice health via the API gateway (401 = service is up). */
+export async function checkAllServices(): Promise<ServiceHealth[]> {
+  const base = API_BASE_URL.replace(/\/$/, '');
+
+  return Promise.all(
+    SERVICE_PATHS.map(async ({ name, path }) => {
       try {
-        const res = await fetch(`${API_BASE.replace('/api/v1', '')}/health`, {
+        const res = await fetch(`${base}${path}`, {
           method: 'GET',
           cache: 'no-store',
-        }).catch(() => null);
-        if (res?.ok) {
-          return { name: service.name, status: 'healthy' as const };
-        }
-        const alt = await fetch(`${API_BASE}${service.path}`, {
-          method: 'GET',
-          cache: 'no-store',
-        }).catch(() => null);
-        return {
-          name: service.name,
-          status: alt?.ok || alt?.status === 401 ? ('healthy' as const) : ('unhealthy' as const),
-        };
+        });
+        const healthy = res.ok || res.status === 401;
+        return { name, status: healthy ? 'healthy' as const : 'unhealthy' as const };
       } catch {
-        return { name: service.name, status: 'unhealthy' as const };
+        return { name, status: 'unhealthy' as const };
       }
     }),
   );
-  return checks;
 }
