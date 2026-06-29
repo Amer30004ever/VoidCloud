@@ -431,8 +431,7 @@ jobs:
 
       - name: Build auth service image for testing
         run: |
-          cd services/auth
-          docker build -t auth-test:latest .
+          docker build -f services/auth/Dockerfile -t auth-test:latest .
 
       - name: Create network for containers
         run: docker network create test-network || true
@@ -575,10 +574,8 @@ jobs:
           
           for SERVICE in $SERVICES_TO_BUILD; do
             echo "Building service: $SERVICE"
-            cd services/$SERVICE
-            docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:latest .
-            docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${TIMESTAMP} .
-            cd ../../
+            docker build -f services/$SERVICE/Dockerfile -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:latest .
+            docker build -f services/$SERVICE/Dockerfile -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${TIMESTAMP} .
           done
           
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
