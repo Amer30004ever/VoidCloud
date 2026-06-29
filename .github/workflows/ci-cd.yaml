@@ -61,6 +61,7 @@ on:
         required: false
         type: choice
         options:
+          - none                    # Skip frontend build
           - all                     # Build all features
           - landing-only            # Build landing page only
           - dashboard-only          # Build dashboard only
@@ -68,12 +69,13 @@ on:
           - landing-dashboard       # Build landing + dashboard
           - landing-crm             # Build landing + CRM
           - dashboard-crm           # Build dashboard + CRM
-        default: 'all'
+        default: 'none'
       services:
         description: 'Services to build (for backend-related modes)'
         required: false
         type: choice
         options:
+          - none                    # Skip backend build
           - all                     # Build all services
           - auth                    # Auth service only
           - user                    # User service only
@@ -87,7 +89,7 @@ on:
           - monitoring              # Monitoring service only
           - audit                   # Audit service only
           - analytics               # Analytics service only
-        default: 'all'
+        default: 'none'
 
 env:
   DOCKER_HUB_USERNAME: amer30004ever
@@ -560,10 +562,16 @@ jobs:
           username: ${{ env.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Clean old images
+      - name: Clean old images and free disk space
         run: |
-          docker system prune -f
+          echo "🧹 Cleaning up disk space..."
+          df -h
+          docker system prune -a -f --volumes
           docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-*-service) 2>/dev/null || true
+          docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend) 2>/dev/null || true
+          rm -rf /tmp/* 2>/dev/null || true
+          npm cache clean --force 2>/dev/null || true
+          df -h
 
       - name: Build service images
         id: build
@@ -571,6 +579,10 @@ jobs:
           SERVICES_TO_BUILD="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_BUILD" == "all" ] || [ -z "$SERVICES_TO_BUILD" ]; then
             SERVICES_TO_BUILD="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
+          elif [ "$SERVICES_TO_BUILD" == "none" ]; then
+            echo "Skipping backend build (services=none)"
+            echo "BUILT=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
           
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
@@ -589,6 +601,9 @@ jobs:
           SERVICES_TO_BUILD="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_BUILD" == "all" ] || [ -z "$SERVICES_TO_BUILD" ]; then
             SERVICES_TO_BUILD="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
+          elif [ "$SERVICES_TO_BUILD" == "none" ]; then
+            echo "Skipping backend push (services=none)"
+            exit 0
           fi
           
           for SERVICE in $SERVICES_TO_BUILD; do
@@ -618,14 +633,27 @@ jobs:
           username: ${{ env.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Clean old images
+      - name: Clean old images and free disk space
         run: |
-          docker system prune -f
+          echo "🧹 Cleaning up disk space..."
+          df -h
+          docker system prune -a -f --volumes
           docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend) 2>/dev/null || true
+          docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-*-service) 2>/dev/null || true
+          rm -rf /tmp/* 2>/dev/null || true
+          npm cache clean --force 2>/dev/null || true
+          df -h
 
       - name: Build frontend image
         id: build
         run: |
+          FRONTEND_FEATURES="${{ github.event.inputs.frontend_features }}"
+          if [ "$FRONTEND_FEATURES" == "none" ]; then
+            echo "Skipping frontend build (frontend_features=none)"
+            echo "BUILT=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
           cd frontend
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           docker build --build-arg NEXT_PUBLIC_API_URL=https://api.voidcloud.cc.cd/api/v1 -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest .
@@ -635,6 +663,11 @@ jobs:
 
       - name: Push frontend image
         run: |
+          FRONTEND_FEATURES="${{ github.event.inputs.frontend_features }}"
+          if [ "$FRONTEND_FEATURES" == "none" ]; then
+            echo "Skipping frontend push (frontend_features=none)"
+            exit 0
+          fi
           docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest
           docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${{ steps.build.outputs.TIMESTAMP }}
 
