@@ -24,9 +24,9 @@ data:
     metrics: 0.0.0.0:2000
     ingress:
       - hostname: voidcloud.cc.cd
-        service: http://frontend.voidcloud.svc.cluster.local:3000
+        service: http://frontend-service:3000
       - hostname: api.voidcloud.cc.cd
-        service: http://backend.voidcloud.svc.cluster.local:3001
+        service: http://traefik:80
       - service: http_status:404
 ---
 apiVersion: apps/v1

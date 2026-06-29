@@ -40,7 +40,7 @@ function RegisterInner() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    api.get("/cloud/plans").then((r) => setPlans(r.data ?? [])).catch(() => setPlans([]));
+    api.get("cloud/plans").then((r) => setPlans(r.data ?? [])).catch(() => setPlans([]));
   }, []);
 
   const strength = useMemo(() => scorePassword(password), [password]);
@@ -55,7 +55,7 @@ function RegisterInner() {
 
     setBusy(true);
     try {
-      await api.post("/auth/register", {
+      await api.post("auth/register", {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password,
@@ -77,7 +77,7 @@ function RegisterInner() {
         <div className="space-y-4 text-sm text-white/80">
           <p>Verify <strong>{email}</strong> to activate your account. The link is valid for 24 hours.</p>
           <button
-            onClick={() => api.post("/auth/resend-verification", { email }).catch(() => { })}
+            onClick={() => api.post("auth/resend-verification", { email }).catch(() => { })}
             className="w-full rounded-xl border border-white/10 bg-white/5 py-3 font-medium text-white hover:bg-white/10"
           >Resend verification email</button>
           <Link
@@ -90,25 +90,25 @@ function RegisterInner() {
   }
 
   return (
-    <AuthShell title="Create your account" subtitle="Start deploying on AmerCloud in minutes">
+    <AuthShell title="Create your account" subtitle="Start deploying on Void Cloud in minutes">
       <form onSubmit={submit} className="space-y-4">
         {err && <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{err}</div>}
 
-        <Input label="Full name" value={name} onChange={setName} required />
-        <Input label="Email" type="email" value={email} onChange={setEmail} required />
-        <Input label="Phone (Egyptian)" type="tel" value={phone} onChange={setPhone} placeholder="+201012345678" />
-        <Input label="Password" type="password" value={password} onChange={setPassword} required />
+        <Input label="Full name" value={name} onValueChange={setName} required />
+        <Input label="Email" type="email" value={email} onValueChange={setEmail} required />
+        <Input label="Phone (Egyptian)" type="tel" value={phone} onValueChange={setPhone} placeholder="+201012345678" />
+        <Input label="Password" type="password" value={password} onValueChange={setPassword} required />
 
         {password && (
           <div className="space-y-1">
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-              <div className={`h-full ${strength.color} transition-all`} style={{ width: `${(strength.score / 5) * 100}%` }} />
+              <div className={`h-full ${strength.color} transition-all`} data-strength-width={`${(strength.score / 5) * 100}%`} />
             </div>
             <p className="text-xs text-white/60">Strength: {strength.label}</p>
           </div>
         )}
 
-        <Input label="Confirm password" type="password" value={confirm} onChange={setConfirm} required />
+        <Input label="Confirm password" type="password" value={confirm} onValueChange={setConfirm} required />
 
         <div>
           <label className="mb-2 block text-sm text-white/70">Select plan</label>

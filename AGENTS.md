@@ -1,118 +1,70 @@
-# Lovable Agent Instructions for AmerCloud
+# Void Cloud Agent Instructions
 
 ## Project Overview
 
-AmerCloud is a Kubernetes hosting platform for Egyptian developers and businesses. We provide managed Kubernetes with local payment support (Fawry/InstaPay) plus global Stripe. Target customers: Egyptian startups, SMEs, and freelance developers.
+Void Cloud is a multi-tenant VPS hosting platform with WhatsApp CRM. The codebase uses **microservices only** — there is no monolithic backend.
 
-## Critical Rules - NEVER VIOLATE
+## Repository Layout
 
-### NEVER add these (they were past mistakes):
-- ❌ Google or Microsoft logos in any "Trusted by" or "Integrations" section
-- ❌ Any diagram showing pods (api-gateway, web-frontend, redis-cache, postgres-db, worker-queue, auth-service, cdn-edge, metrics)
-- ❌ Inflated statistics - use "50+ Deployments in beta" NOT "500+ Deployments"
-- ❌ Empty FAQ answers - all 8 questions must have complete answers
-- ❌ Placeholder text like "Lorem ipsum" anywhere on landing page
+```
+frontend/          → Next.js UI (port 3000)
+services/          → NestJS microservices (ports 3001–3012)
+  auth/ user/ tenant/ vps/ billing/ crm/
+  whatsapp/ email/ notification/ monitoring/ audit/ analytics/
+shared/            → Events, Redis, RabbitMQ helpers
+database/          → Prisma schema, migrations, seed (single source of truth)
+kubernetes/        → K8s YAML only — no manual scripts
+docs/              → Architecture documentation
+```
 
-### ALWAYS ensure:
-- ✅ All 8 FAQ questions have complete, helpful answers
-- ✅ Free trial card has tooltip explaining "After 7 days, deployments pause until upgrade. No auto-charge."
-- ✅ Stats show accurate numbers for beta phase: "50+ Deployments in beta", "99.9% Uptime SLA", "<50ms Avg Response (Egypt)", "24/7 Support"
-- ✅ Egyptian payment methods explicitly listed: Fawry, InstaPay, Vodafone Cash, Stripe
+## Critical Rules
 
-## File Organization Rules
+### NEVER add:
+- Monolithic backend code
+- Manual deploy scripts (`.ps1`, `.sh`) — use `.gitlab-ci.yml` or `.github/workflows/ci-cd.yaml` only
+- Files in repository root except: `README.md`, `AGENTS.md`, `package.json`, `lovable.toml`, `docker-compose.yaml`, CI configs
 
-### NEVER create files in these locations:
-- Repository root (except config files: lovable.toml, AGENTS.md, package.json, README.md)
-- Any folder outside frontend/ or backend/
+### ALWAYS:
+- Put landing components in `frontend/src/components/landing/`
+- Put UI components in `frontend/src/components/ui/`
+- Put new microservices in `services/<name>/`
+- Use `database/prisma/schema.prisma` for all schema changes
+- Run migrations from `database/` package
 
-### ALWAYS put files in correct locations:
-- Landing page components → `/frontend/src/components/landing/`
-- UI components (buttons, inputs, cards) → `/frontend/src/components/ui/`
-- App pages → `/frontend/src/app/`
-- Backend modules → `/backend/src/modules/`
-- Backend controllers → `/backend/src/controllers/`
-- Backend services → `/backend/src/services/`
+## Locked Files
 
-### Naming conventions:
-- Use kebab-case for file names: `my-component.tsx`, `user-service.ts`
-- Use PascalCase for component names: `MyComponent`, `UserProfile`
-- Use camelCase for variables and functions: `getUserData`, `isLoading`
+- `frontend/src/components/landing/Integrations.tsx`
+- `frontend/src/components/landing/Pricing.tsx`
+- `lovable.toml`
+- `AGENTS.md` (unless explicitly asked to update)
 
-## Coding Standards
+## Services & Ports
 
-### TypeScript rules:
-- Enable strict mode
-- NEVER use `any` type - use `unknown` and narrow the type
-- Always define interfaces for props and state
-- Use proper return types for functions
+| Service | Port | Ingress path |
+|---------|------|--------------|
+| auth | 3001 | /api/v1/auth |
+| user | 3002 | /api/v1/users |
+| tenant | 3003 | /api/v1/tenants |
+| vps | 3004 | /api/v1/vps |
+| billing | 3005 | /api/v1/billing |
+| crm | 3006 | /api/v1/crm |
+| whatsapp | 3007 | /api/v1/whatsapp, /api/v1/webhooks |
+| email | 3008 | /api/v1/email |
+| notification | 3009 | /api/v1/notifications |
+| monitoring | 3010 | /api/v1/monitoring |
+| audit | 3011 | /api/v1/audit |
+| analytics | 3012 | /api/v1/analytics |
+| frontend | 3000 | voidcloud.cc.cd |
 
-### React/Next.js rules:
-- Prefer named exports over default exports
-- Use functional components with hooks
-- Add proper loading and error states
-- Use Tailwind CSS for styling - no inline styles
+## Docker Build
 
-### Backend rules:
-- Always validate input with class-validator
-- Always handle errors with try/catch
-- Never expose sensitive data in responses
-- Use DTOs for data transformation
+Build from repo root:
 
-## What the App Does
+```bash
+docker build -f services/auth/Dockerfile -t voidcloud/auth-service:latest .
+```
 
-### Core features:
-1. Kubernetes deployment engine - users can deploy containers with one click
-2. Payment processing - Stripe (global), Fawry (Egyptian cards + 3000+ locations), InstaPay (Egyptian bank transfers)
-3. User dashboard - monitor CPU, RAM, storage usage in real-time
-4. Authentication - email/password, 2FA, GitHub OAuth, Google OAuth
-5. Backups - daily automated backups with one-click restore
+## Domains
 
-### Current status:
-- Phase 2 complete - all core features implemented
-- Landing page needs trust signals fixed (no fake logos)
-- In beta - accurate stats should reflect "in beta"
-
-## History of Changes (For Context)
-
-### Completed fixes (do not undo):
-- 2026-06-12: Added password show/hide toggle to login/register forms
-- 2026-06-12: Created lovable.toml for proper dev server configuration
-- 2026-06-12: Removed fake Google/Microsoft logos from earlier version (DO NOT RE-ADD)
-- 2026-06-12: Removed pod visualization diagram (DO NOT RE-ADD)
-
-### Pending fixes (you may be asked to do):
-- Add all 8 FAQ answers
-- Fix stats to show "50+ in beta"
-- Add free trial tooltip
-- Add comparison table (AmerCloud vs AWS vs Vercel)
-- Add use cases section
-- Add live status indicator
-
-## Locked Files - NEVER MODIFY WITHOUT PERMISSION
-
-The following files are locked and should never be modified unless explicitly asked:
-
-1. `/frontend/src/components/landing/Integrations.tsx` - Contains integration logos
-2. `/frontend/src/components/landing/Pricing.tsx` - Contains pricing plans
-3. `/lovable.toml` - Dev server configuration
-4. `/AGENTS.md` - This file itself
-
-If I need to modify these, I will explicitly say "unlock [filename]" first.
-
-## How to Respond
-
-When I ask for changes:
-1. First check if any locked files are affected
-2. Review the "NEVER" rules above before implementing
-3. If something violates a rule, warn me before proceeding
-4. Keep file organization rules in mind when creating new files
-5. Follow coding standards automatically
-
-## Success Criteria
-
-A change is successful when:
-- No "NEVER" rules are violated
-- File organization rules are followed
-- No placeholder text remains
-- All links work (especially Sign In → /amercloud/login, Start Free → /amercloud/register)
-- No fake trust signals exist
+- https://voidcloud.cc.cd
+- https://api.voidcloud.cc.cd

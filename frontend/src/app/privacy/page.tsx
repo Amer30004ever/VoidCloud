@@ -1,12 +1,12 @@
 import { LegalPage } from "@/components/landing/LegalPage";
 
-export const metadata = { title: "Privacy Policy — AmerCloud" };
+export const metadata = { title: "Privacy Policy — Void Cloud" };
 
 export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy" subtitle="Last updated: June 12, 2026">
       <p>
-        AmerCloud respects your privacy. This page explains what we collect, why, and how
+        Void Cloud respects your privacy. This page explains what we collect, why, and how
         we handle it.
       </p>
       <h2>What we collect</h2>

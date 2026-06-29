@@ -1,15 +1,15 @@
 import { LegalPage } from "@/components/landing/LegalPage";
 
-export const metadata = { title: "About — AmerCloud" };
+export const metadata = { title: "About — Void Cloud" };
 
 export default function AboutPage() {
   return (
     <LegalPage
-      title="About AmerCloud"
+      title="About Void Cloud"
       subtitle="Kubernetes hosting built in Egypt, for the world."
     >
       <p>
-        AmerCloud is an independent cloud platform founded by{" "}
+        Void Cloud is an independent cloud platform founded by{" "}
         <strong>Amer Magdi</strong>, a DevOps engineer who built the entire stack — from
         bare-metal Proxmox nodes to the Kubernetes control plane — to give Egyptian
         developers a hosting option that accepts local payments and runs close to home.

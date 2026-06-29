@@ -1,6 +1,0 @@
-# DATABASE_URL in your .env file uses postgres:5432 (Docker internal hostname), but you're running the migration from 
-the host machine. Since the postgres container is exposing port 5432 to the host, use this command:
-
-# bash
-cd backend
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/amer_portal" npx prisma migrate dev --name add-documentation-and-learning-models

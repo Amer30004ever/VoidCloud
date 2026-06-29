@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vps-service
+  namespace: voidcloud
+  labels:
+    app: vps-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vps-service
+  template:
+    metadata:
+      labels:
+        app: vps-service
+    spec:
+      containers:
+      - name: vps-service
+        image: docker.io/voidcloud/vps-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3004
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: NODE_ENV
+        - name: PORT
+          value: "3004"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: DATABASE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: JWT_SECRET
+        - name: PROXMOX_HOST
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: PROXMOX_HOST
+        - name: PROXMOX_TOKEN_ID
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: PROXMOX_TOKEN_ID
+        - name: PROXMOX_TOKEN_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: PROXMOX_TOKEN_SECRET
+        - name: PROXMOX_NODE
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: PROXMOX_NODE
+        - name: PROXMOX_STORAGE
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: PROXMOX_STORAGE
+        - name: PROXMOX_BRIDGE
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: PROXMOX_BRIDGE
+        - name: PROXMOX_IP_POOL_CIDR
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: PROXMOX_IP_POOL_CIDR
+        - name: PROXMOX_GATEWAY
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: PROXMOX_GATEWAY
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: REDIS_PORT
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: RABBITMQ_HOST
+        - name: RABBITMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: RABBITMQ_PORT
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3004
+          initialDelaySeconds: 30
+          periodSeconds: 10

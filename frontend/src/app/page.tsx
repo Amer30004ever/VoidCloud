@@ -15,7 +15,7 @@ import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
 
 export const metadata: Metadata = {
-  title: "AmerCloud | Egyptian Kubernetes Hosting with Fawry & InstaPay",
+  title: "Void Cloud | Egyptian Kubernetes Hosting with Fawry & InstaPay",
   description:
     "Deploy apps in seconds on managed Kubernetes. Pay with Fawry, InstaPay, or Stripe. Free trial, no credit card. Built for Egypt and the world.",
   keywords: [
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   },
   alternates: { canonical: "https://voidcloud.cc.cd" },
   openGraph: {
-    title: "AmerCloud | Egyptian Kubernetes Hosting",
+    title: "Void Cloud | Egyptian Kubernetes Hosting",
     description:
       "Deploy apps in seconds on managed Kubernetes. Pay with Fawry, InstaPay, or Stripe.",
     url: "https://voidcloud.cc.cd",
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "AmerCloud",
+  name: "Void Cloud",
   applicationCategory: "DeveloperApplication",
   operatingSystem: "Web",
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },

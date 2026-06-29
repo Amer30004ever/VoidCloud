@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: voidcloud-db-migrate
+  namespace: voidcloud
+spec:
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: docker.io/voidcloud/database:latest
+          command: ["npx", "prisma", "migrate", "deploy"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: DATABASE_URL
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: voidcloud-db-seed
+  namespace: voidcloud
+spec:
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: seed
+          image: docker.io/voidcloud/database:latest
+          command: ["npx", "prisma", "db", "seed"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: DATABASE_URL

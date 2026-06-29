@@ -4,8 +4,8 @@ import { useState } from "react";
 
 const faqs = [
   {
-    q: "What's the difference between AmerCloud and AWS/Vercel?",
-    a: "AmerCloud offers managed Kubernetes with Egyptian payment support (Fawry/InstaPay), local pricing in EGP, and lower latency for Middle East traffic. We're 60% cheaper than AWS for equivalent resources. Unlike Vercel, we give you full container control without the complexity of managing your own K8s cluster.",
+    q: "What's the difference between Void Cloud and AWS/Vercel?",
+    a: "Void Cloud offers managed Kubernetes with Egyptian payment support (Fawry/InstaPay), local pricing in EGP, and lower latency for Middle East traffic. We're 60% cheaper than AWS for equivalent resources. Unlike Vercel, we give you full container control without the complexity of managing your own K8s cluster.",
   },
   {
     q: "Do I need to know Kubernetes?",
@@ -64,9 +64,8 @@ export function FAQ() {
                 </span>
               </button>
               <div
-                className={`grid transition-all duration-300 ${
-                  isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                }`}
+                className={`grid transition-all duration-300 ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                  }`}
               >
                 <div className="overflow-hidden">
                   <p className="px-5 pb-4 text-sm text-white/70">{f.a}</p>

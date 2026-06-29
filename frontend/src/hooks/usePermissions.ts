@@ -39,7 +39,7 @@ export function usePermissions() {
         const user = await res.json();
         const userPerms = user.permissions || [];
         setPermissions(userPerms);
-        
+
         // Cache permissions
         localStorage.setItem(
           'user_permissions',
@@ -55,7 +55,7 @@ export function usePermissions() {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    loadPermissions();
+    void loadPermissions();
   }, [loadPermissions]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -85,4 +85,3 @@ export function usePermissions() {
     refreshPermissions,
   };
 }
-/* eslint-enable react-hooks/set-state-in-effect */

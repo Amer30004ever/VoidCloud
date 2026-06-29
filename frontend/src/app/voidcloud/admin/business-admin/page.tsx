@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -126,11 +125,10 @@ export default function BusinessAdminDashboard() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab as "overview" | "team" | "conversations" | "vps" | "settings" | "analytics")}
-            className={`px-4 py-2 capitalize whitespace-nowrap ${
-              activeTab === tab
+            className={`px-4 py-2 capitalize whitespace-nowrap ${activeTab === tab
                 ? "border-b-2 border-cyan-400 text-white"
                 : "text-white/50 hover:text-white"
-            }`}
+              }`}
           >
             {tab}
           </button>
@@ -262,9 +260,8 @@ export default function BusinessAdminDashboard() {
               <div key={conv.id} className="rounded-lg border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white font-medium">{conv.contactId}</span>
-                  <span className={`rounded-full px-3 py-1 text-xs ${
-                    conv.status === "OPEN" ? "bg-emerald-500/10 text-emerald-300" : "bg-blue-500/10 text-blue-300"
-                  }`}>
+                  <span className={`rounded-full px-3 py-1 text-xs ${conv.status === "OPEN" ? "bg-emerald-500/10 text-emerald-300" : "bg-blue-500/10 text-blue-300"
+                    }`}>
                     {conv.status}
                   </span>
                 </div>
@@ -299,13 +296,12 @@ export default function BusinessAdminDashboard() {
                   <tr key={vps.id} className="border-b border-white/5 hover:bg-white/5">
                     <td className="p-4 text-white">{vps.name}</td>
                     <td className="p-4">
-                      <span className={`rounded-full px-3 py-1 text-xs ${
-                        vps.status === "RUNNING" ? "bg-emerald-500/10 text-emerald-300" : "bg-yellow-500/10 text-yellow-300"
-                      }`}>
+                      <span className={`rounded-full px-3 py-1 text-xs ${vps.status === "RUNNING" ? "bg-emerald-500/10 text-emerald-300" : "bg-yellow-500/10 text-yellow-300"
+                        }`}>
                         {vps.status}
                       </span>
                     </td>
-                    <td className="p-4 text-white/70">{vps.cpu} CPU · {vps.memory}MB · {Math.ceil(vps.storage/1024)}GB</td>
+                    <td className="p-4 text-white/70">{vps.cpu} CPU · {vps.memory}MB · {Math.ceil(vps.storage / 1024)}GB</td>
                     <td className="p-4">
                       <a href={`/voidcloud/dashboard/vps/${vps.id}`} className="text-cyan-300 hover:underline text-sm">Manage</a>
                     </td>
@@ -396,4 +392,3 @@ export default function BusinessAdminDashboard() {
     </div>
   );
 }
-/* eslint-enable react-hooks/set-state-in-effect */
