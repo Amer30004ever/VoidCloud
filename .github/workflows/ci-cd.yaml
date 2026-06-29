@@ -420,7 +420,7 @@ jobs:
   # BACKEND ARTIFACT TESTS
   # ============================================
   test-backend-artifact:
-    needs: [detect-changes, test-backend]
+    needs: [detect-changes, build-backend]
     if: |
       needs.detect-changes.outputs.backend == 'true' && 
       needs.detect-changes.outputs.build_backend == 'true'
@@ -471,6 +471,9 @@ jobs:
             -e POSTGRES_DB="test_db" \
             -e JWT_SECRET="test_secret_key_for_ci_only" \
             -e NODE_ENV="test" \
+            -e SMTP_HOST="smtp.example.com" \
+            -e SMTP_USER="test@example.com" \
+            -e SMTP_PASS="test_password" \
             auth-test:latest
 
       - name: Wait for auth service to be ready
