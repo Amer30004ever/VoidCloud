@@ -567,6 +567,7 @@ jobs:
           echo "🧹 Cleaning up disk space..."
           df -h
           docker system prune -a -f --volumes
+          docker builder prune -a -f
           docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-*-service) 2>/dev/null || true
           docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend) 2>/dev/null || true
           rm -rf /tmp/* 2>/dev/null || true
@@ -589,8 +590,15 @@ jobs:
           
           for SERVICE in $SERVICES_TO_BUILD; do
             echo "Building service: $SERVICE"
+            echo "Disk space before build:"
+            df -h
             docker build -f services/$SERVICE/Dockerfile -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:latest .
             docker build -f services/$SERVICE/Dockerfile -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${TIMESTAMP} .
+            echo "Cleaning up after $SERVICE build..."
+            docker system prune -f
+            docker builder prune -f
+            echo "Disk space after cleanup:"
+            df -h
           done
           
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
@@ -638,6 +646,7 @@ jobs:
           echo "🧹 Cleaning up disk space..."
           df -h
           docker system prune -a -f --volumes
+          docker builder prune -a -f
           docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend) 2>/dev/null || true
           docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-*-service) 2>/dev/null || true
           rm -rf /tmp/* 2>/dev/null || true
