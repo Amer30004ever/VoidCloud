@@ -332,8 +332,9 @@ jobs:
             SERVICES_TO_TEST="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
           fi
           
-          # Generate Prisma client from database directory first
+          # Install dependencies and generate Prisma client from database directory first
           cd database
+          npm ci
           npx prisma generate
           cd ..
           
