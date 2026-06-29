@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: billing-service
-        image: docker.io/voidcloud/billing-service:latest
+        image: amer30004ever/voidcloud-billing-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3005

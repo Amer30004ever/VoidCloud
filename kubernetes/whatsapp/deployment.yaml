@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: whatsapp-service
-        image: docker.io/voidcloud/whatsapp-service:latest
+        image: amer30004ever/voidcloud-whatsapp-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3007

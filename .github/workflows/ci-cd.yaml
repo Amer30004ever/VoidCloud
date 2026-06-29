@@ -332,6 +332,11 @@ jobs:
             SERVICES_TO_TEST="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
           fi
           
+          # Generate Prisma client from database directory first
+          cd database
+          npx prisma generate
+          cd ..
+          
           for SERVICE in $SERVICES_TO_TEST; do
             echo "Testing service: $SERVICE"
             cd services/$SERVICE
@@ -774,6 +779,39 @@ jobs:
           fi
           
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Create/update voidcloud-secrets from GitHub Secrets
+          kubectl create secret generic voidcloud-secrets -n ${NAMESPACE} \
+            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            --from-literal=JWT_EXPIRES_IN="${{ secrets.JWT_EXPIRES_IN }}" \
+            --from-literal=SMTP_HOST="${{ secrets.SMTP_HOST }}" \
+            --from-literal=SMTP_PORT="${{ secrets.SMTP_PORT }}" \
+            --from-literal=SMTP_USER="${{ secrets.SMTP_USER }}" \
+            --from-literal=SMTP_PASS="${{ secrets.SMTP_PASS }}" \
+            --from-literal=EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
+            --from-literal=POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
+            --from-literal=POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
+            --from-literal=POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
+            --from-literal=PROXMOX_HOST="${{ secrets.PROXMOX_HOST }}" \
+            --from-literal=PROXMOX_TOKEN_ID="${{ secrets.PROXMOX_TOKEN_ID }}" \
+            --from-literal=PROXMOX_TOKEN_SECRET="${{ secrets.PROXMOX_TOKEN_SECRET }}" \
+            --from-literal=PROXMOX_NODE="${{ secrets.PROXMOX_NODE }}" \
+            --from-literal=PROXMOX_STORAGE="${{ secrets.PROXMOX_STORAGE }}" \
+            --from-literal=PROXMOX_BRIDGE="${{ secrets.PROXMOX_BRIDGE }}" \
+            --from-literal=PROXMOX_IP_POOL_CIDR="${{ secrets.PROXMOX_IP_POOL_CIDR }}" \
+            --from-literal=PROXMOX_GATEWAY="${{ secrets.PROXMOX_GATEWAY }}" \
+            --from-literal=WHATSAPP_APP_ID="${{ secrets.WHATSAPP_APP_ID }}" \
+            --from-literal=WHATSAPP_APP_SECRET="${{ secrets.WHATSAPP_APP_SECRET }}" \
+            --from-literal=WHATSAPP_CLIENT_TOKEN="${{ secrets.WHATSAPP_CLIENT_TOKEN }}" \
+            --from-literal=WHATSAPP_ACCESS_TOKEN="${{ secrets.WHATSAPP_ACCESS_TOKEN }}" \
+            --from-literal=WHATSAPP_PHONE_NUMBER_ID="${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}" \
+            --from-literal=WHATSAPP_VERIFY_TOKEN="${{ secrets.WHATSAPP_VERIFY_TOKEN }}" \
+            --from-literal=WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}" \
+            --from-literal=WHATSAPP_SUPPORT_NUMBER="${{ secrets.WHATSAPP_SUPPORT_NUMBER }}" \
+            --from-literal=WHATSAPP_SUPPORT_NUMBER_FORMATTED="${{ secrets.WHATSAPP_SUPPORT_NUMBER_FORMATTED }}" \
+            --from-literal=WHATSAPP_WEBHOOK_URL="${{ secrets.WHATSAPP_WEBHOOK_URL }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
           
           for SERVICE in $SERVICES_TO_DEPLOY; do
             echo "Deploying service: $SERVICE"

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: monitoring-service
-        image: docker.io/voidcloud/monitoring-service:latest
+        image: amer30004ever/voidcloud-monitoring-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3010

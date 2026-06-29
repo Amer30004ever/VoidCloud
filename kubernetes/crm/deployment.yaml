@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: crm-service
-        image: docker.io/voidcloud/crm-service:latest
+        image: amer30004ever/voidcloud-crm-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3006

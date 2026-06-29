@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: notification-service
-        image: docker.io/voidcloud/notification-service:latest
+        image: amer30004ever/voidcloud-notification-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3009

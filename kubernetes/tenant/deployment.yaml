@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: tenant-service
-        image: docker.io/voidcloud/tenant-service:latest
+        image: amer30004ever/voidcloud-tenant-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3003

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: auth-service
-        image: docker.io/voidcloud/auth-service:latest
+        image: amer30004ever/voidcloud-auth-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3001

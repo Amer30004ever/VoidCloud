@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: audit-service
-        image: docker.io/voidcloud/audit-service:latest
+        image: amer30004ever/voidcloud-audit-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3011
