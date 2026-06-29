@@ -332,10 +332,19 @@ jobs:
             SERVICES_TO_TEST="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
           fi
           
+          # Generate Prisma client from database directory first
+          cd database
+          npm install
+          npx prisma generate
+          cd ..
+          
           for SERVICE in $SERVICES_TO_TEST; do
             echo "Testing service: $SERVICE"
             cd services/$SERVICE
             npm ci
+            # Copy generated Prisma client from database to service node_modules
+            mkdir -p node_modules/@prisma
+            cp -r ../../database/node_modules/@prisma/client node_modules/@prisma/
             npm run lint 2>/dev/null || echo "⚠️ No lint script found, skipping"
             npm run build
             cd ../../

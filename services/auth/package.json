@@ -3,7 +3,7 @@
     "version":  "1.0.0",
     "private":  true,
     "scripts":  {
-                    "build":  "npx prisma generate --schema=../../database/prisma/schema.prisma && tsc -p tsconfig.build.json",
+                    "build":  "tsc -p tsconfig.build.json",
                     "start":  "node dist/main.js",
                     "start:dev":  "ts-node src/main.ts",
                     "prisma:generate":  "npx prisma generate --schema=../../database/prisma/schema.prisma"
