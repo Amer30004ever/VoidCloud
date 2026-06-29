@@ -29,6 +29,16 @@ spec:
               key: NODE_ENV
         - name: PORT
           value: "3008"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: DATABASE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: JWT_SECRET
         - name: SMTP_HOST
           valueFrom:
             secretKeyRef:

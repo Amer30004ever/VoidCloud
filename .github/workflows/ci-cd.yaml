@@ -852,6 +852,7 @@ jobs:
             --from-literal=WHATSAPP_CLIENT_TOKEN="${{ secrets.WHATSAPP_CLIENT_TOKEN }}" \
             --from-literal=WHATSAPP_ACCESS_TOKEN="${{ secrets.WHATSAPP_ACCESS_TOKEN }}" \
             --from-literal=WHATSAPP_PHONE_NUMBER_ID="${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}" \
+            --from-literal=WHATSAPP_WABA_ID="${{ secrets.WHATSAPP_WABA_ID }}" \
             --from-literal=WHATSAPP_VERIFY_TOKEN="${{ secrets.WHATSAPP_VERIFY_TOKEN }}" \
             --from-literal=WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}" \
             --from-literal=WHATSAPP_SUPPORT_NUMBER="${{ secrets.WHATSAPP_SUPPORT_NUMBER }}" \

@@ -34,6 +34,11 @@ spec:
             secretKeyRef:
               name: voidcloud-secrets
               key: DATABASE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: JWT_SECRET
         - name: RABBITMQ_HOST
           valueFrom:
             configMapKeyRef:
