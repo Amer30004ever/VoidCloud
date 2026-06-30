@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { API_BASE_URL } from "@/lib/constants";
 
 export default function ApiKeysPage() {
   const [keys, setKeys] = useState<any[]>([]);

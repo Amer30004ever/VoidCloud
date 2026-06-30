@@ -5,6 +5,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
+import { API_BASE_URL } from "@/lib/constants";
 import { useLocale } from "@/contexts/LocaleContext";
 
 function LoginInner() {
@@ -61,10 +62,19 @@ function LoginInner() {
         router.push("/amercloud/user/dashboard");
       }
     } catch (e: unknown) {
-      const fallbackMessage = t("auth.api_unreachable", "Portal API is unreachable. Please check backend health and try again.");
-      const status = (e as { response?: { status?: number; data?: { message?: string } } }).response?.status;
-      const message = resolveAuthError(e, fallbackMessage);
-      setErr(status === 401 ? (message ?? t("auth.invalid_credentials", "Invalid credentials. Please try again.")) : message);
+      const err = e as { response?: { status?: number; data?: { message?: string; error?: string } }; request?: unknown; message?: string };
+      if (err.response) {
+        // API responded with an error status
+        const status = err.response.status;
+        const message = resolveAuthError(e, t("auth.invalid_credentials", "Invalid credentials. Please try again."));
+        setErr(status === 401 ? (message ?? t("auth.invalid_credentials", "Invalid credentials. Please try again.")) : message);
+      } else if (err.request) {
+        // Request was made but no response received — API is unreachable
+        setErr(t("auth.api_unreachable", `Cannot reach the API at "${API_BASE_URL}". Make sure your backend is running and reachable from this domain.`));
+      } else {
+        // Something else went wrong
+        setErr(err.message ?? t("auth.generic_error", "An unexpected error occurred. Please try again."));
+      }
     } finally { setBusy(false); }
   }
 
