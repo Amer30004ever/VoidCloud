@@ -1441,6 +1441,9 @@ jobs:
           # REMOVED: Ingress is not needed since we use Cloudflare Tunnel
           # kubectl apply -f kubernetes/ingress.yaml -n ${NAMESPACE} 2>/dev/null || true
           
+          # Apply Ingress for existing Traefik routing (traefik namespace)
+          kubectl apply -f kubernetes/ingress.yaml -n ${NAMESPACE}
+          
           echo "✅ All manifests applied successfully!"
           
           # Wait for PostgreSQL to be ready
