@@ -3,7 +3,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "declaration": true,
+    "declaration": false,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -17,7 +17,10 @@
     "skipLibCheck": true,
     "strictNullChecks": false,
     "forceConsistentCasingInFileNames": false,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "paths": {
+      "@prisma/client": ["../../database/node_modules/@prisma/client"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

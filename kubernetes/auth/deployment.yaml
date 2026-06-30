@@ -6,7 +6,7 @@ metadata:
   labels:
     app: auth-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: auth-service
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: auth-service
-        image: docker.io/voidcloud/auth-service:latest
+        image: amer30004ever/voidcloud-auth-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3001
@@ -86,20 +86,20 @@ spec:
               key: REDIS_PORT
         resources:
           requests:
-            memory: "256Mi"
+            memory: "512Mi"
             cpu: "250m"
           limits:
-            memory: "512Mi"
+            memory: "1Gi"
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /health
+            path: /api/v1/health
             port: 3001
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /health
+            path: /api/v1/health
             port: 3001
-          initialDelaySeconds: 10
+          initialDelaySeconds: 30
           periodSeconds: 5

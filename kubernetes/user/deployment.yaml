@@ -6,7 +6,7 @@ metadata:
   labels:
     app: user-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: user-service
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: user-service
-        image: docker.io/voidcloud/user-service:latest
+        image: amer30004ever/voidcloud-user-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3002
@@ -58,7 +58,7 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /health
+            path: /api/v1/health
             port: 3002
           initialDelaySeconds: 30
           periodSeconds: 10

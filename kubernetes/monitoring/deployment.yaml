@@ -6,7 +6,7 @@ metadata:
   labels:
     app: monitoring-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: monitoring-service
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: monitoring-service
-        image: docker.io/voidcloud/monitoring-service:latest
+        image: amer30004ever/voidcloud-monitoring-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3010
@@ -34,6 +34,11 @@ spec:
             secretKeyRef:
               name: voidcloud-secrets
               key: DATABASE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: JWT_SECRET
         - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
@@ -53,7 +58,7 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /health
+            path: /api/v1/health
             port: 3010
           initialDelaySeconds: 30
           periodSeconds: 10

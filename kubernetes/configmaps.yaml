@@ -12,3 +12,4 @@ data:
   RABBITMQ_PORT: "5672"
   FRONTEND_URL: "https://voidcloud.cc.cd"
   CORS_ORIGINS: "https://voidcloud.cc.cd,https://www.voidcloud.cc.cd"
+  NEXT_PUBLIC_API_URL: "https://api.voidcloud.cc.cd/api/v1"

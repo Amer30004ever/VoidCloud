@@ -284,14 +284,40 @@ model Message {
 }
 
 model WhatsappContact {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  waId      String   @unique
-  name      String?
-  phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String           @id @default(uuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id])
+  waId         String           @unique
+  name         String?
+  phone        String?
+  profilePic   String?
+  isBlocked    Boolean          @default(false)
+  crmContactId String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  messages     WhatsappMessage[]
+
+  @@index([userId])
+  @@index([crmContactId])
+}
+
+model WhatsappMessage {
+  id             String   @id @default(uuid())
+  contactId      String
+  contact        WhatsappContact @relation(fields: [contactId], references: [id])
+  waMessageId    String   @unique
+  direction      String   // inbound, outbound
+  content        String   @db.Text
+  type           String   @default("text") // text, image, audio, video, document
+  mediaUrl       String?
+  status         String   @default("sent") // sent, delivered, read, failed
+  timestamp      DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([contactId])
+  @@index([direction])
+  @@index([timestamp])
 }
 
 // WhatsApp CRM Models

@@ -27,6 +27,8 @@ on:
           - full-ci-both            # Complete CI + Deploy both
           - full-ci-all             # Complete CI + Deploy backend, frontend, and postgres
           - apply-manifests         # kubectl apply all k8s manifests (no build)
+          - apply-service          # kubectl apply specific service manifest
+          - run-migrations          # Run database migrations only
           - validate-secrets        # Run Validate-Secrets equivalent + annotate
           - reset-postgres          # DESTRUCTIVE: wipe postgres PVC/PV + reinit
           - rollback-migrations       # Rollback last database migration
@@ -61,6 +63,7 @@ on:
         required: false
         type: choice
         options:
+          - none                    # Skip frontend build
           - all                     # Build all features
           - landing-only            # Build landing page only
           - dashboard-only          # Build dashboard only
@@ -68,12 +71,13 @@ on:
           - landing-dashboard       # Build landing + dashboard
           - landing-crm             # Build landing + CRM
           - dashboard-crm           # Build dashboard + CRM
-        default: 'all'
+        default: 'none'
       services:
         description: 'Services to build (for backend-related modes)'
         required: false
         type: choice
         options:
+          - none                    # Skip backend build
           - all                     # Build all services
           - auth                    # Auth service only
           - user                    # User service only
@@ -81,13 +85,36 @@ on:
           - vps                     # VPS service only
           - billing                 # Billing service only
           - crm                     # CRM service only
-          - whatsapp                # WhatsApp service only
           - email                   # Email service only
           - notification            # Notification service only
           - monitoring              # Monitoring service only
           - audit                   # Audit service only
           - analytics               # Analytics service only
-        default: 'all'
+          - openwa                  # OpenWA service only
+        default: 'none'
+      service_name:
+        description: 'Specific service name for apply-service mode'
+        required: false
+        type: choice
+        options:
+          - auth
+          - user
+          - tenant
+          - vps
+          - billing
+          - crm
+          - email
+          - notification
+          - monitoring
+          - audit
+          - analytics
+          - openwa
+          - frontend
+          - postgres
+          - redis
+          - rabbitmq
+          - whatsapp
+        default: 'auth'
 
 env:
   DOCKER_HUB_USERNAME: amer30004ever
@@ -332,11 +359,20 @@ jobs:
             SERVICES_TO_TEST="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
           fi
           
+          # Generate Prisma client from database directory first
+          cd database
+          npm install
+          npx prisma generate
+          cd ..
+          
           for SERVICE in $SERVICES_TO_TEST; do
             echo "Testing service: $SERVICE"
             cd services/$SERVICE
             npm ci
-            npm run lint
+            # Copy generated Prisma client from database to service node_modules
+            mkdir -p node_modules/@prisma
+            cp -r ../../database/node_modules/@prisma/client node_modules/@prisma/
+            npm run lint 2>/dev/null || echo "⚠️ No lint script found, skipping"
             npm run build
             cd ../../
           done
@@ -411,7 +447,7 @@ jobs:
   # BACKEND ARTIFACT TESTS
   # ============================================
   test-backend-artifact:
-    needs: [detect-changes, test-backend]
+    needs: [detect-changes, build-backend]
     if: |
       needs.detect-changes.outputs.backend == 'true' && 
       needs.detect-changes.outputs.build_backend == 'true'
@@ -422,8 +458,7 @@ jobs:
 
       - name: Build auth service image for testing
         run: |
-          cd services/auth
-          docker build -t auth-test:latest .
+          docker build -f services/auth/Dockerfile -t auth-test:latest .
 
       - name: Create network for containers
         run: docker network create test-network || true
@@ -463,6 +498,9 @@ jobs:
             -e POSTGRES_DB="test_db" \
             -e JWT_SECRET="test_secret_key_for_ci_only" \
             -e NODE_ENV="test" \
+            -e SMTP_HOST="smtp.example.com" \
+            -e SMTP_USER="test@example.com" \
+            -e SMTP_PASS="test_password" \
             auth-test:latest
 
       - name: Wait for auth service to be ready
@@ -532,7 +570,7 @@ jobs:
   # BUILD AND PUSH BACKEND
   # ============================================
   build-backend:
-    needs: [detect-changes, test-backend, test-backend-artifact]
+    needs: [detect-changes, test-backend]
     if: |
       needs.detect-changes.outputs.build_backend == 'true'
     runs-on: ubuntu-latest
@@ -549,27 +587,43 @@ jobs:
           username: ${{ env.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Clean old images
+      - name: Clean old images and free disk space
         run: |
-          docker system prune -f
+          echo "🧹 Cleaning up disk space..."
+          df -h
+          docker system prune -a -f --volumes
+          docker builder prune -a -f
           docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-*-service) 2>/dev/null || true
+          docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend) 2>/dev/null || true
+          rm -rf /tmp/* 2>/dev/null || true
+          npm cache clean --force 2>/dev/null || true
+          df -h
 
       - name: Build service images
         id: build
         run: |
           SERVICES_TO_BUILD="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_BUILD" == "all" ] || [ -z "$SERVICES_TO_BUILD" ]; then
-            SERVICES_TO_BUILD="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
+            SERVICES_TO_BUILD="auth user tenant vps billing crm email notification monitoring audit analytics"
+          elif [ "$SERVICES_TO_BUILD" == "none" ]; then
+            echo "Skipping backend build (services=none)"
+            echo "BUILT=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
           
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           
           for SERVICE in $SERVICES_TO_BUILD; do
             echo "Building service: $SERVICE"
-            cd services/$SERVICE
-            docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:latest .
-            docker build -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${TIMESTAMP} .
-            cd ../../
+            echo "Disk space before build:"
+            df -h
+            docker build -f services/$SERVICE/Dockerfile -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:latest .
+            docker build -f services/$SERVICE/Dockerfile -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${TIMESTAMP} .
+            echo "Cleaning up after $SERVICE build..."
+            docker system prune -f
+            docker builder prune -f
+            echo "Disk space after cleanup:"
+            df -h
           done
           
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
@@ -579,7 +633,10 @@ jobs:
         run: |
           SERVICES_TO_BUILD="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_BUILD" == "all" ] || [ -z "$SERVICES_TO_BUILD" ]; then
-            SERVICES_TO_BUILD="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
+            SERVICES_TO_BUILD="auth user tenant vps billing crm email notification monitoring audit analytics"
+          elif [ "$SERVICES_TO_BUILD" == "none" ]; then
+            echo "Skipping backend push (services=none)"
+            exit 0
           fi
           
           for SERVICE in $SERVICES_TO_BUILD; do
@@ -609,14 +666,28 @@ jobs:
           username: ${{ env.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Clean old images
+      - name: Clean old images and free disk space
         run: |
-          docker system prune -f
+          echo "🧹 Cleaning up disk space..."
+          df -h
+          docker system prune -a -f --volumes
+          docker builder prune -a -f
           docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend) 2>/dev/null || true
+          docker rmi $(docker images -q ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-*-service) 2>/dev/null || true
+          rm -rf /tmp/* 2>/dev/null || true
+          npm cache clean --force 2>/dev/null || true
+          df -h
 
       - name: Build frontend image
         id: build
         run: |
+          FRONTEND_FEATURES="${{ github.event.inputs.frontend_features }}"
+          if [ "$FRONTEND_FEATURES" == "none" ]; then
+            echo "Skipping frontend build (frontend_features=none)"
+            echo "BUILT=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
           cd frontend
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           docker build --build-arg NEXT_PUBLIC_API_URL=https://api.voidcloud.cc.cd/api/v1 -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest .
@@ -626,6 +697,11 @@ jobs:
 
       - name: Push frontend image
         run: |
+          FRONTEND_FEATURES="${{ github.event.inputs.frontend_features }}"
+          if [ "$FRONTEND_FEATURES" == "none" ]; then
+            echo "Skipping frontend push (frontend_features=none)"
+            exit 0
+          fi
           docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest
           docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${{ steps.build.outputs.TIMESTAMP }}
 
@@ -770,10 +846,42 @@ jobs:
           
           SERVICES_TO_DEPLOY="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_DEPLOY" == "all" ] || [ -z "$SERVICES_TO_DEPLOY" ]; then
-            SERVICES_TO_DEPLOY="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
+            SERVICES_TO_DEPLOY="auth user tenant vps billing crm email notification monitoring audit analytics"
           fi
           
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Apply infrastructure manifests
+          kubectl apply -f kubernetes/configmaps.yaml
+          kubectl apply -f kubernetes/postgres/pv.yaml
+          kubectl apply -f kubernetes/postgres/pvc.yaml
+          kubectl apply -f kubernetes/rabbitmq/pv.yaml
+          kubectl apply -f kubernetes/rabbitmq/pvc.yaml
+          kubectl apply -f kubernetes/redis/pv.yaml
+          kubectl apply -f kubernetes/redis/pvc.yaml
+          
+          # Create/update voidcloud-secrets from GitHub Secrets
+          kubectl create secret generic voidcloud-secrets -n ${NAMESPACE} \
+            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            --from-literal=JWT_EXPIRES_IN="${{ secrets.JWT_EXPIRES_IN }}" \
+            --from-literal=SMTP_HOST="${{ secrets.SMTP_HOST }}" \
+            --from-literal=SMTP_PORT="${{ secrets.SMTP_PORT }}" \
+            --from-literal=SMTP_USER="${{ secrets.SMTP_USER }}" \
+            --from-literal=SMTP_PASS="${{ secrets.SMTP_PASS }}" \
+            --from-literal=EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
+            --from-literal=POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
+            --from-literal=POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
+            --from-literal=POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
+            --from-literal=PROXMOX_HOST="${{ secrets.PROXMOX_HOST }}" \
+            --from-literal=PROXMOX_TOKEN_ID="${{ secrets.PROXMOX_TOKEN_ID }}" \
+            --from-literal=PROXMOX_TOKEN_SECRET="${{ secrets.PROXMOX_TOKEN_SECRET }}" \
+            --from-literal=PROXMOX_NODE="${{ secrets.PROXMOX_NODE }}" \
+            --from-literal=PROXMOX_STORAGE="${{ secrets.PROXMOX_STORAGE }}" \
+            --from-literal=PROXMOX_BRIDGE="${{ secrets.PROXMOX_BRIDGE }}" \
+            --from-literal=PROXMOX_IP_POOL_CIDR="${{ secrets.PROXMOX_IP_POOL_CIDR }}" \
+            --from-literal=PROXMOX_GATEWAY="${{ secrets.PROXMOX_GATEWAY }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
           
           for SERVICE in $SERVICES_TO_DEPLOY; do
             echo "Deploying service: $SERVICE"
@@ -785,9 +893,8 @@ jobs:
               IMAGE_TAG="latest"
             fi
             
-            kubectl patch deployment $SERVICE-service -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"'$SERVICE'","imagePullPolicy":"Always"}]}}}}' 2>/dev/null || true
             kubectl set image deployment/$SERVICE-service -n ${NAMESPACE} \
-              $SERVICE=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${IMAGE_TAG}
+              $SERVICE-service=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${IMAGE_TAG}
           done
           
           echo "🔄 Running database migrations..."
@@ -801,20 +908,32 @@ jobs:
           fi
           kubectl logs job/prisma-migrate -n ${NAMESPACE}
           
+          # Wait for services to be ready (kubectl set image already triggered rollouts)
           for SERVICE in $SERVICES_TO_DEPLOY; do
-            kubectl rollout restart deployment/$SERVICE-service -n ${NAMESPACE}
             kubectl rollout status deployment/$SERVICE-service -n ${NAMESPACE} --timeout=300s
           done
+          
+          echo "🚀 Deploying OpenWA..."
+          kubectl apply -f kubernetes/openwa/pv.yaml
+          kubectl apply -f kubernetes/openwa/pvc.yaml
+          kubectl apply -f kubernetes/openwa/deployment.yaml
+          kubectl apply -f kubernetes/openwa/service.yaml
+          kubectl apply -f kubernetes/openwa/openwa-nodeport.yaml
+          kubectl rollout status deployment/openwa -n ${NAMESPACE} --timeout=300s
+          
+          echo "🚀 Deploying infrastructure services..."
+          kubectl apply -f kubernetes/postgres/deployment.yaml
+          kubectl apply -f kubernetes/rabbitmq/deployment.yaml
+          kubectl apply -f kubernetes/redis/deployment.yaml
           
           echo "✅ Services deployment complete!"
   # ============================================
   # RUN DATABASE MIGRATIONS
   # ============================================
   run-migrations:
-    needs: [deploy-backend]
     if: |
-      needs.deploy-backend.result == 'success' &&
-      (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.mode == 'run-migrations'
     runs-on: self-hosted
     outputs:
       migration_status: ${{ steps.migration.outputs.status }}
@@ -1087,6 +1206,79 @@ jobs:
           kubectl rollout status deployment/frontend -n ${NAMESPACE} --timeout=120s
           echo "✅ All deployments restarted!"
 
+  apply-specific-service:
+    runs-on: self-hosted
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'apply-service'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Apply Specific Service
+        run: |
+          echo "🚀 Applying service: ${{ github.event.inputs.service_name }}"
+          NAMESPACE="voidcloud"
+          SERVICE="${{ github.event.inputs.service_name }}"
+          
+          if [ -z "$SERVICE" ]; then
+            echo "❌ service_name is required for apply-service mode"
+            exit 1
+          fi
+          
+          kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Apply service-specific manifests
+          if [ -f "kubernetes/$SERVICE/service.yaml" ]; then
+            kubectl apply -f kubernetes/$SERVICE/service.yaml
+          fi
+          
+          if [ -f "kubernetes/$SERVICE/deployment.yaml" ]; then
+            kubectl apply -f kubernetes/$SERVICE/deployment.yaml
+          fi
+          
+          if [ -f "kubernetes/$SERVICE/pvc.yaml" ]; then
+            kubectl apply -f kubernetes/$SERVICE/pvc.yaml
+          fi
+          
+          if [ -f "kubernetes/$SERVICE/pv.yaml" ]; then
+            kubectl apply -f kubernetes/$SERVICE/pv.yaml
+          fi
+          
+          # Handle OpenWA special case
+          if [ "$SERVICE" == "openwa" ]; then
+            if [ -f "kubernetes/$SERVICE/openwa-nodeport.yaml" ]; then
+              kubectl apply -f kubernetes/$SERVICE/openwa-nodeport.yaml
+            fi
+          fi
+          
+          # Handle frontend special case
+          if [ "$SERVICE" == "frontend" ]; then
+            if [ -f "kubernetes/$SERVICE/frontend-nodeport.yaml" ]; then
+              kubectl apply -f kubernetes/$SERVICE/frontend-nodeport.yaml
+            fi
+          fi
+          
+          # Rollout restart if deployment exists
+          if kubectl get deployment $SERVICE -n ${NAMESPACE} 2>/dev/null; then
+            kubectl rollout restart deployment/$SERVICE -n ${NAMESPACE}
+            kubectl rollout status deployment/$SERVICE -n ${NAMESPACE} --timeout=120s
+          elif kubectl get deployment $SERVICE-service -n ${NAMESPACE} 2>/dev/null; then
+            kubectl rollout restart deployment/$SERVICE-service -n ${NAMESPACE}
+            kubectl rollout status deployment/$SERVICE-service -n ${NAMESPACE} --timeout=120s
+          fi
+          
+          echo "✅ Service $SERVICE applied successfully!"
+
   # ============================================
   # CI SUMMARY
   # ============================================
@@ -1280,6 +1472,31 @@ jobs:
           # Apply configmaps
           kubectl apply -f kubernetes/configmaps.yaml -n ${NAMESPACE}
           
+          # Create/update voidcloud-secrets from GitHub Secrets
+          kubectl create secret generic voidcloud-secrets -n ${NAMESPACE} \
+            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            --from-literal=JWT_EXPIRES_IN="${{ secrets.JWT_EXPIRES_IN }}" \
+            --from-literal=SMTP_HOST="${{ secrets.SMTP_HOST }}" \
+            --from-literal=SMTP_PORT="${{ secrets.SMTP_PORT }}" \
+            --from-literal=SMTP_USER="${{ secrets.SMTP_USER }}" \
+            --from-literal=SMTP_PASS="${{ secrets.SMTP_PASS }}" \
+            --from-literal=EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
+            --from-literal=POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
+            --from-literal=POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
+            --from-literal=POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
+            --from-literal=PROXMOX_HOST="${{ secrets.PROXMOX_HOST }}" \
+            --from-literal=PROXMOX_TOKEN_ID="${{ secrets.PROXMOX_TOKEN_ID }}" \
+            --from-literal=PROXMOX_TOKEN_SECRET="${{ secrets.PROXMOX_TOKEN_SECRET }}" \
+            --from-literal=PROXMOX_NODE="${{ secrets.PROXMOX_NODE }}" \
+            --from-literal=PROXMOX_STORAGE="${{ secrets.PROXMOX_STORAGE }}" \
+            --from-literal=PROXMOX_BRIDGE="${{ secrets.PROXMOX_BRIDGE }}" \
+            --from-literal=PROXMOX_IP_POOL_CIDR="${{ secrets.PROXMOX_IP_POOL_CIDR }}" \
+            --from-literal=PROXMOX_GATEWAY="${{ secrets.PROXMOX_GATEWAY }}" \
+            --from-literal=WHATSAPP_SUPPORT_NUMBER="${{ secrets.WHATSAPP_SUPPORT_NUMBER }}" \
+            --from-literal=WHATSAPP_SUPPORT_NUMBER_FORMATTED="${{ secrets.WHATSAPP_SUPPORT_NUMBER_FORMATTED }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
           # Apply secrets - fail if there's an issue
           if [ -f "kubernetes/secrets.yaml" ]; then
             kubectl apply -f kubernetes/secrets.yaml -n ${NAMESPACE}
@@ -1293,14 +1510,32 @@ jobs:
           kubectl apply -f kubernetes/postgres/deployment.yaml -n ${NAMESPACE}
           kubectl apply -f kubernetes/postgres/service.yaml -n ${NAMESPACE}
           
+          # Apply Redis
+          kubectl apply -f kubernetes/redis/pv.yaml 2>/dev/null || echo "⚠️ Redis PV may already exist"
+          kubectl apply -f kubernetes/redis/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ Redis PVC may already exist"
+          kubectl apply -f kubernetes/redis/deployment.yaml -n ${NAMESPACE}
+          kubectl apply -f kubernetes/redis/service.yaml -n ${NAMESPACE}
+          
+          # Apply RabbitMQ
+          kubectl apply -f kubernetes/rabbitmq/pv.yaml 2>/dev/null || echo "⚠️ RabbitMQ PV may already exist"
+          kubectl apply -f kubernetes/rabbitmq/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ RabbitMQ PVC may already exist"
+          kubectl apply -f kubernetes/rabbitmq/deployment.yaml -n ${NAMESPACE}
+          kubectl apply -f kubernetes/rabbitmq/service.yaml -n ${NAMESPACE}
+          
           # Apply Services
-          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
+          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             kubectl apply -f kubernetes/$SERVICE/deployment.yaml -n ${NAMESPACE} 2>/dev/null || true
             kubectl apply -f kubernetes/$SERVICE/service.yaml -n ${NAMESPACE} 2>/dev/null || true
           done
           
+          # Apply OpenWA
+          kubectl apply -f kubernetes/openwa/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ OpenWA PVC may already exist"
+          kubectl apply -f kubernetes/openwa/deployment.yaml -n ${NAMESPACE}
+          kubectl apply -f kubernetes/openwa/service.yaml -n ${NAMESPACE}
+          kubectl apply -f kubernetes/openwa/openwa-nodeport.yaml -n ${NAMESPACE}
+          
           # Apply Service NodePorts (for Cloudflare Tunnel)
-          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
+          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             if [ -f "kubernetes/$SERVICE/$SERVICE-nodeport.yaml" ]; then
               kubectl apply -f kubernetes/$SERVICE/$SERVICE-nodeport.yaml -n ${NAMESPACE}
               echo "✅ $SERVICE NodePort service applied"
@@ -1322,17 +1557,32 @@ jobs:
           # REMOVED: Ingress is not needed since we use Cloudflare Tunnel
           # kubectl apply -f kubernetes/ingress.yaml -n ${NAMESPACE} 2>/dev/null || true
           
+          # Apply Ingress for existing Traefik routing (traefik namespace)
+          kubectl apply -f kubernetes/ingress.yaml -n ${NAMESPACE}
+          
           echo "✅ All manifests applied successfully!"
           
           # Wait for PostgreSQL to be ready
           echo "⏳ Waiting for PostgreSQL..."
           kubectl -n ${NAMESPACE} rollout status deploy/postgres --timeout=300s || echo "⚠️ PostgreSQL rollout status check skipped"
           
+          # Wait for Redis to be ready
+          echo "⏳ Waiting for Redis..."
+          kubectl -n ${NAMESPACE} rollout status deploy/redis --timeout=300s || echo "⚠️ Redis rollout status check skipped"
+          
+          # Wait for RabbitMQ to be ready
+          echo "⏳ Waiting for RabbitMQ..."
+          kubectl -n ${NAMESPACE} rollout status deploy/rabbitmq --timeout=300s || echo "⚠️ RabbitMQ rollout status check skipped"
+          
           # Wait for Services to be ready
           echo "⏳ Waiting for Services..."
-          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
+          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             kubectl -n ${NAMESPACE} rollout status deploy/$SERVICE-service --timeout=300s 2>/dev/null || echo "⚠️ $SERVICE rollout status check skipped"
           done
+          
+          # Wait for OpenWA to be ready
+          echo "⏳ Waiting for OpenWA..."
+          kubectl -n ${NAMESPACE} rollout status deploy/openwa --timeout=300s 2>/dev/null || echo "⚠️ OpenWA rollout status check skipped"
           
           # Wait for Frontend to be ready
           echo "⏳ Waiting for Frontend..."

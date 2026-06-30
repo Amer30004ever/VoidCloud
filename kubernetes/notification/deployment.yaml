@@ -6,7 +6,7 @@ metadata:
   labels:
     app: notification-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: notification-service
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: notification-service
-        image: docker.io/voidcloud/notification-service:latest
+        image: amer30004ever/voidcloud-notification-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3009
@@ -29,6 +29,21 @@ spec:
               key: NODE_ENV
         - name: PORT
           value: "3009"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: DATABASE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: JWT_SECRET
+        - name: JWT_EXPIRES_IN
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: JWT_EXPIRES_IN
         - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
@@ -58,7 +73,7 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /health
+            path: /api/v1/health
             port: 3009
           initialDelaySeconds: 30
           periodSeconds: 10

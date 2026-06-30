@@ -6,7 +6,7 @@ metadata:
   labels:
     app: billing-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: billing-service
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: billing-service
-        image: docker.io/voidcloud/billing-service:latest
+        image: amer30004ever/voidcloud-billing-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3005
@@ -68,7 +68,8 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /health
+            path: /api/v1/health
             port: 3005
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 10
+          timeoutSeconds: 5

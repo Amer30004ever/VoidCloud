@@ -58,9 +58,9 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: whatsapp-service
+            name: openwa-service
             port:
-              number: 3007
+              number: 2785
       - path: /api/v1/email
         pathType: Prefix
         backend:
@@ -100,9 +100,9 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: whatsapp-service
+            name: openwa-service
             port:
-              number: 3007
+              number: 2785
   - host: voidcloud.cc.cd
     http:
       paths:
@@ -110,6 +110,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: frontend-service
+            name: frontend
             port:
               number: 3000
