@@ -869,9 +869,9 @@ jobs:
               IMAGE_TAG="latest"
             fi
             
-            kubectl patch deployment $SERVICE-service -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"'$SERVICE'","imagePullPolicy":"Always"}]}}}}' 2>/dev/null || true
+            kubectl patch deployment $SERVICE-service -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"'$SERVICE'-service","imagePullPolicy":"Always"}]}}}}' 2>/dev/null || true
             kubectl set image deployment/$SERVICE-service -n ${NAMESPACE} \
-              $SERVICE=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${IMAGE_TAG}
+              $SERVICE-service=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${IMAGE_TAG}
           done
           
           echo "🔄 Running database migrations..."
