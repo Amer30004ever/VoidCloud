@@ -1,2 +1,0 @@
-- [API URL routing](api-url-routing.md) — frontend must use /api/v1 (relative), NOT localhost:3001; Replit proxy maps /api to api-server port 8080
-- [Express 5 wildcard routes](express5-wildcards.md) — Express 5 + path-to-regexp v8 rejects bare "*"; use "/{*splat}" instead

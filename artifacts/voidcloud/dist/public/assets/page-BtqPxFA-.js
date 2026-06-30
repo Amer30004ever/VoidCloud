@@ -1,0 +1,1 @@
+import{u as r,r as t,j as s}from"./index-DFoe734A.js";function a(){const e=r();return t.useEffect(()=>{e.replace("/dashboard")},[e]),s.jsx("div",{className:"min-h-screen flex items-center justify-center bg-background text-muted-foreground",children:"Opening DevOps portal…"})}export{a as default};
