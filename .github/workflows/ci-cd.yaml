@@ -1356,6 +1356,31 @@ jobs:
           # Apply configmaps
           kubectl apply -f kubernetes/configmaps.yaml -n ${NAMESPACE}
           
+          # Create/update voidcloud-secrets from GitHub Secrets
+          kubectl create secret generic voidcloud-secrets -n ${NAMESPACE} \
+            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            --from-literal=JWT_EXPIRES_IN="${{ secrets.JWT_EXPIRES_IN }}" \
+            --from-literal=SMTP_HOST="${{ secrets.SMTP_HOST }}" \
+            --from-literal=SMTP_PORT="${{ secrets.SMTP_PORT }}" \
+            --from-literal=SMTP_USER="${{ secrets.SMTP_USER }}" \
+            --from-literal=SMTP_PASS="${{ secrets.SMTP_PASS }}" \
+            --from-literal=EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
+            --from-literal=POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
+            --from-literal=POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
+            --from-literal=POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
+            --from-literal=PROXMOX_HOST="${{ secrets.PROXMOX_HOST }}" \
+            --from-literal=PROXMOX_TOKEN_ID="${{ secrets.PROXMOX_TOKEN_ID }}" \
+            --from-literal=PROXMOX_TOKEN_SECRET="${{ secrets.PROXMOX_TOKEN_SECRET }}" \
+            --from-literal=PROXMOX_NODE="${{ secrets.PROXMOX_NODE }}" \
+            --from-literal=PROXMOX_STORAGE="${{ secrets.PROXMOX_STORAGE }}" \
+            --from-literal=PROXMOX_BRIDGE="${{ secrets.PROXMOX_BRIDGE }}" \
+            --from-literal=PROXMOX_IP_POOL_CIDR="${{ secrets.PROXMOX_IP_POOL_CIDR }}" \
+            --from-literal=PROXMOX_GATEWAY="${{ secrets.PROXMOX_GATEWAY }}" \
+            --from-literal=WHATSAPP_SUPPORT_NUMBER="${{ secrets.WHATSAPP_SUPPORT_NUMBER }}" \
+            --from-literal=WHATSAPP_SUPPORT_NUMBER_FORMATTED="${{ secrets.WHATSAPP_SUPPORT_NUMBER_FORMATTED }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
           # Apply secrets - fail if there's an issue
           if [ -f "kubernetes/secrets.yaml" ]; then
             kubectl apply -f kubernetes/secrets.yaml -n ${NAMESPACE}
@@ -1368,6 +1393,18 @@ jobs:
           kubectl apply -f kubernetes/postgres/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ PVC may already exist"
           kubectl apply -f kubernetes/postgres/deployment.yaml -n ${NAMESPACE}
           kubectl apply -f kubernetes/postgres/service.yaml -n ${NAMESPACE}
+          
+          # Apply Redis
+          kubectl apply -f kubernetes/redis/pv.yaml 2>/dev/null || echo "⚠️ Redis PV may already exist"
+          kubectl apply -f kubernetes/redis/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ Redis PVC may already exist"
+          kubectl apply -f kubernetes/redis/deployment.yaml -n ${NAMESPACE}
+          kubectl apply -f kubernetes/redis/service.yaml -n ${NAMESPACE}
+          
+          # Apply RabbitMQ
+          kubectl apply -f kubernetes/rabbitmq/pv.yaml 2>/dev/null || echo "⚠️ RabbitMQ PV may already exist"
+          kubectl apply -f kubernetes/rabbitmq/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ RabbitMQ PVC may already exist"
+          kubectl apply -f kubernetes/rabbitmq/deployment.yaml -n ${NAMESPACE}
+          kubectl apply -f kubernetes/rabbitmq/service.yaml -n ${NAMESPACE}
           
           # Apply Services
           for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
@@ -1409,6 +1446,14 @@ jobs:
           # Wait for PostgreSQL to be ready
           echo "⏳ Waiting for PostgreSQL..."
           kubectl -n ${NAMESPACE} rollout status deploy/postgres --timeout=300s || echo "⚠️ PostgreSQL rollout status check skipped"
+          
+          # Wait for Redis to be ready
+          echo "⏳ Waiting for Redis..."
+          kubectl -n ${NAMESPACE} rollout status deploy/redis --timeout=300s || echo "⚠️ Redis rollout status check skipped"
+          
+          # Wait for RabbitMQ to be ready
+          echo "⏳ Waiting for RabbitMQ..."
+          kubectl -n ${NAMESPACE} rollout status deploy/rabbitmq --timeout=300s || echo "⚠️ RabbitMQ rollout status check skipped"
           
           # Wait for Services to be ready
           echo "⏳ Waiting for Services..."
