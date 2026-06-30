@@ -70,5 +70,6 @@ spec:
           httpGet:
             path: /api/v1/health
             port: 3005
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 10
+          timeoutSeconds: 5

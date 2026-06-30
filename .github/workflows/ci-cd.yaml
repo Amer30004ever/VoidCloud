@@ -851,6 +851,15 @@ jobs:
           
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
           
+          # Apply infrastructure manifests
+          kubectl apply -f kubernetes/configmaps.yaml
+          kubectl apply -f kubernetes/postgres/pv.yaml
+          kubectl apply -f kubernetes/postgres/pvc.yaml
+          kubectl apply -f kubernetes/rabbitmq/pv.yaml
+          kubectl apply -f kubernetes/rabbitmq/pvc.yaml
+          kubectl apply -f kubernetes/redis/pv.yaml
+          kubectl apply -f kubernetes/redis/pvc.yaml
+          
           # Create/update voidcloud-secrets from GitHub Secrets
           kubectl create secret generic voidcloud-secrets -n ${NAMESPACE} \
             --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
@@ -872,11 +881,6 @@ jobs:
             --from-literal=PROXMOX_BRIDGE="${{ secrets.PROXMOX_BRIDGE }}" \
             --from-literal=PROXMOX_IP_POOL_CIDR="${{ secrets.PROXMOX_IP_POOL_CIDR }}" \
             --from-literal=PROXMOX_GATEWAY="${{ secrets.PROXMOX_GATEWAY }}" \
-<<<<<<< HEAD
-=======
-            --from-literal=WHATSAPP_SUPPORT_NUMBER="${{ secrets.WHATSAPP_SUPPORT_NUMBER }}" \
-            --from-literal=WHATSAPP_SUPPORT_NUMBER_FORMATTED="${{ secrets.WHATSAPP_SUPPORT_NUMBER_FORMATTED }}" \
->>>>>>> a8ab217d0d0b2d6132bd41a1f6248d83902c2963
             --dry-run=client -o yaml | kubectl apply -f -
           
           for SERVICE in $SERVICES_TO_DEPLOY; do
@@ -889,7 +893,6 @@ jobs:
               IMAGE_TAG="latest"
             fi
             
-            kubectl patch deployment $SERVICE-service -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"'$SERVICE'-service","imagePullPolicy":"Always"}]}}}}' 2>/dev/null || true
             kubectl set image deployment/$SERVICE-service -n ${NAMESPACE} \
               $SERVICE-service=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${IMAGE_TAG}
           done
@@ -905,17 +908,23 @@ jobs:
           fi
           kubectl logs job/prisma-migrate -n ${NAMESPACE}
           
+          # Wait for services to be ready (kubectl set image already triggered rollouts)
           for SERVICE in $SERVICES_TO_DEPLOY; do
-            kubectl rollout restart deployment/$SERVICE-service -n ${NAMESPACE}
             kubectl rollout status deployment/$SERVICE-service -n ${NAMESPACE} --timeout=300s
           done
           
           echo "🚀 Deploying OpenWA..."
+          kubectl apply -f kubernetes/openwa/pv.yaml
           kubectl apply -f kubernetes/openwa/pvc.yaml
           kubectl apply -f kubernetes/openwa/deployment.yaml
           kubectl apply -f kubernetes/openwa/service.yaml
           kubectl apply -f kubernetes/openwa/openwa-nodeport.yaml
           kubectl rollout status deployment/openwa -n ${NAMESPACE} --timeout=300s
+          
+          echo "🚀 Deploying infrastructure services..."
+          kubectl apply -f kubernetes/postgres/deployment.yaml
+          kubectl apply -f kubernetes/rabbitmq/deployment.yaml
+          kubectl apply -f kubernetes/redis/deployment.yaml
           
           echo "✅ Services deployment complete!"
   # ============================================

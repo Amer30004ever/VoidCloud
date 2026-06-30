@@ -39,6 +39,11 @@ spec:
             secretKeyRef:
               name: voidcloud-secrets
               key: JWT_SECRET
+        - name: JWT_EXPIRES_IN
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: JWT_EXPIRES_IN
         - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
