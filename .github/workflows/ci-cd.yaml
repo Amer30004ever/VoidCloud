@@ -27,6 +27,8 @@ on:
           - full-ci-both            # Complete CI + Deploy both
           - full-ci-all             # Complete CI + Deploy backend, frontend, and postgres
           - apply-manifests         # kubectl apply all k8s manifests (no build)
+          - apply-service          # kubectl apply specific service manifest
+          - run-migrations          # Run database migrations only
           - validate-secrets        # Run Validate-Secrets equivalent + annotate
           - reset-postgres          # DESTRUCTIVE: wipe postgres PVC/PV + reinit
           - rollback-migrations       # Rollback last database migration
@@ -83,13 +85,35 @@ on:
           - vps                     # VPS service only
           - billing                 # Billing service only
           - crm                     # CRM service only
-          - whatsapp                # WhatsApp service only
           - email                   # Email service only
           - notification            # Notification service only
           - monitoring              # Monitoring service only
           - audit                   # Audit service only
           - analytics               # Analytics service only
         default: 'none'
+      service_name:
+        description: 'Specific service name for apply-service mode'
+        required: false
+        type: choice
+        options:
+          - auth
+          - user
+          - tenant
+          - vps
+          - billing
+          - crm
+          - email
+          - notification
+          - monitoring
+          - audit
+          - analytics
+          - openwa
+          - frontend
+          - postgres
+          - redis
+          - rabbitmq
+          - whatsapp
+        default: 'auth'
 
 env:
   DOCKER_HUB_USERNAME: amer30004ever
@@ -579,7 +603,7 @@ jobs:
         run: |
           SERVICES_TO_BUILD="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_BUILD" == "all" ] || [ -z "$SERVICES_TO_BUILD" ]; then
-            SERVICES_TO_BUILD="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
+            SERVICES_TO_BUILD="auth user tenant vps billing crm email notification monitoring audit analytics"
           elif [ "$SERVICES_TO_BUILD" == "none" ]; then
             echo "Skipping backend build (services=none)"
             echo "BUILT=false" >> $GITHUB_OUTPUT
@@ -608,7 +632,7 @@ jobs:
         run: |
           SERVICES_TO_BUILD="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_BUILD" == "all" ] || [ -z "$SERVICES_TO_BUILD" ]; then
-            SERVICES_TO_BUILD="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
+            SERVICES_TO_BUILD="auth user tenant vps billing crm email notification monitoring audit analytics"
           elif [ "$SERVICES_TO_BUILD" == "none" ]; then
             echo "Skipping backend push (services=none)"
             exit 0
@@ -821,7 +845,7 @@ jobs:
           
           SERVICES_TO_DEPLOY="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_DEPLOY" == "all" ] || [ -z "$SERVICES_TO_DEPLOY" ]; then
-            SERVICES_TO_DEPLOY="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
+            SERVICES_TO_DEPLOY="auth user tenant vps billing crm email notification monitoring audit analytics"
           fi
           
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
@@ -847,16 +871,6 @@ jobs:
             --from-literal=PROXMOX_BRIDGE="${{ secrets.PROXMOX_BRIDGE }}" \
             --from-literal=PROXMOX_IP_POOL_CIDR="${{ secrets.PROXMOX_IP_POOL_CIDR }}" \
             --from-literal=PROXMOX_GATEWAY="${{ secrets.PROXMOX_GATEWAY }}" \
-            --from-literal=WHATSAPP_APP_ID="${{ secrets.WHATSAPP_APP_ID }}" \
-            --from-literal=WHATSAPP_APP_SECRET="${{ secrets.WHATSAPP_APP_SECRET }}" \
-            --from-literal=WHATSAPP_CLIENT_TOKEN="${{ secrets.WHATSAPP_CLIENT_TOKEN }}" \
-            --from-literal=WHATSAPP_ACCESS_TOKEN="${{ secrets.WHATSAPP_ACCESS_TOKEN }}" \
-            --from-literal=WHATSAPP_PHONE_NUMBER_ID="${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}" \
-            --from-literal=WHATSAPP_VERIFY_TOKEN="${{ secrets.WHATSAPP_VERIFY_TOKEN }}" \
-            --from-literal=WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}" \
-            --from-literal=WHATSAPP_SUPPORT_NUMBER="${{ secrets.WHATSAPP_SUPPORT_NUMBER }}" \
-            --from-literal=WHATSAPP_SUPPORT_NUMBER_FORMATTED="${{ secrets.WHATSAPP_SUPPORT_NUMBER_FORMATTED }}" \
-            --from-literal=WHATSAPP_WEBHOOK_URL="${{ secrets.WHATSAPP_WEBHOOK_URL }}" \
             --dry-run=client -o yaml | kubectl apply -f -
           
           for SERVICE in $SERVICES_TO_DEPLOY; do
@@ -890,15 +904,21 @@ jobs:
             kubectl rollout status deployment/$SERVICE-service -n ${NAMESPACE} --timeout=300s
           done
           
+          echo "🚀 Deploying OpenWA..."
+          kubectl apply -f kubernetes/openwa/pvc.yaml
+          kubectl apply -f kubernetes/openwa/deployment.yaml
+          kubectl apply -f kubernetes/openwa/service.yaml
+          kubectl apply -f kubernetes/openwa/openwa-nodeport.yaml
+          kubectl rollout status deployment/openwa -n ${NAMESPACE} --timeout=300s
+          
           echo "✅ Services deployment complete!"
   # ============================================
   # RUN DATABASE MIGRATIONS
   # ============================================
   run-migrations:
-    needs: [deploy-backend]
     if: |
-      needs.deploy-backend.result == 'success' &&
-      (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.mode == 'run-migrations'
     runs-on: self-hosted
     outputs:
       migration_status: ${{ steps.migration.outputs.status }}
@@ -1170,6 +1190,79 @@ jobs:
           done
           kubectl rollout status deployment/frontend -n ${NAMESPACE} --timeout=120s
           echo "✅ All deployments restarted!"
+
+  apply-specific-service:
+    runs-on: self-hosted
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'apply-service'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Apply Specific Service
+        run: |
+          echo "🚀 Applying service: ${{ github.event.inputs.service_name }}"
+          NAMESPACE="voidcloud"
+          SERVICE="${{ github.event.inputs.service_name }}"
+          
+          if [ -z "$SERVICE" ]; then
+            echo "❌ service_name is required for apply-service mode"
+            exit 1
+          fi
+          
+          kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Apply service-specific manifests
+          if [ -f "kubernetes/$SERVICE/service.yaml" ]; then
+            kubectl apply -f kubernetes/$SERVICE/service.yaml
+          fi
+          
+          if [ -f "kubernetes/$SERVICE/deployment.yaml" ]; then
+            kubectl apply -f kubernetes/$SERVICE/deployment.yaml
+          fi
+          
+          if [ -f "kubernetes/$SERVICE/pvc.yaml" ]; then
+            kubectl apply -f kubernetes/$SERVICE/pvc.yaml
+          fi
+          
+          if [ -f "kubernetes/$SERVICE/pv.yaml" ]; then
+            kubectl apply -f kubernetes/$SERVICE/pv.yaml
+          fi
+          
+          # Handle OpenWA special case
+          if [ "$SERVICE" == "openwa" ]; then
+            if [ -f "kubernetes/$SERVICE/openwa-nodeport.yaml" ]; then
+              kubectl apply -f kubernetes/$SERVICE/openwa-nodeport.yaml
+            fi
+          fi
+          
+          # Handle frontend special case
+          if [ "$SERVICE" == "frontend" ]; then
+            if [ -f "kubernetes/$SERVICE/frontend-nodeport.yaml" ]; then
+              kubectl apply -f kubernetes/$SERVICE/frontend-nodeport.yaml
+            fi
+          fi
+          
+          # Rollout restart if deployment exists
+          if kubectl get deployment $SERVICE -n ${NAMESPACE} 2>/dev/null; then
+            kubectl rollout restart deployment/$SERVICE -n ${NAMESPACE}
+            kubectl rollout status deployment/$SERVICE -n ${NAMESPACE} --timeout=120s
+          elif kubectl get deployment $SERVICE-service -n ${NAMESPACE} 2>/dev/null; then
+            kubectl rollout restart deployment/$SERVICE-service -n ${NAMESPACE}
+            kubectl rollout status deployment/$SERVICE-service -n ${NAMESPACE} --timeout=120s
+          fi
+          
+          echo "✅ Service $SERVICE applied successfully!"
 
   # ============================================
   # CI SUMMARY
