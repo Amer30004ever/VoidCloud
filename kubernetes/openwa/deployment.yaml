@@ -41,8 +41,11 @@ spec:
           value: "--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage,--disable-gpu"
         - name: ALLOW_DEV_API_KEY
           value: "true"
+<<<<<<< HEAD
         - name: WEBHOOK_URL
           value: "http://crm-service.voidcloud.svc.cluster.local:3006/api/v1/whatsapp/webhook"
+=======
+>>>>>>> a8ab217d0d0b2d6132bd41a1f6248d83902c2963
         volumeMounts:
         - name: data
           mountPath: /app/data
