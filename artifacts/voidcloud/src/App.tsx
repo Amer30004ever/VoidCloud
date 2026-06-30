@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
+import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { LocaleProvider } from "@/contexts/LocaleContext";
 import { useState, Suspense, lazy } from "react";
+import CloudDashboardLayout from "@/app/amercloud/dashboard/layout";
 
 // Lazy-load all page components
 const LandingPage = lazy(() => import("@/app/page").then(m => ({ default: m.default })));
@@ -154,6 +155,14 @@ function LoadingFallback() {
   );
 }
 
+function WithDashboardLayout({ component: PageComponent }: { component: React.ComponentType }) {
+  return (
+    <CloudDashboardLayout>
+      <PageComponent />
+    </CloudDashboardLayout>
+  );
+}
+
 function AppRoutes() {
   return (
     <Suspense fallback={<LoadingFallback />}>
@@ -182,40 +191,40 @@ function AppRoutes() {
         <Route path="/amercloud/forgot-password" component={AmerCloudForgotPage} />
         <Route path="/amercloud/reset-password" component={AmerCloudResetPage} />
         <Route path="/amercloud/verify-email" component={AmerCloudVerifyPage} />
-        <Route path="/amercloud/user/dashboard" component={AmerCloudUserDashboard} />
+        <Route path="/amercloud/user/dashboard">{() => <WithDashboardLayout component={AmerCloudUserDashboard} />}</Route>
 
-        {/* AmerCloud dashboard */}
-        <Route path="/amercloud/dashboard" component={AmerDashboard} />
-        <Route path="/amercloud/dashboard/analytics" component={AmerAnalytics} />
-        <Route path="/amercloud/dashboard/backups" component={AmerBackups} />
-        <Route path="/amercloud/dashboard/billing" component={AmerBilling} />
-        <Route path="/amercloud/dashboard/billing/invoices" component={AmerBillingInvoices} />
-        <Route path="/amercloud/dashboard/crm" component={AmerCrm} />
-        <Route path="/amercloud/dashboard/databases" component={AmerDatabases} />
-        <Route path="/amercloud/dashboard/databases/:id" component={AmerDatabaseById} />
-        <Route path="/amercloud/dashboard/deployments" component={AmerDeployments} />
-        <Route path="/amercloud/dashboard/deployments/new" component={AmerDeploymentNew} />
-        <Route path="/amercloud/dashboard/deployments/:id" component={AmerDeploymentById} />
-        <Route path="/amercloud/dashboard/enterprise" component={AmerEnterprise} />
-        <Route path="/amercloud/dashboard/images" component={AmerImages} />
-        <Route path="/amercloud/dashboard/orgs/:id" component={AmerOrgs} />
-        <Route path="/amercloud/dashboard/referral" component={AmerReferral} />
-        <Route path="/amercloud/dashboard/settings" component={AmerSettings} />
-        <Route path="/amercloud/dashboard/settings/api-keys" component={AmerSettingsApiKeys} />
-        <Route path="/amercloud/dashboard/settings/team" component={AmerSettingsTeam} />
-        <Route path="/amercloud/dashboard/vps" component={AmerVps} />
-        <Route path="/amercloud/dashboard/vps/new" component={AmerVpsNew} />
-        <Route path="/amercloud/dashboard/vps/:id" component={AmerVpsById} />
-        <Route path="/amercloud/dashboard/webhooks" component={AmerWebhooks} />
+        {/* AmerCloud dashboard — wrapped in CloudDashboardLayout */}
+        <Route path="/amercloud/dashboard">{() => <WithDashboardLayout component={AmerDashboard} />}</Route>
+        <Route path="/amercloud/dashboard/analytics">{() => <WithDashboardLayout component={AmerAnalytics} />}</Route>
+        <Route path="/amercloud/dashboard/backups">{() => <WithDashboardLayout component={AmerBackups} />}</Route>
+        <Route path="/amercloud/dashboard/billing">{() => <WithDashboardLayout component={AmerBilling} />}</Route>
+        <Route path="/amercloud/dashboard/billing/invoices">{() => <WithDashboardLayout component={AmerBillingInvoices} />}</Route>
+        <Route path="/amercloud/dashboard/crm">{() => <WithDashboardLayout component={AmerCrm} />}</Route>
+        <Route path="/amercloud/dashboard/databases">{() => <WithDashboardLayout component={AmerDatabases} />}</Route>
+        <Route path="/amercloud/dashboard/databases/:id">{() => <WithDashboardLayout component={AmerDatabaseById} />}</Route>
+        <Route path="/amercloud/dashboard/deployments">{() => <WithDashboardLayout component={AmerDeployments} />}</Route>
+        <Route path="/amercloud/dashboard/deployments/new">{() => <WithDashboardLayout component={AmerDeploymentNew} />}</Route>
+        <Route path="/amercloud/dashboard/deployments/:id">{() => <WithDashboardLayout component={AmerDeploymentById} />}</Route>
+        <Route path="/amercloud/dashboard/enterprise">{() => <WithDashboardLayout component={AmerEnterprise} />}</Route>
+        <Route path="/amercloud/dashboard/images">{() => <WithDashboardLayout component={AmerImages} />}</Route>
+        <Route path="/amercloud/dashboard/orgs/:id">{() => <WithDashboardLayout component={AmerOrgs} />}</Route>
+        <Route path="/amercloud/dashboard/referral">{() => <WithDashboardLayout component={AmerReferral} />}</Route>
+        <Route path="/amercloud/dashboard/settings">{() => <WithDashboardLayout component={AmerSettings} />}</Route>
+        <Route path="/amercloud/dashboard/settings/api-keys">{() => <WithDashboardLayout component={AmerSettingsApiKeys} />}</Route>
+        <Route path="/amercloud/dashboard/settings/team">{() => <WithDashboardLayout component={AmerSettingsTeam} />}</Route>
+        <Route path="/amercloud/dashboard/vps">{() => <WithDashboardLayout component={AmerVps} />}</Route>
+        <Route path="/amercloud/dashboard/vps/new">{() => <WithDashboardLayout component={AmerVpsNew} />}</Route>
+        <Route path="/amercloud/dashboard/vps/:id">{() => <WithDashboardLayout component={AmerVpsById} />}</Route>
+        <Route path="/amercloud/dashboard/webhooks">{() => <WithDashboardLayout component={AmerWebhooks} />}</Route>
 
-        {/* AmerCloud admin */}
-        <Route path="/amercloud/admin" component={AmerAdminPage} />
-        <Route path="/amercloud/admin/billing" component={AmerAdminBilling} />
-        <Route path="/amercloud/admin/dashboard" component={AmerAdminDashboard} />
-        <Route path="/amercloud/admin/maintenance" component={AmerAdminMaintenance} />
-        <Route path="/amercloud/admin/plans" component={AmerAdminPlans} />
-        <Route path="/amercloud/admin/transactions" component={AmerAdminTransactions} />
-        <Route path="/amercloud/admin/users" component={AmerAdminUsers} />
+        {/* AmerCloud admin — wrapped in CloudDashboardLayout */}
+        <Route path="/amercloud/admin">{() => <WithDashboardLayout component={AmerAdminPage} />}</Route>
+        <Route path="/amercloud/admin/billing">{() => <WithDashboardLayout component={AmerAdminBilling} />}</Route>
+        <Route path="/amercloud/admin/dashboard">{() => <WithDashboardLayout component={AmerAdminDashboard} />}</Route>
+        <Route path="/amercloud/admin/maintenance">{() => <WithDashboardLayout component={AmerAdminMaintenance} />}</Route>
+        <Route path="/amercloud/admin/plans">{() => <WithDashboardLayout component={AmerAdminPlans} />}</Route>
+        <Route path="/amercloud/admin/transactions">{() => <WithDashboardLayout component={AmerAdminTransactions} />}</Route>
+        <Route path="/amercloud/admin/users">{() => <WithDashboardLayout component={AmerAdminUsers} />}</Route>
 
         {/* VoidCloud admin */}
         <Route path="/voidcloud/admin/super-admin" component={VoidAdminSuperAdmin} />

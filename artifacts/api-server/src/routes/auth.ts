@@ -7,7 +7,11 @@ import { eq } from "drizzle-orm";
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "voidcloud-dev-secret-change-in-prod";
+const JWT_SECRET =
+  process.env.JWT_SECRET ??
+  (process.env.NODE_ENV === "production"
+    ? (() => { throw new Error("JWT_SECRET env var is required in production"); })()
+    : "voidcloud-dev-secret-change-in-prod");
 const JWT_EXPIRES = "7d";
 
 function signToken(user: typeof usersTable.$inferSelect) {
