@@ -1,4 +1,4 @@
-name: NEW CI/CD - Test, Build & Deploy
+name: Void Cloud — CI/CD Pipeline
 
 # Auto-cancel older queued/running runs on the same ref so the queue can never pile up.
 concurrency:
@@ -6,6 +6,28 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  # Auto-trigger on push to main/master/develop/release branches and version tags
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - "release/**"
+    tags:
+      - "v*.*.*"
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+
+  # Auto-trigger on PR to main/master (test only, no deploy)
+  pull_request:
+    branches:
+      - main
+      - master
+    types: [opened, synchronize, reopened]
+
+  # Manual trigger with full control
   workflow_dispatch:
     inputs:
       mode:

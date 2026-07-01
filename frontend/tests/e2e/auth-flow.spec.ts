@@ -15,7 +15,7 @@ test('login page renders and login submission hits the API endpoint', async ({ p
         });
     });
 
-    await page.goto('/amercloud/login');
+    await page.goto('/voidcloud/login');
 
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
     await expect(page.getByText('Sign in to your Void Cloud account')).toBeVisible();
@@ -29,12 +29,12 @@ test('login page renders and login submission hits the API endpoint', async ({ p
 });
 
 test('auth helper pages render', async ({ page }) => {
-    await page.goto('/amercloud/register');
+    await page.goto('/voidcloud/register');
     await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
 
-    await page.goto('/amercloud/forgot-password');
+    await page.goto('/voidcloud/forgot-password');
     await expect(page.getByRole('heading', { name: 'Reset your password' })).toBeVisible();
 
-    await page.goto('/amercloud/reset-password');
+    await page.goto('/voidcloud/reset-password');
     await expect(page.getByRole('heading', { name: 'Set a new password' })).toBeVisible();
 });

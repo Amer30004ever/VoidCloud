@@ -32,7 +32,7 @@ const plans: Plan[] = [
       "No credit card required",
     ],
     cta: "Start Trial →",
-    href: "/amercloud/register",
+    href: "/voidcloud/register",
     outline: true,
     trialNote: "After 7 days, deployments pause until upgrade. No auto-charge.",
   },
@@ -50,7 +50,7 @@ const plans: Plan[] = [
       "50k API requests",
     ],
     cta: "Choose Starter →",
-    href: "/amercloud/register?plan=starter",
+    href: "/voidcloud/register?plan=starter",
     popular: true,
   },
   {
@@ -68,7 +68,7 @@ const plans: Plan[] = [
       "Redis cache + Staging",
     ],
     cta: "Choose Pro →",
-    href: "/amercloud/register?plan=pro",
+    href: "/voidcloud/register?plan=pro",
   },
   {
     name: "Business",
@@ -141,7 +141,7 @@ export function Pricing() {
     setLoading(true);
     try {
       const plan = await cloudApi.plans.createCustomPlan(customConfig);
-      window.location.href = `/amercloud/register?plan=${plan.slug}`;
+      window.location.href = `/voidcloud/register?plan=${plan.slug}`;
     } catch (error) {
       console.error("Failed to create custom plan:", error);
       alert("Failed to create custom plan. Please try again.");
