@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openwa
+  namespace: voidcloud
+  labels:
+    app: openwa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openwa
+  template:
+    metadata:
+      labels:
+        app: openwa
+    spec:
+      containers:
+      - name: openwa
+        image: ghcr.io/rmyndharis/openwa:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 2785
+          name: http
+        env:
+        - name: API_PORT
+          value: "2785"
+        - name: DATABASE_TYPE
+          value: "sqlite"
+        - name: DATABASE_NAME
+          value: "/app/data/openwa.sqlite"
+        - name: SESSION_DATA_PATH
+          value: "/app/data/sessions"
+        - name: STORAGE_TYPE
+          value: "local"
+        - name: STORAGE_LOCAL_PATH
+          value: "/app/data/media"
+        - name: PUPPETEER_HEADLESS
+          value: "true"
+        - name: PUPPETEER_ARGS
+          value: "--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage,--disable-gpu"
+        - name: ALLOW_DEV_API_KEY
+          value: "true"
+        - name: WEBHOOK_URL
+          value: "http://crm-service.voidcloud.svc.cluster.local:3006/api/v1/whatsapp/webhook"
+        - name: REDIS_HOST
+          value: "redis"
+        - name: REDIS_PORT
+          value: "6379"
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/docs
+            port: 2785
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/docs
+            port: 2785
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: openwa-pvc

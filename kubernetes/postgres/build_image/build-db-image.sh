@@ -13,7 +13,7 @@ echo -e "${GREEN}🐘 Building Custom PostgreSQL Image${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-IMAGE_NAME="amer30004ever/amer-portal-postgres"
+IMAGE_NAME="amer30004ever/voidcloud-postgres"
 TAG=$(date +"%Y%m%d-%H%M%S")
 
 # Step 1: Create postgres directory if not exists
@@ -99,7 +99,7 @@ FROM postgres:15-alpine
 
 ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWORD=AmerDevOps2026
-ENV POSTGRES_DB=amer_portal
+ENV POSTGRES_DB=voidcloud
 
 # Copy initialization scripts (executed in alphabetical order)
 COPY 01-init-db.sql /docker-entrypoint-initdb.d/

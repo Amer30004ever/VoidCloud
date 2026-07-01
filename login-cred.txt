@@ -1,3 +1,0 @@
-Email: newadmin@mavoid.com
-
-Password: password123

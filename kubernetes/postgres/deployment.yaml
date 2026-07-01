@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: amer-portal
+  namespace: voidcloud
 spec:
   replicas: 1
   strategy:
@@ -56,17 +56,17 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: amer-portal-secrets
+                  name: voidcloud-secrets
                   key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: amer-portal-secrets
+                  name: voidcloud-secrets
                   key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: amer-portal-secrets
+                  name: voidcloud-secrets
                   key: POSTGRES_DB
             # Use a sub-path under the mount so the cluster lives in a clean
             # directory that the init container created with 0700 perms.

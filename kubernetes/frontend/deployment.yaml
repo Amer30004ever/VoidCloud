@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: amer-portal
+  namespace: voidcloud
 spec:
   replicas: 1
   selector:
@@ -16,18 +16,18 @@ spec:
       # imagePullSecrets removed — images are public on Docker Hub.
       containers:
         - name: frontend
-          image: amer30004ever/amer-portal-frontend:latest  # Will be updated
+          image: amer30004ever/voidcloud-frontend:latest  # Will be updated
           imagePullPolicy: Always
           env:
             - name: NEXT_PUBLIC_API_URL
               valueFrom:
                 configMapKeyRef:
-                  name: amer-portal-config
+                  name: voidcloud-config
                   key: NEXT_PUBLIC_API_URL
             - name: NODE_ENV
               valueFrom:
                 configMapKeyRef:
-                  name: amer-portal-config
+                  name: voidcloud-config
                   key: NODE_ENV
           ports:
             - containerPort: 3000

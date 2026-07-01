@@ -5,7 +5,7 @@ Write-Host "🐳 Building Custom PostgreSQL Image" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Blue
 Write-Host ""
 
-$imageName = "amer30004ever/amer-portal-postgres"
+$imageName = "amer30004ever/voidcloud-postgres"
 $tag = Get-Date -Format "yyyyMMdd-HHmmss"
 
 # Step 1: Create postgres directory if not exists
@@ -54,7 +54,7 @@ FROM postgres:15-alpine
 
 ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWORD=AmerDevOps2026
-ENV POSTGRES_DB=amer_portal
+ENV POSTGRES_DB=voidcloud
 
 COPY 01-init-db.sql /docker-entrypoint-initdb.d/
 COPY 02-seed-admin.sql /docker-entrypoint-initdb.d/
