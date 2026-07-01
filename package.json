@@ -1,16 +1,16 @@
 {
-  "name": "amer-devops-portal-root",
-  "version": "0.1.0",
-  "private": true,
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
   "scripts": {
-    "postinstall": "npm run install:frontend",
-    "dev": "npm run install:frontend && npm --prefix frontend run dev -- --hostname 0.0.0.0",
-    "build": "npm run install:frontend && npm --prefix frontend run build",
-    "build:dev": "npm run install:frontend && npm --prefix frontend run build",
-    "start": "npm --prefix frontend run start",
-    "lint": "npm --prefix frontend run lint",
-    "test": "npm --prefix frontend run test",
-    "install:frontend": "node -e \"const fs=require('fs');const cp=require('child_process');if(!fs.existsSync('frontend/node_modules/next/dist/bin/next')) cp.execFileSync('npm',['--prefix','frontend','ci','--include=dev','--no-audit','--no-fund'],{stdio:'inherit'});\"",
-    "mind:update": "node mind/scripts/mind-helper.mjs"
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+  },
+  "private": true,
+  "devDependencies": {
+    "prettier": "^3.8.4",
+    "typescript": "~5.9.3"
   }
 }
