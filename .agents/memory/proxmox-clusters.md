@@ -1,14 +1,18 @@
 ---
 name: Proxmox multi-cluster
-description: Super Admin can add/manage multiple Proxmox clusters from the settings page
+description: Super Admin can add/manage multiple Proxmox clusters from the settings page; multi-cluster proxy at /api/proxmox-cluster
 ---
 
-Proxmox cluster configs are stored in `localStorage` under key `proxmox_clusters` (array of `ProxmoxCluster` objects). Managed from `/amercloud/admin/settings` tab "Proxmox Clusters".
+Proxmox cluster configs stored in `localStorage["proxmox_clusters"]`. Managed from `/amercloud/admin/clusters`.
 
-Default cluster: `{ id: "primary", host: "10.51.100.10", node: "proxmox", storage: "raid-vms", bridge: "vmbr1", gateway: "10.51.100.1" }`.
+**Multi-cluster proxy** at `frontend/src/app/api/proxmox-cluster/route.ts`:
+- POST: accepts X-Proxmox-Host, X-Proxmox-Token-Id, X-Proxmox-Token-Secret, X-Proxmox-Path, X-Proxmox-Method headers
+- GET: test connectivity — accepts ?host=, ?tokenId=, ?secret= query params; returns { ok, version, release }
+- Falls back to PROXMOX_HOST / PROXMOX_TOKEN_ID / PROXMOX_TOKEN_SECRET env vars if headers absent
 
-The VPS page (`/amercloud/admin/vps`) reads the same key to populate the cluster selector dropdown.
+**Smart scheduler** in clusters page: fetches node status + qemu list from each cluster; picks the cluster with most headroom (CPU 40% + RAM 40% + disk 20% weighting) that satisfies requested VM specs.
 
-**Why:** User requested ability to add multiple Proxmox clusters for scalability without backend changes.
+Default cluster: `{ id: "primary", host: "10.51.100.10", node: "proxmox", storage: "raid-vms", bridge: "vmbr1" }`.
 
-**How to apply:** Any Proxmox API call should check `localStorage.proxmox_clusters` for the selected cluster's host/node. The frontend proxmox proxy (`/api/proxmox/`) currently uses a single hardcoded cluster — extend the proxy to accept a cluster ID param if full multi-cluster support is needed backend-side.
+**Why:** User requested multi-cluster management + auto-failover scheduling without backend changes.
+**How to apply:** The original /api/proxmox proxy still works for single-cluster use; new /api/proxmox-cluster is used by clusters page and any future VPS provisioning with cluster selection.

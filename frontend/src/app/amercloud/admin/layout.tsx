@@ -7,16 +7,17 @@ import api from "@/lib/api";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 
 const SA_NAV = [
-  { href: "/amercloud/admin/dashboard",   label: "Dashboard",       icon: "📊" },
-  { href: "/amercloud/admin/users",        label: "Users",           icon: "👤" },
-  { href: "/amercloud/admin/tenants",      label: "Tenants",         icon: "🏢" },
-  { href: "/amercloud/admin/vps",          label: "VPS Instances",   icon: "🖥️" },
-  { href: "/amercloud/admin/whatsapp",     label: "WhatsApp CRM",    icon: "💬" },
-  { href: "/amercloud/admin/plans",        label: "Plans",           icon: "💎" },
-  { href: "/amercloud/admin/billing",      label: "Billing",         icon: "💳" },
-  { href: "/amercloud/admin/audit",        label: "Audit Logs",      icon: "📋" },
-  { href: "/amercloud/admin/monitoring",   label: "Monitoring",      icon: "📡" },
-  { href: "/amercloud/admin/settings",     label: "Settings",        icon: "⚙️" },
+  { href: "/amercloud/admin/dashboard",   label: "Dashboard",        icon: "📊" },
+  { href: "/amercloud/admin/users",        label: "Users",            icon: "👤" },
+  { href: "/amercloud/admin/tenants",      label: "Tenants",          icon: "🏢" },
+  { href: "/amercloud/admin/vps",          label: "VPS Instances",    icon: "🖥️" },
+  { href: "/amercloud/admin/clusters",     label: "Proxmox Clusters", icon: "⚡" },
+  { href: "/amercloud/admin/whatsapp",     label: "WhatsApp CRM",     icon: "💬" },
+  { href: "/amercloud/admin/plans",        label: "Plans",            icon: "💎" },
+  { href: "/amercloud/admin/billing",      label: "Billing",          icon: "💳" },
+  { href: "/amercloud/admin/audit",        label: "Audit Logs",       icon: "📋" },
+  { href: "/amercloud/admin/monitoring",   label: "Monitoring",       icon: "📡" },
+  { href: "/amercloud/admin/settings",     label: "Settings",         icon: "⚙️" },
 ];
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {

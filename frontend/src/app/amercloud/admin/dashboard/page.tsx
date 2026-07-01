@@ -1,10 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { cloudApi, CloudDeployment } from "@/lib/cloud";
+
+/* ── Quick health snapshot for dashboard widget ─── */
+interface QuickHealth {
+  healthScore: number;
+  summary: { up: number; down: number; total: number };
+  services: Array<{ id: string; name: string; icon: string; status: "UP" | "DOWN" | "DEGRADED" }>;
+}
 
 type NodeInfo = {
   name: string;
@@ -27,8 +34,21 @@ export default function AdminDashboard() {
   const [showAllNs, setShowAllNs] = useState(false);
   const [smtpTesting, setSmtpTesting] = useState(false);
   const [smtpTestMsg, setSmtpTestMsg] = useState<string | null>(null);
+  const [quickHealth, setQuickHealth] = useState<QuickHealth | null>(null);
+  const [healthLoading, setHealthLoading] = useState(true);
+
+  const fetchQuickHealth = useCallback(async () => {
+    setHealthLoading(true);
+    try {
+      const res = await fetch("/api/health-check", { cache: "no-store" });
+      const data = await res.json();
+      setQuickHealth(data);
+    } catch { /* silent */ }
+    finally { setHealthLoading(false); }
+  }, []);
 
   useEffect(() => {
+    fetchQuickHealth();
     cloudApi.admin.stats().then(setStats).catch(() => { });
     api.get("/admin/cluster/nodes").then((r) => setNodes(r.data?.nodes ?? [])).catch(() =>
       api.get("/cluster/nodes").then((r) => setNodes(r.data?.nodes ?? [])).catch(() => { })
@@ -159,6 +179,50 @@ export default function AdminDashboard() {
 
         </section>
       </div>
+
+      {/* ── Platform Health Quick Widget ── */}
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Platform Health</h2>
+            <p className="text-xs text-white/40">Live microservice status · <Link href="/amercloud/admin/monitoring" className="text-red-300 hover:underline">Full dashboard →</Link></p>
+          </div>
+          <div className="flex items-center gap-3">
+            {quickHealth && (
+              <span className={`text-2xl font-bold ${quickHealth.healthScore >= 90 ? "text-emerald-400" : quickHealth.healthScore >= 70 ? "text-amber-400" : "text-red-400"}`}>
+                {quickHealth.healthScore}%
+              </span>
+            )}
+            <button onClick={fetchQuickHealth} disabled={healthLoading} className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/60 hover:bg-white/10 disabled:opacity-40">
+              {healthLoading ? "…" : "↻"}
+            </button>
+          </div>
+        </div>
+        {healthLoading && !quickHealth ? (
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-9">
+            {[...Array(13)].map((_, i) => <div key={i} className="h-12 animate-pulse rounded-xl bg-white/5" />)}
+          </div>
+        ) : quickHealth ? (
+          <>
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-9">
+              {quickHealth.services.slice(0, 13).map((svc) => (
+                <div key={svc.id} title={`${svc.name}: ${svc.status}`}
+                  className={`flex flex-col items-center gap-1 rounded-xl border p-2 ${svc.status === "UP" ? "border-emerald-500/15 bg-emerald-500/5" : svc.status === "DEGRADED" ? "border-amber-500/15 bg-amber-500/5" : "border-red-500/20 bg-red-500/5"}`}>
+                  <span className="text-lg leading-none">{svc.icon}</span>
+                  <span className={`text-[9px] font-bold ${svc.status === "UP" ? "text-emerald-400" : svc.status === "DEGRADED" ? "text-amber-400" : "text-red-400"}`}>{svc.status}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex gap-4 text-xs text-white/40">
+              <span>✓ <span className="text-emerald-400">{quickHealth.summary.up}</span> up</span>
+              <span>✗ <span className="text-red-400">{quickHealth.summary.down}</span> down</span>
+              <span>Total: {quickHealth.summary.total}</span>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-white/40">Health check unavailable</p>
+        )}
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
