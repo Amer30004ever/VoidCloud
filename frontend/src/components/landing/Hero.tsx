@@ -32,7 +32,7 @@ export function Hero() {
 
       <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <Link
-          href="/amercloud/register"
+          href="/voidcloud/register"
           className="rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-3 font-semibold text-slate-950 shadow-2xl shadow-cyan-500/20 transition hover:opacity-90"
         >
           Start Free Trial →

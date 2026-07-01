@@ -15,11 +15,11 @@ const routeChecks = [
     { path: '/team', text: /team/i },
     { path: '/portfolio', text: /Portfolio/i },
     { path: '/portal', text: /Opening DevOps portal|Opening portal/i },
-    { path: '/amercloud', text: /Void Cloud|pricing/i },
-    { path: '/amercloud/login', text: /Welcome back|Sign in to your Void Cloud account/i },
-    { path: '/amercloud/register', text: /Create your account|verification/i },
-    { path: '/amercloud/forgot-password', text: /Reset your password|reset link/i },
-    { path: '/amercloud/reset-password', text: /Set a new password/i },
+    { path: '/voidcloud', text: /Void Cloud|pricing/i },
+    { path: '/voidcloud/login', text: /Welcome back|Sign in to your Void Cloud account/i },
+    { path: '/voidcloud/register', text: /Create your account|verification/i },
+    { path: '/voidcloud/forgot-password', text: /Reset your password|reset link/i },
+    { path: '/voidcloud/reset-password', text: /Set a new password/i },
     { path: '/devops', text: /Amer Platform Portal|Sign in to your portal/i },
 ];
 
@@ -35,14 +35,14 @@ test('public website and auth entry points render end to end', async ({ page }) 
 });
 
 test('landing page navigation reaches sign-in and register flows', async ({ page }) => {
-    await page.goto('/amercloud');
+    await page.goto('/voidcloud');
 
     await page.getByRole('link', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/\/amercloud\/login$/);
+    await expect(page).toHaveURL(/\/voidcloud\/login$/);
 
     await page.goBack();
     await page.getByRole('link', { name: 'Start free trial' }).first().click();
-    await expect(page).toHaveURL(/\/amercloud\/register/);
+    await expect(page).toHaveURL(/\/voidcloud\/register/);
 
     await page.goBack();
     await page.getByRole('link', { name: 'View pricing' }).click();
@@ -64,7 +64,7 @@ test('login form supports password reveal and reports failed submission', async 
         });
     });
 
-    await page.goto('/amercloud/login');
+    await page.goto('/voidcloud/login');
 
     const passwordInput = page.locator('input[type="password"]').first();
     await passwordInput.fill('bad');

@@ -1,0 +1,2230 @@
+workernode01@workernode01:~$ cat /etc/cloudflared/config.yaml.bkp
+tunnel: b87510bf-f586-42aa-ab0c-b1a24206768a
+credentials-file: /etc/cloudflared/credentials.json
+metrics: 0.0.0.0:2000
+ingress:
+  - hostname: voidcloud.cc.cd
+    service: http://10.51.100.31:30088
+  - hostname: api.voidcloud.cc.cd
+    service: http://10.51.100.31:30080
+  - service: http_status:404
+workernode01@workernode01:~$ sudo systemctl status cloudflared
+[sudo] password for workernode01:
+● cloudflared.service - cloudflared
+     Loaded: loaded (/etc/systemd/system/cloudflared.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2026-06-30 13:00:36 UTC; 10h ago
+   Main PID: 211657 (cloudflared)
+      Tasks: 12 (limit: 28693)
+     Memory: 20.2M
+        CPU: 1min 38.500s
+     CGroup: /system.slice/cloudflared.service
+             └─211657 /usr/local/bin/cloudflared --no-autoupdate tunnel run --token eyJhIjoiNTk3NDk3N2M3Njg0MTY2MjNlNWVjOGJmN2JhNmEwNzAiLCJ0IjoiYjg3NTEwYmYtZjU4Ni00MmFhLWFiMGMtYjFh>
+
+Jun 30 13:00:36 workernode01 systemd[1]: Started cloudflared.
+Jun 30 13:00:37 workernode01 cloudflared[211657]: 2026-06-30T13:00:37Z INF Registered tunnel connection connIndex=1 connection=ab2d36b0-47d8-4df2-855c-5f4c11bb614b event=0 ip=198.4>
+Jun 30 13:00:37 workernode01 cloudflared[211657]: 2026-06-30T13:00:37Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=2 event=0 ip=198>
+Jun 30 13:00:38 workernode01 cloudflared[211657]: 2026-06-30T13:00:38Z INF Registered tunnel connection connIndex=2 connection=f4186c23-5495-4c34-bfca-0b2ad784aa0c event=0 ip=198.4>
+Jun 30 13:00:38 workernode01 cloudflared[211657]: 2026-06-30T13:00:38Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=3 event=0 ip=198>
+Jun 30 13:00:39 workernode01 cloudflared[211657]: 2026-06-30T13:00:39Z INF Registered tunnel connection connIndex=3 connection=8cb43177-94df-43b1-84c3-0c1576842295 event=0 ip=198.4>
+Jun 30 22:21:28 workernode01 cloudflared[211657]: 2026-06-30T22:21:28Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffi>
+Jun 30 22:21:28 workernode01 cloudflared[211657]: 2026-06-30T22:21:28Z ERR Request failed error="Unable to reach the origin service. The service may be down or it may not be respon>
+Jun 30 22:28:28 workernode01 cloudflared[211657]: 2026-06-30T22:28:28Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffi>
+Jun 30 22:28:28 workernode01 cloudflared[211657]: 2026-06-30T22:28:28Z ERR Request failed error="Unable to reach the origin service. The service may be down or it may not be respon>
+workernode01@workernode01:~$ cat /etc/cloudflared/credentials.json
+cat: /etc/cloudflared/credentials.json: No such file or directory
+
+workernode01@workernode01:~$ # All pods in all namespaces with detailed info
+kubectl get pods --all-namespaces -o wide
+
+# Specific namespaces with more details
+kubectl get pods -n monitoring -o wide
+kubectl get pods -n traefik -o wide
+
+# JSON/YAML output for complete pod specs
+kubectl get pods -n monitoring -o json > monitoring-pods.json
+kubectl get pods -n traefik -o yaml > traefik-pods.yaml
+NAMESPACE     NAME                                            READY   STATUS                       RESTARTS         AGE     IP             NODE           NOMINATED NODE   READINESS GATES
+argocd        argocd-application-controller-5f6d45455-9vvrn   1/1     Running                      8 (14h ago)      8d      10.36.0.41     workernode01   <none>           <none>
+argocd        argocd-redis-6d4776ffb-7t8sw                    1/1     Running                      8 (14h ago)      8d      10.36.0.34     workernode01   <none>           <none>
+argocd        argocd-repo-server-7d64dd98d9-xdd6x             1/1     Running                      8 (14h ago)      8d      10.36.0.26     workernode01   <none>           <none>
+argocd        argocd-server-647969bb4d-bcz55                  1/1     Running                      8 (14h ago)      8d      10.36.0.38     workernode01   <none>           <none>
+confluence    confluence-6966ccfff9-hxgrz                     1/1     Running                      8 (14h ago)      9d      10.36.0.40     workernode01   <none>           <none>
+drawio        drawio-84d8595bcf-94vfc                         1/1     Running                      8 (14h ago)      9d      10.36.0.4      workernode01   <none>           <none>
+gitlab        gitlab-859b75678d-gl6rx                         1/1     Running                      8 (14h ago)      8d      10.36.0.17     workernode01   <none>           <none>
+gitlab        gitlab-agent-6d869f78db-77jht                   1/1     Running                      8 (14h ago)      9d      10.36.0.43     workernode01   <none>           <none>
+gitlab        gitlab-runner-69ccbb9d86-hkbzf                  1/1     Running                      8 (14h ago)      9d      10.36.0.12     workernode01   <none>           <none>
+harbor        harbor-core-8445cf5cf8-m885c                    1/1     Running                      13 (13h ago)     9d      10.36.0.9      workernode01   <none>           <none>
+harbor        harbor-database-0                               1/1     Running                      8 (14h ago)      8d      10.36.0.36     workernode01   <none>           <none>
+harbor        harbor-jobservice-65658bdf6-9dt2g               1/1     Running                      25 (13h ago)     9d      10.36.0.13     workernode01   <none>           <none>
+harbor        harbor-portal-b5c977569-47rzb                   1/1     Running                      8 (14h ago)      9d      10.36.0.16     workernode01   <none>           <none>
+harbor        harbor-redis-0                                  1/1     Running                      8 (14h ago)      8d      10.36.0.2      workernode01   <none>           <none>
+harbor        harbor-registry-6686c8dd98-qqtn8                2/2     Running                      16 (14h ago)     9d      10.36.0.37     workernode01   <none>           <none>
+harbor        harbor-trivy-0                                  1/1     Running                      8 (14h ago)      8d      10.36.0.15     workernode01   <none>           <none>
+hc-vault      vault-7dfcfc75ff-xlp8x                          1/1     Running                      8 (14h ago)      9d      10.36.0.39     workernode01   <none>           <none>
+jaeger        jaeger-58fb97987-bwt77                          1/1     Running                      8 (14h ago)      9d      10.36.0.42     workernode01   <none>           <none>
+kube-system   coredns-76f75df574-7p52w                        1/1     Running                      38 (14h ago)     42d     10.32.0.3      masternode01   <none>           <none>
+kube-system   coredns-76f75df574-tbv9c                        1/1     Running                      38 (14h ago)     42d     10.32.0.2      masternode01   <none>           <none>
+kube-system   etcd-masternode01                               1/1     Running                      50 (14h ago)     42d     10.51.100.21   masternode01   <none>           <none>
+kube-system   kube-apiserver-masternode01                     1/1     Running                      50 (14h ago)     42d     10.51.100.21   masternode01   <none>           <none>
+kube-system   kube-controller-manager-masternode01            1/1     Running                      58 (14h ago)     42d     10.51.100.21   masternode01   <none>           <none>
+kube-system   kube-proxy-qlccs                                1/1     Running                      34 (14h ago)     27d     10.51.100.21   masternode01   <none>           <none>
+kube-system   kube-proxy-s8lg6                                1/1     Running                      34 (14h ago)     27d     10.51.100.31   workernode01   <none>           <none>
+kube-system   kube-scheduler-masternode01                     1/1     Running                      59 (4h41m ago)   42d     10.51.100.21   masternode01   <none>           <none>
+kube-system   metrics-server-6db6cd6674-j8rcz                 1/1     Running                      8 (14h ago)      9d      10.36.0.6      workernode01   <none>           <none>
+kube-system   weave-net-467zn                                 2/2     Running                      81 (14h ago)     42d     10.51.100.21   masternode01   <none>           <none>
+kube-system   weave-net-q8xls                                 2/2     Running                      80 (14h ago)     42d     10.51.100.31   workernode01   <none>           <none>
+kuma          uptime-kuma-7bb78d88c6-g5bsr                    1/1     Running                      9 (13h ago)      9d      10.36.0.0      workernode01   <none>           <none>
+monitoring    alertmanager-alertmanager-0                     2/2     Running                      16 (14h ago)     8d      10.36.0.3      workernode01   <none>           <none>
+monitoring    elasticsearch-b779f5d55-hfh4w                   1/1     Running                      9 (14h ago)      9d      10.36.0.33     workernode01   <none>           <none>
+monitoring    grafana-64bd4dbf77-nx7gp                        1/1     Running                      8 (14h ago)      9d      10.36.0.11     workernode01   <none>           <none>
+monitoring    kibana-7d679dff9b-b89mm                         1/1     Running                      17 (13h ago)     9d      10.36.0.22     workernode01   <none>           <none>
+monitoring    kube-state-metrics-7d6b8c9c66-g6fvp             1/1     Running                      8 (14h ago)      9d      10.36.0.32     workernode01   <none>           <none>
+monitoring    loki-5cfc447694-ffbr8                           1/1     Running                      8 (14h ago)      9d      10.36.0.28     workernode01   <none>           <none>
+monitoring    node-exporter-br8v6                             1/1     Running                      12 (14h ago)     16d     10.51.100.31   workernode01   <none>           <none>
+monitoring    node-exporter-l25j9                             1/1     Running                      0                4h52m   10.51.100.21   masternode01   <none>           <none>
+monitoring    prometheus-operator-86cf48bb84-9gftd            1/1     Running                      8 (14h ago)      9d      10.36.0.31     workernode01   <none>           <none>
+monitoring    prometheus-prometheus-0                         2/2     Running                      16 (14h ago)     8d      10.36.0.44     workernode01   <none>           <none>
+monitoring    promtail-6vgp8                                  1/1     Running                      0                4h52m   10.32.0.16     masternode01   <none>           <none>
+monitoring    promtail-p75kn                                  1/1     Running                      12 (14h ago)     16d     10.36.0.35     workernode01   <none>           <none>
+traefik       traefik-657c94988f-5bzqj                        1/1     Running                      8 (14h ago)      9d      10.51.100.31   workernode01   <none>           <none>
+voidcloud     postgres-6bd8b6545c-szw4s                       0/1     CreateContainerConfigError   0                164m    10.36.0.1      workernode01   <none>           <none>
+NAME                                   READY   STATUS    RESTARTS       AGE     IP             NODE           NOMINATED NODE   READINESS GATES
+alertmanager-alertmanager-0            2/2     Running   16 (14h ago)   8d      10.36.0.3      workernode01   <none>           <none>
+elasticsearch-b779f5d55-hfh4w          1/1     Running   9 (14h ago)    9d      10.36.0.33     workernode01   <none>           <none>
+grafana-64bd4dbf77-nx7gp               1/1     Running   8 (14h ago)    9d      10.36.0.11     workernode01   <none>           <none>
+kibana-7d679dff9b-b89mm                1/1     Running   17 (13h ago)   9d      10.36.0.22     workernode01   <none>           <none>
+kube-state-metrics-7d6b8c9c66-g6fvp    1/1     Running   8 (14h ago)    9d      10.36.0.32     workernode01   <none>           <none>
+loki-5cfc447694-ffbr8                  1/1     Running   8 (14h ago)    9d      10.36.0.28     workernode01   <none>           <none>
+node-exporter-br8v6                    1/1     Running   12 (14h ago)   16d     10.51.100.31   workernode01   <none>           <none>
+node-exporter-l25j9                    1/1     Running   0              4h52m   10.51.100.21   masternode01   <none>           <none>
+prometheus-operator-86cf48bb84-9gftd   1/1     Running   8 (14h ago)    9d      10.36.0.31     workernode01   <none>           <none>
+prometheus-prometheus-0                2/2     Running   16 (14h ago)   8d      10.36.0.44     workernode01   <none>           <none>
+promtail-6vgp8                         1/1     Running   0              4h52m   10.32.0.16     masternode01   <none>           <none>
+promtail-p75kn                         1/1     Running   12 (14h ago)   16d     10.36.0.35     workernode01   <none>           <none>
+NAME                       READY   STATUS    RESTARTS      AGE   IP             NODE           NOMINATED NODE   READINESS GATES
+traefik-657c94988f-5bzqj   1/1     Running   8 (14h ago)   9d    10.51.100.31   workernode01   <none>           <none>
+workernode01@workernode01:~$ # Describe all pods in monitoring namespace
+kubectl describe pods -n monitoring > monitoring-pods-describe.txt
+
+# Describe specific pods
+kubectl describe pod alertmanager-alertmanager-0 -n monitoring
+kubectl describe pod traefik-657c94988f-5bzqj -n traefik
+
+# Describe all resources in namespace
+kubectl describe all -n monitoring > monitoring-all-resources.txt
+Name:             alertmanager-alertmanager-0
+Namespace:        monitoring
+Priority:         0
+Service Account:  default
+Node:             workernode01/10.51.100.31
+Start Time:       Mon, 22 Jun 2026 14:04:44 +0000
+Labels:           alertmanager=alertmanager
+                  app.kubernetes.io/instance=alertmanager
+                  app.kubernetes.io/managed-by=prometheus-operator
+                  app.kubernetes.io/name=alertmanager
+                  app.kubernetes.io/version=0.26.0
+                  apps.kubernetes.io/pod-index=0
+                  controller-revision-hash=alertmanager-alertmanager-6844fd7564
+                  statefulset.kubernetes.io/pod-name=alertmanager-alertmanager-0
+Annotations:      kubectl.kubernetes.io/default-container: alertmanager
+Status:           Running
+IP:               10.36.0.3
+IPs:
+  IP:           10.36.0.3
+Controlled By:  StatefulSet/alertmanager-alertmanager
+Init Containers:
+  init-config-reloader:
+    Container ID:  containerd://95c28169ece02ac9e8a888140383bb7232ae9d150b30688ca92320e90a75b24e
+    Image:         quay.io/prometheus-operator/prometheus-config-reloader:v0.71.0
+    Image ID:      quay.io/prometheus-operator/prometheus-config-reloader@sha256:48e1b6a1393bd187e6aed71e86f065308e016b69e29f212083d8b282354404ec
+    Port:          8080/TCP
+    Host Port:     0/TCP
+    Command:
+      /bin/prometheus-config-reloader
+    Args:
+      --watch-interval=0
+      --listen-address=:8080
+      --config-file=/etc/alertmanager/config/alertmanager.yaml.gz
+      --config-envsubst-file=/etc/alertmanager/config_out/alertmanager.env.yaml
+      --watched-dir=/etc/alertmanager/config
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Tue, 30 Jun 2026 09:24:08 +0000
+      Finished:     Tue, 30 Jun 2026 09:24:21 +0000
+    Ready:          True
+    Restart Count:  8
+    Limits:
+      cpu:     10m
+      memory:  50Mi
+    Requests:
+      cpu:     10m
+      memory:  50Mi
+    Environment:
+      POD_NAME:  alertmanager-alertmanager-0 (v1:metadata.name)
+      SHARD:     -1
+    Mounts:
+      /etc/alertmanager/config from config-volume (ro)
+      /etc/alertmanager/config_out from config-out (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-phvvg (ro)
+Containers:
+  alertmanager:
+    Container ID:  containerd://886ad9c32d7b8f1a180f248f61c72bfcff9421d49d211d9ce0d05717b7e05d30
+    Image:         quay.io/prometheus/alertmanager:v0.26.0
+    Image ID:      quay.io/prometheus/alertmanager@sha256:361db356b33041437517f1cd298462055580585f26555c317df1a3caf2868552
+    Ports:         9093/TCP, 9094/TCP, 9094/UDP
+    Host Ports:    0/TCP, 0/TCP, 0/UDP
+    Args:
+      --config.file=/etc/alertmanager/config_out/alertmanager.env.yaml
+      --storage.path=/alertmanager
+      --data.retention=120h
+      --cluster.listen-address=
+      --web.listen-address=:9093
+      --web.route-prefix=/
+      --cluster.label=monitoring/alertmanager
+      --cluster.peer=alertmanager-alertmanager-0.alertmanager-operated:9094
+      --cluster.reconnect-timeout=5m
+      --web.config.file=/etc/alertmanager/web_config/web-config.yaml
+    State:       Running
+      Started:   Tue, 30 Jun 2026 09:24:47 +0000
+    Last State:  Terminated
+      Reason:    Unknown
+      Message:   ts=2026-06-29T10:06:38.316Z caller=main.go:245 level=info msg="Starting Alertmanager" version="(version=0.26.0, branch=HEAD, revision=d7b4f0c7322e7151d6e3b1e31cbc15361e295d8d)"
+ts=2026-06-29T10:06:38.316Z caller=main.go:246 level=info build_context="(go=go1.20.7, platform=linux/amd64, user=root@df8d7debeef4, date=20230824-11:11:58, tags=netgo)"
+ts=2026-06-29T10:06:38.510Z caller=coordinator.go:113 level=info component=configuration msg="Loading configuration file" file=/etc/alertmanager/config_out/alertmanager.env.yaml
+ts=2026-06-29T10:06:38.542Z caller=coordinator.go:126 level=info component=configuration msg="Completed loading of configuration file" file=/etc/alertmanager/config_out/alertmanager.env.yaml
+ts=2026-06-29T10:06:38.591Z caller=tls_config.go:274 level=info msg="Listening on" address=[::]:9093
+ts=2026-06-29T10:06:38.591Z caller=tls_config.go:313 level=info msg="TLS is disabled." http2=false address=[::]:9093
+ts=2026-06-29T10:06:46.092Z caller=coordinator.go:113 level=info component=configuration msg="Loading configuration file" file=/etc/alertmanager/config_out/alertmanager.env.yaml
+ts=2026-06-29T10:06:46.092Z caller=coordinator.go:126 level=info component=configuration msg="Completed loading of configuration file" file=/etc/alertmanager/config_out/alertmanager.env.yaml
+
+      Exit Code:    255
+      Started:      Mon, 29 Jun 2026 10:06:34 +0000
+      Finished:     Tue, 30 Jun 2026 09:22:13 +0000
+    Ready:          True
+    Restart Count:  8
+    Limits:
+      cpu:     200m
+      memory:  200Mi
+    Requests:
+      cpu:      100m
+      memory:   100Mi
+    Liveness:   http-get http://:web/-/healthy delay=0s timeout=3s period=10s #success=1 #failure=10
+    Readiness:  http-get http://:web/-/ready delay=3s timeout=3s period=5s #success=1 #failure=10
+    Environment:
+      POD_IP:   (v1:status.podIP)
+    Mounts:
+      /alertmanager from alertmanager-alertmanager-db (rw)
+      /etc/alertmanager/certs from tls-assets (ro)
+      /etc/alertmanager/config from config-volume (rw)
+      /etc/alertmanager/config_out from config-out (ro)
+      /etc/alertmanager/web_config/web-config.yaml from web-config (ro,path="web-config.yaml")
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-phvvg (ro)
+  config-reloader:
+    Container ID:  containerd://8c2148034488a2120e4b5bfe62b203a42311c5edc263295d4a7d776bfa4f4a9f
+    Image:         quay.io/prometheus-operator/prometheus-config-reloader:v0.71.0
+    Image ID:      quay.io/prometheus-operator/prometheus-config-reloader@sha256:48e1b6a1393bd187e6aed71e86f065308e016b69e29f212083d8b282354404ec
+    Port:          8080/TCP
+    Host Port:     0/TCP
+    Command:
+      /bin/prometheus-config-reloader
+    Args:
+      --listen-address=:8080
+      --reload-url=http://localhost:9093/-/reload
+      --config-file=/etc/alertmanager/config/alertmanager.yaml.gz
+      --config-envsubst-file=/etc/alertmanager/config_out/alertmanager.env.yaml
+      --watched-dir=/etc/alertmanager/config
+    State:       Running
+      Started:   Tue, 30 Jun 2026 09:25:02 +0000
+    Last State:  Terminated
+      Reason:    Unknown
+      Message:   level=info ts=2026-06-29T10:06:45.592105338Z caller=main.go:137 msg="Starting prometheus-config-reloader" version="(version=0.71.0, branch=refs/tags/v0.71.0, revision=9c26b6a94cc5095cc162f3d22f4e8c630df949d0)"
+level=info ts=2026-06-29T10:06:45.592184793Z caller=main.go:138 build_context="(go=go1.21.5, platform=linux/amd64, user=Action-Run-ID-7500027263, date=20240112-09:04:19, tags=unknown)"
+level=info ts=2026-06-29T10:06:45.991355358Z caller=main.go:193 msg="Starting web server for metrics" listen=:8080
+level=info ts=2026-06-29T10:06:45.991391382Z caller=reloader.go:246 msg="reloading via HTTP"
+level=info ts=2026-06-29T10:06:46.09143608Z caller=tls_config.go:313 msg="Listening on" address=[::]:8080
+level=info ts=2026-06-29T10:06:46.091534539Z caller=tls_config.go:316 msg="TLS is disabled." http2=false address=[::]:8080
+level=info ts=2026-06-29T10:06:46.491374322Z caller=reloader.go:424 msg="Reload triggered" cfg_in=/etc/alertmanager/config/alertmanager.yaml.gz cfg_out=/etc/alertmanager/config_out/alertmanager.env.yaml watched_dirs=/etc/alertmanager/config
+level=info ts=2026-06-29T10:06:46.491483401Z caller=reloader.go:282 msg="started watching config file and directories for changes" cfg=/etc/alertmanager/config/alertmanager.yaml.gz out=/etc/alertmanager/config_out/alertmanager.env.yaml dirs=/etc/alertmanager/config
+level=info ts=2026-06-30T00:57:20.065866336Z caller=main.go:208 msg="Received SIGTERM, exiting gracefully..."
+
+      Exit Code:    255
+      Started:      Mon, 29 Jun 2026 10:06:41 +0000
+      Finished:     Tue, 30 Jun 2026 09:22:12 +0000
+    Ready:          True
+    Restart Count:  8
+    Limits:
+      cpu:     10m
+      memory:  50Mi
+    Requests:
+      cpu:     10m
+      memory:  50Mi
+    Environment:
+      POD_NAME:  alertmanager-alertmanager-0 (v1:metadata.name)
+      SHARD:     -1
+    Mounts:
+      /etc/alertmanager/config from config-volume (ro)
+      /etc/alertmanager/config_out from config-out (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-phvvg (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       True
+  ContainersReady             True
+  PodScheduled                True
+Volumes:
+  config-volume:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  alertmanager-alertmanager-generated
+    Optional:    false
+  tls-assets:
+    Type:                Projected (a volume that contains injected data from multiple sources)
+    SecretName:          alertmanager-alertmanager-tls-assets-0
+    SecretOptionalName:  <nil>
+  config-out:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     Memory
+    SizeLimit:  <unset>
+  web-config:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  alertmanager-alertmanager-web-config
+    Optional:    false
+  alertmanager-alertmanager-db:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:
+    SizeLimit:  <unset>
+  kube-api-access-phvvg:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:                      <none>
+Name:             traefik-657c94988f-5bzqj
+Namespace:        traefik
+Priority:         0
+Service Account:  traefik
+Node:             workernode01/10.51.100.31
+Start Time:       Mon, 22 Jun 2026 14:03:50 +0000
+Labels:           app=traefik
+                  pod-template-hash=657c94988f
+Annotations:      prometheus.io/port: 8082
+                  prometheus.io/scrape: true
+Status:           Running
+IP:               10.51.100.31
+IPs:
+  IP:           10.51.100.31
+Controlled By:  ReplicaSet/traefik-657c94988f
+Containers:
+  traefik:
+    Container ID:  containerd://d652c0f26a988047c437a13e0b18f0bcc862ff2f50bd2e0753a9dc10dab1ad60
+    Image:         traefik:v3.4
+    Image ID:      docker.io/library/traefik@sha256:06ddf61ee653caf4f4211a604e657f084f4727f762c16f826c97aafbefcb279e
+    Ports:         80/TCP, 443/TCP, 8080/TCP, 8082/TCP
+    Host Ports:    80/TCP, 443/TCP, 8080/TCP, 8082/TCP
+    Args:
+      --entrypoints.web.address=:80
+      --entrypoints.websecure.address=:443
+      --entrypoints.traefik.address=:8080
+      --entrypoints.metrics.address=:8082
+      --providers.file.directory=/dynamic
+      --providers.file.watch=true
+      --providers.kubernetesingress
+      --api.dashboard=true
+      --api.insecure=true
+      --log.level=INFO
+      --global.checkNewVersion=false
+      --global.sendAnonymousUsage=false
+      --metrics.prometheus=true
+      --metrics.prometheus.entrypoint=metrics
+      --metrics.prometheus.addEntryPointsLabels=true
+      --metrics.prometheus.addServicesLabels=true
+      --certificatesresolvers.letsencrypt.acme.email=admin@home.lab
+      --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json
+      --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+    State:          Running
+      Started:      Tue, 30 Jun 2026 09:22:38 +0000
+    Last State:     Terminated
+      Reason:       Unknown
+      Exit Code:    255
+      Started:      Mon, 29 Jun 2026 10:04:36 +0000
+      Finished:     Tue, 30 Jun 2026 09:22:12 +0000
+    Ready:          True
+    Restart Count:  8
+    Environment:    <none>
+    Mounts:
+      /dynamic from dynamic-config (rw)
+      /etc/traefik from traefik-data (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-98dq9 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       True
+  ContainersReady             True
+  PodScheduled                True
+Volumes:
+  dynamic-config:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      traefik-dynamic-config
+    Optional:  false
+  traefik-data:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  traefik-traefik-data-pvc
+    ReadOnly:   false
+  kube-api-access-98dq9:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              kubernetes.io/hostname=workernode01
+Tolerations:                 node-role.kubernetes.io/control-plane:NoSchedule op=Exists
+                             node-role.kubernetes.io/master:NoSchedule op=Exists
+                             node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:                      <none>
+
+workernode01@workernode01:~$ kubectl get deployment -n monitoring -o yaml
+kubectl get statefulset -n monitoring -o yaml
+kubectl get service -n monitoring -o yaml
+kubectl get configmap -n monitoring -o yaml
+kubectl get secret -n monitoring -o yaml
+apiVersion: v1
+items:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"elasticsearch"},"name":"elasticsearch","namespace":"monitoring"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"elasticsearch"}},"template":{"metadata":{"labels":{"app":"elasticsearch"}},"spec":{"containers":[{"env":[{"name":"discovery.type","value":"single-node"},{"name":"xpack.security.enabled","value":"false"},{"name":"ES_JAVA_OPTS","value":"-Xms512m -Xmx512m"},{"name":"bootstrap.memory_lock","value":"false"}],"image":"docker.elastic.co/elasticsearch/elasticsearch:7.17.20","livenessProbe":{"httpGet":{"path":"/_cluster/health","port":9200},"initialDelaySeconds":90,"periodSeconds":10},"name":"elasticsearch","ports":[{"containerPort":9200},{"containerPort":9300}],"readinessProbe":{"httpGet":{"path":"/_cluster/health","port":9200},"initialDelaySeconds":60,"periodSeconds":5},"resources":{"limits":{"cpu":"1","memory":"1.5Gi"},"requests":{"cpu":"500m","memory":"1Gi"}},"volumeMounts":[{"mountPath":"/usr/share/elasticsearch/data","name":"data"}]}],"initContainers":[{"command":["sh","-c","chown -R 1000:1000 /usr/share/elasticsearch/data"],"image":"busybox:1.35.0","name":"fix-permissions","securityContext":{"runAsUser":0},"volumeMounts":[{"mountPath":"/usr/share/elasticsearch/data","name":"data"}]},{"command":["sysctl","-w","vm.max_map_count=262144"],"image":"busybox:1.35.0","name":"increase-vm-max-map","securityContext":{"privileged":true}}],"nodeSelector":{"kubernetes.io/hostname":"workernode01"},"volumes":[{"name":"data","persistentVolumeClaim":{"claimName":"elasticsearch-pvc"}}]}}}}
+    creationTimestamp: "2026-06-14T12:01:48Z"
+    generation: 1
+    labels:
+      app: elasticsearch
+    name: elasticsearch
+    namespace: monitoring
+    resourceVersion: "1872357"
+    uid: f8cf22a4-098b-4b80-8986-3e551c4dd84d
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: elasticsearch
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: elasticsearch
+      spec:
+        containers:
+        - env:
+          - name: discovery.type
+            value: single-node
+          - name: xpack.security.enabled
+            value: "false"
+          - name: ES_JAVA_OPTS
+            value: -Xms512m -Xmx512m
+          - name: bootstrap.memory_lock
+            value: "false"
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.17.20
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /_cluster/health
+              port: 9200
+              scheme: HTTP
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: elasticsearch
+          ports:
+          - containerPort: 9200
+            protocol: TCP
+          - containerPort: 9300
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /_cluster/health
+              port: 9200
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1536Mi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /usr/share/elasticsearch/data
+            name: data
+        dnsPolicy: ClusterFirst
+        initContainers:
+        - command:
+          - sh
+          - -c
+          - chown -R 1000:1000 /usr/share/elasticsearch/data
+          image: busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          name: fix-permissions
+          resources: {}
+          securityContext:
+            runAsUser: 0
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /usr/share/elasticsearch/data
+            name: data
+        - command:
+          - sysctl
+          - -w
+          - vm.max_map_count=262144
+          image: busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          name: increase-vm-max-map
+          resources: {}
+          securityContext:
+            privileged: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        nodeSelector:
+          kubernetes.io/hostname: workernode01
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: elasticsearch-pvc
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-14T12:01:48Z"
+      lastUpdateTime: "2026-06-14T12:03:08Z"
+      message: ReplicaSet "elasticsearch-b779f5d55" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-30T09:27:14Z"
+      lastUpdateTime: "2026-06-30T09:27:14Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"grafana","namespace":"monitoring"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"grafana"}},"template":{"metadata":{"labels":{"app":"grafana"}},"spec":{"containers":[{"env":[{"name":"GF_SECURITY_ADMIN_PASSWORD","value":"admin123"}],"image":"grafana/grafana:10.2.2","name":"grafana","ports":[{"containerPort":3000,"name":"http"}],"resources":{"limits":{"cpu":"500m","memory":"500Mi"},"requests":{"cpu":"100m","memory":"200Mi"}},"volumeMounts":[{"mountPath":"/var/lib/grafana","name":"storage"}]}],"securityContext":{"fsGroup":472,"runAsUser":472},"volumes":[{"emptyDir":{},"name":"storage"}]}}}}
+    creationTimestamp: "2026-06-14T12:01:46Z"
+    generation: 1
+    name: grafana
+    namespace: monitoring
+    resourceVersion: "1871666"
+    uid: 4905e545-005d-4cf8-9d52-6321e3b4bc53
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: grafana
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: grafana
+      spec:
+        containers:
+        - env:
+          - name: GF_SECURITY_ADMIN_PASSWORD
+            value: admin123
+          image: grafana/grafana:10.2.2
+          imagePullPolicy: IfNotPresent
+          name: grafana
+          ports:
+          - containerPort: 3000
+            name: http
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 100m
+              memory: 200Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/grafana
+            name: storage
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext:
+          fsGroup: 472
+          runAsUser: 472
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - emptyDir: {}
+          name: storage
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-14T12:01:46Z"
+      lastUpdateTime: "2026-06-14T12:01:54Z"
+      message: ReplicaSet "grafana-64bd4dbf77" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-30T09:23:23Z"
+      lastUpdateTime: "2026-06-30T09:23:23Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"kibana"},"name":"kibana","namespace":"monitoring"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"kibana"}},"template":{"metadata":{"labels":{"app":"kibana"}},"spec":{"containers":[{"env":[{"name":"ELASTICSEARCH_HOSTS","value":"http://elasticsearch.monitoring:9200"},{"name":"ELASTICSEARCH_USERNAME","value":"elastic"},{"name":"ELASTICSEARCH_PASSWORD","valueFrom":{"secretKeyRef":{"key":"ELASTIC_PASSWORD","name":"elasticsearch-secret"}}},{"name":"ELASTICSEARCH_SSL_VERIFICATIONMODE","value":"none"}],"image":"docker.elastic.co/kibana/kibana:7.17.20","livenessProbe":{"httpGet":{"path":"/api/status","port":5601},"initialDelaySeconds":90,"periodSeconds":10},"name":"kibana","ports":[{"containerPort":5601}],"readinessProbe":{"httpGet":{"path":"/api/status","port":5601},"initialDelaySeconds":60,"periodSeconds":5},"resources":{"limits":{"cpu":"500m","memory":"512Mi"},"requests":{"cpu":"200m","memory":"256Mi"}}}],"nodeSelector":{"kubernetes.io/hostname":"workernode01"}}}}}
+    creationTimestamp: "2026-06-14T12:01:52Z"
+    generation: 1
+    labels:
+      app: kibana
+    name: kibana
+    namespace: monitoring
+    resourceVersion: "1872588"
+    uid: 38040306-88f1-424f-9e17-0a6634de4ed5
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: kibana
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: kibana
+      spec:
+        containers:
+        - env:
+          - name: ELASTICSEARCH_HOSTS
+            value: http://elasticsearch.monitoring:9200
+          - name: ELASTICSEARCH_USERNAME
+            value: elastic
+          - name: ELASTICSEARCH_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: ELASTIC_PASSWORD
+                name: elasticsearch-secret
+          - name: ELASTICSEARCH_SSL_VERIFICATIONMODE
+            value: none
+          image: docker.elastic.co/kibana/kibana:7.17.20
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/status
+              port: 5601
+              scheme: HTTP
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: kibana
+          ports:
+          - containerPort: 5601
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/status
+              port: 5601
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        nodeSelector:
+          kubernetes.io/hostname: workernode01
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-14T12:01:52Z"
+      lastUpdateTime: "2026-06-14T12:03:23Z"
+      message: ReplicaSet "kibana-7d679dff9b" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-30T09:28:35Z"
+      lastUpdateTime: "2026-06-30T09:28:35Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"kube-state-metrics","namespace":"monitoring"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"kube-state-metrics"}},"template":{"metadata":{"labels":{"app":"kube-state-metrics"}},"spec":{"containers":[{"image":"registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.0","name":"kube-state-metrics","ports":[{"containerPort":8080,"name":"http"}]}],"serviceAccountName":"kube-state-metrics"}}}}
+    creationTimestamp: "2026-06-14T12:01:40Z"
+    generation: 1
+    name: kube-state-metrics
+    namespace: monitoring
+    resourceVersion: "1871916"
+    uid: 25baf23a-feda-4fdd-98f3-7c17ab1f11b6
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: kube-state-metrics
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: kube-state-metrics
+      spec:
+        containers:
+        - image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.0
+          imagePullPolicy: IfNotPresent
+          name: kube-state-metrics
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: kube-state-metrics
+        serviceAccountName: kube-state-metrics
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-14T12:01:40Z"
+      lastUpdateTime: "2026-06-14T12:01:45Z"
+      message: ReplicaSet "kube-state-metrics-7d6b8c9c66" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-30T09:24:27Z"
+      lastUpdateTime: "2026-06-30T09:24:27Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"loki","namespace":"monitoring"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"loki"}},"template":{"metadata":{"labels":{"app":"loki"}},"spec":{"containers":[{"args":["-config.file=/etc/loki/loki.yaml"],"env":[{"name":"JAEGER_AGENT_HOST","value":"localhost"}],"image":"grafana/loki:2.9.2","livenessProbe":{"httpGet":{"path":"/ready","port":3100},"initialDelaySeconds":30,"periodSeconds":10},"name":"loki","ports":[{"containerPort":3100,"name":"http"}],"readinessProbe":{"httpGet":{"path":"/ready","port":3100},"initialDelaySeconds":20,"periodSeconds":10},"resources":{"limits":{"cpu":"500m","memory":"512Mi"},"requests":{"cpu":"100m","memory":"128Mi"}},"volumeMounts":[{"mountPath":"/etc/loki","name":"config"},{"mountPath":"/loki","name":"storage"}]}],"volumes":[{"configMap":{"name":"loki-config"},"name":"config"},{"emptyDir":{},"name":"storage"}]}}}}
+    creationTimestamp: "2026-06-14T12:01:42Z"
+    generation: 1
+    name: loki
+    namespace: monitoring
+    resourceVersion: "1872060"
+    uid: 5d40dcbe-2d92-4338-a774-8f0e0de44449
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: loki
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: loki
+      spec:
+        containers:
+        - args:
+          - -config.file=/etc/loki/loki.yaml
+          env:
+          - name: JAEGER_AGENT_HOST
+            value: localhost
+          image: grafana/loki:2.9.2
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ready
+              port: 3100
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: loki
+          ports:
+          - containerPort: 3100
+            name: http
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ready
+              port: 3100
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /etc/loki
+            name: config
+          - mountPath: /loki
+            name: storage
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: loki-config
+          name: config
+        - emptyDir: {}
+          name: storage
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-14T12:01:43Z"
+      lastUpdateTime: "2026-06-14T12:02:34Z"
+      message: ReplicaSet "loki-5cfc447694" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-30T09:24:58Z"
+      lastUpdateTime: "2026-06-30T09:24:58Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"prometheus-operator"},"name":"prometheus-operator","namespace":"monitoring"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"prometheus-operator"}},"template":{"metadata":{"labels":{"app":"prometheus-operator"}},"spec":{"containers":[{"args":["--kubelet-service=kube-system/kubelet","--prometheus-config-reloader=quay.io/prometheus-operator/prometheus-config-reloader:v0.71.0"],"image":"quay.io/prometheus-operator/prometheus-operator:v0.71.0","name":"prometheus-operator","ports":[{"containerPort":8080,"name":"http"}],"resources":{"limits":{"cpu":"200m","memory":"200Mi"},"requests":{"cpu":"100m","memory":"100Mi"}}}],"serviceAccountName":"prometheus-operator"}}}}
+    creationTimestamp: "2026-06-14T12:01:31Z"
+    generation: 1
+    labels:
+      app: prometheus-operator
+    name: prometheus-operator
+    namespace: monitoring
+    resourceVersion: "1871934"
+    uid: 3a1c4673-5e44-45fc-9e73-80d6a4afdf57
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: prometheus-operator
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: prometheus-operator
+      spec:
+        containers:
+        - args:
+          - --kubelet-service=kube-system/kubelet
+          - --prometheus-config-reloader=quay.io/prometheus-operator/prometheus-config-reloader:v0.71.0
+          image: quay.io/prometheus-operator/prometheus-operator:v0.71.0
+          imagePullPolicy: IfNotPresent
+          name: prometheus-operator
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 200m
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: prometheus-operator
+        serviceAccountName: prometheus-operator
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-14T12:01:31Z"
+      lastUpdateTime: "2026-06-14T12:01:34Z"
+      message: ReplicaSet "prometheus-operator-86cf48bb84" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-30T09:24:30Z"
+      lastUpdateTime: "2026-06-30T09:24:30Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+kind: List
+metadata:
+  resourceVersion: ""
+apiVersion: v1
+items:
+- apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    annotations:
+      prometheus-operator-input-hash: "8624190850766857695"
+    creationTimestamp: "2026-06-14T12:01:38Z"
+    generation: 1
+    labels:
+      managed-by: prometheus-operator
+    name: alertmanager-alertmanager
+    namespace: monitoring
+    ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Alertmanager
+      name: alertmanager
+      uid: d4be240c-b1c5-4871-9227-1483044e945f
+    resourceVersion: "1872085"
+    uid: a8fd4ecf-fa1b-429e-9f93-4865656ef723
+  spec:
+    persistentVolumeClaimRetentionPolicy:
+      whenDeleted: Retain
+      whenScaled: Retain
+    podManagementPolicy: Parallel
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        alertmanager: alertmanager
+        app.kubernetes.io/instance: alertmanager
+        app.kubernetes.io/managed-by: prometheus-operator
+        app.kubernetes.io/name: alertmanager
+    serviceName: alertmanager-operated
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/default-container: alertmanager
+        creationTimestamp: null
+        labels:
+          alertmanager: alertmanager
+          app.kubernetes.io/instance: alertmanager
+          app.kubernetes.io/managed-by: prometheus-operator
+          app.kubernetes.io/name: alertmanager
+          app.kubernetes.io/version: 0.26.0
+      spec:
+        containers:
+        - args:
+          - --config.file=/etc/alertmanager/config_out/alertmanager.env.yaml
+          - --storage.path=/alertmanager
+          - --data.retention=120h
+          - --cluster.listen-address=
+          - --web.listen-address=:9093
+          - --web.route-prefix=/
+          - --cluster.label=monitoring/alertmanager
+          - --cluster.peer=alertmanager-alertmanager-0.alertmanager-operated:9094
+          - --cluster.reconnect-timeout=5m
+          - --web.config.file=/etc/alertmanager/web_config/web-config.yaml
+          env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.podIP
+          image: quay.io/prometheus/alertmanager:v0.26.0
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 10
+            httpGet:
+              path: /-/healthy
+              port: web
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 3
+          name: alertmanager
+          ports:
+          - containerPort: 9093
+            name: web
+            protocol: TCP
+          - containerPort: 9094
+            name: mesh-tcp
+            protocol: TCP
+          - containerPort: 9094
+            name: mesh-udp
+            protocol: UDP
+          readinessProbe:
+            failureThreshold: 10
+            httpGet:
+              path: /-/ready
+              port: web
+              scheme: HTTP
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            limits:
+              cpu: 200m
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+          - mountPath: /etc/alertmanager/config
+            name: config-volume
+          - mountPath: /etc/alertmanager/config_out
+            name: config-out
+            readOnly: true
+          - mountPath: /etc/alertmanager/certs
+            name: tls-assets
+            readOnly: true
+          - mountPath: /alertmanager
+            name: alertmanager-alertmanager-db
+          - mountPath: /etc/alertmanager/web_config/web-config.yaml
+            name: web-config
+            readOnly: true
+            subPath: web-config.yaml
+        - args:
+          - --listen-address=:8080
+          - --reload-url=http://localhost:9093/-/reload
+          - --config-file=/etc/alertmanager/config/alertmanager.yaml.gz
+          - --config-envsubst-file=/etc/alertmanager/config_out/alertmanager.env.yaml
+          - --watched-dir=/etc/alertmanager/config
+          command:
+          - /bin/prometheus-config-reloader
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: SHARD
+            value: "-1"
+          image: quay.io/prometheus-operator/prometheus-config-reloader:v0.71.0
+          imagePullPolicy: IfNotPresent
+          name: config-reloader
+          ports:
+          - containerPort: 8080
+            name: reloader-web
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 10m
+              memory: 50Mi
+            requests:
+              cpu: 10m
+              memory: 50Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+          - mountPath: /etc/alertmanager/config
+            name: config-volume
+            readOnly: true
+          - mountPath: /etc/alertmanager/config_out
+            name: config-out
+        dnsPolicy: ClusterFirst
+        initContainers:
+        - args:
+          - --watch-interval=0
+          - --listen-address=:8080
+          - --config-file=/etc/alertmanager/config/alertmanager.yaml.gz
+          - --config-envsubst-file=/etc/alertmanager/config_out/alertmanager.env.yaml
+          - --watched-dir=/etc/alertmanager/config
+          command:
+          - /bin/prometheus-config-reloader
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: SHARD
+            value: "-1"
+          image: quay.io/prometheus-operator/prometheus-config-reloader:v0.71.0
+          imagePullPolicy: IfNotPresent
+          name: init-config-reloader
+          ports:
+          - containerPort: 8080
+            name: reloader-web
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 10m
+              memory: 50Mi
+            requests:
+              cpu: 10m
+              memory: 50Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+          - mountPath: /etc/alertmanager/config
+            name: config-volume
+            readOnly: true
+          - mountPath: /etc/alertmanager/config_out
+            name: config-out
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 120
+        volumes:
+        - name: config-volume
+          secret:
+            defaultMode: 420
+            secretName: alertmanager-alertmanager-generated
+        - name: tls-assets
+          projected:
+            defaultMode: 420
+            sources:
+            - secret:
+                name: alertmanager-alertmanager-tls-assets-0
+        - emptyDir:
+            medium: Memory
+          name: config-out
+        - name: web-config
+          secret:
+            defaultMode: 420
+            secretName: alertmanager-alertmanager-web-config
+        - emptyDir: {}
+          name: alertmanager-alertmanager-db
+    updateStrategy:
+      type: RollingUpdate
+  status:
+    availableReplicas: 1
+    collisionCount: 0
+    currentReplicas: 1
+    currentRevision: alertmanager-alertmanager-6844fd7564
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updateRevision: alertmanager-alertmanager-6844fd7564
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    annotations:
+      prometheus-operator-input-hash: "13349634091618485998"
+    creationTimestamp: "2026-06-14T12:01:38Z"
+    generation: 1
+    labels:
+      managed-by: prometheus-operator
+      operator.prometheus.io/mode: server
+      operator.prometheus.io/name: prometheus
+      operator.prometheus.io/shard: "0"
+    name: prometheus-prometheus
+    namespace: monitoring
+    ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Prometheus
+      name: prometheus
+      uid: 9f2d8093-9aff-44fa-b53e-575394905306
+    resourceVersion: "1872160"
+    uid: 2873d892-c523-4065-bb00-af77951ac6fa
+  spec:
+    persistentVolumeClaimRetentionPolicy:
+      whenDeleted: Retain
+      whenScaled: Retain
+    podManagementPolicy: Parallel
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app.kubernetes.io/instance: prometheus
+        app.kubernetes.io/managed-by: prometheus-operator
+        app.kubernetes.io/name: prometheus
+        operator.prometheus.io/name: prometheus
+        operator.prometheus.io/shard: "0"
+        prometheus: prometheus
+    serviceName: prometheus-operated
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/default-container: prometheus
+        creationTimestamp: null
+        labels:
+          app.kubernetes.io/instance: prometheus
+          app.kubernetes.io/managed-by: prometheus-operator
+          app.kubernetes.io/name: prometheus
+          app.kubernetes.io/version: 2.45.0
+          operator.prometheus.io/name: prometheus
+          operator.prometheus.io/shard: "0"
+          prometheus: prometheus
+      spec:
+        automountServiceAccountToken: true
+        containers:
+        - args:
+          - --web.console.templates=/etc/prometheus/consoles
+          - --web.console.libraries=/etc/prometheus/console_libraries
+          - --config.file=/etc/prometheus/config_out/prometheus.env.yaml
+          - --web.enable-lifecycle
+          - --web.route-prefix=/
+          - --storage.tsdb.retention.time=24h
+          - --storage.tsdb.path=/prometheus
+          - --web.config.file=/etc/prometheus/web_config/web-config.yaml
+          image: quay.io/prometheus/prometheus:v2.45.0
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 6
+            httpGet:
+              path: /-/healthy
+              port: web
+              scheme: HTTP
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          name: prometheus
+          ports:
+          - containerPort: 9090
+            name: web
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /-/ready
+              port: web
+              scheme: HTTP
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+            requests:
+              cpu: 200m
+              memory: 400Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          startupProbe:
+            failureThreshold: 60
+            httpGet:
+              path: /-/ready
+              port: web
+              scheme: HTTP
+            periodSeconds: 15
+            successThreshold: 1
+            timeoutSeconds: 3
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+          - mountPath: /etc/prometheus/config_out
+            name: config-out
+            readOnly: true
+          - mountPath: /etc/prometheus/certs
+            name: tls-assets
+            readOnly: true
+          - mountPath: /prometheus
+            name: prometheus-prometheus-db
+          - mountPath: /etc/prometheus/rules/prometheus-prometheus-rulefiles-0
+            name: prometheus-prometheus-rulefiles-0
+          - mountPath: /etc/prometheus/web_config/web-config.yaml
+            name: web-config
+            readOnly: true
+            subPath: web-config.yaml
+        - args:
+          - --listen-address=:8080
+          - --reload-url=http://localhost:9090/-/reload
+          - --config-file=/etc/prometheus/config/prometheus.yaml.gz
+          - --config-envsubst-file=/etc/prometheus/config_out/prometheus.env.yaml
+          - --watched-dir=/etc/prometheus/rules/prometheus-prometheus-rulefiles-0
+          command:
+          - /bin/prometheus-config-reloader
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: SHARD
+            value: "0"
+          image: quay.io/prometheus-operator/prometheus-config-reloader:v0.71.0
+          imagePullPolicy: IfNotPresent
+          name: config-reloader
+          ports:
+          - containerPort: 8080
+            name: reloader-web
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 10m
+              memory: 50Mi
+            requests:
+              cpu: 10m
+              memory: 50Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+          - mountPath: /etc/prometheus/config
+            name: config
+          - mountPath: /etc/prometheus/config_out
+            name: config-out
+          - mountPath: /etc/prometheus/rules/prometheus-prometheus-rulefiles-0
+            name: prometheus-prometheus-rulefiles-0
+        dnsPolicy: ClusterFirst
+        initContainers:
+        - args:
+          - --watch-interval=0
+          - --listen-address=:8080
+          - --config-file=/etc/prometheus/config/prometheus.yaml.gz
+          - --config-envsubst-file=/etc/prometheus/config_out/prometheus.env.yaml
+          - --watched-dir=/etc/prometheus/rules/prometheus-prometheus-rulefiles-0
+          command:
+          - /bin/prometheus-config-reloader
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: SHARD
+            value: "0"
+          image: quay.io/prometheus-operator/prometheus-config-reloader:v0.71.0
+          imagePullPolicy: IfNotPresent
+          name: init-config-reloader
+          ports:
+          - containerPort: 8080
+            name: reloader-web
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 10m
+              memory: 50Mi
+            requests:
+              cpu: 10m
+              memory: 50Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+          - mountPath: /etc/prometheus/config
+            name: config
+          - mountPath: /etc/prometheus/config_out
+            name: config-out
+          - mountPath: /etc/prometheus/rules/prometheus-prometheus-rulefiles-0
+            name: prometheus-prometheus-rulefiles-0
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: prometheus
+        serviceAccountName: prometheus
+        shareProcessNamespace: false
+        terminationGracePeriodSeconds: 600
+        volumes:
+        - name: config
+          secret:
+            defaultMode: 420
+            secretName: prometheus-prometheus
+        - name: tls-assets
+          projected:
+            defaultMode: 420
+            sources:
+            - secret:
+                name: prometheus-prometheus-tls-assets-0
+        - emptyDir:
+            medium: Memory
+          name: config-out
+        - configMap:
+            defaultMode: 420
+            name: prometheus-prometheus-rulefiles-0
+          name: prometheus-prometheus-rulefiles-0
+        - name: web-config
+          secret:
+            defaultMode: 420
+            secretName: prometheus-prometheus-web-config
+        - emptyDir: {}
+          name: prometheus-prometheus-db
+    updateStrategy:
+      type: RollingUpdate
+  status:
+    availableReplicas: 1
+    collisionCount: 0
+    currentReplicas: 1
+    currentRevision: prometheus-prometheus-6cdbbf47b5
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updateRevision: prometheus-prometheus-6cdbbf47b5
+    updatedReplicas: 1
+kind: List
+metadata:
+  resourceVersion: ""
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2026-06-14T12:01:38Z"
+    labels:
+      managed-by: prometheus-operator
+      operated-alertmanager: "true"
+    name: alertmanager-operated
+    namespace: monitoring
+    ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      kind: Alertmanager
+      name: alertmanager
+      uid: d4be240c-b1c5-4871-9227-1483044e945f
+    resourceVersion: "969807"
+    uid: 5e5dbbf9-b3ca-48fd-a91e-84db101a234f
+  spec:
+    clusterIP: None
+    clusterIPs:
+    - None
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: web
+      port: 9093
+      protocol: TCP
+      targetPort: web
+    - name: tcp-mesh
+      port: 9094
+      protocol: TCP
+      targetPort: 9094
+    - name: udp-mesh
+      port: 9094
+      protocol: UDP
+      targetPort: 9094
+    selector:
+      app.kubernetes.io/name: alertmanager
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app":"elasticsearch","component":"monitoring"},"name":"elasticsearch","namespace":"monitoring"},"spec":{"ports":[{"name":"http","port":9200,"targetPort":9200},{"name":"transport","port":9300,"targetPort":9300}],"selector":{"app":"elasticsearch"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-06-14T12:01:51Z"
+    labels:
+      app: elasticsearch
+      component: monitoring
+    name: elasticsearch
+    namespace: monitoring
+    resourceVersion: "970034"
+    uid: 1d815b71-4eba-456f-93b5-b978915666ad
+  spec:
+    clusterIP: 10.96.116.85
+    clusterIPs:
+    - 10.96.116.85
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 9200
+      protocol: TCP
+      targetPort: 9200
+    - name: transport
+      port: 9300
+      protocol: TCP
+      targetPort: 9300
+    selector:
+      app: elasticsearch
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"grafana","namespace":"monitoring"},"spec":{"ports":[{"name":"http","port":3000,"targetPort":3000}],"selector":{"app":"grafana"}}}
+    creationTimestamp: "2026-06-14T12:01:46Z"
+    name: grafana
+    namespace: monitoring
+    resourceVersion: "969981"
+    uid: 6ac066cd-0eb8-4409-be16-cb5809f2a7de
+  spec:
+    clusterIP: 10.111.178.50
+    clusterIPs:
+    - 10.111.178.50
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 3000
+      protocol: TCP
+      targetPort: 3000
+    selector:
+      app: grafana
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app":"kibana","component":"monitoring"},"name":"kibana","namespace":"monitoring"},"spec":{"ports":[{"name":"http","port":5601,"targetPort":5601}],"selector":{"app":"kibana"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-06-14T12:01:52Z"
+    labels:
+      app: kibana
+      component: monitoring
+    name: kibana
+    namespace: monitoring
+    resourceVersion: "970058"
+    uid: 76050afa-e22e-4802-ba96-062361228896
+  spec:
+    clusterIP: 10.107.114.96
+    clusterIPs:
+    - 10.107.114.96
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 5601
+      protocol: TCP
+      targetPort: 5601
+    selector:
+      app: kibana
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app":"kube-state-metrics"},"name":"kube-state-metrics","namespace":"monitoring"},"spec":{"ports":[{"name":"http","port":8080,"targetPort":8080}],"selector":{"app":"kube-state-metrics"}}}
+    creationTimestamp: "2026-06-14T12:01:40Z"
+    labels:
+      app: kube-state-metrics
+    name: kube-state-metrics
+    namespace: monitoring
+    resourceVersion: "969872"
+    uid: 9ae7d726-2051-4af6-b40d-9179589642d4
+  spec:
+    clusterIP: 10.111.31.183
+    clusterIPs:
+    - 10.111.31.183
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: kube-state-metrics
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"loki","namespace":"monitoring"},"spec":{"ports":[{"name":"http","port":3100,"targetPort":3100}],"selector":{"app":"loki"}}}
+    creationTimestamp: "2026-06-14T12:01:44Z"
+    name: loki
+    namespace: monitoring
+    resourceVersion: "969930"
+    uid: 53858b97-7d4f-414b-9f33-aa241c1ee8d7
+  spec:
+    clusterIP: 10.100.89.177
+    clusterIPs:
+    - 10.100.89.177
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 3100
+      protocol: TCP
+      targetPort: 3100
+    selector:
+      app: loki
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app":"node-exporter"},"name":"node-exporter","namespace":"monitoring"},"spec":{"clusterIP":"None","ports":[{"name":"metrics","port":9100,"targetPort":9100}],"selector":{"app":"node-exporter"}}}
+    creationTimestamp: "2026-06-14T12:01:39Z"
+    labels:
+      app: node-exporter
+    name: node-exporter
+    namespace: monitoring
+    resourceVersion: "969843"
+    uid: eaca8d85-7a7a-4a87-9a20-a6ce9f24844d
+  spec:
+    clusterIP: None
+    clusterIPs:
+    - None
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: metrics
+      port: 9100
+      protocol: TCP
+      targetPort: 9100
+    selector:
+      app: node-exporter
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2026-06-14T12:01:38Z"
+    labels:
+      managed-by: prometheus-operator
+      operated-prometheus: "true"
+    name: prometheus-operated
+    namespace: monitoring
+    ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      kind: Prometheus
+      name: prometheus
+      uid: 9f2d8093-9aff-44fa-b53e-575394905306
+    resourceVersion: "969824"
+    uid: 6a17c025-43f4-4143-84fc-4ae62b6e68ff
+  spec:
+    clusterIP: None
+    clusterIPs:
+    - None
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: web
+      port: 9090
+      protocol: TCP
+      targetPort: web
+    selector:
+      app.kubernetes.io/name: prometheus
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+kind: List
+metadata:
+  resourceVersion: ""
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    elasticsearch.yml: |
+      cluster.name: "monitoring-elasticsearch"
+      network.host: 0.0.0.0
+      discovery.type: single-node
+      xpack.security.enabled: false
+      xpack.security.enrollment.enabled: false
+      xpack.security.http.ssl.enabled: false
+      xpack.security.transport.ssl.enabled: false
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"elasticsearch.yml":"cluster.name: \"monitoring-elasticsearch\"\nnetwork.host: 0.0.0.0\ndiscovery.type: single-node\nxpack.security.enabled: false\nxpack.security.enrollment.enabled: false\nxpack.security.http.ssl.enabled: false\nxpack.security.transport.ssl.enabled: false\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"elasticsearch-config","namespace":"monitoring"}}
+    creationTimestamp: "2026-06-14T12:01:48Z"
+    name: elasticsearch-config
+    namespace: monitoring
+    resourceVersion: "970005"
+    uid: 2cb335cd-3b16-4a94-8a21-3d41b1a347d1
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIDBTCCAe2gAwIBAgIIXLy3EJJYDg0wDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
+      AxMKa3ViZXJuZXRlczAeFw0yNjA1MTkwMTU0MDRaFw0zNjA1MTYwMTU5MDRaMBUx
+      EzARBgNVBAMTCmt1YmVybmV0ZXMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+      AoIBAQC0Oe+XntDWoOSG/gZ2eFcjt4nS4oYrbv2sMJItqzRP2QwxXTlVjW0f4Lpd
+      1iV6jZC056bKC5ooKL+NWKY1GSVZVT0mAv/u/6GnNx15ohKF1JReu1a2TWQBPDow
+      T5mvtbs40D+SoT1H4pM8nmtcRsE0a1gHad01WvFksZFIhxQvWoeS3y/y+jQC565m
+      GwRkQ0tQsSDO4zrfaFTU0I1xDyualMFX6/0PYt5Nkw0zVvTrzyJmZwaEJnPBCWuo
+      YW+kwqxm1iJEbvjlKR+QVCdIYaGECfrTowtXorjZm4OYDqI9zLE+5jZGVfO02ifV
+      JOxohgqiBiuthUP1xnHEOZf+8ugjAgMBAAGjWTBXMA4GA1UdDwEB/wQEAwICpDAP
+      BgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRe1Ikwr/Vkm45l2XI7P0uiJekt1DAV
+      BgNVHREEDjAMggprdWJlcm5ldGVzMA0GCSqGSIb3DQEBCwUAA4IBAQBoY7+3IVjM
+      XnZ8WAzXRDskc7SrAxQFAqBwdFhMOGihmqjJbtmhusNN2lZqsk4a73swc4YhPv6/
+      sLI8qHodgA0onpZ+4sHQlXwhsigCMhDHVpOM4T92iIQ4KJmr3OPTjHEFdCjLCS5c
+      5tfAbNmunmak2gjxsxFfW5uxU9TN6TQRopiDtZTfIVhlcNj4eV3SN4Kf9Nb/eit5
+      DKg69FQXrHo2egKRDzOQ2dpKsK21/U401SDX/asxWULW/9Mlsj/bs/hJ0fYn7ure
+      ubBwh0eRaa+DvKyP/ispV6Z8DbsKlieDlQZi/H/9W5ltCZg98u8sCmrR94LiAXTi
+      XZCdNlEsREu9
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-06-14T12:01:25Z"
+    name: kube-root-ca.crt
+    namespace: monitoring
+    resourceVersion: "969726"
+    uid: 80db50de-4d71-4c16-8ec1-02151c4b1632
+- apiVersion: v1
+  data:
+    loki.yaml: |
+      auth_enabled: false
+      server:
+        http_listen_port: 3100
+      common:
+        path_prefix: /loki
+        storage:
+          filesystem:
+            chunks_directory: /loki/chunks
+            rules_directory: /loki/rules
+        replication_factor: 1
+        ring:
+          kvstore:
+            store: inmemory
+      schema_config:
+        configs:
+        - from: 2020-10-24
+          store: boltdb-shipper
+          object_store: filesystem
+          schema: v11
+          index:
+            prefix: index_
+            period: 24h
+      storage_config:
+        boltdb_shipper:
+          active_index_directory: /loki/index
+          cache_location: /loki/index_cache
+          shared_store: filesystem
+        filesystem:
+          directory: /loki/chunks
+      ingester:
+        lifecycler:
+          ring:
+            kvstore:
+              store: inmemory
+            replication_factor: 1
+      ruler:
+        storage:
+          type: local
+          local:
+            directory: /loki/rules
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"loki.yaml":"auth_enabled: false\nserver:\n  http_listen_port: 3100\ncommon:\n  path_prefix: /loki\n  storage:\n    filesystem:\n      chunks_directory: /loki/chunks\n      rules_directory: /loki/rules\n  replication_factor: 1\n  ring:\n    kvstore:\n      store: inmemory\nschema_config:\n  configs:\n  - from: 2020-10-24\n    store: boltdb-shipper\n    object_store: filesystem\n    schema: v11\n    index:\n      prefix: index_\n      period: 24h\nstorage_config:\n  boltdb_shipper:\n    active_index_directory: /loki/index\n    cache_location: /loki/index_cache\n    shared_store: filesystem\n  filesystem:\n    directory: /loki/chunks\ningester:\n  lifecycler:\n    ring:\n      kvstore:\n        store: inmemory\n      replication_factor: 1\nruler:\n  storage:\n    type: local\n    local:\n      directory: /loki/rules\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"loki-config","namespace":"monitoring"}}
+    creationTimestamp: "2026-06-14T12:01:42Z"
+    name: loki-config
+    namespace: monitoring
+    resourceVersion: "969902"
+    uid: 13e009b6-a25c-40e1-a867-c7e577ce5fa8
+- apiVersion: v1
+  data:
+    monitoring-prometheus-rules-c6ca07f0-2816-4bb4-b3f3-261d42c4a646.yaml: |
+      groups:
+      - name: node-alerts
+        rules:
+        - alert: HighCPUUsage
+          annotations:
+            description: CPU usage is above 80% on {{ .instance }}
+            summary: High CPU usage on {{ .instance }}
+          expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))
+            * 100) > 80
+          for: 5m
+          labels:
+            severity: warning
+        - alert: HighMemoryUsage
+          annotations:
+            description: Memory usage is above 85% on {{ .instance }}
+            summary: High memory usage on {{ .instance }}
+          expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+            > 85
+          for: 5m
+          labels:
+            severity: warning
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: "2026-06-14T12:01:39Z"
+    labels:
+      managed-by: prometheus-operator
+      prometheus-name: prometheus
+    name: prometheus-prometheus-rulefiles-0
+    namespace: monitoring
+    ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Prometheus
+      name: prometheus
+      uid: 9f2d8093-9aff-44fa-b53e-575394905306
+    resourceVersion: "969840"
+    uid: 9f3d4255-6d27-4361-bf7a-f4392959054b
+- apiVersion: v1
+  data:
+    promtail.yaml: |
+      server:
+        http_listen_port: 9080
+      clients:
+      - url: http://loki.monitoring:3100/loki/api/v1/push
+      positions:
+        filename: /tmp/positions.yaml
+      scrape_configs:
+      - job_name: kubernetes-pods
+        kubernetes_sd_configs:
+        - role: pod
+        pipeline_stages:
+        - cri: {}
+        relabel_configs:
+        - source_labels:
+          - __meta_kubernetes_pod_label_app
+          target_label: app
+        - source_labels:
+          - __meta_kubernetes_namespace
+          target_label: namespace
+        - source_labels:
+          - __meta_kubernetes_pod_name
+          target_label: pod
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"promtail.yaml":"server:\n  http_listen_port: 9080\nclients:\n- url: http://loki.monitoring:3100/loki/api/v1/push\npositions:\n  filename: /tmp/positions.yaml\nscrape_configs:\n- job_name: kubernetes-pods\n  kubernetes_sd_configs:\n  - role: pod\n  pipeline_stages:\n  - cri: {}\n  relabel_configs:\n  - source_labels:\n    - __meta_kubernetes_pod_label_app\n    target_label: app\n  - source_labels:\n    - __meta_kubernetes_namespace\n    target_label: namespace\n  - source_labels:\n    - __meta_kubernetes_pod_name\n    target_label: pod\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"promtail-config","namespace":"monitoring"}}
+    creationTimestamp: "2026-06-14T12:01:45Z"
+    name: promtail-config
+    namespace: monitoring
+    resourceVersion: "969940"
+    uid: 6326c71f-e5f2-4738-b607-07479fbb7fc0
+kind: List
+metadata:
+  resourceVersion: ""
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    alertmanager.yaml.gz: H4sIAAAAAAAA/yrKLy1JteJSUChKTU7NLEstslJQzyvNyVHnggkUW3HpKuQl5qbCZAABAAD//00HDPczAAAA
+  kind: Secret
+  metadata:
+    creationTimestamp: "2026-06-14T12:01:37Z"
+    labels:
+      managed-by: prometheus-operator
+    name: alertmanager-alertmanager-generated
+    namespace: monitoring
+    ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Alertmanager
+      name: alertmanager
+      uid: d4be240c-b1c5-4871-9227-1483044e945f
+    resourceVersion: "969802"
+    uid: a28053e8-7178-4977-b818-ead333b58e62
+  type: Opaque
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    creationTimestamp: "2026-06-14T12:01:37Z"
+    labels:
+      managed-by: prometheus-operator
+    name: alertmanager-alertmanager-tls-assets-0
+    namespace: monitoring
+    ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Alertmanager
+      name: alertmanager
+      uid: d4be240c-b1c5-4871-9227-1483044e945f
+    resourceVersion: "969804"
+    uid: 4c119de8-33a4-4d4a-af24-3512b1bd44e9
+  type: Opaque
+- apiVersion: v1
+  data:
+    web-config.yaml: ""
+  kind: Secret
+  metadata:
+    creationTimestamp: "2026-06-14T12:01:37Z"
+    labels:
+      managed-by: prometheus-operator
+    name: alertmanager-alertmanager-web-config
+    namespace: monitoring
+    ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Alertmanager
+      name: alertmanager
+      uid: d4be240c-b1c5-4871-9227-1483044e945f
+    resourceVersion: "969805"
+    uid: ec4da970-2b2a-49e5-8e2f-93de7e8aab99
+  type: Opaque
+- apiVersion: v1
+  data:
+    alertmanager.yaml: Z2xvYmFsOgogIHNsYWNrX2FwaV91cmw6ICdodHRwczovL2hvb2tzLnNsYWNrLmNvbS9zZXJ2aWNlcy9ZT1VSL1NMQUNLL1dFQkhPT0snCiAgcmVzb2x2ZV90aW1lb3V0OiA1bQoKcm91dGU6CiAgZ3JvdXBfYnk6IFsnYWxlcnRuYW1lJ10KICBncm91cF93YWl0OiAzMHMKICBncm91cF9pbnRlcnZhbDogNW0KICByZXBlYXRfaW50ZXJ2YWw6IDRoCiAgcmVjZWl2ZXI6ICdzbGFjay1ub3RpZmljYXRpb25zJwoKcmVjZWl2ZXJzOgotIG5hbWU6ICdzbGFjay1ub3RpZmljYXRpb25zJwogIHNsYWNrX2NvbmZpZ3M6CiAgLSBjaGFubmVsOiAnI2FsZXJ0cycKICAgIHNlbmRfcmVzb2x2ZWQ6IHRydWUKICAgIHRpdGxlOiAnW3t7IC5TdGF0dXMgfCB0b1VwcGVyIH19XSB7eyAuQ29tbW9uTGFiZWxzLmFsZXJ0bmFtZSB9fScKICAgIHRleHQ6ICd7eyAuQ29tbW9uQW5ub3RhdGlvbnMuZGVzY3JpcHRpb24gfX0nCg==
+  kind: Secret
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Secret","metadata":{"annotations":{},"name":"alertmanager-instance","namespace":"monitoring"},"stringData":{"alertmanager.yaml":"global:\n  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'\n  resolve_timeout: 5m\n\nroute:\n  group_by: ['alertname']\n  group_wait: 30s\n  group_interval: 5m\n  repeat_interval: 4h\n  receiver: 'slack-notifications'\n\nreceivers:\n- name: 'slack-notifications'\n  slack_configs:\n  - channel: '#alerts'\n    send_resolved: true\n    title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'\n    text: '{{ .CommonAnnotations.description }}'\n"}}
+    creationTimestamp: "2026-06-14T12:01:37Z"
+    name: alertmanager-instance
+    namespace: monitoring
+    resourceVersion: "969803"
+    uid: 476533c6-acce-464f-b77c-a61f65abdf8c
+  type: Opaque
+- apiVersion: v1
+  data:
+    ELASTIC_PASSWORD: ZWxhc3RpYzEyMw==
+  kind: Secret
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Secret","metadata":{"annotations":{},"name":"elasticsearch-secret","namespace":"monitoring"},"stringData":{"ELASTIC_PASSWORD":"elastic123"},"type":"Opaque"}
+    creationTimestamp: "2026-06-14T12:01:50Z"
+    name: elasticsearch-secret
+    namespace: monitoring
+    resourceVersion: "970031"
+    uid: 5f05d56f-b19a-4eac-a4b1-7f0ee898f86f
+  type: Opaque
+- apiVersion: v1
+  data:
+    prometheus.yaml.gz: H4sIAAAAAAAA/+xVz2/bOgy++6/goYekgJsW76aeCvQ9vEu7Yj0Og8BIbKJVlgSKLjps+98HO3Zqt0mX7AfQAbnZJPWJ/CjyW/g4R68KAHpAX6O4GLQLQvyAXsE/p7kAyIYx0QszPQpxQK89zsnnBgQgcaxIllRnBVUMTiK7sJg9mZ9FaabknUEFR5Obd5f6+uLq32nBtSd95zxlVZQwIzEDhFnjzQNDOfhsfO3B8nR2fPIZK1906ZsY7tyiBfwU5zpgRQoy8YMzdLXKdDbI+L6eU5kFhcqKhJ3Js9MCYBlD5L5iuEOfqQBogjmQUNbZPt0EUAJHTwoo2BRdkFX5zd05oaGOtM7S/5QD5rbT35nFVRRrUXDWWpna3MY55FizoVGfWhLaL0FekKycCrSWKulBf3quWiA0zQNRcE+U2sMbkbWuSFAPSVnRvIrTmNJukYkpU5D1AaYFPSqYvOzN9Fy4/rUc+xbpFFn6ktd3LkXSdi5fQUNrmXLWHc33Lti9D62TyZSQUSIrOB9mdx0tnU9OjqedMXk0VFEQBUdfzr5t6HOIlt5uPTfR7ldOinafatYDuImZgW9nwP7ZrisbY3bufRBTtNvQ9iy2QTIxCLpAvA1zHTCaIctxrxlqrkpLzKPRmfyHzpP9elsbQ2TJTn8js/0W2/RIymex/XN8eeBH092/X711Yy4xL1tnFW3tG/U7a397Jht/9XrfRjAdd0eT2/8v3l9OR1jdZlutPv1848OHjztKXLMDSnps9h3xQd3eirqN2vLHha0T0LerBQdtO2jbQdt+Xtt2GPC/Td6+BwAA//+bb4Gptg4AAA==
+  kind: Secret
+  metadata:
+    creationTimestamp: "2026-06-14T12:01:38Z"
+    labels:
+      managed-by: prometheus-operator
+    name: prometheus-prometheus
+    namespace: monitoring
+    ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Prometheus
+      name: prometheus
+      uid: 9f2d8093-9aff-44fa-b53e-575394905306
+    resourceVersion: "969900"
+    uid: 7a053cd9-3b60-41fe-a792-1639ffa81f14
+  type: Opaque
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    creationTimestamp: "2026-06-14T12:01:38Z"
+    labels:
+      managed-by: prometheus-operator
+    name: prometheus-prometheus-tls-assets-0
+    namespace: monitoring
+    ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Prometheus
+      name: prometheus
+      uid: 9f2d8093-9aff-44fa-b53e-575394905306
+    resourceVersion: "969817"
+    uid: bbeffd64-b52d-4bcd-b69c-fb96014a4266
+  type: Opaque
+- apiVersion: v1
+  data:
+    web-config.yaml: ""
+  kind: Secret
+  metadata:
+    creationTimestamp: "2026-06-14T12:01:38Z"
+    labels:
+      managed-by: prometheus-operator
+    name: prometheus-prometheus-web-config
+    namespace: monitoring
+    ownerReferences:
+    - apiVersion: monitoring.coreos.com/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Prometheus
+      name: prometheus
+      uid: 9f2d8093-9aff-44fa-b53e-575394905306
+    resourceVersion: "969823"
+    uid: 846358e7-f4ef-4630-a958-cd6d945d6464
+  type: Opaque
+kind: List
+metadata:
+  resourceVersion: ""
+workernode01@workernode01:~$ # All resources in monitoring
+kubectl get all,configmaps,secrets,persistentvolumeclaims,serviceaccounts -n monitoring
+
+# Export to file
+kubectl get all,configmaps,secrets,persistentvolumeclaims,serviceaccounts -n monitoring -o yaml > monitoring-everything.yaml
+NAME                                       READY   STATUS    RESTARTS       AGE
+pod/alertmanager-alertmanager-0            2/2     Running   16 (14h ago)   8d
+pod/elasticsearch-b779f5d55-hfh4w          1/1     Running   9 (14h ago)    9d
+pod/grafana-64bd4dbf77-nx7gp               1/1     Running   8 (14h ago)    9d
+pod/kibana-7d679dff9b-b89mm                1/1     Running   17 (13h ago)   9d
+pod/kube-state-metrics-7d6b8c9c66-g6fvp    1/1     Running   8 (14h ago)    9d
+pod/loki-5cfc447694-ffbr8                  1/1     Running   8 (14h ago)    9d
+pod/node-exporter-br8v6                    1/1     Running   12 (14h ago)   16d
+pod/node-exporter-l25j9                    1/1     Running   0              4h55m
+pod/prometheus-operator-86cf48bb84-9gftd   1/1     Running   8 (14h ago)    9d
+pod/prometheus-prometheus-0                2/2     Running   16 (14h ago)   8d
+pod/promtail-6vgp8                         1/1     Running   0              4h55m
+pod/promtail-p75kn                         1/1     Running   12 (14h ago)   16d
+
+NAME                            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+service/alertmanager-operated   ClusterIP   None            <none>        9093/TCP,9094/TCP,9094/UDP   16d
+service/elasticsearch           ClusterIP   10.96.116.85    <none>        9200/TCP,9300/TCP            16d
+service/grafana                 ClusterIP   10.111.178.50   <none>        3000/TCP                     16d
+service/kibana                  ClusterIP   10.107.114.96   <none>        5601/TCP                     16d
+service/kube-state-metrics      ClusterIP   10.111.31.183   <none>        8080/TCP                     16d
+service/loki                    ClusterIP   10.100.89.177   <none>        3100/TCP                     16d
+service/node-exporter           ClusterIP   None            <none>        9100/TCP                     16d
+service/prometheus-operated     ClusterIP   None            <none>        9090/TCP                     16d
+
+NAME                           DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+daemonset.apps/node-exporter   2         2         2       2            2           <none>          16d
+daemonset.apps/promtail        2         2         2       2            2           <none>          16d
+
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/elasticsearch         1/1     1            1           16d
+deployment.apps/grafana               1/1     1            1           16d
+deployment.apps/kibana                1/1     1            1           16d
+deployment.apps/kube-state-metrics    1/1     1            1           16d
+deployment.apps/loki                  1/1     1            1           16d
+deployment.apps/prometheus-operator   1/1     1            1           16d
+
+NAME                                             DESIRED   CURRENT   READY   AGE
+replicaset.apps/elasticsearch-b779f5d55          1         1         1       16d
+replicaset.apps/grafana-64bd4dbf77               1         1         1       16d
+replicaset.apps/kibana-7d679dff9b                1         1         1       16d
+replicaset.apps/kube-state-metrics-7d6b8c9c66    1         1         1       16d
+replicaset.apps/loki-5cfc447694                  1         1         1       16d
+replicaset.apps/prometheus-operator-86cf48bb84   1         1         1       16d
+
+NAME                                         READY   AGE
+statefulset.apps/alertmanager-alertmanager   1/1     16d
+statefulset.apps/prometheus-prometheus       1/1     16d
+
+NAME                                          DATA   AGE
+configmap/elasticsearch-config                1      16d
+configmap/kube-root-ca.crt                    1      16d
+configmap/loki-config                         1      16d
+configmap/prometheus-prometheus-rulefiles-0   1      16d
+configmap/promtail-config                     1      16d
+
+NAME                                            TYPE     DATA   AGE
+secret/alertmanager-alertmanager-generated      Opaque   1      16d
+secret/alertmanager-alertmanager-tls-assets-0   Opaque   0      16d
+secret/alertmanager-alertmanager-web-config     Opaque   1      16d
+secret/alertmanager-instance                    Opaque   1      16d
+secret/elasticsearch-secret                     Opaque   1      16d
+secret/prometheus-prometheus                    Opaque   1      16d
+secret/prometheus-prometheus-tls-assets-0       Opaque   0      16d
+secret/prometheus-prometheus-web-config         Opaque   1      16d
+
+NAME                                      STATUS   VOLUME             CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/elasticsearch-pvc   Bound    elasticsearch-pv   50Gi       RWO            manual         <unset>                 16d
+persistentvolumeclaim/grafana-pvc         Bound    grafana-pv         10Gi       RWO            manual         <unset>                 16d
+persistentvolumeclaim/storage-loki-0      Bound    loki-pv            50Gi       RWO            manual         <unset>                 16d
+
+NAME                                 SECRETS   AGE
+serviceaccount/default               0         16d
+serviceaccount/kube-state-metrics    0         16d
+serviceaccount/prometheus            0         16d
+serviceaccount/prometheus-operator   0         16d
+serviceaccount/promtail              0         16d
+
+GitHub Secret Name	Value from your .env
+KUBECONFIG    YXBpVmVyc2lvbjogdjEKY2x1c3RlcnM6Ci0gY2x1c3RlcjoKICAgIGNlcnRpZmljYXRlLWF1dGhvcml0eS1kYXRhOiBMUzB0TFMxQ1JVZEpUaUJEUlZKVVNVWkpRMEZVUlMwdExTMHRDazFKU1VSQ1ZFTkRRV1V5WjBGM1NVSkJaMGxKV0V4NU0wVktTbGxFWnpCM1JGRlpTa3R2V2tsb2RtTk9RVkZGVEVKUlFYZEdWRVZVVFVKRlIwRXhWVVVLUVhoTlMyRXpWbWxhV0VwMVdsaFNiR042UVdWR2R6QjVUbXBCTVUxVWEzZE5WRlV3VFVSU1lVWjNNSHBPYWtFeFRWUlpkMDFVVlRWTlJGSmhUVUpWZUFwRmVrRlNRbWRPVmtKQlRWUkRiWFF4V1cxV2VXSnRWakJhV0UxM1oyZEZhVTFCTUVkRFUzRkhVMGxpTTBSUlJVSkJVVlZCUVRSSlFrUjNRWGRuWjBWTENrRnZTVUpCVVVNd1QyVXJXRzUwUkZkdlQxTkhMMmRhTW1WR1kycDBORzVUTkc5WmNtSjJNbk5OU2tsMGNYcFNVREpSZDNoWVZHeFdhbGN3WmpSTWNHUUtNV2xXTm1wYVF6QTFObUpMUXpWdmIwdE1LMDVYUzFreFIxTldXbFpVTUcxQmRpOTFMelpIYms1NE1UVnZhRXRHTVVwU1pYVXhZVEpVVjFGQ1VFUnZkd3BVTlcxMmRHSnpOREJFSzFOdlZERklOSEJOT0c1dGRHTlNjMFV3WVRGblNHRmtNREZYZGtacmMxcEdTV2g0VVhaWGIyVlRNM2t2ZVN0cVVVTTFOalZ0Q2tkM1VtdFJNSFJSYzFORVR6UjZjbVpoUmxSVk1Fa3hlRVI1ZFdGc1RVWllOaTh3VUZsME5VNXJkekI2Vm5aVWNucDVTbTFhZDJGRlNtNVFRa05YZFc4S1dWY3JhM2R4ZUcweGFVcEZZblpxYkV0U0sxRldRMlJKV1dGSFJVTm1jbFJ2ZDNSWWIzSnFXbTAwVDFsRWNVazVla3hGS3pWcVdrZFdaazh3TW1sbVZncEtUM2h2YUdkeGFVSnBkWFJvVlZBeGVHNUlSVTlhWmlzNGRXZHFRV2ROUWtGQlIycFhWRUpZVFVFMFIwRXhWV1JFZDBWQ0wzZFJSVUYzU1VOd1JFRlFDa0puVGxaSVVrMUNRV1k0UlVKVVFVUkJVVWd2VFVJd1IwRXhWV1JFWjFGWFFrSlNaVEZKYTNkeUwxWnJiVFExYkRKWVNUZFFNSFZwU21WcmRERkVRVllLUW1kT1ZraFNSVVZFYWtGTloyZHdjbVJYU214amJUVnNaRWRXZWsxQk1FZERVM0ZIVTBsaU0wUlJSVUpEZDFWQlFUUkpRa0ZSUW05Wk55c3pTVlpxVFFwWWJsbzRWMEY2V0ZKRWMydGpOMU55UVhoUlJrRnhRbmRrUm1oTlQwZHBhRzF4YWtwaWRHMW9kWE5PVGpKc1duRnphelJoTnpOemQyTTBXV2hRZGpZdkNuTk1TVGh4U0c5a1owRXdiMjV3V2lzMGMwaFJiRmgzYUhOcFowTk5hRVJJVm5CUFRUUlVPVEpwU1ZFMFMwcHRjak5QVUZScVNFVkdaRU5xVEVOVE5XTUtOWFJtUVdKT2JYVnViV0ZyTW1kcWVITjRSbVpYTlhWNFZUbFVUalpVVVZKdmNHbEVkRnBVWmtsV2FHeGpUbW8wWlZZelUwNDBTMlk1VG1JdlpXbDBOUXBFUzJjMk9VWlJXSEpJYnpKbFowdFNSSHBQVVRKa2NFdHpTekl4TDFVME1ERlRSRmd2WVhONFYxVk1WeTg1VFd4emFpOWljeTlvU2pCbVdXNDNkWEpsQ25WaVFuZG9NR1ZTWVdFclJIWkxlVkF2YVhOd1ZqWmFPRVJpYzB0c2FXVkViRkZhYVM5SUx6bFhOV3gwUTFwbk9UaDFPSE5EYlhKU09UUk1hVUZZVkdrS1dGcERaRTVzUlhOU1JYVTVDaTB0TFMwdFJVNUVJRU5GVWxSSlJrbERRVlJGTFMwdExTMEsKICAgIHNlcnZlcjogaHR0cHM6Ly8xMC41MS4xMDAuMjE6NjQ0MwogIG5hbWU6IGRlZmF1bHQtY2x1c3Rlcgpjb250ZXh0czoKLSBjb250ZXh0OgogICAgY2x1c3RlcjogZGVmYXVsdC1jbHVzdGVyCiAgICBuYW1lc3BhY2U6IGRlZmF1bHQKICAgIHVzZXI6IGRlZmF1bHQtYXV0aAogIG5hbWU6IGRlZmF1bHQtY29udGV4dApjdXJyZW50LWNvbnRleHQ6IGRlZmF1bHQtY29udGV4dApraW5kOiBDb25maWcKcHJlZmVyZW5jZXM6IHt9CnVzZXJzOgotIG5hbWU6IGRlZmF1bHQtYXV0aAogIHVzZXI6CiAgICBjbGllbnQtY2VydGlmaWNhdGU6IC92YXIvbGliL2t1YmVsZXQvcGtpL2t1YmVsZXQtY2xpZW50LWN1cnJlbnQucGVtCiAgICBjbGllbnQta2V5OiAvdmFyL2xpYi9rdWJlbGV0L3BraS9rdWJlbGV0LWNsaWVudC1jdXJyZW50LnBlbQo=
+DOCKER_HUB_TOKEN    dckr_pat_bPnT0R3kp3jisOrapLusQNn3dHQ
+DATABASE_URL	postgresql://postgres:postgres@postgres:5432/void_portal
+JWT_SECRET	your-super-secret-key-at-least-32-characters-long"openssl rand -base64 32"    nUhchhUI6JNOnImTi3Y3I/lFRNrDyjwCvVIZpLkfwVY=
+JWT_EXPIRES_IN	7d
+SMTP_HOST	smtp.gmail.com
+SMTP_PORT	587
+SMTP_USER	support.voidcloud@gmail.com
+SMTP_PASS	eyjm lege duuo xyei
+EMAIL_FROM	VoidCloud <support.voidcloud@gmail.com>
+POSTGRES_USER	postgres
+POSTGRES_PASSWORD	postgres
+POSTGRES_DB	void_portal
+PROXMOX_HOST	10.51.100.10
+PROXMOX_TOKEN_ID	root@pam!Amer-Cloud
+PROXMOX_TOKEN_SECRET	c2061f36-4819-44c1-be04-f4e42b97c7d5
+PROXMOX_NODE	proxmox
+PROXMOX_STORAGE	raid-vms
+PROXMOX_BRIDGE	vmbr1
+PROXMOX_IP_POOL_CIDR	10.51.100.0/24
+PROXMOX_GATEWAY	10.51.100.1
+WHATSAPP_SUPPORT_NUMBER	201061365444
+WHATSAPP_SUPPORT_NUMBER_FORMATTED	+201061365444

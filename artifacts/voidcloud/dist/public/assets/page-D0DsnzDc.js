@@ -1,0 +1,1 @@
+import{u as r,r as t,j as o}from"./index-DFoe734A.js";function s(){const e=r();return t.useEffect(()=>{e.replace("/amercloud/login")},[e]),o.jsx("div",{className:"min-h-screen flex items-center justify-center bg-background text-muted-foreground",children:"Redirecting to AmerCloud login…"})}export{s as default};

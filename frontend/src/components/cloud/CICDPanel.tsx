@@ -19,7 +19,7 @@ export function CICDPanel({ vpsId }: { vpsId: string }) {
   if (!cfg) return <p className="text-sm text-white/50">Loading…</p>;
 
   const webhookUrl =
-    (typeof window !== "undefined" ? window.location.origin : "https://api.amercloud.com") +
+    (typeof window !== "undefined" ? window.location.origin : "https://api.voidcloud.com") +
     `/api/public/deploy/${cfg.webhookToken}`;
 
   const update = async (patch: Partial<VpsCicdConfig>) => {
