@@ -29,3 +29,31 @@ spec:
                 name: auth
                 port:
                   number: 3001
+---
+# Grafana ingress — enables iframe embed in the Monitoring page
+# Access at: grafana.voidcloud.cc.cd
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  namespace: monitoring
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.middlewares: voidcloud-compress@kubernetescrd
+    # Allow embedding in iframes from the voidcloud frontend
+    traefik.ingress.kubernetes.io/custom-response-headers: |
+      X-Frame-Options: SAMEORIGIN
+      Content-Security-Policy: frame-ancestors 'self' https://voidcloud.cc.cd https://*.voidcloud.cc.cd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: grafana.voidcloud.cc.cd
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: 3000

@@ -56,8 +56,12 @@ function LoginInner() {
       const redirect = params.get("redirect");
       if (redirect) {
         router.push(redirect);
-      } else if (role === "ADMIN") {
+      } else if (role === "SUPER_ADMIN") {
         router.push("/amercloud/admin/dashboard");
+      } else if (role === "ADMIN") {
+        router.push("/amercloud/business/dashboard");
+      } else if (role === "AGENT") {
+        router.push("/amercloud/agent/dashboard");
       } else {
         router.push("/amercloud/user/dashboard");
       }

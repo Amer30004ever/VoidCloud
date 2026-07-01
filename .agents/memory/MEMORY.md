@@ -1,0 +1,3 @@
+- [Role-based routing](role-routing.md) — login routes by role: SUPER_ADMIN→/admin/dashboard, ADMIN→/business/dashboard, AGENT→/agent/dashboard, USER→/user/dashboard
+- [Proxmox multi-cluster](proxmox-clusters.md) — clusters stored in localStorage under key `proxmox_clusters`; editable from /amercloud/admin/settings
+- [Admin layout split](admin-layout-split.md) — /amercloud/admin uses its own SuperAdmin layout (red theme), /amercloud/business has Business layout (blue), /amercloud/agent has Agent layout (violet); NOT wrapping CloudDashboardLayout
