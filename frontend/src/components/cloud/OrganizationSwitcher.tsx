@@ -39,7 +39,7 @@ export function OrganizationSwitcher() {
         <div className="absolute z-20 mt-1 w-full rounded-lg border border-white/10 bg-slate-950 p-1 shadow-xl">
           <button onClick={() => pick(null)} className={`w-full rounded px-3 py-2 text-left text-sm hover:bg-white/10 ${!active ? "bg-white/5" : ""}`}>Personal</button>
           {orgs.map((o) => (
-            <Link key={o.id} href={`/amercloud/dashboard/orgs/${o.id}`} onClick={() => pick(o.id)}
+            <Link key={o.id} href={`/voidcloud/dashboard/orgs/${o.id}`} onClick={() => pick(o.id)}
               className={`block rounded px-3 py-2 text-sm hover:bg-white/10 ${active === o.id ? "bg-white/5" : ""}`}>
               {o.name} <span className="text-xs text-white/40">· {o._count?.members ?? 0}m</span>
             </Link>

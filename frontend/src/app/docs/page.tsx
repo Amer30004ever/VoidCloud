@@ -11,7 +11,7 @@ export default function DocsPage() {
       <h2>Quick start</h2>
       <ol>
         <li>
-          Create an account at <a href="/amercloud/register">/amercloud/register</a>.
+          Create an account at <a href="/voidcloud/register">/voidcloud/register</a>.
         </li>
         <li>Connect your GitHub repo or push a Docker image.</li>
         <li>Pick a plan (free trial available for 7 days, no card required).</li>

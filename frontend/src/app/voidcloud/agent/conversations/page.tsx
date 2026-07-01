@@ -1,312 +1,214 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import api from "@/lib/api";
 
 interface Conversation {
   id: string;
-  userId: string;
-  platform: string;
-  contactId: string;
-  title?: string;
-  status: string;
-  assignedTo?: string;
-  createdAt: string;
+  contactName: string;
+  contactPhone: string;
+  status: "OPEN" | "CLOSED" | "PENDING" | "ESCALATED";
+  lastMessage?: string;
+  unreadCount?: number;
   updatedAt: string;
-  messages: Message[];
 }
 
 interface Message {
   id: string;
-  role: string;
-  content: string;
-  type: string;
-  direction: string;
+  body: string;
+  direction: "INBOUND" | "OUTBOUND";
+  status?: string;
   createdAt: string;
+  senderName?: string;
 }
 
-interface QuickReply {
-  id: string;
-  text: string;
-  category: string;
-}
-
-const QUICK_REPLIES: QuickReply[] = [
-  { id: "1", text: "Thank you for contacting Void Cloud! How can I help you today?", category: "greeting" },
-  { id: "2", text: "I'll look into that for you right away.", category: "acknowledgment" },
-  { id: "3", text: "Could you please provide more details about your issue?", category: "request_info" },
-  { id: "4", text: "Your request has been forwarded to our technical team.", category: "escalation" },
-  { id: "5", text: "Is there anything else I can help you with?", category: "closing" },
+const QUICK_REPLIES = [
+  "Hello! How can I help you today?",
+  "Thank you for contacting us. I'll look into this right away.",
+  "I understand your concern. Let me check that for you.",
+  "Is there anything else I can help you with?",
+  "We'll get back to you within 24 hours.",
 ];
 
-export default function AgentConversationsPage() {
+const STATUS_PILL: Record<string, string> = {
+  OPEN: "bg-emerald-500/10 text-emerald-300",
+  PENDING: "bg-amber-500/10 text-amber-300",
+  ESCALATED: "bg-red-500/10 text-red-300",
+  CLOSED: "bg-slate-500/10 text-slate-400",
+};
+
+function ConversationsInner() {
+  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"assigned" | "all">("assigned");
-  const [newMessage, setNewMessage] = useState("");
+  const [selected, setSelected] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
-  const [notes, setNotes] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("ALL");
+  const [search, setSearch] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const fetchConversations = useCallback(async () => {
+  const loadConversations = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await fetch(`/api/v1/agent/conversations?filter=${filter}`);
-      if (res.ok) {
-        const data = await res.json();
-        setConversations(data.conversations || []);
+      const r = await api.get("/crm/conversations?limit=100&sort=updatedAt_desc");
+      const d = r.data;
+      const list: Conversation[] = Array.isArray(d) ? d : (d?.conversations ?? []);
+      setConversations(list);
+      const preselect = searchParams.get("id");
+      if (preselect && !selected) {
+        const found = list.find((c) => c.id === preselect);
+        if (found) setSelected(found);
       }
-    } catch (error) {
-      console.error("Failed to fetch conversations:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [filter]);
+    } finally { setLoading(false); }
+  }, [searchParams, selected]);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => { loadConversations(); }, [loadConversations]);
+
   useEffect(() => {
-    fetchConversations();
-    const interval = setInterval(fetchConversations, 5000);
-    return () => clearInterval(interval);
-  }, [fetchConversations]);
+    if (!selected) return;
+    api.get(`/crm/conversations/${selected.id}/messages`).then((r) => {
+      const d = r.data;
+      setMessages(Array.isArray(d) ? d : (d?.messages ?? []));
+    }).catch(() => setMessages([]));
+  }, [selected]);
 
-  const fetchConversationMessages = async (conversationId: string) => {
-    try {
-      const res = await fetch(`/api/v1/crm/conversations/${conversationId}/messages`);
-      if (res.ok) {
-        const data = await res.json();
-        const conv = conversations.find((c) => c.id === conversationId);
-        if (conv) {
-          setSelectedConversation({ ...conv, messages: data.messages || [] });
-        }
-      }
-    } catch (error) {
-      console.error("Failed to fetch messages:", error);
-    }
-  };
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  const selectConversation = (conversation: Conversation) => {
-    setSelectedConversation(conversation);
-    fetchConversationMessages(conversation.id);
-  };
-
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation) return;
-
+  async function sendReply() {
+    if (!reply.trim() || !selected) return;
     setSending(true);
     try {
-      const res = await fetch(`/api/v1/crm/conversations/${selectedConversation.id}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newMessage, type: "TEXT" }),
-      });
+      await api.post(`/crm/conversations/${selected.id}/messages`, { body: reply, direction: "OUTBOUND" });
+      setReply("");
+      const r = await api.get(`/crm/conversations/${selected.id}/messages`);
+      const d = r.data;
+      setMessages(Array.isArray(d) ? d : (d?.messages ?? []));
+    } finally { setSending(false); }
+  }
 
-      if (res.ok) {
-        setNewMessage("");
-        fetchConversationMessages(selectedConversation.id);
-      }
-    } catch (error) {
-      console.error("Failed to send message:", error);
-    } finally {
-      setSending(false);
-    }
-  };
+  async function updateStatus(id: string, status: string) {
+    await api.patch(`/crm/conversations/${id}`, { status });
+    loadConversations();
+    if (selected?.id === id) setSelected({ ...selected, status: status as Conversation["status"] });
+  }
 
-  const handleQuickReply = (text: string) => {
-    setNewMessage(text);
-  };
-
-  const updateConversationStatus = async (conversationId: string, status: string) => {
-    try {
-      const res = await fetch(`/api/v1/crm/conversations/${conversationId}/status`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-
-      if (res.ok) {
-        fetchConversations();
-      }
-    } catch (error) {
-      console.error("Failed to update status:", error);
-    }
-  };
-
-  const saveNotes = async () => {
-    if (!selectedConversation || !notes.trim()) return;
-    try {
-      const res = await fetch(`/api/v1/crm/conversations/${selectedConversation.id}/notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes }),
-      });
-
-      if (res.ok) {
-        alert("Notes saved successfully");
-      }
-    } catch (error) {
-      console.error("Failed to save notes:", error);
-    }
-  };
-
-  if (loading) return <div className="p-6 text-white/50">Loading your conversations...</div>;
+  const filtered = conversations.filter((c) => {
+    if (filter !== "ALL" && c.status !== filter) return false;
+    if (search && !c.contactName.toLowerCase().includes(search.toLowerCase()) && !c.contactPhone.includes(search)) return false;
+    return true;
+  });
 
   return (
-    <div className="flex h-screen bg-slate-900">
-      {/* Sidebar - Conversation List */}
-      <div className="w-96 border-r border-white/10 flex flex-col">
-        <div className="p-4 border-b border-white/10">
-          <h1 className="text-xl font-bold text-white mb-4">My Conversations</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilter("assigned")}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm ${filter === "assigned"
-                  ? "bg-cyan-500 text-white"
-                  : "bg-white/5 text-white/70 hover:bg-white/10"
-                }`}
-            >
-              Assigned to Me
-            </button>
-            <button
-              onClick={() => setFilter("all")}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm ${filter === "all"
-                  ? "bg-cyan-500 text-white"
-                  : "bg-white/5 text-white/70 hover:bg-white/10"
-                }`}
-            >
-              All Open
-            </button>
+    <div className="flex h-[calc(100vh-7rem)] overflow-hidden rounded-2xl border border-white/10">
+      <aside className="flex w-80 shrink-0 flex-col border-r border-white/5 bg-slate-900/60">
+        <div className="border-b border-white/5 p-3">
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search conversations…" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-violet-400/50" />
+          <div className="mt-2 flex gap-1">
+            {["ALL", "OPEN", "PENDING", "ESCALATED", "CLOSED"].map((f) => (
+              <button key={f} onClick={() => setFilter(f)} className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition ${filter === f ? "bg-white/10 text-white" : "text-white/30 hover:text-white"}`}>{f}</button>
+            ))}
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {conversations.map((conv) => (
-            <div
-              key={conv.id}
-              onClick={() => selectConversation(conv)}
-              className={`p-4 border-b border-white/5 cursor-pointer hover:bg-white/5 ${selectedConversation?.id === conv.id ? "bg-white/10" : ""
-                }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-white">{conv.contactId}</span>
-                <span className={`text-xs px-2 py-1 rounded-full ${conv.status === "OPEN" ? "bg-emerald-500/20 text-emerald-300" :
-                    conv.status === "RESOLVED" ? "bg-blue-500/20 text-blue-300" :
-                      "bg-yellow-500/20 text-yellow-300"
-                  }`}>
-                  {conv.status}
-                </span>
+          {loading ? (
+            <div className="space-y-1 p-2">{[1,2,3,4,5].map(i => <div key={i} className="h-14 animate-pulse rounded-xl bg-white/5" />)}</div>
+          ) : filtered.length === 0 ? (
+            <p className="p-6 text-center text-xs text-white/40">No conversations</p>
+          ) : filtered.map((c) => (
+            <button key={c.id} onClick={() => setSelected(c)} className={`w-full px-3 py-3 text-left transition hover:bg-white/5 ${selected?.id === c.id ? "bg-violet-500/10" : ""}`}>
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 text-xs font-bold text-white">
+                  {c.contactName.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-sm font-medium text-white truncate">{c.contactName}</span>
+                    {(c.unreadCount ?? 0) > 0 && <span className="shrink-0 rounded-full bg-violet-500 px-1.5 py-0.5 text-[9px] font-bold text-white">{c.unreadCount}</span>}
+                  </div>
+                  <p className="truncate text-xs text-white/30">{c.lastMessage ?? c.contactPhone}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${STATUS_PILL[c.status]}`}>{c.status}</span>
+                    <span className="text-[10px] text-white/20">{new Date(c.updatedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
               </div>
-              <p className="text-white/50 text-sm truncate">
-                {conv.messages[conv.messages.length - 1]?.content || "No messages yet"}
-              </p>
-              <p className="text-white/30 text-xs mt-1">
-                {new Date(conv.updatedAt).toLocaleString()}
-              </p>
-            </div>
+            </button>
           ))}
         </div>
-      </div>
+      </aside>
 
-      {/* Main Content - Conversation Details */}
-      <div className="flex-1 flex flex-col">
-        {selectedConversation ? (
+      <div className="flex flex-1 flex-col">
+        {!selected ? (
+          <div className="flex flex-1 flex-col items-center justify-center text-white/30">
+            <div className="text-5xl mb-3">💬</div>
+            <p className="text-sm">Select a conversation to start replying</p>
+          </div>
+        ) : (
           <>
-            {/* Conversation Header */}
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+            <div className="flex items-center justify-between border-b border-white/5 bg-slate-900/40 px-5 py-3">
               <div>
-                <h2 className="text-lg font-semibold text-white">{selectedConversation.contactId}</h2>
-                <p className="text-white/50 text-sm">{selectedConversation.title}</p>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-white">{selected.contactName}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_PILL[selected.status]}`}>{selected.status}</span>
+                </div>
+                <span className="font-mono text-xs text-white/40">{selected.contactPhone}</span>
               </div>
-              <select
-                value={selectedConversation.status}
-                onChange={(e) => updateConversationStatus(selectedConversation.id, e.target.value)}
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white"
-              >
-                <option value="OPEN">Open</option>
-                <option value="RESOLVED">Resolved</option>
-                <option value="PENDING">Pending</option>
-              </select>
+              <div className="flex gap-2">
+                {selected.status !== "CLOSED" && <button onClick={() => updateStatus(selected.id, "CLOSED")} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-white/50 hover:text-white">Mark Closed</button>}
+                {selected.status === "OPEN" && <button onClick={() => updateStatus(selected.id, "ESCALATED")} className="rounded-lg border border-red-500/20 px-3 py-1.5 text-xs text-red-400">Escalate</button>}
+                {selected.status === "CLOSED" && <button onClick={() => updateStatus(selected.id, "OPEN")} className="rounded-lg border border-emerald-500/20 px-3 py-1.5 text-xs text-emerald-400">Reopen</button>}
+              </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {selectedConversation.messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.direction === "INBOUND" ? "justify-start" : "justify-end"}`}
-                >
-                  <div
-                    className={`max-w-[70%] rounded-lg p-3 ${msg.direction === "INBOUND"
-                        ? "bg-white/10 text-white"
-                        : "bg-cyan-500 text-white"
-                      }`}
-                  >
-                    <p>{msg.content}</p>
-                    <p className="text-xs opacity-70 mt-1">
-                      {new Date(msg.createdAt).toLocaleString()}
-                    </p>
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+              {messages.length === 0 ? (
+                <p className="text-center text-xs text-white/30 pt-8">No messages yet</p>
+              ) : messages.map((m) => (
+                <div key={m.id} className={`flex ${m.direction === "OUTBOUND" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm ${m.direction === "OUTBOUND" ? "bg-gradient-to-br from-violet-500/30 to-fuchsia-500/20 text-white" : "bg-white/10 text-white"}`}>
+                    {m.body}
+                    <div className="mt-1 text-[10px] text-white/30 text-right">{new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Replies */}
-            <div className="p-4 border-t border-white/10">
-              <p className="text-white/50 text-sm mb-2">Quick Replies:</p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {QUICK_REPLIES.map((reply) => (
-                  <button
-                    key={reply.id}
-                    onClick={() => handleQuickReply(reply.text)}
-                    className="rounded-full bg-white/5 px-3 py-1 text-sm text-white/70 hover:bg-white/10"
-                  >
-                    {reply.text}
+            <div className="border-t border-white/5 p-3">
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {QUICK_REPLIES.map((qr) => (
+                  <button key={qr} onClick={() => setReply(qr)} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-white/50 hover:text-white hover:bg-white/10 transition">
+                    {qr.length > 40 ? qr.slice(0, 40) + "…" : qr}
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* Message Input */}
-            <div className="p-4 border-t border-white/10">
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Type a message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                  className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white"
+                <textarea
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
+                  rows={2}
+                  placeholder="Type a reply… (Enter to send, Shift+Enter for new line)"
+                  className="flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-violet-400/50"
                 />
-                <button
-                  onClick={sendMessage}
-                  disabled={sending}
-                  className="rounded-lg bg-cyan-500 px-6 py-2 font-semibold text-white hover:bg-cyan-600 disabled:opacity-50"
-                >
-                  {sending ? "Sending..." : "Send"}
+                <button onClick={sendReply} disabled={sending || !reply.trim()} className="rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 px-4 text-sm font-semibold text-white disabled:opacity-40 self-end py-2">
+                  {sending ? "…" : "Send"}
                 </button>
               </div>
             </div>
-
-            {/* Notes Section */}
-            <div className="p-4 border-t border-white/10">
-              <h3 className="text-white font-semibold mb-2">Conversation Notes</h3>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add notes about this conversation..."
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white h-24"
-              />
-              <button
-                onClick={saveNotes}
-                className="mt-2 rounded-lg bg-fuchsia-500 px-4 py-2 text-sm text-white hover:bg-fuchsia-600"
-              >
-                Save Notes
-              </button>
-            </div>
           </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-white/50">
-            Select a conversation to view messages
-          </div>
         )}
       </div>
     </div>
   );
 }
-/* eslint-enable react-hooks/set-state-in-effect */
+
+export default function ConversationsPage() {
+  return <Suspense fallback={<div className="min-h-screen bg-slate-950" />}><ConversationsInner /></Suspense>;
+}

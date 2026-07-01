@@ -206,7 +206,7 @@
     "save_env": "Save environment variables",
     "save_domains": "Save domains",
     "domains_placeholder": "app.example.com\napi.example.com",
-    "activity_coming_soon": "VPS activity log is coming soon. Account-level audit events live under /amercloud/admin",
+    "activity_coming_soon": "VPS activity log is coming soon. Account-level audit events live under /voidcloud/admin",
     "create_snapshot": "Create snapshot",
     "snapshot_name": "Snapshot name",
     "snapshot_description": "Description (optional)",

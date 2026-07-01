@@ -25,7 +25,7 @@ const SERVICES: Array<{
   { id: "audit",        name: "Audit Service",         port: 3011, category: "backend",  icon: "📋" },
   { id: "analytics",    name: "Analytics Service",     port: 3012, category: "backend",  icon: "📈" },
   // Frontend
-  { id: "frontend",     name: "Frontend (Next.js)",    port: 3000, path: "/amercloud",  category: "frontend", icon: "🌐" },
+  { id: "frontend",     name: "Frontend (Next.js)",    port: 3000, path: "/voidcloud",  category: "frontend", icon: "🌐" },
   // Infra (exposed via monitoring proxy)
   { id: "prometheus",   name: "Prometheus",            port: 9090, category: "infra",   icon: "🔥" },
   { id: "grafana",      name: "Grafana",               port: 3000, category: "infra",   icon: "📊" },
