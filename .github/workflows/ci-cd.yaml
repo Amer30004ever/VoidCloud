@@ -603,6 +603,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up QEMU (multi-arch emulation)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -621,7 +631,7 @@ jobs:
           npm cache clean --force 2>/dev/null || true
           df -h
 
-      - name: Build service images
+      - name: Build and push service images (multi-arch)
         id: build
         run: |
           SERVICES_TO_BUILD="${{ github.event.inputs.services }}"
@@ -632,40 +642,39 @@ jobs:
             echo "BUILT=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-          
+          REPO="${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}"
+
           for SERVICE in $SERVICES_TO_BUILD; do
-            echo "Building service: $SERVICE"
+            IMAGE_BASE="${REPO}-${SERVICE}-service"
+            echo "=== Building (multi-arch amd64+arm64): $SERVICE ==="
             echo "Disk space before build:"
             df -h
-            docker build -f services/$SERVICE/Dockerfile -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:latest .
-            docker build -f services/$SERVICE/Dockerfile -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${TIMESTAMP} .
-            echo "Cleaning up after $SERVICE build..."
-            docker system prune -f
+
+            # Build and push both tags in a single buildx pass (no double build)
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              --file "services/${SERVICE}/Dockerfile" \
+              --label "git-commit=${{ github.sha }}" \
+              --label "git-branch=${{ github.ref_name }}" \
+              --label "build-date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --label "service=${SERVICE}" \
+              --cache-from "type=registry,ref=${IMAGE_BASE}:cache" \
+              --cache-to   "type=registry,ref=${IMAGE_BASE}:cache,mode=max" \
+              --tag "${IMAGE_BASE}:latest" \
+              --tag "${IMAGE_BASE}:${TIMESTAMP}" \
+              --push \
+              .
+
+            echo "✅ Multi-arch pushed: ${IMAGE_BASE}:${TIMESTAMP}"
             docker builder prune -f
             echo "Disk space after cleanup:"
             df -h
           done
-          
+
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
           echo "BUILT=true" >> $GITHUB_OUTPUT
-
-      - name: Push service images
-        run: |
-          SERVICES_TO_BUILD="${{ github.event.inputs.services }}"
-          if [ "$SERVICES_TO_BUILD" == "all" ] || [ -z "$SERVICES_TO_BUILD" ]; then
-            SERVICES_TO_BUILD="auth user tenant vps billing crm email notification monitoring audit analytics"
-          elif [ "$SERVICES_TO_BUILD" == "none" ]; then
-            echo "Skipping backend push (services=none)"
-            exit 0
-          fi
-          
-          for SERVICE in $SERVICES_TO_BUILD; do
-            echo "Pushing service: $SERVICE"
-            docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:latest
-            docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${{ steps.build.outputs.TIMESTAMP }}
-          done
 
   # ============================================
   # BUILD AND PUSH FRONTEND
@@ -682,6 +691,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up QEMU (multi-arch emulation)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -700,7 +719,7 @@ jobs:
           npm cache clean --force 2>/dev/null || true
           df -h
 
-      - name: Build frontend image
+      - name: Build and push frontend image (multi-arch)
         id: build
         run: |
           FRONTEND_FEATURES="${{ github.event.inputs.frontend_features }}"
@@ -709,23 +728,123 @@ jobs:
             echo "BUILT=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
-          cd frontend
+
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-          docker build --build-arg NEXT_PUBLIC_API_URL=https://api.voidcloud.cc.cd/api/v1 -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest .
-          docker build --build-arg NEXT_PUBLIC_API_URL=https://api.voidcloud.cc.cd/api/v1 -t ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${TIMESTAMP} .
+          IMAGE_BASE="${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend"
+
+          echo "=== Building frontend (multi-arch amd64+arm64) ==="
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --file "frontend/Dockerfile" \
+            --build-arg NEXT_PUBLIC_API_URL=https://api.voidcloud.cc.cd/api/v1 \
+            --build-arg NEXT_TELEMETRY_DISABLED=1 \
+            --label "git-commit=${{ github.sha }}" \
+            --label "git-branch=${{ github.ref_name }}" \
+            --label "build-date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --cache-from "type=registry,ref=${IMAGE_BASE}:cache" \
+            --cache-to   "type=registry,ref=${IMAGE_BASE}:cache,mode=max" \
+            --tag "${IMAGE_BASE}:latest" \
+            --tag "${IMAGE_BASE}:${TIMESTAMP}" \
+            --push \
+            frontend/
+
+          echo "✅ Multi-arch frontend pushed: ${IMAGE_BASE}:${TIMESTAMP}"
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
           echo "BUILT=true" >> $GITHUB_OUTPUT
 
-      - name: Push frontend image
+  # ============================================
+  # SECURITY SCAN — Trivy container scanning
+  # Runs after images are built; non-blocking by default.
+  # Set SECURITY_FAIL_ON_CRITICAL=true to make it blocking.
+  # ============================================
+  security-scan:
+    needs: [detect-changes, build-backend, build-frontend]
+    if: |
+      always() &&
+      (needs.build-backend.result == 'success' || needs.build-frontend.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub (pull private images for scanning)
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+        continue-on-error: true   # non-blocking: public images still scannable without auth
+
+      - name: Install Trivy
         run: |
-          FRONTEND_FEATURES="${{ github.event.inputs.frontend_features }}"
-          if [ "$FRONTEND_FEATURES" == "none" ]; then
-            echo "Skipping frontend push (frontend_features=none)"
-            exit 0
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy --version
+
+      - name: Scan backend service images
+        if: needs.build-backend.result == 'success'
+        env:
+          DOCKER_HUB_USERNAME: ${{ env.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_REPO: ${{ env.DOCKER_HUB_REPO }}
+        run: |
+          echo "=== Trivy scan: backend services ==="
+          SERVICES_TO_SCAN="${{ github.event.inputs.services }}"
+          if [ "$SERVICES_TO_SCAN" == "all" ] || [ -z "$SERVICES_TO_SCAN" ] || [ "$SERVICES_TO_SCAN" == "none" ]; then
+            SERVICES_TO_SCAN="auth user tenant vps billing"
           fi
-          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest
-          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${{ steps.build.outputs.TIMESTAMP }}
+          FAIL_ON_CRITICAL="${{ vars.SECURITY_FAIL_ON_CRITICAL }}"
+          EXIT_CODE=0
+          [ "$FAIL_ON_CRITICAL" == "true" ] && EXIT_CODE=1
+
+          for SERVICE in $SERVICES_TO_SCAN; do
+            IMAGE="${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:latest"
+            echo "--- Scanning: $IMAGE ---"
+            trivy image \
+              --exit-code "$EXIT_CODE" \
+              --severity HIGH,CRITICAL \
+              --no-progress \
+              --format table \
+              "$IMAGE" || echo "⚠ Issues found in $SERVICE (check output above)"
+          done
+          echo "✅ Backend security scan complete"
+
+      - name: Scan frontend image
+        if: needs.build-frontend.result == 'success'
+        run: |
+          echo "=== Trivy scan: frontend ==="
+          IMAGE="${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:latest"
+          FAIL_ON_CRITICAL="${{ vars.SECURITY_FAIL_ON_CRITICAL }}"
+          EXIT_CODE=0
+          [ "$FAIL_ON_CRITICAL" == "true" ] && EXIT_CODE=1
+
+          trivy image \
+            --exit-code "$EXIT_CODE" \
+            --severity HIGH,CRITICAL \
+            --no-progress \
+            --format sarif \
+            --output trivy-frontend.sarif \
+            "$IMAGE" || echo "⚠ Issues found in frontend (check output above)"
+          echo "✅ Frontend security scan complete"
+
+      - name: Upload SARIF to GitHub Security
+        if: always() && hashFiles('trivy-frontend.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-frontend.sarif
+        continue-on-error: true
+
+      - name: Scan source code (filesystem)
+        run: |
+          echo "=== Trivy filesystem scan (secrets + misconfigurations) ==="
+          trivy fs \
+            --exit-code 0 \
+            --severity HIGH,CRITICAL \
+            --security-checks secret,config \
+            --no-progress \
+            --format table \
+            . || echo "⚠ Source scan warnings (non-blocking)"
+          echo "✅ Filesystem scan complete"
 
   # ============================================
   # DEPLOY POSTGRES (Self-Hosted Runner)

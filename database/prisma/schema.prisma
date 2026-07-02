@@ -1594,6 +1594,103 @@ model Maintenance {
   @@index([status])
 }
 
+// ─── Platform Enhancement Models ─────────────────────────────
+
+/// Proxmox cluster registry — one row per Proxmox host
+/// Table name: proxmox_clusters (@@map); columns use Prisma's default camelCase.
+model ProxmoxCluster {
+  id          String   @id @default(uuid())
+  name        String
+  host        String
+  port        Int      @default(8006)
+  username    String   @default("root@pam")
+  tokenId     String?
+  tokenSecret String?
+  status      String   @default("ACTIVE")
+  cpuTotal    Int      @default(0)
+  ramTotal    BigInt   @default(0)
+  diskTotal   BigInt   @default(0)
+  cpuUsed     Int      @default(0)
+  ramUsed     BigInt   @default(0)
+  diskUsed    BigInt   @default(0)
+  vmCount     Int      @default(0)
+  nodeCount   Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@map("proxmox_clusters")
+}
+
+
+/// Timestamped health check snapshots for each microservice
+model ServiceHealthLog {
+  id               String   @id @default(uuid())
+  serviceName      String
+  status           String   // UP | DEGRADED | DOWN
+  responseTimeMs   Int?
+  errorMessage     String?
+  uptimePercentage Float    @default(100)
+  checkedAt        DateTime @default(now())
+
+  @@index([serviceName])
+  @@index([checkedAt])
+  @@index([status])
+  @@map("service_health_logs")
+}
+
+/// WhatsApp broadcast campaign records
+model WhatsappBroadcast {
+  id             String    @id @default(uuid())
+  createdBy      String
+  tenantId       String?
+  templateId     String?
+  templateName   String?
+  messageBody    String    @db.Text
+  segment        String    @default("all")
+  status         String    @default("PENDING") // PENDING | SENDING | COMPLETED | FAILED
+  sentCount      Int       @default(0)
+  deliveredCount Int       @default(0)
+  failedCount    Int       @default(0)
+  metadata       Json?
+  sentAt         DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([createdBy])
+  @@index([status])
+  @@index([createdAt])
+  @@map("whatsapp_broadcasts")
+}
+
+/// Simple key-value platform configuration store
+model PlatformSetting {
+  key         String   @id
+  value       String   @default("")
+  valueType   String   @default("string") // string | boolean | number | json
+  description String?
+  updatedBy   String?
+  updatedAt   DateTime @updatedAt @default(now())
+
+  @@map("platform_settings")
+}
+
+/// IP-based block list for rate-limit abuse prevention
+model IpBlockList {
+  id          String    @id @default(uuid())
+  ipAddress   String    @unique
+  reason      String?
+  blockedBy   String?
+  tenantId    String?
+  isPermanent Boolean   @default(false)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([ipAddress])
+  @@index([createdAt])
+  @@map("ip_block_list")
+}
+
 model Incident {
   id          String           @id @default(cuid())
   title       String
