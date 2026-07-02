@@ -11,6 +11,10 @@ const apiBase = import.meta.env.VITE_API_URL || "/api";
 setBaseUrl(apiBase);
 setAuthTokenGetter(() => localStorage.getItem("voidcloud_token"));
 
+// Apply stored theme on load
+const storedTheme = localStorage.getItem("vc_theme") || "dark";
+document.documentElement.classList.toggle("dark", storedTheme === "dark");
+
 // Layout
 import Layout from "@/components/layout";
 
@@ -29,6 +33,9 @@ import AdminPlans from "@/pages/admin/plans";
 import AdminBilling from "@/pages/admin/billing";
 import AdminWhatsApp from "@/pages/admin/whatsapp";
 import AdminSettings from "@/pages/admin/settings";
+import AdminAudit from "@/pages/admin/audit";
+import AdminSecurity from "@/pages/admin/security";
+import AdminPods from "@/pages/admin/pods";
 
 // Business pages
 import BusinessDashboard from "@/pages/business/dashboard";
@@ -36,6 +43,7 @@ import BusinessTeam from "@/pages/business/team";
 import BusinessCRM from "@/pages/business/crm";
 import BusinessVPS from "@/pages/business/vps";
 import BusinessBilling from "@/pages/business/billing";
+import BusinessSettings from "@/pages/business/settings";
 
 // Agent pages
 import AgentDashboard from "@/pages/agent/dashboard";
@@ -45,8 +53,8 @@ import AgentLeads from "@/pages/agent/leads";
 // User pages
 import UserDashboard from "@/pages/user/dashboard";
 import UserVPS from "@/pages/user/vps";
-
-import PlaceholderPage from "@/pages/placeholder";
+import UserBilling from "@/pages/user/billing";
+import UserSettings from "@/pages/user/settings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,7 +65,13 @@ const queryClient = new QueryClient({
   },
 });
 
-function ProtectedRoute({ component: Component, allowedRoles, title }: { component: any; allowedRoles?: string[]; title?: string }) {
+function ProtectedRoute({
+  component: Component,
+  allowedRoles,
+}: {
+  component: React.ComponentType;
+  allowedRoles?: string[];
+}) {
   const { isAuthenticated, user } = useAuth();
 
   if (!isAuthenticated || !user) {
@@ -70,22 +84,23 @@ function ProtectedRoute({ component: Component, allowedRoles, title }: { compone
 
   return (
     <Layout>
-      <Component title={title} />
+      <Component />
     </Layout>
   );
 }
 
 function RoleRouter() {
   const { user, isAuthenticated } = useAuth();
-  
+
   useEffect(() => {
     if (user) {
-      const themeClass = user.role === "SUPER_ADMIN" ? "theme-super-admin" :
-                        user.role === "ADMIN" ? "theme-admin" :
-                        user.role === "AGENT" ? "theme-agent" : "";
-      document.body.className = `dark ${themeClass}`;
+      const themeClass =
+        user.role === "SUPER_ADMIN" ? "theme-super-admin" :
+        user.role === "ADMIN"       ? "theme-admin" :
+        user.role === "AGENT"       ? "theme-agent" : "";
+      document.body.className = `${themeClass}`;
     } else {
-      document.body.className = "dark";
+      document.body.className = "";
     }
   }, [user]);
 
@@ -93,99 +108,55 @@ function RoleRouter() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      
-      {/* Root redirect */}
+
+      {/* Root redirect by role */}
       <Route path="/">
         {() => {
           if (!isAuthenticated) return <Redirect to="/login" />;
           if (user?.role === "SUPER_ADMIN") return <Redirect to="/admin/dashboard" />;
-          if (user?.role === "ADMIN") return <Redirect to="/business/dashboard" />;
-          if (user?.role === "AGENT") return <Redirect to="/agent/dashboard" />;
+          if (user?.role === "ADMIN")       return <Redirect to="/business/dashboard" />;
+          if (user?.role === "AGENT")       return <Redirect to="/agent/dashboard" />;
           return <Redirect to="/dashboard" />;
         }}
       </Route>
 
-      {/* Admin */}
-      <Route path="/admin/dashboard">
-        {() => <ProtectedRoute component={AdminDashboard} allowedRoles={["SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/admin/users">
-        {() => <ProtectedRoute component={AdminUsers} allowedRoles={["SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/admin/tenants">
-        {() => <ProtectedRoute component={AdminTenants} allowedRoles={["SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/admin/vps">
-        {() => <ProtectedRoute component={AdminVPS} allowedRoles={["SUPER_ADMIN"]} />}
-      </Route>
-      
-      <Route path="/admin/clusters">
-        {() => <ProtectedRoute component={AdminClusters} allowedRoles={["SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/admin/monitoring">
-        {() => <ProtectedRoute component={AdminMonitoring} allowedRoles={["SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/admin/whatsapp">
-        {() => <ProtectedRoute component={AdminWhatsApp} allowedRoles={["SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/admin/plans">
-        {() => <ProtectedRoute component={AdminPlans} allowedRoles={["SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/admin/billing">
-        {() => <ProtectedRoute component={AdminBilling} allowedRoles={["SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/admin/settings">
-        {() => <ProtectedRoute component={AdminSettings} allowedRoles={["SUPER_ADMIN"]} />}
-      </Route>
+      {/* ── Super Admin ── */}
+      <Route path="/admin/dashboard">{() => <ProtectedRoute component={AdminDashboard} allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/users">    {() => <ProtectedRoute component={AdminUsers}     allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/tenants">  {() => <ProtectedRoute component={AdminTenants}   allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/vps">      {() => <ProtectedRoute component={AdminVPS}       allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/clusters"> {() => <ProtectedRoute component={AdminClusters}  allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/whatsapp"> {() => <ProtectedRoute component={AdminWhatsApp}  allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/plans">    {() => <ProtectedRoute component={AdminPlans}     allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/billing">  {() => <ProtectedRoute component={AdminBilling}   allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/monitoring">{() => <ProtectedRoute component={AdminMonitoring} allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/pods">     {() => <ProtectedRoute component={AdminPods}      allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/security"> {() => <ProtectedRoute component={AdminSecurity}  allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/audit">    {() => <ProtectedRoute component={AdminAudit}     allowedRoles={["SUPER_ADMIN"]} />}</Route>
+      <Route path="/admin/settings"> {() => <ProtectedRoute component={AdminSettings}  allowedRoles={["SUPER_ADMIN"]} />}</Route>
 
-      {/* Business Admin */}
-      <Route path="/business/dashboard">
-        {() => <ProtectedRoute component={BusinessDashboard} allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/business/team">
-        {() => <ProtectedRoute component={BusinessTeam} allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/business/crm">
-        {() => <ProtectedRoute component={BusinessCRM} allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/business/vps">
-        {() => <ProtectedRoute component={BusinessVPS} allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/business/billing">
-        {() => <ProtectedRoute component={BusinessBilling} allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/business/settings">
-        {() => <ProtectedRoute component={PlaceholderPage} allowedRoles={["ADMIN", "SUPER_ADMIN"]} title="Settings" />}
-      </Route>
+      {/* ── Business Admin ── */}
+      <Route path="/business/dashboard">{() => <ProtectedRoute component={BusinessDashboard} allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}</Route>
+      <Route path="/business/team">     {() => <ProtectedRoute component={BusinessTeam}      allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}</Route>
+      <Route path="/business/crm">      {() => <ProtectedRoute component={BusinessCRM}       allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}</Route>
+      <Route path="/business/vps">      {() => <ProtectedRoute component={BusinessVPS}       allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}</Route>
+      <Route path="/business/billing">  {() => <ProtectedRoute component={BusinessBilling}   allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}</Route>
+      <Route path="/business/settings"> {() => <ProtectedRoute component={BusinessSettings}  allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}</Route>
 
-      {/* Agent */}
-      <Route path="/agent/dashboard">
-        {() => <ProtectedRoute component={AgentDashboard} allowedRoles={["AGENT", "ADMIN", "SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/agent/conversations">
-        {() => <ProtectedRoute component={AgentConversations} allowedRoles={["AGENT", "ADMIN", "SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/agent/leads">
-        {() => <ProtectedRoute component={AgentLeads} allowedRoles={["AGENT", "ADMIN", "SUPER_ADMIN"]} />}
-      </Route>
+      {/* ── Agent ── */}
+      <Route path="/agent/dashboard">     {() => <ProtectedRoute component={AgentDashboard}     allowedRoles={["AGENT", "ADMIN", "SUPER_ADMIN"]} />}</Route>
+      <Route path="/agent/conversations"> {() => <ProtectedRoute component={AgentConversations} allowedRoles={["AGENT", "ADMIN", "SUPER_ADMIN"]} />}</Route>
+      <Route path="/agent/leads">         {() => <ProtectedRoute component={AgentLeads}         allowedRoles={["AGENT", "ADMIN", "SUPER_ADMIN"]} />}</Route>
 
-      {/* User */}
-      <Route path="/dashboard">
-        {() => <ProtectedRoute component={UserDashboard} allowedRoles={["USER", "ADMIN", "SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/vps">
-        {() => <ProtectedRoute component={UserVPS} allowedRoles={["USER", "ADMIN", "SUPER_ADMIN"]} />}
-      </Route>
-      <Route path="/billing">
-        {() => <ProtectedRoute component={PlaceholderPage} allowedRoles={["USER", "ADMIN", "SUPER_ADMIN"]} title="Billing" />}
-      </Route>
-      <Route path="/settings">
-        {() => <ProtectedRoute component={PlaceholderPage} allowedRoles={["USER", "ADMIN", "SUPER_ADMIN"]} title="Settings" />}
-      </Route>
+      {/* ── User ── */}
+      <Route path="/dashboard">{() => <ProtectedRoute component={UserDashboard} allowedRoles={["USER", "ADMIN", "SUPER_ADMIN", "AGENT"]} />}</Route>
+      <Route path="/vps">      {() => <ProtectedRoute component={UserVPS}       allowedRoles={["USER", "ADMIN", "SUPER_ADMIN"]} />}</Route>
+      <Route path="/billing">  {() => <ProtectedRoute component={UserBilling}   allowedRoles={["USER", "ADMIN", "SUPER_ADMIN"]} />}</Route>
+      <Route path="/settings"> {() => <ProtectedRoute component={UserSettings}  allowedRoles={["USER", "ADMIN", "SUPER_ADMIN", "AGENT"]} />}</Route>
 
-      {/* Default Not Found */}
+      {/* 404 */}
       <Route>
-        <div className="flex items-center justify-center h-screen">Page Not Found</div>
+        <div className="flex items-center justify-center h-screen text-muted-foreground">Page Not Found</div>
       </Route>
     </Switch>
   );

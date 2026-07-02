@@ -8,6 +8,7 @@ router.get("/dashboard/admin", async (req, res) => {
   try {
     const user = await getUserFromToken(req);
     if (!user) return res.status(401).json({ error: "Unauthorized" });
+    if (user.role !== "SUPER_ADMIN") return res.status(403).json({ error: "Forbidden" });
 
     const [users, tenants, vpsList, invoices, alerts, auditLogs] = await Promise.all([
       db.query.usersTable.findMany(),

@@ -74,9 +74,11 @@ router.get("/vps/:id", async (req, res) => {
   try {
     const user = await getUserFromToken(req);
     if (!user) return res.status(401).json({ error: "Unauthorized" });
-
     const vps = await db.query.vpsInstancesTable.findFirst({ where: eq(vpsInstancesTable.id, parseInt(req.params.id)) });
     if (!vps) return res.status(404).json({ error: "VPS not found" });
+    // Ownership check
+    if (user.role === "USER" && vps.userId !== user.id) return res.status(403).json({ error: "Forbidden" });
+    if (user.role === "ADMIN" && vps.tenantId !== user.tenantId) return res.status(403).json({ error: "Forbidden" });
     res.json({ ...vps, clusterName: null, planName: null, uptime: vps.status === "running" ? 86400 : null });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -88,19 +90,35 @@ router.delete("/vps/:id", async (req, res) => {
   try {
     const user = await getUserFromToken(req);
     if (!user) return res.status(401).json({ error: "Unauthorized" });
-    await db.delete(vpsInstancesTable).where(eq(vpsInstancesTable.id, parseInt(req.params.id)));
+    const vps = await db.query.vpsInstancesTable.findFirst({ where: eq(vpsInstancesTable.id, parseInt(req.params.id)) });
+    if (!vps) return res.status(404).json({ error: "VPS not found" });
+    // Ownership/tenant check: SUPER_ADMIN can delete any; ADMIN only within tenant; USER only their own
+    if (user.role === "USER" && vps.userId !== user.id) return res.status(403).json({ error: "Forbidden" });
+    if (user.role === "ADMIN" && vps.tenantId !== user.tenantId) return res.status(403).json({ error: "Forbidden" });
+    await db.delete(vpsInstancesTable).where(eq(vpsInstancesTable.id, vps.id));
     res.json({ message: "VPS deleted" });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
+// Helper: check VPS ownership before mutation
+async function assertVpsAccess(user: Awaited<ReturnType<typeof getUserFromToken>>, id: number) {
+  if (!user) return { error: "Unauthorized", status: 401 };
+  const vps = await db.query.vpsInstancesTable.findFirst({ where: eq(vpsInstancesTable.id, id) });
+  if (!vps) return { error: "VPS not found", status: 404 };
+  if (user.role === "USER" && vps.userId !== user.id) return { error: "Forbidden", status: 403 };
+  if (user.role === "ADMIN" && vps.tenantId !== user.tenantId) return { error: "Forbidden", status: 403 };
+  return { vps };
+}
+
 // POST /api/vps/:id/start
 router.post("/vps/:id/start", async (req, res) => {
   try {
     const user = await getUserFromToken(req);
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-    await db.update(vpsInstancesTable).set({ status: "running", updatedAt: new Date() }).where(eq(vpsInstancesTable.id, parseInt(req.params.id)));
+    const check = await assertVpsAccess(user, parseInt(req.params.id));
+    if (check.error) return res.status(check.status!).json({ error: check.error });
+    await db.update(vpsInstancesTable).set({ status: "running", updatedAt: new Date() }).where(eq(vpsInstancesTable.id, check.vps!.id));
     res.json({ message: "VPS started" });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -111,8 +129,9 @@ router.post("/vps/:id/start", async (req, res) => {
 router.post("/vps/:id/stop", async (req, res) => {
   try {
     const user = await getUserFromToken(req);
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-    await db.update(vpsInstancesTable).set({ status: "stopped", updatedAt: new Date() }).where(eq(vpsInstancesTable.id, parseInt(req.params.id)));
+    const check = await assertVpsAccess(user, parseInt(req.params.id));
+    if (check.error) return res.status(check.status!).json({ error: check.error });
+    await db.update(vpsInstancesTable).set({ status: "stopped", updatedAt: new Date() }).where(eq(vpsInstancesTable.id, check.vps!.id));
     res.json({ message: "VPS stopped" });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -123,8 +142,9 @@ router.post("/vps/:id/stop", async (req, res) => {
 router.post("/vps/:id/restart", async (req, res) => {
   try {
     const user = await getUserFromToken(req);
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-    await db.update(vpsInstancesTable).set({ status: "running", updatedAt: new Date() }).where(eq(vpsInstancesTable.id, parseInt(req.params.id)));
+    const check = await assertVpsAccess(user, parseInt(req.params.id));
+    if (check.error) return res.status(check.status!).json({ error: check.error });
+    await db.update(vpsInstancesTable).set({ status: "running", updatedAt: new Date() }).where(eq(vpsInstancesTable.id, check.vps!.id));
     res.json({ message: "VPS restarted" });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

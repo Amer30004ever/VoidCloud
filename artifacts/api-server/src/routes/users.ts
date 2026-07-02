@@ -74,15 +74,25 @@ router.patch("/users/:id", async (req, res) => {
     const currentUser = await getUserFromToken(req);
     if (!currentUser) return res.status(401).json({ error: "Unauthorized" });
 
+    const targetId = parseInt(req.params.id);
+    const isSelf = currentUser.id === targetId;
+    const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
+
+    // Only SUPER_ADMIN can modify other users or change privileged fields
+    if (!isSelf && !isSuperAdmin) return res.status(403).json({ error: "Forbidden" });
+
     const { name, role, status, tenantId } = req.body;
     const updates: Record<string, unknown> = {};
+    // Non-admins can only update their own name
     if (name) updates.name = name;
-    if (role) updates.role = role;
-    if (status) updates.status = status;
-    if (tenantId !== undefined) updates.tenantId = tenantId;
+    if (isSuperAdmin) {
+      if (role) updates.role = role;
+      if (status) updates.status = status;
+      if (tenantId !== undefined) updates.tenantId = tenantId;
+    }
     updates.updatedAt = new Date();
 
-    const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, parseInt(req.params.id))).returning();
+    const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, targetId)).returning();
     if (!user) return res.status(404).json({ error: "User not found" });
     const { passwordHash, twoFaSecret, ...safe } = user;
     res.json(safe);

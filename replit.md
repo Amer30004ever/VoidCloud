@@ -1,45 +1,57 @@
-# [Project name]
+# VoidCloud Platform
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A multi-tenant VPS hosting platform with a full admin/business/agent/user role hierarchy.
 
-## Run & Operate
+## Architecture
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- **Frontend** (`artifacts/voidcloud/`): React + Vite + Wouter + TanStack Query + Tailwind + shadcn/ui
+- **API Gateway** (`artifacts/api-server/`): Express 5 + Drizzle ORM + PostgreSQL
+- **Original microservices** (`services/`): 12 NestJS services — not modified, kept as-is
+- **Shared DB lib** (`lib/db/`): Drizzle ORM schema used by the API gateway
 
-## Stack
+## Running the Project
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+Both workflows start automatically:
+- **API Server** — `PORT=8080 pnpm --filter @workspace/api-server run dev` → http://localhost:8080/api
+- **VoidCloud Frontend** — `PORT=21291 BASE_PATH=/ pnpm --filter @workspace/voidcloud run dev` → http://localhost:21291
 
-## Where things live
+## Seeded Accounts
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+| Role | Email | Password |
+|---|---|---|
+| Super Admin | admin@voidcloud.com | VoidCloud2026! |
+| Business Admin | business@voidcloud.com | Admin2026! |
+| Agent | agent@voidcloud.com | Agent2026! |
+| User | user@voidcloud.com | User2026! |
 
-## Architecture decisions
+## Role-Based Routing
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+| Role | Landing page |
+|---|---|
+| SUPER_ADMIN | `/admin/dashboard` |
+| ADMIN | `/business/dashboard` |
+| AGENT | `/agent/dashboard` |
+| USER | `/dashboard` |
 
-## Product
+## Key Pages
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+### Super Admin (`/admin/*`)
+- Dashboard, Users (with impersonation), Tenants, VPS, Clusters, Monitoring, Pods, Plans, Billing, WhatsApp, Security, Audit, Settings
 
-## User preferences
+### Business Admin (`/business/*`)
+- Dashboard, Team, CRM, VPS, Billing, Settings
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+### Agent (`/agent/*`)
+- Dashboard, Conversations, Leads
 
-## Gotchas
+### User (`/user → /dashboard, /vps, /billing, /settings`)
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+## Environment Variables
 
-## Pointers
+- `DATABASE_URL` — PostgreSQL connection string (provisioned by Replit)
+- `SESSION_SECRET` — Session signing secret
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+## User Preferences
+
+- Do not replace or overwrite the existing microservices in `services/`
+- All new features target the Replit artifacts only (`artifacts/voidcloud`, `artifacts/api-server`)
