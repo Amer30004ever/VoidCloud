@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Ban, RefreshCw, AlertTriangle, Globe, Zap, TrendingUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function AdminSecurity() {
   const token = localStorage.getItem("voidcloud_token");

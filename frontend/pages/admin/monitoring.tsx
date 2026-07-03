@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { RadialBarChart, RadialBar, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from "recharts";
 import { Activity, CheckCircle2, AlertTriangle, XCircle, RefreshCw, Cpu, MemoryStick, HardDrive, Globe } from "lucide-react";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 function StatusIcon({ status }: { status: string }) {
   if (status === "UP") return <CheckCircle2 className="h-5 w-5 text-emerald-400" />;
@@ -295,7 +295,7 @@ export default function AdminMonitoring() {
               </p>
               <div className="bg-muted/30 rounded-lg border border-border overflow-hidden" style={{ height: 600 }}>
                 <iframe
-                  src={`${import.meta.env.VITE_GRAFANA_URL || "https://grafana.voidcloud.cc.cd"}/d/kubernetes?orgId=1&kiosk=tv&theme=dark`}
+                  src={`${process.env.NEXT_PUBLIC_GRAFANA_URL || "https://grafana.voidcloud.cc.cd"}/d/kubernetes?orgId=1&kiosk=tv&theme=dark`}
                   className="w-full h-full border-0"
                   title="Grafana Dashboard"
                   onError={() => {}}

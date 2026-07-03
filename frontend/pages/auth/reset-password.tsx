@@ -13,7 +13,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Shield, ArrowLeft, Eye, EyeOff, CheckCircle2, KeyRound } from "lucide-react";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function ResetPassword() {
   const [location] = useLocation();

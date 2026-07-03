@@ -1,5 +1,25 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, AuthResponse } from "@workspace/api-client-react";
+
+// ─── Local types (replaces @workspace/api-client-react) ───────────────────────
+
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  role: "SUPER_ADMIN" | "ADMIN" | "AGENT" | "USER" | string;
+  tenantId?: string;
+  status?: string;
+}
+
+export interface AuthResponse {
+  token?: string;
+  access_token?: string;
+  user?: User;
+  requires2FA?: boolean;
+  userId?: string;
+}
+
+// ─── Context ──────────────────────────────────────────────────────────────────
 
 interface AuthContextType {
   user: User | null;
@@ -29,9 +49,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (data: AuthResponse) => {
-    if (data.token) {
-      localStorage.setItem("voidcloud_token", data.token);
-      setToken(data.token);
+    // Support both `token` (Express) and `access_token` (NestJS)
+    const tok = data.token ?? data.access_token ?? null;
+    if (tok) {
+      localStorage.setItem("voidcloud_token", tok);
+      setToken(tok);
     }
     if (data.user) {
       localStorage.setItem("voidcloud_user", JSON.stringify(data.user));
@@ -47,7 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider
+      value={{ user, token, login, logout, isAuthenticated: !!token }}
+    >
       {children}
     </AuthContext.Provider>
   );

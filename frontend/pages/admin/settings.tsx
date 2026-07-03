@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, Save, Shield, Globe, Mail, Key } from "lucide-react";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function AdminSettings() {
   const { data, isLoading, refetch } = useGetMaintenanceMode();

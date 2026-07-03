@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { Shield, User, Bell, Key, Save, QrCode, Copy, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function UserSettings() {
   const { user, token } = useAuth();

@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Download, RefreshCw, FileText, Shield, User, Server, CreditCard } from "lucide-react";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 const actionColors: Record<string, string> = {
   CREATE:      "bg-emerald-500/20 text-emerald-400",

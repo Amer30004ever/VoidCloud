@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { MessageSquare, Radio, Send, Users, CheckCheck, Clock, Plus, Trash2 } from "lucide-react";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 const TEMPLATES = [
   {

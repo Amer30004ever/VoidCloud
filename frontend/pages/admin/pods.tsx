@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, Search, RotateCcw, FileText, Cpu, MemoryStick, AlertTriangle } from "lucide-react";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function AdminPods() {
   const token = localStorage.getItem("voidcloud_token");

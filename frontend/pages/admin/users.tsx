@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { Search, UserCheck, UserX, LogIn, Plus, RefreshCw, Shield } from "lucide-react";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 const roleBadge: Record<string, "destructive" | "default" | "secondary" | "outline"> = {
   SUPER_ADMIN: "destructive",

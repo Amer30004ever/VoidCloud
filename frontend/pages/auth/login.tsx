@@ -9,11 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Shield, KeyRound, ArrowLeft, Eye, EyeOff } from "lucide-react";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function Login() {
   // Pre-fill only in local development — never in staging or production
-  const isDev = import.meta.env.DEV;
+  const isDev = process.env.NODE_ENV === 'development';
   const [email, setEmail] = useState(isDev ? "admin@voidcloud.com" : "");
   const [password, setPassword] = useState(isDev ? "VoidCloud2026!" : "");
   const [showPassword, setShowPassword] = useState(false);

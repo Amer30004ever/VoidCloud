@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Server, Plus, Activity, HardDrive, Cpu, Zap, Network, RefreshCw } from "lucide-react";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 const OS_TEMPLATES = [
   { value: "ubuntu-22.04", label: "Ubuntu 22.04 LTS" },

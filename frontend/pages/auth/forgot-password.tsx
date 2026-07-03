@@ -13,7 +13,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Shield, ArrowLeft, Mail, CheckCircle2 } from "lucide-react";
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");

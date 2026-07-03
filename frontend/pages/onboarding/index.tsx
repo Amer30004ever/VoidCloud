@@ -26,7 +26,7 @@ const STEPS = [
   { id: 4, label: "Done", icon: CheckCircle2 },
 ];
 
-const apiBase = import.meta.env.VITE_API_URL || "/api";
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function Onboarding() {
   const [step, setStep] = useState(1);
