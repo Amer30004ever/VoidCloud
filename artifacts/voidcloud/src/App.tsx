@@ -21,6 +21,11 @@ import Layout from "@/components/layout";
 // Auth
 import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
+import ForgotPassword from "@/pages/auth/forgot-password";
+import ResetPassword from "@/pages/auth/reset-password";
+
+// Onboarding
+import Onboarding from "@/pages/onboarding";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -108,6 +113,9 @@ function RoleRouter() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/onboarding" component={Onboarding} />
 
       {/* Root redirect by role */}
       <Route path="/">
