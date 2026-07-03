@@ -1,6 +1,29 @@
+<<<<<<< HEAD
 modules = ["nodejs-24"]
 [agent]
 expertMode = true
 
+=======
+modules = ["nodejs-20", "web", "bash", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+>>>>>>> cab7d4b621a02ce0811ab9425d584b74cde858a6
 [nix]
 channel = "stable-25_05"

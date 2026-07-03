@@ -1,0 +1,11 @@
+# lovable.toml
+[run]
+dev = "node frontend/node_modules/next/dist/bin/next dev frontend --hostname 0.0.0.0"
+build = "node frontend/node_modules/next/dist/bin/next build frontend"
+install = "npm --prefix frontend install"
+
+[build]
+output = "frontend/.next"
+
+[env]
+NEXT_PUBLIC_API_URL = "https://api.voidcloud.cc.cd/api/v1"
