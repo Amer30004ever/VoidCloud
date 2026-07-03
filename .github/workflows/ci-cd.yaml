@@ -1701,11 +1701,24 @@ jobs:
             echo "⚠️ kubernetes/frontend/frontend-nodeport.yaml not found"
           fi
           
-          # REMOVED: Ingress is not needed since we use Cloudflare Tunnel
-          # kubectl apply -f kubernetes/ingress.yaml -n ${NAMESPACE} 2>/dev/null || true
+          # Apply API NodePort (for Cloudflare Tunnel)
+          if [ -f "kubernetes/api-nodeport.yaml" ]; then
+            kubectl apply -f kubernetes/api-nodeport.yaml -n ${NAMESPACE}
+            echo "✅ API NodePort service applied"
+          else
+            echo "⚠️ kubernetes/api-nodeport.yaml not found"
+          fi
           
-          # Apply Ingress for existing Traefik routing (traefik namespace)
-          kubectl apply -f kubernetes/ingress.yaml -n ${NAMESPACE}
+          # Apply Cloudflare Tunnel (in-cluster routing)
+          if [ -f "kubernetes/cloudflare-tunnel-config.yaml" ]; then
+            kubectl apply -f kubernetes/cloudflare-tunnel-config.yaml -n ${NAMESPACE}
+            echo "✅ Cloudflare Tunnel applied"
+          else
+            echo "⚠️ kubernetes/cloudflare-tunnel-config.yaml not found"
+          fi
+          
+          # REMOVED: Ingress not needed with Cloudflare Tunnel
+          # kubectl apply -f kubernetes/ingress.yaml -n ${NAMESPACE}
           
           echo "✅ All manifests applied successfully!"
           
@@ -1734,6 +1747,10 @@ jobs:
           # Wait for Frontend to be ready
           echo "⏳ Waiting for Frontend..."
           kubectl -n ${NAMESPACE} rollout status deploy/frontend --timeout=300s || echo "⚠️ Frontend rollout status check skipped"
+          
+          # Wait for Cloudflare Tunnel to be ready
+          echo "⏳ Waiting for Cloudflare Tunnel..."
+          kubectl -n ${NAMESPACE} rollout status deploy/cloudflare-tunnel --timeout=300s || echo "⚠️ Cloudflare Tunnel rollout status check skipped"
           
           echo "📊 Current pods in ${NAMESPACE}:"
           kubectl get pods -n ${NAMESPACE}
