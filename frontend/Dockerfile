@@ -6,8 +6,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-COPY pnpm-lock.yaml ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -20,7 +19,7 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ARG NEXT_TELEMETRY_DISABLED
 ENV NEXT_TELEMETRY_DISABLED=${NEXT_TELEMETRY_DISABLED}
 
-RUN corepack enable pnpm && pnpm build
+RUN npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
