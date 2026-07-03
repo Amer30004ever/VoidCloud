@@ -7,6 +7,7 @@
     "src/rbac/rbac.controller.ts",
     "src/auth/cloud-auth/github.strategy.ts",
     "src/auth/cloud-auth/google.strategy.ts",
-    "src/auth/cloud-auth/account.service.ts"
+    "src/auth/cloud-auth/account.service.ts",
+    "src/routes"
   ]
 }
