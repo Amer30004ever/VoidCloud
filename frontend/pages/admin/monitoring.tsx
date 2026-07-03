@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGetServiceHealth, useGetPlatformMetrics, useListAlerts } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,8 +46,11 @@ export default function AdminMonitoring() {
   const [pods, setPods] = useState<any[]>([]);
   const [podsLoading, setPodsLoading] = useState(false);
   const [grafanaTab, setGrafanaTab] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
 
-  const token = localStorage.getItem("voidcloud_token");
+  useEffect(() => {
+    setToken(localStorage.getItem("voidcloud_token"));
+  }, []);
 
   const loadPods = async () => {
     setPodsLoading(true);

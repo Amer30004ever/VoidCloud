@@ -1,5 +1,7 @@
+"use client";
+
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useRouter } from "next/router";
 import { useRegister } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -9,10 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 
 export default function Register() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [, setLocation] = useLocation();
   const { login } = useAuth();
   const { toast } = useToast();
   
@@ -23,10 +25,10 @@ export default function Register() {
     registerMutation.mutate({ data: { name, email, password } }, {
       onSuccess: (data) => {
         login(data);
-        if (data.user?.role === "SUPER_ADMIN") setLocation("/admin/dashboard");
-        else if (data.user?.role === "ADMIN") setLocation("/business/dashboard");
-        else if (data.user?.role === "AGENT") setLocation("/agent/dashboard");
-        else setLocation("/dashboard");
+        if (data.user?.role === "SUPER_ADMIN") router.push("/admin/dashboard");
+        else if (data.user?.role === "ADMIN") router.push("/business/dashboard");
+        else if (data.user?.role === "AGENT") router.push("/agent/dashboard");
+        else router.push("/dashboard");
       },
       onError: (err: any) => {
         toast({

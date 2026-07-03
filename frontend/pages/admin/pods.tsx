@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,8 +12,12 @@ import { RefreshCw, Search, RotateCcw, FileText, Cpu, MemoryStick, AlertTriangle
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function AdminPods() {
-  const token = localStorage.getItem("voidcloud_token");
+  const [token, setToken] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setToken(localStorage.getItem("voidcloud_token"));
+  }, []);
   const [namespace, setNamespace] = useState("all");
   const [search, setSearch] = useState("");
   const [logDialog, setLogDialog] = useState<{ pod: string; logs: string } | null>(null);

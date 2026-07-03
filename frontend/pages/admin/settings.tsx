@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGetMaintenanceMode } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,11 @@ const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 export default function AdminSettings() {
   const { data, isLoading, refetch } = useGetMaintenanceMode();
   const { toast } = useToast();
-  const token = localStorage.getItem("voidcloud_token");
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setToken(localStorage.getItem("voidcloud_token"));
+  }, []);
 
   const [maintenanceEnabled, setMaintenanceEnabled] = useState<boolean | null>(null);
   const [maintenanceMessage, setMaintenanceMessage] = useState("");

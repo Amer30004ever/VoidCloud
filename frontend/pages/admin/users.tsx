@@ -50,13 +50,17 @@ export default function AdminUsers() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       // Save current session for return
-      const currentToken = localStorage.getItem("voidcloud_token");
-      const currentUser = localStorage.getItem("voidcloud_user");
-      localStorage.setItem("voidcloud_prev_token", currentToken || "");
-      localStorage.setItem("voidcloud_prev_user", currentUser || "");
+      if (typeof window !== "undefined") {
+        const currentToken = localStorage.getItem("voidcloud_token");
+        const currentUser = localStorage.getItem("voidcloud_user");
+        localStorage.setItem("voidcloud_prev_token", currentToken || "");
+        localStorage.setItem("voidcloud_prev_user", currentUser || "");
+      }
       login(data);
       toast({ title: "Impersonating user", description: `You are now logged in as ${impersonateTarget.name}` });
-      window.location.href = "/";
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {

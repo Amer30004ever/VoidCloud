@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,11 +31,15 @@ const STEPS = [
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function Onboarding() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
-  const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
-  const token = localStorage.getItem("voidcloud_token");
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setToken(localStorage.getItem("voidcloud_token"));
+  }, []);
 
   // Step 1 — Business info
   const [businessName, setBusinessName] = useState(user?.name ?? "");
@@ -82,8 +88,10 @@ export default function Onboarding() {
   };
 
   const finish = () => {
-    localStorage.setItem("vc_onboarding_done", "1");
-    setLocation("/business/dashboard");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("vc_onboarding_done", "1");
+    }
+    router.push("/business/dashboard");
   };
 
   return (

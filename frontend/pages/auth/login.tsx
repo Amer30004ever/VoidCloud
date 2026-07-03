@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { useLogin } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -12,12 +14,12 @@ import { Shield, KeyRound, ArrowLeft, Eye, EyeOff } from "lucide-react";
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function Login() {
+  const router = useRouter();
   // Pre-fill only in local development — never in staging or production
   const isDev = process.env.NODE_ENV === 'development';
   const [email, setEmail] = useState(isDev ? "admin@voidcloud.com" : "");
   const [password, setPassword] = useState(isDev ? "VoidCloud2026!" : "");
   const [showPassword, setShowPassword] = useState(false);
-  const [, setLocation] = useLocation();
   const { login } = useAuth();
   const { toast } = useToast();
 
@@ -96,10 +98,10 @@ export default function Login() {
   };
 
   const redirectByRole = (role?: string) => {
-    if (role === "SUPER_ADMIN") setLocation("/admin/dashboard");
-    else if (role === "ADMIN") setLocation("/business/dashboard");
-    else if (role === "AGENT") setLocation("/agent/dashboard");
-    else setLocation("/dashboard");
+    if (role === "SUPER_ADMIN") router.push("/admin/dashboard");
+    else if (role === "ADMIN") router.push("/business/dashboard");
+    else if (role === "AGENT") router.push("/agent/dashboard");
+    else router.push("/dashboard");
   };
 
   const resetTo2FA = () => {

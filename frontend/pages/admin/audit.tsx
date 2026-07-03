@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -33,11 +33,15 @@ function ActionBadge({ action }: { action: string }) {
 }
 
 export default function AdminAudit() {
-  const token = localStorage.getItem("voidcloud_token");
+  const [token, setToken] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [resourceFilter, setResourceFilter] = useState("ALL");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+
+  useEffect(() => {
+    setToken(localStorage.getItem("voidcloud_token"));
+  }, []);
 
   const { data: logs, isLoading, refetch } = useQuery({
     queryKey: ["audit-logs", resourceFilter, fromDate, toDate],

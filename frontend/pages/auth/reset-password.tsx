@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,9 +19,15 @@ import { Shield, ArrowLeft, Eye, EyeOff, CheckCircle2, KeyRound } from "lucide-r
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export default function ResetPassword() {
-  const [location] = useLocation();
-  // Extract token from query string: /reset-password?token=xxx
-  const token = new URLSearchParams(window.location.search).get("token") ?? "";
+  const router = useRouter();
+  const [token, setToken] = useState("");
+
+  useEffect(() => {
+    // Extract token from query string: /reset-password?token=xxx
+    if (typeof window !== "undefined") {
+      setToken(new URLSearchParams(window.location.search).get("token") ?? "");
+    }
+  }, []);
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");

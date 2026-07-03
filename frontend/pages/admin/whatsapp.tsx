@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useListConversations } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,7 +50,11 @@ const BROADCAST_HISTORY = [
 export default function AdminWhatsApp() {
   const { data: conversations, isLoading: isConvosLoading } = useListConversations();
   const { toast } = useToast();
-  const token = localStorage.getItem("voidcloud_token");
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setToken(localStorage.getItem("voidcloud_token"));
+  }, []);
 
   const [selectedTemplate, setSelectedTemplate] = useState<typeof TEMPLATES[0] | null>(null);
   const [segment, setSegment] = useState("all");

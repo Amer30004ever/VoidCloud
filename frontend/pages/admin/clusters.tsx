@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useListClusters } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,11 @@ const OS_TEMPLATES = [
 export default function AdminClusters() {
   const { data: clusters, isLoading, refetch } = useListClusters();
   const { toast } = useToast();
-  const token = localStorage.getItem("voidcloud_token");
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setToken(localStorage.getItem("voidcloud_token"));
+  }, []);
 
   const [showAddCluster, setShowAddCluster] = useState(false);
   const [showProvision, setShowProvision] = useState(false);
