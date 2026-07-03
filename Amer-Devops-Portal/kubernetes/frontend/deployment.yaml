@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: voidcloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      # imagePullSecrets removed — images are public on Docker Hub.
+      containers:
+        - name: frontend
+          image: amer30004ever/voidcloud-frontend:latest  # Will be updated
+          imagePullPolicy: Always
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: voidcloud-config
+                  key: NEXT_PUBLIC_API_URL
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: voidcloud-config
+                  key: NODE_ENV
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
