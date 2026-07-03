@@ -31,91 +31,91 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Test/Build Mode'
+        description: "Test/Build Mode"
         required: true
-        default: 'auto'
+        default: "auto"
         type: choice
         options:
-          - auto                    # Auto-detect changes
-          - test-backend-only       # Test backend code only
-          - test-frontend-only      # Test frontend code only
-          - test-both               # Test both backend and frontend
-          - build-backend-only      # Test + Build + Push backend image + Deploy
-          - build-frontend-only     # Test + Build + Push frontend image + Deploy
-          - build-both              # Test + Build + Push both images + Deploy both
-          - build-postgres          # Build + Push PostgreSQL image only
-          - full-ci-backend         # Complete CI + Deploy backend
-          - full-ci-frontend        # Complete CI + Deploy frontend
-          - full-ci-both            # Complete CI + Deploy both
-          - full-ci-all             # Complete CI + Deploy backend, frontend, and postgres
-          - apply-manifests         # kubectl apply all k8s manifests (no build)
-          - apply-service          # kubectl apply specific service manifest
-          - run-migrations          # Run database migrations only
-          - validate-secrets        # Run Validate-Secrets equivalent + annotate
-          - reset-postgres          # DESTRUCTIVE: wipe postgres PVC/PV + reinit
-          - rollback-migrations       # Rollback last database migration
-          - k8s-full-reset          # reset-postgres -> apply -> validate -> redeploy
+          - auto # Auto-detect changes
+          - test-backend-only # Test backend code only
+          - test-frontend-only # Test frontend code only
+          - test-both # Test both backend and frontend
+          - build-backend-only # Test + Build + Push backend image + Deploy
+          - build-frontend-only # Test + Build + Push frontend image + Deploy
+          - build-both # Test + Build + Push both images + Deploy both
+          - build-postgres # Build + Push PostgreSQL image only
+          - full-ci-backend # Complete CI + Deploy backend
+          - full-ci-frontend # Complete CI + Deploy frontend
+          - full-ci-both # Complete CI + Deploy both
+          - full-ci-all # Complete CI + Deploy backend, frontend, and postgres
+          - apply-manifests # kubectl apply all k8s manifests (no build)
+          - apply-service # kubectl apply specific service manifest
+          - run-migrations # Run database migrations only
+          - validate-secrets # Run Validate-Secrets equivalent + annotate
+          - reset-postgres # DESTRUCTIVE: wipe postgres PVC/PV + reinit
+          - rollback-migrations # Rollback last database migration
+          - k8s-full-reset # reset-postgres -> apply -> validate -> redeploy
       deploy_enabled:
-        description: 'Enable auto-deploy after build'
+        description: "Enable auto-deploy after build"
         required: false
         type: boolean
         default: true
       backend_image:
-        description: 'Backend image tag for manual deploy (optional)'
+        description: "Backend image tag for manual deploy (optional)"
         required: false
         type: string
-        default: 'latest'
+        default: "latest"
       frontend_image:
-        description: 'Frontend image tag for manual deploy (optional)'
+        description: "Frontend image tag for manual deploy (optional)"
         required: false
         type: string
-        default: 'latest'
+        default: "latest"
       postgres_image:
-        description: 'PostgreSQL image tag for manual deploy (optional)'
+        description: "PostgreSQL image tag for manual deploy (optional)"
         required: false
         type: string
-        default: 'latest'
+        default: "latest"
       force_pull:
-        description: 'Force pull new images on deploy'
+        description: "Force pull new images on deploy"
         required: false
         type: boolean
         default: true
       frontend_features:
-        description: 'Frontend features to build (for frontend-related modes)'
+        description: "Frontend features to build (for frontend-related modes)"
         required: false
         type: choice
         options:
-          - none                    # Skip frontend build
-          - all                     # Build all features
-          - landing-only            # Build landing page only
-          - dashboard-only          # Build dashboard only
-          - crm-only                # Build CRM only
-          - landing-dashboard       # Build landing + dashboard
-          - landing-crm             # Build landing + CRM
-          - dashboard-crm           # Build dashboard + CRM
-        default: 'none'
+          - none # Skip frontend build
+          - all # Build all features
+          - landing-only # Build landing page only
+          - dashboard-only # Build dashboard only
+          - crm-only # Build CRM only
+          - landing-dashboard # Build landing + dashboard
+          - landing-crm # Build landing + CRM
+          - dashboard-crm # Build dashboard + CRM
+        default: "none"
       services:
-        description: 'Services to build (for backend-related modes)'
+        description: "Services to build (for backend-related modes)"
         required: false
         type: choice
         options:
-          - none                    # Skip backend build
-          - all                     # Build all services
-          - auth                    # Auth service only
-          - user                    # User service only
-          - tenant                  # Tenant service only
-          - vps                     # VPS service only
-          - billing                 # Billing service only
-          - crm                     # CRM service only
-          - email                   # Email service only
-          - notification            # Notification service only
-          - monitoring              # Monitoring service only
-          - audit                   # Audit service only
-          - analytics               # Analytics service only
-          - openwa                  # OpenWA service only
-        default: 'none'
+          - none # Skip backend build
+          - all # Build all services
+          - auth # Auth service only
+          - user # User service only
+          - tenant # Tenant service only
+          - vps # VPS service only
+          - billing # Billing service only
+          - crm # CRM service only
+          - email # Email service only
+          - notification # Notification service only
+          - monitoring # Monitoring service only
+          - audit # Audit service only
+          - analytics # Analytics service only
+          - openwa # OpenWA service only
+        default: "none"
       service_name:
-        description: 'Specific service name for apply-service mode'
+        description: "Specific service name for apply-service mode"
         required: false
         type: choice
         options:
@@ -136,7 +136,7 @@ on:
           - redis
           - rabbitmq
           - whatsapp
-        default: 'auth'
+        default: "auth"
 
 env:
   DOCKER_HUB_USERNAME: amer30004ever
@@ -320,17 +320,17 @@ jobs:
         run: |
           cd kubernetes/postgres/build_image
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-          
+
           # Verify Dockerfile exists
           if [ ! -f "./postgres/Dockerfile" ]; then
             echo "❌ Dockerfile not found at kubernetes/postgres/build_image/postgres/Dockerfile"
             exit 1
           fi
-          
+
           # Build with both tags
           docker build -t ${{ env.POSTGRES_IMAGE_NAME }}:latest ./postgres
           docker build -t ${{ env.POSTGRES_IMAGE_NAME }}:${TIMESTAMP} ./postgres
-          
+
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
           echo "BUILT=true" >> $GITHUB_OUTPUT
           echo "✅ PostgreSQL image built successfully with tags: latest, ${TIMESTAMP}"
@@ -353,7 +353,7 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15-alpine
@@ -376,8 +376,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: services/*/package-lock.json
 
       - name: Test services
@@ -386,13 +386,13 @@ jobs:
           if [ "$SERVICES_TO_TEST" == "all" ] || [ -z "$SERVICES_TO_TEST" ]; then
             SERVICES_TO_TEST="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
           fi
-          
+
           # Generate Prisma client from database directory first
           cd database
           npm install
           npx prisma generate
           cd ..
-          
+
           for SERVICE in $SERVICES_TO_TEST; do
             echo "Testing service: $SERVICE"
             cd services/$SERVICE
@@ -420,8 +420,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
@@ -437,7 +437,7 @@ jobs:
         run: |
           FEATURES="${{ github.event.inputs.frontend_features }}"
           cd frontend
-          
+
           case "$FEATURES" in
             "all")
               npm run build
@@ -490,7 +490,7 @@ jobs:
 
       - name: Create network for containers
         run: docker network create test-network || true
-  
+
       - name: Run PostgreSQL container
         run: |
           docker run -d \
@@ -666,8 +666,6 @@ jobs:
               --label "git-branch=${{ github.ref_name }}" \
               --label "build-date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
               --label "service=${SERVICE}" \
-              --cache-from "type=registry,ref=${IMAGE_BASE}:cache" \
-              --cache-to   "type=registry,ref=${IMAGE_BASE}:cache,mode=max" \
               --tag "${IMAGE_BASE}:latest" \
               --tag "${IMAGE_BASE}:${TIMESTAMP}" \
               --push \
@@ -747,8 +745,6 @@ jobs:
             --label "git-commit=${{ github.sha }}" \
             --label "git-branch=${{ github.ref_name }}" \
             --label "build-date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --cache-from "type=registry,ref=${IMAGE_BASE}:cache" \
-            --cache-to   "type=registry,ref=${IMAGE_BASE}:cache,mode=max" \
             --tag "${IMAGE_BASE}:latest" \
             --tag "${IMAGE_BASE}:${TIMESTAMP}" \
             --push \
@@ -781,7 +777,7 @@ jobs:
         with:
           username: ${{ env.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
-        continue-on-error: true   # non-blocking: public images still scannable without auth
+        continue-on-error: true # non-blocking: public images still scannable without auth
 
       - name: Install Trivy
         run: |
@@ -871,7 +867,7 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Setup kubeconfig
         run: |
@@ -906,15 +902,15 @@ jobs:
         run: |
           echo "🐘 Deploying PostgreSQL..."
           NAMESPACE="voidcloud"
-          
+
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
-          
+
           # Apply PostgreSQL manifests
           kubectl apply -f kubernetes/postgres/pv.yaml 2>/dev/null || true
           kubectl apply -f kubernetes/postgres/pvc.yaml 2>/dev/null || true
           kubectl apply -f kubernetes/postgres/deployment.yaml 2>/dev/null || true
           kubectl apply -f kubernetes/postgres/service.yaml 2>/dev/null || true
-          
+
           # Update image if specific tag provided
           POSTGRES_IMG="${{ steps.deployment_info.outputs.postgres_image }}"
           if [ "$POSTGRES_IMG" != "latest" ] && [ "$POSTGRES_IMG" != "" ] && [ "$POSTGRES_IMG" != "null" ]; then
@@ -922,14 +918,14 @@ jobs:
             kubectl set image deployment/postgres -n ${NAMESPACE} \
               postgres=${{ env.POSTGRES_IMAGE_NAME }}:${POSTGRES_IMG}
           fi
-          
+
           # Ensure imagePullPolicy is Always
           kubectl patch deployment postgres -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"postgres","imagePullPolicy":"Always"}]}}}}' 2>/dev/null || true
-          
+
           # Restart and wait for readiness
           kubectl rollout restart deployment/postgres -n ${NAMESPACE} 2>/dev/null || true
           kubectl rollout status deployment/postgres -n ${NAMESPACE} --timeout=120s 2>/dev/null || echo "⚠️ PostgreSQL rollout status check skipped (may not exist yet)"
-          
+
           echo "✅ PostgreSQL deployment complete!"
 
   # ============================================
@@ -954,7 +950,7 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Setup kubeconfig
         run: |
@@ -990,14 +986,14 @@ jobs:
           echo "🚀 Deploying services..."
           NAMESPACE="voidcloud"
           TIMESTAMP="${{ needs.build-backend.outputs.backend_tag }}"
-          
+
           SERVICES_TO_DEPLOY="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_DEPLOY" == "all" ] || [ -z "$SERVICES_TO_DEPLOY" ]; then
             SERVICES_TO_DEPLOY="auth user tenant vps billing crm email notification monitoring audit analytics"
           fi
-          
+
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
-          
+
           # Apply infrastructure manifests
           kubectl apply -f kubernetes/configmaps.yaml
           kubectl apply -f kubernetes/postgres/pv.yaml
@@ -1006,7 +1002,7 @@ jobs:
           kubectl apply -f kubernetes/rabbitmq/pvc.yaml
           kubectl apply -f kubernetes/redis/pv.yaml
           kubectl apply -f kubernetes/redis/pvc.yaml
-          
+
           # Create/update voidcloud-secrets from GitHub Secrets
           kubectl create secret generic voidcloud-secrets -n ${NAMESPACE} \
             --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
@@ -1029,7 +1025,7 @@ jobs:
             --from-literal=PROXMOX_IP_POOL_CIDR="${{ secrets.PROXMOX_IP_POOL_CIDR }}" \
             --from-literal=PROXMOX_GATEWAY="${{ secrets.PROXMOX_GATEWAY }}" \
             --dry-run=client -o yaml | kubectl apply -f -
-          
+
           for SERVICE in $SERVICES_TO_DEPLOY; do
             echo "Deploying service: $SERVICE"
             kubectl apply -f kubernetes/$SERVICE/service.yaml 2>/dev/null || true
@@ -1043,7 +1039,7 @@ jobs:
             kubectl set image deployment/$SERVICE-service -n ${NAMESPACE} \
               $SERVICE-service=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${IMAGE_TAG}
           done
-          
+
           echo "🔄 Running database migrations..."
           kubectl delete job prisma-migrate -n ${NAMESPACE} --ignore-not-found --wait=true
           sed "s|amer30004ever/voidcloud-backend:latest|${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-auth-service:${IMAGE_TAG}|g" kubernetes/migrate-job.yaml | kubectl apply -f -
@@ -1054,12 +1050,12 @@ jobs:
             exit 1
           fi
           kubectl logs job/prisma-migrate -n ${NAMESPACE}
-          
+
           # Wait for services to be ready (kubectl set image already triggered rollouts)
           for SERVICE in $SERVICES_TO_DEPLOY; do
             kubectl rollout status deployment/$SERVICE-service -n ${NAMESPACE} --timeout=300s
           done
-          
+
           echo "🚀 Deploying OpenWA..."
           kubectl apply -f kubernetes/openwa/pv.yaml
           kubectl apply -f kubernetes/openwa/pvc.yaml
@@ -1067,12 +1063,12 @@ jobs:
           kubectl apply -f kubernetes/openwa/service.yaml
           kubectl apply -f kubernetes/openwa/openwa-nodeport.yaml
           kubectl rollout status deployment/openwa -n ${NAMESPACE} --timeout=300s
-          
+
           echo "🚀 Deploying infrastructure services..."
           kubectl apply -f kubernetes/postgres/deployment.yaml
           kubectl apply -f kubernetes/rabbitmq/deployment.yaml
           kubectl apply -f kubernetes/redis/deployment.yaml
-          
+
           echo "✅ Services deployment complete!"
   # ============================================
   # RUN DATABASE MIGRATIONS
@@ -1088,7 +1084,7 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Setup kubeconfig
         run: |
@@ -1124,7 +1120,7 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Setup kubeconfig
         run: |
@@ -1159,20 +1155,20 @@ jobs:
         run: |
           echo "🚀 Deploying frontend..."
           NAMESPACE="voidcloud"
-          
+
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
-          
+
           kubectl apply -f kubernetes/frontend/service.yaml 2>/dev/null || true
           kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml 2>/dev/null || true          kubectl apply -f kubernetes/frontend/deployment.yaml
-          
+
           kubectl patch deployment frontend -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"Always"}]}}}}'
-          
+
           kubectl set image deployment/frontend -n ${NAMESPACE} \
             frontend=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${{ steps.deployment_info.outputs.frontend_image }}
-          
+
           kubectl rollout restart deployment/frontend -n ${NAMESPACE}
           kubectl rollout status deployment/frontend -n ${NAMESPACE} --timeout=180s
-          
+
           echo "✅ Frontend deployment complete!"
 
   # ============================================
@@ -1188,7 +1184,7 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Setup kubeconfig
         run: |
@@ -1200,12 +1196,12 @@ jobs:
         run: |
           echo "🚀 Performing full deployment..."
           NAMESPACE="voidcloud"
-          
+
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
-          
+
           kubectl apply -f kubernetes/configmaps.yaml 2>/dev/null || true
           kubectl apply -f kubernetes/secrets.yaml 2>/dev/null || true
-          
+
           # Deploy PostgreSQL with custom image if specified
           POSTGRES_IMG="${{ github.event.inputs.postgres_image }}"
           if [ -f "kubernetes/postgres/deployment.yaml" ]; then
@@ -1219,16 +1215,16 @@ jobs:
                 postgres=${{ env.POSTGRES_IMAGE_NAME }}:${POSTGRES_IMG} 2>/dev/null || true
             fi
           fi
-          
+
           kubectl wait --for=condition=ready pod -l app=postgres -n ${NAMESPACE} --timeout=120s 2>/dev/null || true
-          
+
           # Apply Services
           for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
             kubectl apply -f kubernetes/$SERVICE/deployment.yaml 2>/dev/null || true
             kubectl apply -f kubernetes/$SERVICE/service.yaml 2>/dev/null || true
             kubectl patch deployment $SERVICE-service -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"'$SERVICE'","imagePullPolicy":"Always"}]}}}}' 2>/dev/null || true
           done
-          
+
           BACKEND_IMG="${{ github.event.inputs.backend_image }}"
           if [ "$BACKEND_IMG" != "latest" ] && [ "$BACKEND_IMG" != "" ] && [ "$BACKEND_IMG" != "null" ]; then
             for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
@@ -1236,26 +1232,26 @@ jobs:
                 $SERVICE=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${BACKEND_IMG} 2>/dev/null || true
             done
           fi
-          
+
           # Wait for services to be ready
           for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
             kubectl wait --for=condition=ready pod -l app=$SERVICE -n ${NAMESPACE} --timeout=120s 2>/dev/null || true
           done
-          
+
           kubectl apply -f kubernetes/frontend/deployment.yaml
           kubectl apply -f kubernetes/frontend/service.yaml
           kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml
           kubectl patch deployment frontend -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"Always"}]}}}}'
-          
+
           FRONTEND_IMG="${{ github.event.inputs.frontend_image }}"
           if [ "$FRONTEND_IMG" != "latest" ] && [ "$FRONTEND_IMG" != "" ] && [ "$FRONTEND_IMG" != "null" ]; then
             kubectl set image deployment/frontend -n ${NAMESPACE} \
               frontend=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend:${FRONTEND_IMG}
           fi
-          
+
           kubectl wait --for=condition=ready pod -l app=frontend -n ${NAMESPACE} --timeout=120s
           kubectl apply -f kubernetes/ingress.yaml 2>/dev/null || true
-          
+
           echo "✅ Full deployment complete!"
 
   manual-restart-backend:
@@ -1265,7 +1261,7 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Setup kubeconfig
         run: |
@@ -1298,7 +1294,7 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Setup kubeconfig
         run: |
@@ -1327,7 +1323,7 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Setup kubeconfig
         run: |
@@ -1363,7 +1359,7 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Setup kubeconfig
         run: |
@@ -1376,45 +1372,45 @@ jobs:
           echo "🚀 Applying service: ${{ github.event.inputs.service_name }}"
           NAMESPACE="voidcloud"
           SERVICE="${{ github.event.inputs.service_name }}"
-          
+
           if [ -z "$SERVICE" ]; then
             echo "❌ service_name is required for apply-service mode"
             exit 1
           fi
-          
+
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
-          
+
           # Apply service-specific manifests
           if [ -f "kubernetes/$SERVICE/service.yaml" ]; then
             kubectl apply -f kubernetes/$SERVICE/service.yaml
           fi
-          
+
           if [ -f "kubernetes/$SERVICE/deployment.yaml" ]; then
             kubectl apply -f kubernetes/$SERVICE/deployment.yaml
           fi
-          
+
           if [ -f "kubernetes/$SERVICE/pvc.yaml" ]; then
             kubectl apply -f kubernetes/$SERVICE/pvc.yaml
           fi
-          
+
           if [ -f "kubernetes/$SERVICE/pv.yaml" ]; then
             kubectl apply -f kubernetes/$SERVICE/pv.yaml
           fi
-          
+
           # Handle OpenWA special case
           if [ "$SERVICE" == "openwa" ]; then
             if [ -f "kubernetes/$SERVICE/openwa-nodeport.yaml" ]; then
               kubectl apply -f kubernetes/$SERVICE/openwa-nodeport.yaml
             fi
           fi
-          
+
           # Handle frontend special case
           if [ "$SERVICE" == "frontend" ]; then
             if [ -f "kubernetes/$SERVICE/frontend-nodeport.yaml" ]; then
               kubectl apply -f kubernetes/$SERVICE/frontend-nodeport.yaml
             fi
           fi
-          
+
           # Rollout restart if deployment exists
           if kubectl get deployment $SERVICE -n ${NAMESPACE} 2>/dev/null; then
             kubectl rollout restart deployment/$SERVICE -n ${NAMESPACE}
@@ -1423,14 +1419,24 @@ jobs:
             kubectl rollout restart deployment/$SERVICE-service -n ${NAMESPACE}
             kubectl rollout status deployment/$SERVICE-service -n ${NAMESPACE} --timeout=120s
           fi
-          
+
           echo "✅ Service $SERVICE applied successfully!"
 
   # ============================================
   # CI SUMMARY
   # ============================================
   ci-summary:
-    needs: [detect-changes, test-backend, test-frontend, test-backend-artifact, test-frontend-artifact, build-backend, build-frontend, build-postgres]
+    needs:
+      [
+        detect-changes,
+        test-backend,
+        test-frontend,
+        test-backend-artifact,
+        test-frontend-artifact,
+        build-backend,
+        build-frontend,
+        build-postgres,
+      ]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1471,18 +1477,18 @@ jobs:
           echo "  PostgreSQL Image Tag: ${{ needs.build-postgres.outputs.postgres_tag }}"
           echo ""
           echo "========================================="
-          
+
           # Exit with error if build was expected but skipped
           if [[ "${{ needs.detect-changes.outputs.build_backend }}" == "true" ]] && [[ "${{ needs.build-backend.result }}" == "skipped" ]]; then
             echo "❌ ERROR: Backend build was expected but got skipped!"
             exit 1
           fi
-          
+
           if [[ "${{ needs.detect-changes.outputs.build_frontend }}" == "true" ]] && [[ "${{ needs.build-frontend.result }}" == "skipped" ]]; then
             echo "❌ ERROR: Frontend build was expected but got skipped!"
             exit 1
           fi
-          
+
           if [[ "${{ needs.detect-changes.outputs.build_postgres }}" == "true" ]] && [[ "${{ needs.build-postgres.result }}" == "skipped" ]]; then
             echo "❌ ERROR: PostgreSQL build was expected but got skipped!"
             exit 1
@@ -1511,14 +1517,24 @@ jobs:
   # DEPLOYMENT VERIFICATION & SUMMARY
   # ============================================
   deploy-summary:
-    needs: [deploy-postgres, deploy-backend, deploy-frontend, run-migrations, manual-full-deploy, manual-restart-backend, manual-restart-frontend, manual-restart-all]
+    needs:
+      [
+        deploy-postgres,
+        deploy-backend,
+        deploy-frontend,
+        run-migrations,
+        manual-full-deploy,
+        manual-restart-backend,
+        manual-restart-frontend,
+        manual-restart-all,
+      ]
     runs-on: self-hosted
     if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     steps:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Setup kubeconfig
         run: |
@@ -1534,7 +1550,7 @@ jobs:
           echo "========================================="
           echo ""
           echo "Trigger: ${{ github.event_name }}"
-          
+
           if [ "${{ github.event_name }}" == "push" ]; then
             echo "Type: Auto CI/CD from code push"
           elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
@@ -1542,7 +1558,7 @@ jobs:
             echo "Mode: ${{ github.event.inputs.mode }}"
             echo "Deploy Type: ${{ github.event.inputs.deploy_type }}"
           fi
-          
+
           echo ""
           echo "📦 Build Status:"
           echo "  PostgreSQL built: ${{ needs.deploy-postgres.result == 'success' || 'skipped' }}"
@@ -1554,14 +1570,14 @@ jobs:
           echo "  Backend deployed: ${{ needs.deploy-backend.result == 'success' || 'not deployed' }}"
           echo "  Frontend deployed: ${{ needs.deploy-frontend.result == 'success' || 'not deployed' }}"
           echo ""
-          
+
           echo "🏥 Current Cluster Status:"
           NAMESPACE="voidcloud"
           kubectl get pods -n ${NAMESPACE}
           echo ""
           kubectl get svc -n ${NAMESPACE}
           echo ""
-          
+
           echo "🌐 Access URLs:"
           echo "   https://voidcloud.cc.cd"
           echo "   https://api.voidcloud.cc.cd/api/v1/health"
@@ -1610,15 +1626,15 @@ jobs:
         run: |
           set -e
           NAMESPACE="voidcloud"
-          
+
           echo "📦 Applying manifests to namespace: ${NAMESPACE}"
-          
+
           # Create namespace if it doesn't exist
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
-          
+
           # Apply configmaps
           kubectl apply -f kubernetes/configmaps.yaml -n ${NAMESPACE}
-          
+
           # Create/update voidcloud-secrets from GitHub Secrets
           kubectl create secret generic voidcloud-secrets -n ${NAMESPACE} \
             --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
@@ -1643,44 +1659,44 @@ jobs:
             --from-literal=WHATSAPP_SUPPORT_NUMBER="${{ secrets.WHATSAPP_SUPPORT_NUMBER }}" \
             --from-literal=WHATSAPP_SUPPORT_NUMBER_FORMATTED="${{ secrets.WHATSAPP_SUPPORT_NUMBER_FORMATTED }}" \
             --dry-run=client -o yaml | kubectl apply -f -
-          
+
           # Apply secrets - fail if there's an issue
           if [ -f "kubernetes/secrets.yaml" ]; then
             kubectl apply -f kubernetes/secrets.yaml -n ${NAMESPACE}
           else
             echo "⚠️ kubernetes/secrets.yaml not found; keeping existing cluster secrets"
           fi
-          
+
           # Apply PostgreSQL
           kubectl apply -f kubernetes/postgres/pv.yaml 2>/dev/null || echo "⚠️ PV may already exist"
           kubectl apply -f kubernetes/postgres/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ PVC may already exist"
           kubectl apply -f kubernetes/postgres/deployment.yaml -n ${NAMESPACE}
           kubectl apply -f kubernetes/postgres/service.yaml -n ${NAMESPACE}
-          
+
           # Apply Redis
           kubectl apply -f kubernetes/redis/pv.yaml 2>/dev/null || echo "⚠️ Redis PV may already exist"
           kubectl apply -f kubernetes/redis/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ Redis PVC may already exist"
           kubectl apply -f kubernetes/redis/deployment.yaml -n ${NAMESPACE}
           kubectl apply -f kubernetes/redis/service.yaml -n ${NAMESPACE}
-          
+
           # Apply RabbitMQ
           kubectl apply -f kubernetes/rabbitmq/pv.yaml 2>/dev/null || echo "⚠️ RabbitMQ PV may already exist"
           kubectl apply -f kubernetes/rabbitmq/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ RabbitMQ PVC may already exist"
           kubectl apply -f kubernetes/rabbitmq/deployment.yaml -n ${NAMESPACE}
           kubectl apply -f kubernetes/rabbitmq/service.yaml -n ${NAMESPACE}
-          
+
           # Apply Services
           for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             kubectl apply -f kubernetes/$SERVICE/deployment.yaml -n ${NAMESPACE} 2>/dev/null || true
             kubectl apply -f kubernetes/$SERVICE/service.yaml -n ${NAMESPACE} 2>/dev/null || true
           done
-          
+
           # Apply OpenWA
           kubectl apply -f kubernetes/openwa/pvc.yaml -n ${NAMESPACE} 2>/dev/null || echo "⚠️ OpenWA PVC may already exist"
           kubectl apply -f kubernetes/openwa/deployment.yaml -n ${NAMESPACE}
           kubectl apply -f kubernetes/openwa/service.yaml -n ${NAMESPACE}
           kubectl apply -f kubernetes/openwa/openwa-nodeport.yaml -n ${NAMESPACE}
-          
+
           # Apply Service NodePorts (for Cloudflare Tunnel)
           for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             if [ -f "kubernetes/$SERVICE/$SERVICE-nodeport.yaml" ]; then
@@ -1688,11 +1704,11 @@ jobs:
               echo "✅ $SERVICE NodePort service applied"
             fi
           done
-          
+
           # Apply Frontend
           kubectl apply -f kubernetes/frontend/deployment.yaml -n ${NAMESPACE}
           kubectl apply -f kubernetes/frontend/service.yaml -n ${NAMESPACE}
-          
+
           # Apply Frontend NodePort (for Cloudflare Tunnel)
           if [ -f "kubernetes/frontend/frontend-nodeport.yaml" ]; then
             kubectl apply -f kubernetes/frontend/frontend-nodeport.yaml -n ${NAMESPACE}
@@ -1700,7 +1716,7 @@ jobs:
           else
             echo "⚠️ kubernetes/frontend/frontend-nodeport.yaml not found"
           fi
-          
+
           # Apply API NodePort (for Cloudflare Tunnel)
           if [ -f "kubernetes/api-nodeport.yaml" ]; then
             kubectl apply -f kubernetes/api-nodeport.yaml -n ${NAMESPACE}
@@ -1708,7 +1724,7 @@ jobs:
           else
             echo "⚠️ kubernetes/api-nodeport.yaml not found"
           fi
-          
+
           # Apply Cloudflare Tunnel (in-cluster routing)
           if [ -f "kubernetes/cloudflare-tunnel-config.yaml" ]; then
             kubectl apply -f kubernetes/cloudflare-tunnel-config.yaml -n ${NAMESPACE}
@@ -1716,45 +1732,45 @@ jobs:
           else
             echo "⚠️ kubernetes/cloudflare-tunnel-config.yaml not found"
           fi
-          
+
           # REMOVED: Ingress not needed with Cloudflare Tunnel
           # kubectl apply -f kubernetes/ingress.yaml -n ${NAMESPACE}
-          
+
           echo "✅ All manifests applied successfully!"
-          
+
           # Wait for PostgreSQL to be ready
           echo "⏳ Waiting for PostgreSQL..."
           kubectl -n ${NAMESPACE} rollout status deploy/postgres --timeout=300s || echo "⚠️ PostgreSQL rollout status check skipped"
-          
+
           # Wait for Redis to be ready
           echo "⏳ Waiting for Redis..."
           kubectl -n ${NAMESPACE} rollout status deploy/redis --timeout=300s || echo "⚠️ Redis rollout status check skipped"
-          
+
           # Wait for RabbitMQ to be ready
           echo "⏳ Waiting for RabbitMQ..."
           kubectl -n ${NAMESPACE} rollout status deploy/rabbitmq --timeout=300s || echo "⚠️ RabbitMQ rollout status check skipped"
-          
+
           # Wait for Services to be ready
           echo "⏳ Waiting for Services..."
           for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             kubectl -n ${NAMESPACE} rollout status deploy/$SERVICE-service --timeout=300s 2>/dev/null || echo "⚠️ $SERVICE rollout status check skipped"
           done
-          
+
           # Wait for OpenWA to be ready
           echo "⏳ Waiting for OpenWA..."
           kubectl -n ${NAMESPACE} rollout status deploy/openwa --timeout=300s 2>/dev/null || echo "⚠️ OpenWA rollout status check skipped"
-          
+
           # Wait for Frontend to be ready
           echo "⏳ Waiting for Frontend..."
           kubectl -n ${NAMESPACE} rollout status deploy/frontend --timeout=300s || echo "⚠️ Frontend rollout status check skipped"
-          
+
           # Wait for Cloudflare Tunnel to be ready
           echo "⏳ Waiting for Cloudflare Tunnel..."
           kubectl -n ${NAMESPACE} rollout status deploy/cloudflare-tunnel --timeout=300s || echo "⚠️ Cloudflare Tunnel rollout status check skipped"
-          
+
           echo "📊 Current pods in ${NAMESPACE}:"
           kubectl get pods -n ${NAMESPACE}
-          
+
           echo "📊 Current services in ${NAMESPACE}:"
           kubectl get svc -n ${NAMESPACE}
 
@@ -1827,12 +1843,12 @@ jobs:
         run: |
           NAMESPACE="voidcloud"
           echo "🔄 Restarting workloads in namespace: ${NAMESPACE}"
-          
+
           kubectl -n ${NAMESPACE} rollout restart deploy/backend
           kubectl -n ${NAMESPACE} rollout status deploy/backend --timeout=300s
-          
+
           kubectl -n ${NAMESPACE} rollout restart deploy/frontend 2>/dev/null || true
           kubectl -n ${NAMESPACE} rollout status deploy/frontend --timeout=300s 2>/dev/null || true
-          
+
           echo "📊 Current pods in ${NAMESPACE}:"
           kubectl get pods -n ${NAMESPACE}
