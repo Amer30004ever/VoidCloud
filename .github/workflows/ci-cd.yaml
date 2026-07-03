@@ -637,7 +637,7 @@ jobs:
           npm cache clean --force 2>/dev/null || true
           df -h
 
-      - name: Build and push service images (multi-arch)
+      - name: Build and push service images
         id: build
         run: |
           SERVICES_TO_BUILD="${{ github.event.inputs.services }}"
@@ -654,13 +654,13 @@ jobs:
 
           for SERVICE in $SERVICES_TO_BUILD; do
             IMAGE_BASE="${REPO}-${SERVICE}-service"
-            echo "=== Building (multi-arch amd64+arm64): $SERVICE ==="
+            echo "=== Building (amd64): $SERVICE ==="
             echo "Disk space before build:"
             df -h
 
             # Build and push both tags in a single buildx pass (no double build)
             docker buildx build \
-              --platform linux/amd64,linux/arm64 \
+              --platform linux/amd64 \
               --file "services/${SERVICE}/Dockerfile" \
               --label "git-commit=${{ github.sha }}" \
               --label "git-branch=${{ github.ref_name }}" \
@@ -671,7 +671,7 @@ jobs:
               --push \
               .
 
-            echo "✅ Multi-arch pushed: ${IMAGE_BASE}:${TIMESTAMP}"
+            echo "✅ Image pushed: ${IMAGE_BASE}:${TIMESTAMP}"
             docker builder prune -f
             echo "Disk space after cleanup:"
             df -h
@@ -723,7 +723,7 @@ jobs:
           npm cache clean --force 2>/dev/null || true
           df -h
 
-      - name: Build and push frontend image (multi-arch)
+      - name: Build and push frontend image
         id: build
         run: |
           FRONTEND_FEATURES="${{ github.event.inputs.frontend_features }}"
@@ -736,9 +736,9 @@ jobs:
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           IMAGE_BASE="${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend"
 
-          echo "=== Building frontend (multi-arch amd64+arm64) ==="
+          echo "=== Building frontend (amd64) ==="
           docker buildx build \
-            --platform linux/amd64,linux/arm64 \
+            --platform linux/amd64 \
             --file "frontend/Dockerfile" \
             --build-arg NEXT_PUBLIC_API_URL=https://api.voidcloud.cc.cd/api/v1 \
             --build-arg NEXT_TELEMETRY_DISABLED=1 \
@@ -750,7 +750,7 @@ jobs:
             --push \
             frontend/
 
-          echo "✅ Multi-arch frontend pushed: ${IMAGE_BASE}:${TIMESTAMP}"
+          echo "✅ Frontend image pushed: ${IMAGE_BASE}:${TIMESTAMP}"
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
           echo "BUILT=true" >> $GITHUB_OUTPUT
 
