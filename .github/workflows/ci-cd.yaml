@@ -1020,15 +1020,17 @@ jobs:
           done
 
           echo "🔄 Running database migrations..."
-          kubectl delete job prisma-migrate -n ${NAMESPACE} --ignore-not-found --wait=true
-          sed "s|amer30004ever/voidcloud-backend:latest|${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-auth-service:${IMAGE_TAG}|g" kubernetes/migrate-job.yaml | kubectl apply -f -
-          if ! kubectl wait --for=condition=complete job/prisma-migrate -n ${NAMESPACE} --timeout=300s; then
+          kubectl delete job voidcloud-db-migrate -n ${NAMESPACE} --ignore-not-found --wait=true
+          kubectl delete job voidcloud-db-seed -n ${NAMESPACE} --ignore-not-found --wait=true
+          sed "s|amer30004ever/voidcloud-auth-service:latest|${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-auth-service:${IMAGE_TAG}|g" kubernetes/migrate-job.yaml | kubectl apply -f -
+          if ! kubectl wait --for=condition=complete job/voidcloud-db-migrate -n ${NAMESPACE} --timeout=300s; then
             echo "❌ Migration job failed — logs:"
-            kubectl logs job/prisma-migrate -n ${NAMESPACE} || true
-            kubectl describe job/prisma-migrate -n ${NAMESPACE} || true
+            kubectl logs job/voidcloud-db-migrate -n ${NAMESPACE} || true
+            kubectl describe job/voidcloud-db-migrate -n ${NAMESPACE} || true
             exit 1
           fi
-          kubectl logs job/prisma-migrate -n ${NAMESPACE}
+          kubectl logs job/voidcloud-db-migrate -n ${NAMESPACE}
+          kubectl logs job/voidcloud-db-seed -n ${NAMESPACE} || true
 
           # Wait for services to be ready (kubectl set image already triggered rollouts)
           for SERVICE in $SERVICES_TO_DEPLOY; do
