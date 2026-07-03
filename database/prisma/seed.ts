@@ -182,20 +182,19 @@ async function main() {
 
     console.log('Seeded cloud plans and RBAC roles');
 
-    // Only log demo credentials in non-production environments.
-    // In production, rotate or remove demo accounts — never log passwords.
-    if (process.env.NODE_ENV !== 'production') {
+    // Only log demo credentials when they were actually seeded (isDev && demoEnabled).
+    // This matches the exact same gate as creation — credentials are never logged
+    // in staging, test, preprod, or production, even if NODE_ENV is not 'production'.
+    if (isDev && demoEnabled) {
       console.log('');
       console.log('═══════════════════════════════════════════════════');
-      console.log('  DEMO ACCOUNT CREDENTIALS (dev/staging only)');
+      console.log('  DEMO ACCOUNT CREDENTIALS (development only)');
       console.log('───────────────────────────────────────────────────');
       for (const d of DEMO_USERS) {
         console.log(`  ${d.role.padEnd(12)} ${d.email}  /  ${d.password}`);
       }
       console.log('═══════════════════════════════════════════════════');
-      console.log('  ⚠  Do NOT run this seed in production with known passwords.');
-    } else {
-      console.log('Demo users upserted (production: credentials not logged).');
+      console.log('  ⚠  Demo users exist only in this dev environment.');
     }
   } finally {
     await prisma.$disconnect();

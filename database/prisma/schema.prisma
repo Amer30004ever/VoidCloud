@@ -1598,6 +1598,11 @@ model Maintenance {
 
 /// Proxmox cluster registry — one row per Proxmox host
 /// Table name: proxmox_clusters (@@map); columns use Prisma's default camelCase.
+///
+/// SECURITY: tokenSecret is a sensitive API credential. The application layer
+/// MUST AES-256-GCM-encrypt the value (using a key derived from SESSION_SECRET)
+/// before writing to this field, and decrypt after reading. Never store plaintext.
+/// When tokenSecret is present, store the format: "<iv_hex>:<authTag_hex>:<ciphertext_hex>".
 model ProxmoxCluster {
   id          String   @id @default(uuid())
   name        String
@@ -1605,6 +1610,7 @@ model ProxmoxCluster {
   port        Int      @default(8006)
   username    String   @default("root@pam")
   tokenId     String?
+  /// Encrypted at application layer — AES-256-GCM. See schema doc above.
   tokenSecret String?
   status      String   @default("ACTIVE")
   cpuTotal    Int      @default(0)
