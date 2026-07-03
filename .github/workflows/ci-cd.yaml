@@ -6,28 +6,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  # Auto-trigger on push to main/master/develop/release branches and version tags
-  push:
-    branches:
-      - main
-      - master
-      - develop
-      - "release/**"
-    tags:
-      - "v*.*.*"
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - ".gitignore"
-
-  # Auto-trigger on PR to main/master (test only, no deploy)
-  pull_request:
-    branches:
-      - main
-      - master
-    types: [opened, synchronize, reopened]
-
-  # Manual trigger with full control
+  # Manual trigger only
   workflow_dispatch:
     inputs:
       mode:
