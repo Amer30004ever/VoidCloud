@@ -631,6 +631,12 @@ jobs:
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           REPO="${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}"
 
+          # Migrations run inside the auth image, so ensure auth is always built for backend deploys.
+          case " $SERVICES_TO_BUILD " in
+            *" auth "*) ;;
+            *) SERVICES_TO_BUILD="$SERVICES_TO_BUILD auth" ;;
+          esac
+
           for SERVICE in $SERVICES_TO_BUILD; do
             IMAGE_BASE="${REPO}-${SERVICE}-service"
             echo "=== Building (amd64): $SERVICE ==="
@@ -1020,9 +1026,10 @@ jobs:
           done
 
           echo "🔄 Running database migrations..."
+          AUTH_IMAGE="${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-auth-service:${IMAGE_TAG}"
           kubectl delete job voidcloud-db-migrate -n ${NAMESPACE} --ignore-not-found --wait=true
           kubectl delete job voidcloud-db-seed -n ${NAMESPACE} --ignore-not-found --wait=true
-          sed "s|amer30004ever/voidcloud-auth-service:latest|${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-auth-service:${IMAGE_TAG}|g" kubernetes/migrate-job.yaml | kubectl apply -f -
+          sed "s|amer30004ever/voidcloud-auth-service:latest|${AUTH_IMAGE}|g" kubernetes/migrate-job.yaml | kubectl apply -f -
           if ! kubectl wait --for=condition=complete job/voidcloud-db-migrate -n ${NAMESPACE} --timeout=300s; then
             echo "❌ Migration job failed — logs:"
             kubectl logs job/voidcloud-db-migrate -n ${NAMESPACE} || true
