@@ -24,7 +24,6 @@ export default function ReferralPage() {
       setPayouts(p);
     } catch (e) { setErr((e as Error).message); }
   }
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, []);
 
   const link = stats ? `${typeof window !== "undefined" ? window.location.origin : ""}/voidcloud/register?ref=${stats.code}` : "";

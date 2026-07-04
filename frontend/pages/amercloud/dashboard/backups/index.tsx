@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
@@ -19,7 +18,6 @@ export default function GlobalBackupsPage() {
   }, [vpsId, from, to]);
   useEffect(() => { cloudApi.deployments.list().then(setVpsList).catch(() => { }); }, []);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh().catch(() => { });
   }, [refresh]);
 
