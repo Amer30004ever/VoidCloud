@@ -5,11 +5,18 @@
   "devFiles": [],
   "ampDevFiles": [],
   "lowPriorityFiles": [
-    "static/rxYiCxwfSoxp-ncU4q0ch/_buildManifest.js",
-    "static/rxYiCxwfSoxp-ncU4q0ch/_ssgManifest.js"
+    "static/3dKfkE7sVEAZVa7Lx5LXC/_buildManifest.js",
+    "static/3dKfkE7sVEAZVa7Lx5LXC/_ssgManifest.js"
   ],
   "rootMainFiles": [],
   "pages": {
+    "/": [
+      "static/chunks/webpack-d36b50b5fb8708d9.js",
+      "static/chunks/framework-945b357d4a851f4b.js",
+      "static/chunks/main-e583ca6585ee3f22.js",
+      "static/chunks/1664-097cf1773184f113.js",
+      "static/chunks/pages/index-3f7c02cee3778cc3.js"
+    ],
     "/_app": [
       "static/chunks/webpack-d36b50b5fb8708d9.js",
       "static/chunks/framework-945b357d4a851f4b.js",
@@ -162,8 +169,8 @@
       "static/chunks/webpack-d36b50b5fb8708d9.js",
       "static/chunks/framework-945b357d4a851f4b.js",
       "static/chunks/main-e583ca6585ee3f22.js",
-      "static/chunks/1096-3684dc572322e1df.js",
-      "static/chunks/pages/auth/forgot-password-e7cb955e5da73ad9.js"
+      "static/chunks/1664-097cf1773184f113.js",
+      "static/chunks/pages/auth/forgot-password-874239bb9d6ff5b0.js"
     ],
     "/auth/login": [
       "static/chunks/webpack-d36b50b5fb8708d9.js",
@@ -183,8 +190,8 @@
       "static/chunks/webpack-d36b50b5fb8708d9.js",
       "static/chunks/framework-945b357d4a851f4b.js",
       "static/chunks/main-e583ca6585ee3f22.js",
-      "static/chunks/1096-3684dc572322e1df.js",
-      "static/chunks/pages/auth/reset-password-8914815ff740e5e6.js"
+      "static/chunks/1664-097cf1773184f113.js",
+      "static/chunks/pages/auth/reset-password-27d071abac694d3f.js"
     ],
     "/business/billing": [
       "static/chunks/webpack-d36b50b5fb8708d9.js",
