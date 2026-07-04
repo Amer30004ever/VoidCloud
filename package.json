@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "cd frontend && PORT=8080 bunx next dev --webpack -p 8080 -H 0.0.0.0",
-    "build": "cd frontend && bunx next build --webpack",
-    "build:dev": "cd frontend && bunx next build --webpack",
+    "dev": "cd frontend && PORT=8080 bun run dev -- -p 8080 -H 0.0.0.0",
+    "build": "cd frontend && bun run build",
+    "build:dev": "cd frontend && bun run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "tsc --build"
   },
