@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
@@ -13,10 +12,6 @@ export default function AdminUsersPage() {
   const [draft, setDraft] = useState({ email: "", name: "", password: "", role: "USER", planId: "" });
 
   const load = useCallback(async () => { setUsers(await cloudApi.admin.users(q)); }, [q]);
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => { load(); }, [load]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-  useEffect(() => { cloudApi.admin.plans().then(setPlans).catch(() => {}); }, []);
 
   async function suspend(id: string) { const r = prompt("Suspension reason?") ?? "manual"; await cloudApi.admin.suspend(id, r); load(); }
   async function activate(id: string) { await cloudApi.admin.activate(id); load(); }

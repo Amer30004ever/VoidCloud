@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -132,10 +131,6 @@ function SecurityTab() {
   const [disablePw, setDisablePw] = useState("");
 
   async function refresh() { try { setStatus(await cloudTwoFactor.status()); } catch {} }
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => { refresh(); }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
   async function changePw() {
     setMsg(null);
     if (next.length < 8) return setMsg({ kind: "err", text: "New password must be at least 8 characters" });
@@ -182,7 +177,6 @@ function SecurityTab() {
         {setup && (
           <div className="space-y-3">
             <p className="text-sm text-white/70">1. Scan the QR code in your authenticator app:</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={setup.qrCode} alt="2FA QR code" className="rounded-lg bg-white p-2" width={200} height={200} />
             <p className="text-xs text-white/50">Or enter this secret manually: <code className="rounded bg-slate-900 px-2 py-1">{setup.base32}</code></p>
             <p className="text-sm text-white/70">2. Enter the 6-digit code from your app:</p>

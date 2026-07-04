@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -200,7 +199,6 @@ function FawryPanel({ c }: { c: any }) {
       {c.sandbox && <p className="rounded bg-orange-500/10 px-2 py-1 text-xs text-orange-300">Sandbox mode — no real charge</p>}
       <div className="grid gap-4 md:grid-cols-[auto,1fr]">
         {c.qrCode && (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={c.qrCode} alt="Fawry QR" className="h-44 w-44 rounded-lg bg-white p-2" />
         )}
         <div className="space-y-2 text-sm">

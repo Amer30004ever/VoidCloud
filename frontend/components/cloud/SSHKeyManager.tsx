@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { cloudSshKeys, type SSHKey } from "@/lib/cloud";
@@ -26,7 +25,6 @@ export function SSHKeyManager({ vpsId }: { vpsId?: string }) {
 
   useEffect(() => {
     let isMounted = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh()
       .catch(() => { })
       .finally(() => {

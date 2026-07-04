@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
 import { cloudApi } from "@/lib/cloud";
@@ -8,10 +7,6 @@ export default function AdminBillingPage() {
   const [busy, setBusy] = useState<string | null>(null);
 
   async function load() { setTx(await cloudApi.admin.transactions()); }
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => { load(); }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
   async function confirmPay(id: string) {
     setBusy(id);
     try { await cloudApi.admin.confirm(id); await load(); } finally { setBusy(null); }
