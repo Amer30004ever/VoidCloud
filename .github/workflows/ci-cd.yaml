@@ -59,20 +59,6 @@ on:
         required: false
         type: boolean
         default: true
-      frontend_features:
-        description: "Frontend features to build (for frontend-related modes)"
-        required: false
-        type: choice
-        options:
-          - none # Skip frontend build
-          - all # Build all features
-          - landing-only # Build landing page only
-          - dashboard-only # Build dashboard only
-          - crm-only # Build CRM only
-          - landing-dashboard # Build landing + dashboard
-          - landing-crm # Build landing + CRM
-          - dashboard-crm # Build dashboard + CRM
-        default: "none"
       services:
         description: "Services to build (for backend-related modes)"
         required: false
@@ -414,38 +400,10 @@ jobs:
 
       - name: Build frontend (Next.js build)
         run: |
-          FEATURES="${{ github.event.inputs.frontend_features }}"
           cd frontend
-
-          case "$FEATURES" in
-            "all")
-              npm run build
-              ;;
-            "landing-only")
-              npm run build -- --feature=landing
-              ;;
-            "dashboard-only")
-              npm run build -- --feature=dashboard
-              ;;
-            "crm-only")
-              npm run build -- --feature=crm
-              ;;
-            "landing-dashboard")
-              npm run build -- --feature=landing,dashboard
-              ;;
-            "landing-crm")
-              npm run build -- --feature=landing,crm
-              ;;
-            "dashboard-crm")
-              npm run build -- --feature=dashboard,crm
-              ;;
-            *)
-              npm run build
-              ;;
-          esac
+          npm run build
         env:
           NEXT_PUBLIC_API_URL: https://api.voidcloud.cc.cd/api/v1
-          NEXT_PUBLIC_FEATURES: ${{ github.event.inputs.frontend_features }}
 
       - name: Run frontend tests
         run: cd frontend && npm test -- --watchAll=false --passWithNoTests
@@ -711,13 +669,6 @@ jobs:
       - name: Build and push frontend image
         id: build
         run: |
-          FRONTEND_FEATURES="${{ github.event.inputs.frontend_features }}"
-          if [ "$FRONTEND_FEATURES" == "none" ]; then
-            echo "Skipping frontend build (frontend_features=none)"
-            echo "BUILT=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           IMAGE_BASE="${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-frontend"
 
