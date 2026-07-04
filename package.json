@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "cd artifacts/voidcloud && PORT=8080 BASE_PATH=/ bunx vite --host 0.0.0.0 --port 8080",
-    "build": "cd artifacts/voidcloud && PORT=8080 BASE_PATH=/ bunx vite build",
-    "build:dev": "cd artifacts/voidcloud && PORT=8080 BASE_PATH=/ bunx vite build --mode development",
+    "dev": "cd frontend && PORT=8080 bunx next dev -p 8080 -H 0.0.0.0",
+    "build": "cd frontend && bunx next build",
+    "build:dev": "cd frontend && bunx next build",
     "typecheck:libs": "tsc --build",
     "typecheck": "tsc --build"
   },
