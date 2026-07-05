@@ -206,7 +206,7 @@
     "save_env": "حفظ متغيرات البيئة",
     "save_domains": "حفظ النطاقات",
     "domains_placeholder": "app.example.com\napi.example.com",
-    "activity_coming_soon": "سجل نشاط VPS قادم قريباً. أحداث التدقيق على مستوى الحساب موجودة تحت /amercloud/admin",
+    "activity_coming_soon": "سجل نشاط VPS قادم قريباً. أحداث التدقيق على مستوى الحساب موجودة تحت /admin",
     "create_snapshot": "إنشاء لقطة",
     "snapshot_name": "اسم اللقطة",
     "snapshot_description": "الوصف (اختياري)",

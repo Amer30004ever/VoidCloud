@@ -46,6 +46,194 @@ services:
       postgres:
         condition: service_healthy
 
+  user:
+    build:
+      context: .
+      dockerfile: services/user/Dockerfile
+    environment:
+      PORT: 3002
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  tenant:
+    build:
+      context: .
+      dockerfile: services/tenant/Dockerfile
+    environment:
+      PORT: 3003
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  vps:
+    build:
+      context: .
+      dockerfile: services/vps/Dockerfile
+    environment:
+      PORT: 3004
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PROXMOX_HOST: ${PROXMOX_HOST:-10.51.100.10}
+      PROXMOX_PORT: ${PROXMOX_PORT:-8006}
+      PROXMOX_TOKEN_ID: ${PROXMOX_TOKEN_ID:-}
+      PROXMOX_TOKEN_SECRET: ${PROXMOX_TOKEN_SECRET:-}
+    ports:
+      - "3004:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  billing:
+    build:
+      context: .
+      dockerfile: services/billing/Dockerfile
+    environment:
+      PORT: 3005
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3005:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  crm:
+    build:
+      context: .
+      dockerfile: services/crm/Dockerfile
+    environment:
+      PORT: 3006
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3006:3006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  whatsapp:
+    build:
+      context: .
+      dockerfile: services/whatsapp/Dockerfile
+    environment:
+      PORT: 3007
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3007:3007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  email:
+    build:
+      context: .
+      dockerfile: services/email/Dockerfile
+    environment:
+      PORT: 3008
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: support.voidcloud@gmail.com
+      SMTP_PASS: ${SMTP_PASS:-}
+    ports:
+      - "3008:3008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notification:
+    build:
+      context: .
+      dockerfile: services/notification/Dockerfile
+    environment:
+      PORT: 3009
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3009:3009"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  monitoring:
+    build:
+      context: .
+      dockerfile: services/monitoring/Dockerfile
+    environment:
+      PORT: 3010
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3010:3010"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  audit:
+    build:
+      context: .
+      dockerfile: services/audit/Dockerfile
+    environment:
+      PORT: 3011
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3011:3011"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  analytics:
+    build:
+      context: .
+      dockerfile: services/analytics/Dockerfile
+    environment:
+      PORT: 3012
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3012:3012"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  sub2api:
+    build:
+      context: .
+      dockerfile: services/sub2api/Dockerfile
+    environment:
+      PORT: 3013
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3013:3013"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   frontend:
     build:
       context: ./frontend
@@ -57,6 +245,18 @@ services:
       - "3000:3000"
     depends_on:
       - auth
+      - user
+      - tenant
+      - vps
+      - billing
+      - crm
+      - whatsapp
+      - email
+      - notification
+      - monitoring
+      - audit
+      - analytics
+      - sub2api
 
 volumes:
   postgres_data:

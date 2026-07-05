@@ -963,7 +963,7 @@ model Note {
 }
 
 // ============================================================
-// AmerCloud — Hosting as a Service (HaaS)
+// Void Cloud — Hosting as a Service (HaaS)
 // ============================================================
 
 enum CloudSubscriptionStatus {

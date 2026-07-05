@@ -49,9 +49,9 @@ export default function ReferralPage() {
 
   if (!stats) return <div className="p-6 text-white/70">Loading…</div>;
 
-  const tweet = `https://twitter.com/intent/tweet?text=${encodeURIComponent("Try AmerCloud — managed Kubernetes for Egyptian devs. ")}&url=${encodeURIComponent(link)}`;
-  const wa = `https://wa.me/?text=${encodeURIComponent("Try AmerCloud: " + link)}`;
-  const mailto = `mailto:?subject=${encodeURIComponent("Try AmerCloud")}&body=${encodeURIComponent("I&apos;m using AmerCloud — sign up here: " + link)}`;
+  const tweet = `https://twitter.com/intent/tweet?text=${encodeURIComponent("Try Void Cloud — managed Kubernetes for Egyptian devs. ")}&url=${encodeURIComponent(link)}`;
+  const wa = `https://wa.me/?text=${encodeURIComponent("Try Void Cloud: " + link)}`;
+  const mailto = `mailto:?subject=${encodeURIComponent("Try Void Cloud")}&body=${encodeURIComponent("I&apos;m using Void Cloud — sign up here: " + link)}`;
 
   return (
     <div className="space-y-6 p-6 text-white">

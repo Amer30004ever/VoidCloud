@@ -15,19 +15,19 @@ metadata:
     
     # CORS headers
     traefik.ingress.kubernetes.io/service-cors-headers: |
-      Access-Control-Allow-Origin: https://amer.homelab.com
+      Access-Control-Allow-Origin: https://voidcloud.cc.cd
       Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS
       Access-Control-Allow-Headers: Content-Type,Authorization
 spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - amer.homelab.com
-        - api.amer.homelab.com
+        - voidcloud.cc.cd
+        - api.voidcloud.cc.cd
       secretName: voidcloud-tls  # cert-manager will create this
   rules:
     # Frontend rule
-    - host: amer.homelab.com
+    - host: voidcloud.cc.cd
       http:
         paths:
           - path: /
@@ -39,7 +39,7 @@ spec:
                   number: 3000
     
     # Backend API rule
-    - host: api.amer.homelab.com
+    - host: api.voidcloud.cc.cd
       http:
         paths:
           - path: /api

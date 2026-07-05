@@ -9,7 +9,7 @@ export function CTASection() {
           Join hundreds of developers shipping faster on Void Cloud.
         </p>
         <Link
-          href="/amercloud/register"
+          href="/register"
           className="mt-8 inline-block rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-8 py-4 font-semibold text-slate-950 shadow-2xl shadow-cyan-500/30 transition hover:opacity-90"
         >
           Start Your Free Trial →

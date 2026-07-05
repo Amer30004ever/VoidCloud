@@ -5,6 +5,7 @@ import { LocaleProvider } from "@/contexts/LocaleContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { Toaster } from "@/components/ui/toaster";
+import "@/styles/globals.css";
 
 // Create a stable QueryClient instance (singleton per page load)
 const queryClient = new QueryClient({

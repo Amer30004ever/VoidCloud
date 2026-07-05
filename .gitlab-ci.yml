@@ -1,21 +1,21 @@
 # ============================================================
 # Void Cloud — GitLab CI/CD Pipeline (Professional)
 # Microservices: auth, user, tenant, vps, billing, crm,
-#   whatsapp, email, notification, monitoring, audit, analytics, sub2api
+#   whatsapp, email, notification, monitoring, audit, analytics
 # Frontend: Next.js 16
 # Cluster: K8s on homelab (masternode01: 10.51.100.21)
 # Registry: Docker Hub
 # ============================================================
 
 variables:
-  DOCKER_HUB_REPO: voidcloud
-  NAMESPACE: voidcloud
-  SERVICES: "auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api"
+  DOCKER_HUB_REPO:  voidcloud
+  NAMESPACE:        voidcloud
+  SERVICES:         "auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
   # Override per-job with --build-arg for injecting env at build time
   NEXT_PUBLIC_API_URL: "https://api.voidcloud.cc.cd/api/v1"
   # Fail on first error, treat unset variables as errors
-  FF_USE_FASTZIP: "true"
-  DOCKER_DRIVER: overlay2
+  FF_USE_FASTZIP:   "true"
+  DOCKER_DRIVER:    overlay2
 
 # ── Pipeline rules ──────────────────────────────────────────
 workflow:
@@ -124,22 +124,7 @@ test-service:
   extends: .node-base
   parallel:
     matrix:
-      - SERVICE:
-          [
-            auth,
-            user,
-            tenant,
-            vps,
-            billing,
-            crm,
-            whatsapp,
-            email,
-            notification,
-            monitoring,
-            audit,
-            analytics,
-            sub2api,
-          ]
+      - SERVICE: [auth, user, tenant, vps, billing, crm, whatsapp, email, notification, monitoring, audit, analytics]
   script:
     - |
       echo "=== Testing service: $SERVICE ==="
@@ -234,22 +219,7 @@ build-services:
       optional: true
   parallel:
     matrix:
-      - SERVICE:
-          [
-            auth,
-            user,
-            tenant,
-            vps,
-            billing,
-            crm,
-            whatsapp,
-            email,
-            notification,
-            monitoring,
-            audit,
-            analytics,
-            sub2api,
-          ]
+      - SERVICE: [auth, user, tenant, vps, billing, crm, whatsapp, email, notification, monitoring, audit, analytics]
   script:
     - |
       set -e
@@ -698,7 +668,7 @@ release:
       **Pipeline:** $CI_PIPELINE_URL
 
       ### Services deployed
-      auth · user · tenant · vps · billing · crm · whatsapp · sub2api
+      auth · user · tenant · vps · billing · crm · whatsapp
       email · notification · monitoring · audit · analytics · frontend
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/

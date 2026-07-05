@@ -32,13 +32,13 @@ export function Hero() {
 
       <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <Link
-          href="/amercloud/register"
+          href="/register"
           className="rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-3 font-semibold text-slate-950 shadow-2xl shadow-cyan-500/20 transition hover:opacity-90"
         >
           Start Free Trial →
         </Link>
         <Link
-          href="mailto:nova-cloud-2026@outlook.com?subject=Enterprise%20Demo%20Request"
+          href="mailto:support@voidcloud.cc.cd?subject=Enterprise%20Demo%20Request"
           className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 hover:bg-white/10"
         >
           📞 Request Enterprise Demo

@@ -13,7 +13,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   }
 
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("amer_portal_token");
+    const token = localStorage.getItem("voidcloud_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,11 +28,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && typeof window !== "undefined") {
       const requestUrl = typeof error.config?.url === "string" ? error.config.url : "";
       const isAuthRoute = requestUrl.includes("auth/login") || requestUrl.includes("auth/register") || requestUrl.includes("auth/forgot-password") || requestUrl.includes("auth/reset-password");
-      const isAuthPage = window.location.pathname.includes("/amercloud/login") || window.location.pathname.includes("/amercloud/register") || window.location.pathname.includes("/amercloud/forgot-password") || window.location.pathname.includes("/amercloud/reset-password");
+      const isAuthPage = window.location.pathname.includes("/login") || window.location.pathname.includes("/register") || window.location.pathname.includes("/forgot-password") || window.location.pathname.includes("/reset-password");
 
       if (!isAuthRoute && !isAuthPage) {
-        localStorage.removeItem("amer_portal_token");
-        window.location.href = "/amercloud/login";
+        localStorage.removeItem("voidcloud_token");
+        window.location.href = "/login";
       }
     }
     return Promise.reject(error);

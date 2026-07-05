@@ -156,13 +156,13 @@ export class AuthService {
     const frontend = (
       process.env.FRONTEND_URL || 'https://voidcloud.cc.cd'
     ).replace(/\/$/, '');
-    const verifyUrl = `${frontend}/amercloud/verify-email?token=${rawVerifyToken}`;
+    const verifyUrl = `${frontend}/verify-email?token=${rawVerifyToken}`;
 
     try {
       const { welcomeEmail } = await import('../mailer/templates/welcome');
       const { verifyEmailTemplate } =
         await import('../mailer/templates/verify-email');
-      const w = welcomeEmail(user.name, `${frontend}/amercloud/dashboard`);
+      const w = welcomeEmail(user.name, `${frontend}/dashboard`);
       const v = verifyEmailTemplate(user.name, verifyUrl);
       this.mailer
         .send(user.email, 'Welcome to Void Cloud 🚀', w.html, w.text)
@@ -234,7 +234,7 @@ export class AuthService {
     const frontend = (
       process.env.FRONTEND_URL || 'https://voidcloud.cc.cd'
     ).replace(/\/$/, '');
-    const verifyUrl = `${frontend}/amercloud/verify-email?token=${rawToken}`;
+    const verifyUrl = `${frontend}/verify-email?token=${rawToken}`;
     try {
       const { verifyEmailTemplate } =
         await import('../mailer/templates/verify-email');
@@ -305,7 +305,7 @@ export class AuthService {
     const frontend = (
       process.env.FRONTEND_URL || 'https://voidcloud.cc.cd'
     ).replace(/\/$/, '');
-    const resetUrl = `${frontend}/amercloud/reset-password?token=${rawToken}`;
+    const resetUrl = `${frontend}/reset-password?token=${rawToken}`;
     const { html, text } = passwordResetEmail(
       user.name,
       resetUrl,

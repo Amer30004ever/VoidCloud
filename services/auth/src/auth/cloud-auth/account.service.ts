@@ -64,7 +64,7 @@ export class CloudAccountService {
       expiresAt: Date.now() + 30 * 60_000,
     });
 
-    const url = `${this.frontend}/amercloud/dashboard/settings?confirmEmail=${token}`;
+    const url = `${this.frontend}/dashboard/settings?confirmEmail=${token}`;
     const html = `<p>Hi ${user.name},</p>
       <p>We received a request to change your Void Cloud account email to <b>${normalized}</b>.</p>
       <p>If this was you, click the link below within 30 minutes to confirm:</p>

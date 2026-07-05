@@ -45,7 +45,7 @@ export interface ContainerStatus {
  * Auth: API token (https://pve.proxmox.com/wiki/Proxmox_VE_API#API_Tokens).
  * Required env:
  *   PROXMOX_HOST            e.g. 10.0.0.10:8006
- *   PROXMOX_TOKEN_ID        e.g. amercloud@pve!api
+ *   PROXMOX_TOKEN_ID        e.g. voidcloud@pve!api
  *   PROXMOX_TOKEN_SECRET    UUID secret
  *   PROXMOX_NODE            target node (default: workernode01)
  *   PROXMOX_STORAGE         e.g. local-lvm

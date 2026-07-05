@@ -77,7 +77,6 @@ on:
           - monitoring # Monitoring service only
           - audit # Audit service only
           - analytics # Analytics service only
-          - sub2api # Sub2api service only
           - openwa # OpenWA service only
         default: "none"
       service_name:
@@ -96,7 +95,6 @@ on:
           - monitoring
           - audit
           - analytics
-          - sub2api
           - openwa
           - frontend
           - postgres
@@ -351,7 +349,7 @@ jobs:
         run: |
           SERVICES_TO_TEST="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_TEST" == "all" ] || [ -z "$SERVICES_TO_TEST" ]; then
-            SERVICES_TO_TEST="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api"
+            SERVICES_TO_TEST="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
           fi
 
           # Generate Prisma client from database directory first
@@ -581,7 +579,7 @@ jobs:
         run: |
           SERVICES_TO_BUILD="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_BUILD" == "all" ] || [ -z "$SERVICES_TO_BUILD" ]; then
-            SERVICES_TO_BUILD="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api"
+            SERVICES_TO_BUILD="auth user tenant vps billing crm email notification monitoring audit analytics"
           elif [ "$SERVICES_TO_BUILD" == "none" ]; then
             echo "Skipping backend build (services=none)"
             echo "BUILT=false" >> $GITHUB_OUTPUT
@@ -927,7 +925,7 @@ jobs:
 
           SERVICES_TO_DEPLOY="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_DEPLOY" == "all" ] || [ -z "$SERVICES_TO_DEPLOY" ]; then
-            SERVICES_TO_DEPLOY="auth user tenant vps billing crm email notification monitoring audit analytics sub2api"
+            SERVICES_TO_DEPLOY="auth user tenant vps billing crm email notification monitoring audit analytics"
           fi
 
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
@@ -1161,7 +1159,7 @@ jobs:
           kubectl wait --for=condition=ready pod -l app=postgres -n ${NAMESPACE} --timeout=120s 2>/dev/null || true
 
           # Apply Services
-          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api; do
+          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
             kubectl apply -f kubernetes/$SERVICE/deployment.yaml 2>/dev/null || true
             kubectl apply -f kubernetes/$SERVICE/service.yaml 2>/dev/null || true
             kubectl patch deployment $SERVICE-service -n ${NAMESPACE} -p '{"spec":{"template":{"spec":{"containers":[{"name":"'$SERVICE'","imagePullPolicy":"Always"}]}}}}' 2>/dev/null || true
@@ -1169,14 +1167,14 @@ jobs:
 
           BACKEND_IMG="${{ github.event.inputs.backend_image }}"
           if [ "$BACKEND_IMG" != "latest" ] && [ "$BACKEND_IMG" != "" ] && [ "$BACKEND_IMG" != "null" ]; then
-            for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api; do
+            for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
               kubectl set image deployment/$SERVICE-service -n ${NAMESPACE} \
                 $SERVICE=${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-${SERVICE}-service:${BACKEND_IMG} 2>/dev/null || true
             done
           fi
 
           # Wait for services to be ready
-          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api; do
+          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
             kubectl wait --for=condition=ready pod -l app=$SERVICE -n ${NAMESPACE} --timeout=120s 2>/dev/null || true
           done
 
@@ -1221,10 +1219,10 @@ jobs:
               ssh -o StrictHostKeyChecking=no $NODE "sudo crictl images | grep 'voidcloud-.*-service' | awk '{print \$3}' | xargs -r sudo crictl rmi" 2>/dev/null || true
             done
           fi
-          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api; do
+          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
             kubectl rollout restart deployment/$SERVICE-service -n ${NAMESPACE} 2>/dev/null || true
           done
-          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api; do
+          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
             kubectl rollout status deployment/$SERVICE-service -n ${NAMESPACE} --timeout=120s 2>/dev/null || true
           done
           echo "✅ Services restarted!"
@@ -1285,7 +1283,7 @@ jobs:
           fi
           kubectl rollout restart deployment -n ${NAMESPACE}
           kubectl rollout status deployment/postgres -n ${NAMESPACE} --timeout=120s 2>/dev/null || true
-          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api; do
+          for SERVICE in auth user tenant vps billing crm whatsapp email notification monitoring audit analytics; do
             kubectl rollout status deployment/$SERVICE-service -n ${NAMESPACE} --timeout=120s 2>/dev/null || true
           done
           kubectl rollout status deployment/frontend -n ${NAMESPACE} --timeout=120s
@@ -1628,7 +1626,7 @@ jobs:
           kubectl apply -f kubernetes/rabbitmq/service.yaml -n ${NAMESPACE}
 
           # Apply Services
-          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics sub2api; do
+          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             kubectl apply -f kubernetes/$SERVICE/deployment.yaml -n ${NAMESPACE} 2>/dev/null || true
             kubectl apply -f kubernetes/$SERVICE/service.yaml -n ${NAMESPACE} 2>/dev/null || true
           done
@@ -1640,7 +1638,7 @@ jobs:
           kubectl apply -f kubernetes/openwa/openwa-nodeport.yaml -n ${NAMESPACE}
 
           # Apply Service NodePorts (for Cloudflare Tunnel)
-          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics sub2api; do
+          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             if [ -f "kubernetes/$SERVICE/$SERVICE-nodeport.yaml" ]; then
               kubectl apply -f kubernetes/$SERVICE/$SERVICE-nodeport.yaml -n ${NAMESPACE}
               echo "✅ $SERVICE NodePort service applied"
@@ -1694,7 +1692,7 @@ jobs:
 
           # Wait for Services to be ready
           echo "⏳ Waiting for Services..."
-          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics sub2api; do
+          for SERVICE in auth user tenant vps billing crm email notification monitoring audit analytics; do
             kubectl -n ${NAMESPACE} rollout status deploy/$SERVICE-service --timeout=300s 2>/dev/null || echo "⚠️ $SERVICE rollout status check skipped"
           done
 

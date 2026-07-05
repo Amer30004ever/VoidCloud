@@ -8,9 +8,9 @@ import { ThemeToggle } from "@/components/common/ThemeToggle";
 const navLinks = [
   { href: "#features", label: "Features" },
   { href: "#pricing", label: "Pricing" },
-  { href: "/amercloud/dashboard/deployments", label: "Deployments" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/docs", label: "Docs" },
-  { href: "mailto:nova-cloud-2026@outlook.com", label: "Support" },
+  { href: "mailto:support@voidcloud.cc.cd", label: "Support" },
 ];
 
 export function Navbar() {
@@ -45,13 +45,13 @@ export function Navbar() {
           </span>
           <ThemeToggle />
           <Link
-            href="/amercloud/login"
+            href="/login"
             className="rounded-lg px-4 py-2 text-sm text-white/80 hover:text-white"
           >
             Sign In
           </Link>
           <Link
-            href="/amercloud/register"
+            href="/register"
             className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:opacity-90"
           >
             Start Free
@@ -84,13 +84,13 @@ export function Navbar() {
             ))}
             <div className="flex gap-3 pt-3">
               <Link
-                href="/amercloud/login"
+                href="/login"
                 className="flex-1 rounded-lg border border-white/10 px-4 py-2 text-center text-sm"
               >
                 Sign In
               </Link>
               <Link
-                href="/amercloud/register"
+                href="/register"
                 className="flex-1 rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-center text-sm font-semibold text-slate-950"
               >
                 Start Free

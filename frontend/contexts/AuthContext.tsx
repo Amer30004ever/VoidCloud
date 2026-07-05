@@ -48,7 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(stored);
         if (storedUser) {
           try {
-            setUser(JSON.parse(storedUser));
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            // Set role cookie for middleware
+            if (typeof document !== "undefined") {
+              document.cookie = `voidcloud_role=${parsedUser.role}; path=/; max-age=604800`; // 7 days
+            }
           } catch {
             localStorage.removeItem("voidcloud_user");
           }
@@ -57,11 +62,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const response = await api.get<User>("/auth/me");
           setUser(response.data);
           localStorage.setItem("voidcloud_user", JSON.stringify(response.data));
+          // Set role cookie for middleware
+          if (typeof document !== "undefined") {
+            document.cookie = `voidcloud_role=${response.data.role}; path=/; max-age=604800`; // 7 days
+          }
         } catch {
           localStorage.removeItem("voidcloud_token");
           localStorage.removeItem("voidcloud_user");
           setToken(null);
           setUser(null);
+          // Clear role cookie
+          if (typeof document !== "undefined") {
+            document.cookie = "voidcloud_role=; path=/; max-age=0";
+          }
         } finally {
           setIsLoading(false);
         }
@@ -84,6 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("voidcloud_user", JSON.stringify(me));
       setToken(access_token);
       setUser(me);
+      // Set role cookie for middleware
+      if (typeof document !== "undefined") {
+        document.cookie = `voidcloud_role=${me.role}; path=/; max-age=604800`; // 7 days
+      }
       return;
     }
 
@@ -107,6 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
       localStorage.setItem("voidcloud_user", JSON.stringify(normalizedUser));
       setUser(normalizedUser);
+      // Set role cookie for middleware
+      if (typeof document !== "undefined") {
+        document.cookie = `voidcloud_role=${normalizedUser.role}; path=/; max-age=604800`; // 7 days
+      }
     }
   };
 
@@ -115,6 +136,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("voidcloud_user");
     setToken(null);
     setUser(null);
+    // Clear role cookie
+    if (typeof document !== "undefined") {
+      document.cookie = "voidcloud_role=; path=/; max-age=0";
+    }
     if (typeof window !== "undefined") {
       window.location.href = "/auth/login";
     }
