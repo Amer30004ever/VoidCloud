@@ -9,7 +9,7 @@ import {
 } from "react";
 import api from "@/lib/api";
 
-interface User {
+export interface User {
   id: string;
   name: string;
   email: string;
@@ -17,11 +17,19 @@ interface User {
   mustChangePassword?: boolean;
 }
 
+interface AuthResponse {
+  token?: string;
+  access_token?: string;
+  user?: Partial<User> | null;
+  requires2FA?: boolean;
+  userId?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (dataOrEmail: string | Record<string, unknown> | unknown, password?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -34,16 +42,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const stored = localStorage.getItem("amer_portal_token");
+      const stored = localStorage.getItem("voidcloud_token");
+      const storedUser = localStorage.getItem("voidcloud_user");
       if (stored) {
         setToken(stored);
+        if (storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch {
+            localStorage.removeItem("voidcloud_user");
+          }
+        }
         try {
           const response = await api.get<User>("/auth/me");
           setUser(response.data);
+          localStorage.setItem("voidcloud_user", JSON.stringify(response.data));
         } catch {
-          // Token is invalid or expired
-          localStorage.removeItem("amer_portal_token");
+          localStorage.removeItem("voidcloud_token");
+          localStorage.removeItem("voidcloud_user");
           setToken(null);
+          setUser(null);
         } finally {
           setIsLoading(false);
         }
@@ -55,22 +73,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const res = await api.post<{ access_token: string; user: User }>(
-      "/auth/login",
-      { email, password }
-    );
-    const { access_token, user: me } = res.data;
-    localStorage.setItem("amer_portal_token", access_token);
-    setToken(access_token);
-    setUser(me);
+  const login = async (dataOrEmail: string | AuthResponse | unknown, password?: string) => {
+    if (typeof dataOrEmail === "string") {
+      const res = await api.post<{ access_token: string; user: User }>("/auth/login", {
+        email: dataOrEmail,
+        password,
+      });
+      const { access_token, user: me } = res.data;
+      localStorage.setItem("voidcloud_token", access_token);
+      localStorage.setItem("voidcloud_user", JSON.stringify(me));
+      setToken(access_token);
+      setUser(me);
+      return;
+    }
+
+    if (typeof dataOrEmail !== "object" || dataOrEmail === null) {
+      return;
+    }
+
+    const data = dataOrEmail as AuthResponse;
+    const nextToken = data.token ?? data.access_token ?? null;
+    if (nextToken) {
+      localStorage.setItem("voidcloud_token", nextToken);
+      setToken(nextToken);
+    }
+    if (data.user) {
+      const normalizedUser: User = {
+        id: data.user.id ?? "",
+        name: data.user.name ?? data.user.email ?? "User",
+        email: data.user.email ?? "",
+        role: data.user.role ?? "USER",
+        mustChangePassword: data.user.mustChangePassword,
+      };
+      localStorage.setItem("voidcloud_user", JSON.stringify(normalizedUser));
+      setUser(normalizedUser);
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem("amer_portal_token");
+    localStorage.removeItem("voidcloud_token");
+    localStorage.removeItem("voidcloud_user");
     setToken(null);
     setUser(null);
-    window.location.href = "/login";
+    if (typeof window !== "undefined") {
+      window.location.href = "/auth/login";
+    }
   };
 
   return (
