@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "workspaces": [
-    "frontend"
+    "frontend",
+    "lib/*"
   ],
   "scripts": {
     "dev": "cd frontend && PORT=8080 bun run dev -- -p 8080 -H 0.0.0.0",
