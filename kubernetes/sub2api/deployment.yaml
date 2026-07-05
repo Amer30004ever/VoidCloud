@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sub2api-service
+  namespace: voidcloud
+  labels:
+    app: sub2api-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sub2api-service
+  template:
+    metadata:
+      labels:
+        app: sub2api-service
+    spec:
+      containers:
+        - name: sub2api-service
+          image: amer30004ever/voidcloud-sub2api-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3013
+          env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: voidcloud-config
+                  key: NODE_ENV
+            - name: PORT
+              value: "3013"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: DATABASE_URL
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/sub2api/health
+              port: 3013
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/v1/sub2api/health
+              port: 3013
+            initialDelaySeconds: 10
+            periodSeconds: 5
