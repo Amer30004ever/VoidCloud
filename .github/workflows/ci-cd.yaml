@@ -361,7 +361,7 @@ jobs:
           for SERVICE in $SERVICES_TO_TEST; do
             echo "Testing service: $SERVICE"
             cd services/$SERVICE
-            npm ci
+            npm install --no-audit --no-fund
             # Copy generated Prisma client from database to service node_modules
             mkdir -p node_modules/@prisma
             cp -r ../../database/node_modules/@prisma/client node_modules/@prisma/
@@ -390,7 +390,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: cd frontend && npm ci
+        run: cd frontend && npm install --no-audit --no-fund
 
       - name: Run linter
         run: cd frontend && npm run lint
