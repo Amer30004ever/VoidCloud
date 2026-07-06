@@ -925,7 +925,7 @@ jobs:
 
           SERVICES_TO_DEPLOY="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_DEPLOY" == "all" ] || [ -z "$SERVICES_TO_DEPLOY" ]; then
-            SERVICES_TO_DEPLOY="auth user tenant vps billing crm email notification monitoring audit analytics"
+            SERVICES_TO_DEPLOY="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api"
           fi
 
           kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
