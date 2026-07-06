@@ -8,7 +8,7 @@ function installDistCheckIndexHook() {
   }
 
   process.env.VOIDCLOUD_DIST_CHECK_INDEX_HOOK = "installed";
-  process.on("beforeExit", () => {
+  process.on("exit", () => {
     const source = path.join(__dirname, ".next/server/pages/index.html");
     const destination = path.join(__dirname, ".next/index.html");
 
