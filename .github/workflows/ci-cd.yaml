@@ -579,7 +579,7 @@ jobs:
         run: |
           SERVICES_TO_BUILD="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_BUILD" == "all" ] || [ -z "$SERVICES_TO_BUILD" ]; then
-            SERVICES_TO_BUILD="auth user tenant vps billing crm email notification monitoring audit analytics"
+            SERVICES_TO_BUILD="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api"
           elif [ "$SERVICES_TO_BUILD" == "none" ]; then
             echo "Skipping backend build (services=none)"
             echo "BUILT=false" >> $GITHUB_OUTPUT
