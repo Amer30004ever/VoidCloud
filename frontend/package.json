@@ -10,7 +10,7 @@
 
     "dev": "node ../node_modules/next/dist/bin/next dev",
 
-    "build": "node ../node_modules/next/dist/bin/next build",
+    "build": "node ../node_modules/next/dist/bin/next build && node -e \"require('fs').copyFileSync('.next/server/pages/index.html','.next/index.html')\"",
 
     "start": "node ../node_modules/next/dist/bin/next start",
 
