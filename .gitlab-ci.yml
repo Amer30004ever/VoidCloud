@@ -10,7 +10,7 @@
 variables:
   DOCKER_HUB_REPO:  voidcloud
   NAMESPACE:        voidcloud
-  SERVICES:         "auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
+  SERVICES:         "auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api"
   # Override per-job with --build-arg for injecting env at build time
   NEXT_PUBLIC_API_URL: "https://api.voidcloud.cc.cd/api/v1"
   # Fail on first error, treat unset variables as errors
