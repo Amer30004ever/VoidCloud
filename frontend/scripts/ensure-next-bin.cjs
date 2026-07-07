@@ -8,6 +8,7 @@ const frontendNextDirectory = path.join(frontendRoot, "node_modules", "next");
 const frontendBinDirectory = path.join(frontendRoot, "node_modules", ".bin");
 const frontendNextBin = path.join(frontendNextDirectory, "dist", "bin", "next");
 const frontendBinShim = path.join(frontendBinDirectory, "next");
+const rootNextBin = path.join(rootNextDirectory, "dist", "bin", "next");
 
 function linkDirectory(source, destination) {
   if (!fs.existsSync(source)) {
@@ -29,7 +30,36 @@ function writeBinShim() {
   );
 }
 
-if (!fs.existsSync(frontendNextBin)) {
+function writeNextWrapper() {
+  if (!fs.existsSync(rootNextBin)) {
+    return false;
+  }
+
+  const wrapperDirectory = path.dirname(frontendNextBin);
+  const rootNextBinRequirePath = path.relative(wrapperDirectory, rootNextBin);
+
+  fs.rmSync(frontendNextDirectory, { force: true, recursive: true });
+  fs.mkdirSync(wrapperDirectory, { recursive: true });
+  fs.writeFileSync(
+    frontendNextBin,
+    `#!/usr/bin/env node
+const path = require("path");
+const args = process.argv.slice(2);
+const isDev = args[0] === "dev";
+const hasPort = args.includes("-p") || args.includes("--port") || args.some((arg) => arg.startsWith("--port="));
+
+if (isDev && !hasPort && !process.env.PORT) {
+  process.env.PORT = "8080";
+}
+
+require(path.resolve(__dirname, ${JSON.stringify(rootNextBinRequirePath)}));
+`,
+    { mode: 0o755 },
+  );
+  return true;
+}
+
+if (!writeNextWrapper() && !fs.existsSync(frontendNextBin)) {
   const linked = linkDirectory(rootNextDirectory, frontendNextDirectory);
 
   if (!linked && !fs.existsSync(frontendNextBin)) {
