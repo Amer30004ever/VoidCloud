@@ -8,17 +8,13 @@
 
   "scripts": {
 
-    "ensure-next-bin": "node scripts/ensure-next-bin.cjs",
+    "dev": "next dev",
 
-    "postinstall": "node scripts/ensure-next-bin.cjs",
+    "build": "next build && node -e \"require('fs').copyFileSync('.next/server/pages/index.html','.next/index.html')\"",
 
-    "dev": "node scripts/ensure-next-bin.cjs && node ./node_modules/next/dist/bin/next dev",
+    "start": "next start",
 
-    "build": "node ./node_modules/next/dist/bin/next build && node -e \"require('fs').copyFileSync('.next/server/pages/index.html','.next/index.html')\"",
-
-    "start": "node ./node_modules/next/dist/bin/next start",
-
-    "lint": "node ./node_modules/next/dist/bin/next lint",
+    "lint": "next lint",
 
     "test": "exit 0"
 
