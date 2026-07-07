@@ -48,7 +48,11 @@ const args = process.argv.slice(2);
 const isDev = args[0] === "dev";
 const hasPort = args.includes("-p") || args.includes("--port") || args.some((arg) => arg.startsWith("--port="));
 
-if (isDev && !hasPort && !process.env.PORT) {
+if (isDev && !hasPort) {
+  process.argv.splice(3, 0, "-p", process.env.PORT || "8080");
+}
+
+if (isDev && !process.env.PORT) {
   process.env.PORT = "8080";
 }
 
