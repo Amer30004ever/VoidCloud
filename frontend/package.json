@@ -12,13 +12,13 @@
 
     "postinstall": "node scripts/ensure-next-bin.cjs",
 
-    "dev": "node scripts/ensure-next-bin.cjs && node ../node_modules/next/dist/bin/next dev",
+    "dev": "node scripts/ensure-next-bin.cjs && node ./node_modules/next/dist/bin/next dev",
 
-    "build": "node ../node_modules/next/dist/bin/next build && node -e \"require('fs').copyFileSync('.next/server/pages/index.html','.next/index.html')\"",
+    "build": "node ./node_modules/next/dist/bin/next build && node -e \"require('fs').copyFileSync('.next/server/pages/index.html','.next/index.html')\"",
 
-    "start": "node ../node_modules/next/dist/bin/next start",
+    "start": "node ./node_modules/next/dist/bin/next start",
 
-    "lint": "node ../node_modules/next/dist/bin/next lint",
+    "lint": "node ./node_modules/next/dist/bin/next lint",
 
     "test": "exit 0"
 
