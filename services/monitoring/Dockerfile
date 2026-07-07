@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY services/monitoring/package*.json ./
 COPY database/prisma ./prisma/
-RUN npm ci --no-audit --no-fund
+RUN npm install
 COPY services/monitoring/tsconfig*.json ./
 COPY services/monitoring/src ./src/
 RUN npx prisma generate --schema=./prisma/schema.prisma \
