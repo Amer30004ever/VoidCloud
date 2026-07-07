@@ -342,15 +342,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
-          cache-dependency-path: services/*/package-lock.json
 
       - name: Test services
         run: |
           SERVICES_TO_TEST="${{ github.event.inputs.services }}"
           if [ "$SERVICES_TO_TEST" == "all" ] || [ -z "$SERVICES_TO_TEST" ]; then
             SERVICES_TO_TEST="auth user tenant vps billing crm whatsapp email notification monitoring audit analytics"
+          elif [ "$SERVICES_TO_TEST" == "none" ]; then
+            echo "services=none — skipping backend tests"
+            exit 0
           fi
+
 
           # Generate Prisma client from database directory first
           cd database
