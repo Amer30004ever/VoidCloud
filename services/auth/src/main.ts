@@ -33,6 +33,12 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.enableCors({
+    origin: ['https://voidcloud.cc.cd', 'http://localhost:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  });
   const port = process.env.PORT ?? 3001;
   await app.listen(port);
   logger.log(`Auth Service running on port ${port}`);

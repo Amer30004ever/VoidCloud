@@ -14,7 +14,7 @@ Multi-tenant VPS hosting platform with WhatsApp CRM. Microservices architecture 
 ```
 voidcloud/
 ├── frontend/                 # Next.js UI (port 3000)
-├── services/                 # NestJS microservices (3001–3012)
+├── services/                 # NestJS microservices (3001–3013)
 │   ├── auth/                 # JWT, login, 2FA
 │   ├── user/                 # User CRUD
 │   ├── tenant/               # Multi-tenant isolation
@@ -26,7 +26,8 @@ voidcloud/
 │   ├── notification/         # Real-time notifications
 │   ├── monitoring/           # Cluster health
 │   ├── audit/                # Activity logs
-│   └── analytics/            # Usage & revenue reports
+│   ├── analytics/            # Usage & revenue reports
+│   └── sub2api/              # Subscription management API
 ├── shared/                   # Shared events, Redis, RabbitMQ helpers
 ├── database/                 # Single Prisma schema, migrations, seed
 ├── kubernetes/               # K8s manifests only (no manual scripts)

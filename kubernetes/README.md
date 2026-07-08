@@ -7,7 +7,7 @@ namespace.yaml → secrets.yaml → configmaps.yaml
 → postgres/ redis/ rabbitmq/
 → cloudflare-tunnel-config.yaml ingress.yaml
 → auth/ user/ tenant/ vps/ billing/ crm/ openwa/
-→ email/ notification/ monitoring/ audit/ analytics/ frontend/
+→ email/ notification/ monitoring/ audit/ analytics/ sub2api/ frontend/
 → migrate-job.yaml
 ```
 

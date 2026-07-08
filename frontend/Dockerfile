@@ -5,14 +5,14 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
+COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm install
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY frontend/ ./
 RUN mkdir -p /app/public
 
 ARG NEXT_PUBLIC_API_URL
@@ -20,7 +20,7 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ARG NEXT_TELEMETRY_DISABLED
 ENV NEXT_TELEMETRY_DISABLED=${NEXT_TELEMETRY_DISABLED}
 
-RUN npm run build
+RUN npx next build
 
 # Production image, copy all the files and run next
 FROM base AS runner

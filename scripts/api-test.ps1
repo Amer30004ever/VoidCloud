@@ -7,8 +7,8 @@
 $API_BASE = if ($env:API_BASE) { $env:API_BASE } else { "https://api.voidcloud.cc.cd" }
 $FRONTEND_URL = if ($env:FRONTEND_URL) { $env:FRONTEND_URL } else { "https://voidcloud.cc.cd" }
 $TOKEN = ""
-$USER_EMAIL = "test@voidcloud.com"
-$USER_PASSWORD = "Test123456"
+$USER_EMAIL = "amer30004ever@hotmail.com"
+$USER_PASSWORD = "VoidCloud2026!"
 
 # Helper functions
 function Print-Header {
@@ -93,7 +93,7 @@ Test-Endpoint -Name "Notification Health" -Endpoint "/api/v1/notifications/healt
 Test-Endpoint -Name "Monitoring Health" -Endpoint "/api/v1/monitoring/health"
 Test-Endpoint -Name "Audit Health" -Endpoint "/api/v1/audit/health"
 Test-Endpoint -Name "Analytics Health" -Endpoint "/api/v1/analytics/health"
-Test-Endpoint -Name "Sub2API Health" -Endpoint "/api/v1/sub2api/sub2api/health"
+Test-Endpoint -Name "Sub2API Health" -Endpoint "/api/v1/health"
 
 # Test 2: Frontend Accessibility
 Print-Header "2. Frontend Accessibility"

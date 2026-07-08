@@ -11,8 +11,8 @@ set -e
 API_BASE="${API_BASE:-https://api.voidcloud.cc.cd}"
 FRONTEND_URL="${FRONTEND_URL:-https://voidcloud.cc.cd}"
 TOKEN=""
-USER_EMAIL="test@voidcloud.com"
-USER_PASSWORD="Test123456"
+USER_EMAIL="amer30004ever@hotmail.com"
+USER_PASSWORD="VoidCloud2026!"
 
 # Colors for output
 RED='\033[0;31m'
@@ -94,7 +94,7 @@ test_endpoint "Notification Health" "/api/v1/notifications/health" 200 false
 test_endpoint "Monitoring Health" "/api/v1/monitoring/health" 200 false
 test_endpoint "Audit Health" "/api/v1/audit/health" 200 false
 test_endpoint "Analytics Health" "/api/v1/analytics/health" 200 false
-test_endpoint "Sub2API Health" "/api/v1/sub2api/sub2api/health" 200 false
+test_endpoint "Sub2API Health" "/api/v1/health" 200 false
 
 # Test 2: Frontend Accessibility
 print_header "2. Frontend Accessibility"

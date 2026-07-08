@@ -26,7 +26,11 @@ data:
       - hostname: voidcloud.cc.cd
         service: http://frontend.voidcloud.svc.cluster.local:3000
       - hostname: api.voidcloud.cc.cd
-        service: http://api-nodeport.voidcloud.svc.cluster.local:3001
+        service: http://auth-service.voidcloud.svc.cluster.local:3001
+      - hostname: sub2api.voidcloud.cc.cd
+        service: http://sub2api-service.voidcloud.svc.cluster.local:3013
+      - hostname: sub2api-api.voidcloud.cc.cd
+        service: http://sub2api-service.voidcloud.svc.cluster.local:3013
       - service: http_status:404
 ---
 apiVersion: apps/v1
