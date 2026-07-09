@@ -6,6 +6,7 @@ import {
 import { CloudDeploymentStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProxmoxService } from '../proxmox/proxmox.service';
+import { ClustersService } from '../clusters/clusters.service';
 import { CreateVpsDto, UpdateVpsDto } from './dto/vps.dto';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class VpsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly proxmox: ProxmoxService,
+    private readonly clusters: ClustersService,
   ) {}
 
   async list(user: { id: string; role: Role }) {
@@ -30,6 +32,16 @@ export class VpsService {
   }
 
   async create(dto: CreateVpsDto, user: { id: string }) {
+    // Smart-select a Proxmox cluster with enough free capacity.
+    // Non-fatal: if no registered clusters, falls back to env-configured host.
+    const scheduled = await this.clusters
+      .schedule({
+        cpu: dto.cpu ?? 1,
+        ramMB: dto.memory ?? 1024,
+        diskGB: Math.ceil((dto.storage ?? 10240) / 1024),
+      })
+      .catch(() => ({ chosen: null } as { chosen: unknown }));
+
     const provision = await this.proxmox.createContainer({
       hostname: dto.name,
       cpuCores: dto.cpu ?? 1,
@@ -53,9 +65,13 @@ export class VpsService {
         storage: dto.storage ?? 10240,
         status: CloudDeploymentStatus.RUNNING,
         provisionedAt: new Date(),
-      },
+        metadata: scheduled?.chosen
+          ? ({ scheduledCluster: (scheduled.chosen as { id: string; name: string }).name } as never)
+          : undefined,
+      } as never,
     });
   }
+
 
   async update(id: string, dto: UpdateVpsDto, user: { id: string; role: Role }) {
     await this.findOwned(id, user);

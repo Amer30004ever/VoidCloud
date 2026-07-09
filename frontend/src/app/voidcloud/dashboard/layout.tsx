@@ -62,6 +62,8 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     { href: "/voidcloud/admin/users", label: t(dict, "admin.users", "Users"), icon: "ðŸ‘¤" },
     { href: "/voidcloud/admin/plans", label: t(dict, "admin.plans", "Plans"), icon: "ðŸ’Ž" },
     { href: "/voidcloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "ðŸ–¥ï¸" },
+    { href: "/voidcloud/admin/clusters", label: "Proxmox Clusters", icon: "🗄️" },
+    { href: "/voidcloud/admin/monitoring", label: "Monitoring", icon: "❤️" },
     { href: "/voidcloud/admin/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "ðŸ’°" },
     { href: "/voidcloud/admin/transactions", label: t(dict, "admin.transactions", "Transactions"), icon: "ðŸ§¾" },
     { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "âš™ï¸" },
