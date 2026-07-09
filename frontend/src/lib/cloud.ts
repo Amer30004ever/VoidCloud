@@ -169,8 +169,74 @@ export const cloudApi = {
     broadcast: async (body: { title: string; body: string; severity?: string; audience?: string }) =>
       (await api.post("/cloud/admin/announcements", body)).data,
     announcements: async () => (await api.get("/cloud/admin/announcements")).data,
+    // ── Proxmox cluster registry (multi-host) ──
+    clusters: {
+      list: async () => (await api.get("/clusters")).data as ProxmoxClusterRow[],
+      create: async (body: ClusterInput) => (await api.post("/clusters", body)).data as ProxmoxClusterRow,
+      update: async (id: string, body: Partial<ClusterInput> & { status?: string }) =>
+        (await api.put(`/clusters/${id}`, body)).data as ProxmoxClusterRow,
+      remove: async (id: string) => api.delete(`/clusters/${id}`),
+      test: async (id: string) => (await api.post(`/clusters/${id}/test`)).data as { ok: boolean; error?: string; cluster?: ProxmoxClusterRow },
+      schedule: async (req: { cpu: number; ramMB: number; diskGB: number }) =>
+        (await api.post("/clusters/schedule", req)).data as { chosen: ProxmoxClusterRow | null; candidates?: number; reason?: string },
+    },
+    // ── Real-time service health probes (all 13 microservices) ──
+    servicesHealth: async () =>
+      (await api.get("/monitoring/services/health")).data as ServicesHealthSnapshot,
+    // ── Maintenance mode ──
+    maintenance: {
+      get: async () => (await api.get("/platform/maintenance")).data as MaintenanceState,
+      set: async (body: { enabled: boolean; message?: string }) =>
+        (await api.put("/platform/maintenance", body)).data as MaintenanceState,
+    },
   },
 };
+
+export interface ClusterInput {
+  name: string;
+  host: string;
+  port?: number;
+  username?: string;
+  tokenId?: string;
+  tokenSecret?: string;
+}
+export interface ProxmoxClusterRow {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  tokenId: string | null;
+  tokenSecretPreview: string;
+  status: string;
+  nodeCount: number;
+  cpuTotal: number; cpuUsed: number;
+  ramTotal: number; ramUsed: number;
+  diskTotal: number; diskUsed: number;
+  vmCount: number;
+  freeCpu: number; freeRamMB: number; freeDiskGB: number;
+  createdAt: string; updatedAt: string;
+}
+export interface ServiceProbe {
+  name: string;
+  url: string;
+  status: "UP" | "DEGRADED" | "DOWN";
+  responseTimeMs: number | null;
+  error?: string;
+  lastChecked: string;
+}
+export interface ServicesHealthSnapshot {
+  services: ServiceProbe[];
+  healthPercent: number;
+  up: number; down: number; degraded: number;
+  checkedAt: string;
+}
+export interface MaintenanceState {
+  enabled: boolean;
+  message: string;
+  updatedAt: string | null;
+}
+
 
 /* ============ Phase 2 helpers ============ */
 
