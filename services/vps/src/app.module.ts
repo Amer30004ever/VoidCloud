@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { VpsModule } from './vps/vps.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ClustersModule } from './clusters/clusters.module';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
@@ -15,6 +16,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PrismaModule,
     VpsModule,
     HealthModule,
+    ClustersModule,
   ],
   providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
