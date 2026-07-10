@@ -11,7 +11,8 @@ import { TwoFactorService } from './cloud-auth/two-factor.service';
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET ?? 'fallback_secret',
+      // No fallback — main.ts validates JWT_SECRET is present at boot and exits if missing.
+      secret: process.env.JWT_SECRET as string,
       signOptions: { expiresIn: '7d' },
     }),
     RbacModule,
