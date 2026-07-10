@@ -1,14 +1,15 @@
-# VoidCloud — Consolidated Backlog & Prompt Library
+# VoidCloud — Optimized Backlog & Prompt Library (v2)
 
-This merges: your original 34-item backlog, the additional professional-improvement list I suggested, and the sub2api pivot — into one prioritized plan with standalone, copy-paste-ready prompts. Each prompt is scoped to **one deliverable** so you can run them independently (in Claude Code, ideally) instead of one giant request.
+**Status of this revision:** reordered and merged for a solo founder building a real, paid hosting product with revenue/customers at risk. Nothing from Tier 0 has been completed yet as of this revision. Manual credential rotation is assumed done outside of this document (see "Manual Steps" note below) — this file covers everything that gets pasted into Lovable.
 
 ---
 
 ## HOW TO USE THIS
 
-1. Paste the **Shared Context Block** once at the start of a Claude Code session (or keep it pinned).
-2. Then paste **one task prompt** at a time, in tier order. Each is self-contained — it restates only what that task needs.
-3. Tiers are ordered by risk/dependency, not by how exciting the feature is. Security and testing come before new features on purpose — building on an untested, credential-leaking base just compounds risk.
+1. Paste the **Shared Context Block** once at the start of a session (or keep it pinned).
+2. Then paste **one task prompt** at a time, strictly in order within a tier. Each is self-contained.
+3. **Do not skip ahead within Tier 0.** Everything in Tier 0 either touches live credentials, live infrastructure provisioning, or the identity layer everything else depends on. Tier 2+ features built on top of an unhardened provisioner/auth layer just compound risk on a product with real money moving through it.
+4. A short list of **manual steps that are not Lovable prompts** (credential rotation, external dashboard actions) is called out separately at the end — do those yourself, they should not be delegated to an agent.
 
 ---
 
@@ -19,167 +20,57 @@ Project: VoidCloud — multi-tenant VPS hosting platform with WhatsApp CRM.
 Architecture: independent microservices in services/*, each = one pod. Do not merge services or introduce cross-service DB access — communicate via REST or RabbitMQ only.
 Stack: NestJS (backend services), Next.js/React + Tailwind (frontend/), Prisma + PostgreSQL (database/prisma/schema.prisma), Redis, RabbitMQ, Kubernetes (kubernetes/*.yaml), Proxmox API for VM provisioning.
 Roles: SUPER_ADMIN, ADMIN (business admin), AGENT, USER — enforced via RoleGuard + @Roles decorator in services/auth.
-Repo: Amer30004ever/Amer-Devops-Portal.
+Status: this is a real product with paying customers planned — treat all security/data-isolation work as production-grade, not prototype-grade. I am a solo founder; keep deliverables scoped so they can be verified and shipped one at a time.
 Rules: never replace existing services, never delete existing frontend structure, add Prisma migrations rather than editing schema destructively, keep microservices independently deployable, all new endpoints must respect RBAC.
 ```
 
 ---
 
-## TIER 0 — SECURITY FIRST (do before anything else)
+## TIER 0 — FOUNDATION HARDENING (do this before any new feature work)
 
-### Prompt 0.1 — Rotate and vault leaked credentials
+This tier merges the original Tier 0 (security), Tier 0.5 (cluster/monitoring hardening), and Tier 0.6 (auth hardening) into one sequence, reordered by actual dependency and blast radius on a live revenue product. Two already-shipped subsystems — the Proxmox cluster scheduler and the auth/RBAC layer — created concrete new attack surface, so their hardening prompts are pulled ahead of everything else.
+
+### Prompt 0.1 — Secret hygiene guardrail
 ```
-The SMTP password for support.voidcloud@gmail.com and the SUPER_ADMIN seed password (admin@voidcloud.com) were both exposed in plaintext in chat history and must be treated as compromised.
+I have already manually rotated all previously-exposed credentials (JWT secret, SMTP password, Proxmox token, WhatsApp tokens, Docker Hub token, Cloudflare tunnel secret). Your task is to make sure this never silently happens again.
+
 Task:
-1. Generate a new Gmail app password (I will do this manually) and update services/email's config to read SMTP_PASS only from an environment variable, never hardcoded in any committed file, seed script, or docs.
-2. Update database/prisma/seed.ts so the SUPER_ADMIN password is read from a required env var (SEED_ADMIN_PASSWORD) with no hardcoded default, and the process fails loudly if it's missing.
-3. Grep the entire repo for any hardcoded secrets (passwords, API keys, tokens) and report every match with file:line so I can rotate each one.
-4. Add a pre-commit hook or CI step (gitleaks or trufflehog) that fails the pipeline if a secret pattern is detected in a diff.
-Acceptance: no secret exists in any tracked file; CI fails on injected test secret; seed script requires env var.
+1. Grep the entire repo for any hardcoded secrets, API keys, tokens, or passwords in any committed file (not just .env files — check seed scripts, YAML manifests, and test fixtures too). Report every match with file:line.
+2. Confirm kubernetes/secrets.yaml, any .env files, and env-example files are in .gitignore going forward, and replace any committed real-value file with a *.example version containing only placeholder values.
+3. Add a gitleaks (or trufflehog) step to CI that fails the pipeline if a secret pattern is detected in a diff.
+Acceptance: no secret exists in any tracked file going forward; CI fails on an injected test secret.
 ```
 
-### Prompt 0.2 — Secrets management migration
-```
-Task: Migrate all service credentials (SMTP, Proxmox tokens, JWT signing keys, DB passwords, Redis/RabbitMQ passwords) from plain Kubernetes Secrets / .env files into a proper secrets manager.
-Use whichever of these fits our current K8s setup with least new infra: Sealed Secrets, External Secrets Operator (with a cloud provider backend), or HashiCorp Vault.
-Deliverables:
-1. Chosen tool installed via a kubernetes/secrets/ manifest set.
-2. All existing plaintext secrets in kubernetes/*.yaml converted to references against the new store.
-3. A README in kubernetes/secrets/README.md explaining how to add a new secret going forward.
-Acceptance: no plaintext secret values remain in any kubernetes/*.yaml file.
-```
-
-### Prompt 0.3 — Tenant data isolation audit
-```
-Task: Audit every Prisma query across all services in services/*/src for tenant isolation bugs — any query that reads/writes tenant-scoped tables (VPS, CRM leads, billing, conversations) without a `WHERE tenantId = ?` (or equivalent) filter.
-Deliverables:
-1. A report listing every offending query by file:line.
-2. Fixes applied directly, scoped per-service.
-3. A lightweight ESLint rule or custom script added to CI that flags new Prisma calls on tenant-scoped models missing a tenantId filter.
-Acceptance: report shows zero remaining unscoped queries; CI check exists and is wired into the pipeline.
-```
-
-### Prompt 0.4 — Platform Secrets Manager (DB-backed, dashboard-editable)
-```
-Task: Build a "Platform Secrets" section at /admin/settings for SUPER_ADMIN to store and manage runtime secrets (SMTP credentials, Stripe keys, WhatsApp API tokens, and any other third-party API keys) directly from the dashboard, instead of only via GitHub/K8s secrets.
-
-Scope — what belongs here vs. what stays out:
-- IN: SMTP password, Stripe secret key, WhatsApp Business API token, and similar runtime, third-party service credentials that services need to call external APIs.
-- OUT (do not build UI for these, they must stay in K8s Secrets / GitHub Actions secrets): the master encryption key used below, the database/Redis/RabbitMQ connection strings, and any CI/CD pipeline credentials (Docker registry push, kubeconfig, deploy signing keys). These have a chicken-and-egg problem — they're needed before the app/DB is reachable.
-
-Backend (new or extend services/auth or a dedicated services/settings):
-1. Prisma model PlatformSecret (key, encryptedValue, description, lastRotatedAt, updatedBy).
-2. Encrypt every value with AES-256-GCM before storing — reuse the same crypto.util.ts pattern already used for Proxmox cluster tokenSecret. The AES master key itself comes from an env var / K8s Secret, never from this table.
-3. CRUD endpoints, SUPER_ADMIN-only via RoleGuard: list (returns masked values only, e.g. "sk_live_••••1234"), create/update (accepts plaintext, encrypts server-side), a separate "reveal" endpoint that returns the decrypted value only on explicit request.
-4. Audit-log every list view, reveal action, and edit — not just edits. Include actor, key name, action type, timestamp.
-5. Services that need these values (email, billing, whatsapp) read them at request-time from this store (with a short in-memory cache + TTL to avoid hitting the DB on every call), falling back to env vars only if not present in the table — this makes migration incremental rather than a hard cutover.
-
-Frontend:
-1. Table of secrets: key name, description, masked value, last rotated date, last updated by.
-2. "Reveal" button per secret (own audit-logged action, maybe requiring a re-auth/2FA step given how sensitive this is).
-3. Add/edit form with a plaintext input that's cleared immediately after successful save (never left populated in the DOM).
-
-Acceptance: adding an SMTP password here and removing it from env vars results in services/email still sending mail correctly by reading from this store; every reveal action produces an audit log entry; the encryption master key itself is verifiably absent from this table and from any committed file.
-```
-
-### Prompt 0.5 — Session/token revocation
-```
-Task: Add a Redis-backed JWT revocation list to services/auth.
-1. On logout, password change, or admin-forced revoke, add the token's jti to a Redis set with TTL matching remaining token life.
-2. Add revocation-list check to the JwtAuthGuard used across all services (via a shared check against services/auth's revoke endpoint, or a shared Redis client).
-3. Add an admin endpoint POST /admin/users/:id/revoke-sessions (SUPER_ADMIN, ADMIN only) that revokes all active tokens for a user.
-Acceptance: a revoked token is rejected by every service immediately, not just at next expiry.
-```
-
----
-
-## TIER 0.5 — HARDENING FOR DELIVERED FEATURES (clusters + monitoring)
-
-These address gaps found in the already-shipped Proxmox cluster management and health-monitoring work. Do these before building more on top (billing, VPS provisioner, etc. all depend on the scheduler and cluster data being correct).
-
-### Prompt 0.5.1 — Fix scheduler race condition with capacity reservation
-```
-Task: The cluster scheduler in services/vps currently picks a target cluster by checking free CPU/RAM/disk at request time, then provisions. Two near-simultaneous requests can both read the same free capacity and both get scheduled onto the same cluster before either VM actually exists to decrement it — a classic overcommit bug.
-
-Fix:
-1. Add a PendingAllocation model (clusterId, cpu, ramMb, diskGb, requestId, createdAt, expiresAt) via Prisma migration.
-2. Wrap "check capacity → reserve → provision" in a DB transaction: when the scheduler selects a cluster, immediately write a PendingAllocation row inside the same transaction that reads current capacity, so a concurrent request's capacity check sees the reservation and is correctly excluded/deprioritized.
-3. On provisioning success, convert the pending allocation into the real VM record (remove the pending row). On failure/timeout, expire and release the pending allocation (a cleanup job or TTL-based check).
-4. Add a test that fires two concurrent provisioning requests against a cluster with only enough capacity for one, and asserts only one succeeds (the other should either queue for a different cluster or fail cleanly, not overcommit the first).
-Acceptance: the concurrency test passes consistently (run it 20+ times, not once) with no double-allocation.
-```
-
-### Prompt 0.5.2 — Server-owned monitoring loop (not frontend-triggered)
-```
-Task: Verify and, if needed, fix services/monitoring so the 30-second health checks run on a server-side interval/cron independent of any browser tab being open, persisting each result to ServiceHealthLog. The frontend's GET /monitoring/services/health should read the latest persisted result (cache), not trigger a fresh round of pings itself.
-
-1. If the current implementation pings services in response to the frontend's poll request, move the ping loop into a server-side scheduled job (e.g. NestJS @Interval or a cron-triggered RabbitMQ job) that runs regardless of whether anyone has the monitoring page open.
-2. Add a separate POST /monitoring/services/health/check-now endpoint (SUPER_ADMIN only) for an explicit manual "force check" button in the UI, distinct from the auto-polled cached read.
-3. Confirm: opening the monitoring page in 3 browser tabs simultaneously does not triple the number of outbound pings to the 13 services.
-Acceptance: outbound ping volume to the 13 services stays constant regardless of how many admin browser tabs have the monitoring page open.
-```
-
-### Prompt 0.5.3 — Audit logging for cluster credential actions
-```
-Task: Extend the audit service to log every create, edit, delete, and credential-reveal action on Proxmox clusters in services/vps/src/clusters — the same treatment as the Platform Secrets Manager (Prompt 0.4), since cluster credentials are functionally the same category of secret.
-1. Log actor, action type (create/edit/delete/reveal), cluster ID/name, timestamp on every relevant endpoint.
-2. If cluster credentials can currently be viewed/revealed in the UI (even masked-then-revealed), that reveal action must also be logged, not just edits.
-Acceptance: adding, editing, deleting, and revealing a cluster's credentials each produce a corresponding audit log entry, visible in the existing audit log view.
-```
-
-### Prompt 0.5.4 — Safe cluster deletion
-```
-Task: Prevent deleting a Proxmox cluster that still has active VMs referencing it, and add a disable/maintenance state as an alternative to hard delete.
-1. Add a status field to the cluster model supporting ACTIVE / UNREACHABLE / DISABLED (in addition to existing states) — DISABLED means "stop scheduling new VMs here, but existing VMs and history remain untouched."
-2. On DELETE /clusters/:id, check for VPS records referencing this cluster; if any exist, reject the deletion with a clear error listing the count of affected VMs, unless an explicit ?force=true is passed (which still requires typing the cluster name to confirm, matching the confirmation-diff pattern from Tier 7).
-3. Add a PUT /clusters/:id/disable (and /enable) endpoint that sets DISABLED/ACTIVE without touching credentials or history — the scheduler must exclude DISABLED clusters from its candidate list.
-4. Frontend: add a "Disable" action distinct from "Delete" in the clusters UI, each clearly labeled with what it does.
-Acceptance: attempting to delete a cluster with active VMs is blocked by default with a clear count shown; disabling a cluster removes it from scheduler candidates without losing its data or credentials.
-```
-
-### Prompt 0.5.5 — Health-log retention and richer failure classification
-```
-Task: Two smaller robustness fixes to the delivered monitoring feature.
-1. Retention: add a scheduled cleanup job that rolls up ServiceHealthLog data — keep raw per-check rows for 48h, then collapse to hourly aggregates (uptime %, avg response time) for anything older, deleting the raw rows after rollup. This table grows by roughly (13 services × 2/min × 1440 min) rows/day and needs this before it becomes a slow table.
-2. Failure classification: extend both the service health check and the Proxmox cluster "test connection" endpoint to distinguish failure types (auth/credential failure vs. network timeout vs. unexpected/malformed response) rather than a single UNREACHABLE/DOWN state, and surface the distinction in the UI so an admin can tell "this cluster's password is wrong" apart from "this cluster is just slow to respond right now."
-Acceptance: ServiceHealthLog table size growth is bounded (verify with the rollup job run against a day of synthetic data); a simulated auth failure and a simulated timeout produce visibly different status/error messages in both the clusters and monitoring UI.
-```
-
----
-
-## TIER 0.6 — AUTH HARDENING (for delivered auth wiring, role routing, 2FA)
-
-These address gaps in the already-shipped auth wiring, role routing, 2FA, and seed-admin work. Do these before adding OAuth (Prompt 2.12) or any further auth surface — this is the foundation everything else's access control sits on.
-
-### Prompt 0.6.1 — Idempotent, non-destructive seed script
+### Prompt 0.2 — Idempotent, non-destructive seed script
 ```
 Task: Audit database/prisma/seed.ts and its CI/deploy wiring.
-1. Confirm (or add) an existence check: if a user with the seed admin's email already exists, the script must skip creating/updating that user entirely — it must never reset an existing admin's password, 2FA settings, or other fields on a re-run.
-2. Confirm the admin password is sourced from a required env var (e.g. SEED_ADMIN_PASSWORD) with no hardcoded fallback value anywhere in the script or its defaults — fail loudly at startup if the var is missing, rather than silently seeding a default/weak password.
-3. Confirm this script is only invoked on genuine first-bootstrap (e.g. an explicit `--seed` flag or a one-time migration job), not automatically re-run on every deploy via migrationsRun or a CI step that unconditionally calls `prisma db seed`.
-4. Grep the repo for any other hardcoded credential defaults introduced before this fix and remove them.
-Acceptance: running the seed script twice against a DB where the admin already exists (with a since-changed password/2FA) leaves that admin's credentials and 2FA state untouched; running it with the env var unset fails the deploy rather than seeding a default password.
+1. Confirm (or add) an existence check: if a user with the seed admin's email already exists, the script must skip creating/updating that user entirely — never reset an existing admin's password, 2FA settings, or other fields on a re-run.
+2. Confirm the admin password is sourced from a required env var (e.g. SEED_ADMIN_PASSWORD) with no hardcoded fallback anywhere in the script — fail loudly at startup if missing.
+3. Confirm this script only runs on genuine first-bootstrap (explicit --seed flag or one-time job), not automatically on every deploy.
+4. Grep the repo for any other hardcoded credential defaults and remove them.
+Acceptance: running the seed script twice against a DB where the admin already exists leaves that admin's credentials and 2FA state untouched; running it with the env var unset fails the deploy.
 ```
 
-### Prompt 0.6.2 — Server-side route/endpoint enforcement (not just redirect logic)
+### Prompt 0.3 — Server-side route/endpoint RBAC enforcement + tests
 ```
-Task: Verify that role-based access is enforced at the API layer for every route the frontend's post-login role routing sends users to, independent of the frontend redirect logic.
-1. For every /admin/*, /business/*, /agent/* frontend route, confirm the corresponding backend endpoint(s) it calls are decorated with @Roles and protected by RoleGuard — not relying on the frontend simply not linking to them.
-2. Write an automated test (extending Prompt 1.3's role-guard suite) that, for each role, directly calls every admin-tier endpoint with that role's JWT and asserts a 403, regardless of what the frontend would or wouldn't navigate to.
-3. Fix any endpoint found missing proper role decoration during this audit.
-Acceptance: a USER-role JWT calling any SUPER_ADMIN-only endpoint directly (via curl/Postman, bypassing the frontend entirely) receives 403 for every single one, with no exceptions found in the audit.
+Task: Verify role-based access is enforced at the API layer for every route, independent of frontend redirect logic.
+1. For every /admin/*, /business/*, /agent/* frontend route, confirm the corresponding backend endpoint(s) are decorated with @Roles and protected by RolesGuard.
+2. Write an automated test suite that, for each role (SUPER_ADMIN, ADMIN, AGENT, USER), directly calls every protected endpoint with that role's JWT and asserts correct 200/403 behavior. Include a case with no token and an expired token.
+3. Fix any endpoint found missing proper role decoration.
+4. Add a lint/test that scans controllers for undecorated routes so this can't silently regress.
+Acceptance: a USER-role JWT calling any SUPER_ADMIN-only endpoint directly (via curl, bypassing the frontend) receives 403 for every one, with no exceptions found.
 ```
 
-### Prompt 0.6.3 — Server-enforced 2FA completion (no bypass via API)
+### Prompt 0.4 — Server-enforced 2FA completion (no bypass via API)
 ```
-Task: Verify and, if needed, fix services/auth so that a user with 2FA enabled cannot obtain a fully-privileged JWT from the login endpoint without completing the TOTP step, regardless of client.
-1. The initial POST /auth/login for a 2FA-enabled user must return only a short-lived, limited-scope "pending 2FA" token (not a full access JWT) — this pending token should only be valid against the TOTP verification endpoint, nothing else.
+Task: Verify and, if needed, fix services/auth so a user with 2FA enabled cannot obtain a fully-privileged JWT from login without completing the TOTP step, regardless of client.
+1. POST /auth/login for a 2FA-enabled user must return only a short-lived, limited-scope "pending 2FA" token, valid only against the TOTP verification endpoint.
 2. Only after successful POST /auth/2fa/verify does the service issue the real, fully-scoped access JWT.
-3. Add a test that calls /auth/login directly for a 2FA-enabled test user and confirms the returned token is rejected by every non-2FA-verification endpoint.
-Acceptance: hitting /auth/login directly (bypassing the frontend's conditional 2FA form) for a 2FA-enabled account never yields a token usable for anything beyond completing 2FA verification.
+3. Add a test calling /auth/login directly for a 2FA-enabled test user, confirming the returned token is rejected by every non-2FA-verification endpoint.
+Acceptance: hitting /auth/login directly for a 2FA-enabled account never yields a token usable for anything beyond completing 2FA verification.
 ```
 
-### Prompt 0.6.4 — Token lifecycle safety for reset/verification links
+### Prompt 0.5 — Token lifecycle safety for reset/verification links
 ```
 Task: Audit the password-reset and email-verification token implementation in services/auth.
 1. Confirm tokens are generated via a cryptographically secure random source (not sequential IDs, not predictable from timestamp/user ID), sufficiently long (256 bits of entropy).
@@ -189,17 +80,86 @@ Task: Audit the password-reset and email-verification token implementation in se
 Acceptance: all four test cases pass; token generation is verified to use a CSPRNG, not Math.random or similar.
 ```
 
-### Prompt 0.6.5 — Zod version tech debt ticket
+### Prompt 0.6 — Fix scheduler race condition with capacity reservation
+```
+Task: The cluster scheduler in services/vps picks a target cluster by checking free CPU/RAM/disk at request time, then provisions. Two near-simultaneous requests can both read the same free capacity and get scheduled onto the same cluster before either VM exists to decrement it — an overcommit bug.
+
+Fix:
+1. Add a PendingAllocation model (clusterId, cpu, ramMb, diskGb, requestId, createdAt, expiresAt) via Prisma migration.
+2. Wrap "check capacity → reserve → provision" in a DB transaction: when the scheduler selects a cluster, immediately write a PendingAllocation row inside the same transaction that reads current capacity, so a concurrent request's capacity check sees the reservation and excludes/deprioritizes it.
+3. On provisioning success, convert the pending allocation into the real VM record. On failure/timeout, expire and release it (cleanup job or TTL check).
+4. Add a test firing two concurrent provisioning requests against a cluster with only enough capacity for one, asserting only one succeeds.
+Acceptance: the concurrency test passes consistently (run 20+ times) with no double-allocation.
+```
+
+### Prompt 0.7 — Audit logging for cluster credential actions
+```
+Task: Extend the audit service to log every create, edit, delete, and credential-reveal action on Proxmox clusters in services/vps/src/clusters.
+1. Log actor, action type (create/edit/delete/reveal), cluster ID/name, timestamp on every relevant endpoint.
+2. If cluster credentials can be viewed/revealed in the UI (even masked-then-revealed), that reveal action must also be logged, not just edits.
+Acceptance: adding, editing, deleting, and revealing a cluster's credentials each produce a corresponding audit log entry, visible in the existing audit log view.
+```
+
+### Prompt 0.8 — Safe cluster deletion
+```
+Task: Prevent deleting a Proxmox cluster that still has active VMs referencing it, and add a disable/maintenance state as an alternative to hard delete.
+1. Add a status field to the cluster model supporting ACTIVE / UNREACHABLE / DISABLED (in addition to existing states) — DISABLED means "stop scheduling new VMs here, but existing VMs and history remain untouched."
+2. On DELETE /clusters/:id, check for VPS records referencing this cluster; if any exist, reject the deletion with a clear error listing the count of affected VMs, unless an explicit ?force=true is passed (which still requires typing the cluster name to confirm).
+3. Add a PUT /clusters/:id/disable (and /enable) endpoint that sets DISABLED/ACTIVE without touching credentials or history — the scheduler must exclude DISABLED clusters from its candidate list.
+4. Frontend: add a "Disable" action distinct from "Delete" in the clusters UI, each clearly labeled with what it does.
+Acceptance: attempting to delete a cluster with active VMs is blocked by default with a clear count shown; disabling a cluster removes it from scheduler candidates without losing its data or credentials.
+```
+
+### Prompt 0.9 — Server-owned monitoring loop (not frontend-triggered)
+```
+Task: Verify and, if needed, fix services/monitoring so the health checks run on a server-side interval/cron independent of any browser tab being open, persisting each result to ServiceHealthLog. The frontend's GET /monitoring/services/health should read the latest persisted result (cache), not trigger a fresh round of pings itself.
+
+1. If the current implementation pings services in response to the frontend's poll request, move the ping loop into a server-side scheduled job (e.g. NestJS @Interval or a cron-triggered RabbitMQ job) that runs regardless of whether anyone has the monitoring page open.
+2. Add a separate POST /monitoring/services/health/check-now endpoint (SUPER_ADMIN only) for an explicit manual "force check" button in the UI, distinct from the auto-polled cached read.
+3. Confirm: opening the monitoring page in 3 browser tabs simultaneously does not triple the number of outbound pings to the 13 services.
+Acceptance: outbound ping volume to the 13 services stays constant regardless of how many admin browser tabs have the monitoring page open.
+```
+
+### Prompt 0.10 — Health-log retention and richer failure classification
+```
+Task: Two robustness fixes to the delivered monitoring feature.
+1. Retention: add a scheduled cleanup job that rolls up ServiceHealthLog data — keep raw per-check rows for 48h, then collapse to hourly aggregates (uptime %, avg response time) for anything older, deleting raw rows after rollup.
+2. Failure classification: extend both the service health check and the Proxmox cluster "test connection" endpoint to distinguish failure types (auth/credential failure vs. network timeout vs. unexpected/malformed response) rather than a single UNREACHABLE/DOWN state, and surface the distinction in the UI.
+Acceptance: ServiceHealthLog table size growth is bounded (verify with the rollup job run against a day of synthetic data); a simulated auth failure and a simulated timeout produce visibly different status/error messages in both the clusters and monitoring UI.
+```
+
+### Prompt 0.11 — Tenant data isolation audit
+```
+Task: Audit every Prisma query across all services in services/*/src for tenant isolation bugs — any query that reads/writes tenant-scoped tables (VPS, CRM leads, billing, conversations) without a `WHERE tenantId = ?` (or equivalent) filter.
+Deliverables:
+1. A report listing every offending query by file:line.
+2. Fixes applied directly, scoped per-service.
+3. A lightweight ESLint rule or custom script added to CI that flags new Prisma calls on tenant-scoped models missing a tenantId filter.
+Acceptance: report shows zero remaining unscoped queries; CI check exists and is wired into the pipeline.
+```
+
+### Prompt 0.12 — Session/token revocation
+```
+Task: Add a Redis-backed JWT revocation list to services/auth.
+1. On logout, password change, or admin-forced revoke, add the token's jti to a Redis set with TTL matching remaining token life.
+2. Add revocation-list check to the JwtAuthGuard used across all services (via a shared check against services/auth's revoke endpoint, or a shared Redis client).
+3. Add an admin endpoint POST /admin/users/:id/revoke-sessions (SUPER_ADMIN, ADMIN only) that revokes all active tokens for a user.
+Acceptance: a revoked token is rejected by every service immediately, not just at next expiry.
+```
+
+### Prompt 0.13 — Zod version tech debt ticket
 ```
 Task: The zod v3 downgrade (to satisfy @hookform/resolvers v5's type expectations) pins a core validation library below its current major version across every service consuming the generated Zod client (lib/api-zod).
 1. Investigate whether @hookform/resolvers has (or has a roadmap for) a version compatible with Zod v4.
-2. If an upgrade path exists, implement it and remove the pin. If not, document the reason for staying on v3 in a comment in package.json and in this backlog, so it isn't mistaken for unintentional drift six months from now.
+2. If an upgrade path exists, implement it and remove the pin. If not, document the reason for staying on v3 in a comment in package.json and in this backlog.
 Acceptance: either the pin is removed with tests passing on Zod v4, or a clear, dated justification for staying on v3 exists in-repo.
 ```
 
 ---
 
-## TIER 1 — TESTING FOUNDATION
+## TIER 1 — MINIMUM VIABLE TEST NET
+
+Scaled down from the original four-part Tier 1 for solo execution. Full Playwright E2E coverage (original Prompt 1.4) is deferred until there's a team or paying-tenant volume that makes manual regression-checking impractical.
 
 ### Prompt 1.1 — Auth test suite
 ```
@@ -221,34 +181,26 @@ Task: Write Jest tests for services/auth's TOTP 2FA flow:
 Acceptance: tests pass in CI, use a real TOTP library to generate valid codes in test rather than hardcoding one.
 ```
 
-### Prompt 1.3 — Role-guard test suite
+### Prompt 1.3 — Role-guard test suite (extends 0.3)
 ```
-Task: Write tests verifying RoleGuard behavior across services/auth and at least one consumer service (e.g. services/vps):
+Task: Extend the role-guard tests from Prompt 0.3 into a full matrix across services/auth and at least one consumer service (e.g. services/vps):
 - Each of SUPER_ADMIN, ADMIN, AGENT, USER is correctly allowed/denied on a representative set of endpoints.
 - SUPER_ADMIN override (full access) works as intended.
 - Missing/invalid JWT is rejected before role check runs.
-Acceptance: a matrix of role x endpoint is covered, tests fail loudly if a new endpoint is added without a Roles decorator (add a lint/test that scans controllers for undecorated routes).
-```
-
-### Prompt 1.4 — E2E smoke test per role
-```
-Task: Add a Playwright (or Cypress) E2E suite that, for each role (SUPER_ADMIN, ADMIN, AGENT, USER):
-1. Logs in via the real login page.
-2. Lands on the correct role-specific dashboard.
-3. Visits every top-level nav item for that role and asserts the page renders without a 500/unhandled error.
-Wire this into CI as a required check on every PR touching frontend/ or services/auth.
-Acceptance: suite runs headless in CI, fails the pipeline on any broken page per role.
+Acceptance: a matrix of role x endpoint is covered, tests fail loudly if a new endpoint is added without a Roles decorator.
 ```
 
 ---
 
-## TIER 2 — CORE FEATURES (original high priority)
+## TIER 2 — CORE REVENUE FEATURES
+
+Reordered from the original: tenant quotas now come immediately after the VPS provisioner, ahead of the billing dashboard — an unquotaed provisioner in front of real payment is the fastest way to lose real money to abuse before invoicing even exists.
 
 ### Prompt 2.1 — Real-time VPS provisioner
 ```
 Task: Build the VM creation form at frontend/pages/admin/clusters (or wherever the cluster UI lives) that actually provisions a VM via Proxmox.
 1. Form fields: cluster (or "auto-select via scheduler"), CPU cores, RAM, disk size, OS template, static IP (optional).
-2. On submit, call services/vps's create endpoint, which calls the scheduler (already built) to pick a cluster, then calls Proxmox's API using that cluster's decrypted credentials.
+2. On submit, call services/vps's create endpoint, which calls the scheduler (already built and hardened) to pick a cluster, then calls Proxmox's API using that cluster's decrypted credentials.
 3. Make the actual Proxmox call async via a RabbitMQ job — return a job ID immediately, poll/notify on completion via the notification service's WebSocket, rather than holding the HTTP request open.
 4. Add an idempotency key (client-generated UUID) so a retried submit doesn't double-provision.
 Acceptance: submitting the form creates a real LXC/VM on the target Proxmox host, UI shows a pending → success/failure state driven by the async job, retried submission with same idempotency key doesn't create a duplicate VM.
@@ -264,7 +216,17 @@ Task: Add per-tenant CPU/RAM/storage quotas.
 Acceptance: provisioning past quota is rejected server-side (not just hidden in UI); gauges reflect real usage; reconciliation job logs and corrects any drift it finds.
 ```
 
-### Prompt 2.3 — Billing revenue dashboard
+### Prompt 2.3 — Rate limit / abuse dashboard with real enforcement
+```
+Task: Build /admin/security.
+1. Backend: Redis-backed sliding-window rate limiter at the API gateway/ingress level (not just per-service) — this is the actual enforcement layer.
+2. Dashboard visualizes what's being enforced: top IPs by request volume, requests/minute per tenant, current block list.
+3. Block-list CRUD: add/remove IP or tenant from block list, using the existing IpBlockList schema.
+4. Blocked IPs/tenants get a 429 with a clear (but not overly detailed) error at the gateway before hitting any service.
+Acceptance: the dashboard reflects real enforced limits (not a separate mocked view), adding an IP to the block list actually blocks it within the same request cycle.
+```
+
+### Prompt 2.4 — Billing revenue dashboard
 ```
 Task: Build /admin/billing with Recharts, backed by services/billing.
 1. MRR chart (monthly recurring revenue, trailing 12 months).
@@ -275,7 +237,7 @@ Task: Build /admin/billing with Recharts, backed by services/billing.
 Acceptance: all charts pull from real services/billing data (seed realistic test data if Stripe isn't live yet), failed-payment alerts are driven by webhook events with a retry/backoff on webhook delivery failure.
 ```
 
-### Prompt 2.4 — WhatsApp broadcast center
+### Prompt 2.5 — WhatsApp broadcast center
 ```
 Task: Build /admin/whatsapp broadcast composer.
 1. Template management: CRUD for message templates (name, body with variable placeholders like {{firstName}}).
@@ -285,7 +247,7 @@ Task: Build /admin/whatsapp broadcast composer.
 Acceptance: a test broadcast to a small segment queues correctly, delivery status table updates as the queue processes, template variables render correctly per recipient.
 ```
 
-### Prompt 2.5 — User impersonation with audit trail
+### Prompt 2.6 — User impersonation with audit trail
 ```
 Task: Add "Login as user X" for SUPER_ADMIN (and ADMIN for their own tenant's users only).
 1. Endpoint issues a scoped JWT: short TTL (15 min), includes an `impersonatedBy: <adminUserId>` claim, restricted to that tenant.
@@ -295,24 +257,14 @@ Task: Add "Login as user X" for SUPER_ADMIN (and ADMIN for their own tenant's us
 Acceptance: impersonation token expires in 15 min even if not manually exited; audit log shows every impersonation session with reason; downstream action logs are tagged when performed under impersonation.
 ```
 
-### Prompt 2.6 — K8s pod manager (with guardrails)
+### Prompt 2.7 — K8s pod manager (with guardrails)
 ```
 Task: Build /admin/pods.
 1. List pods per namespace (read-only first) using a tightly-scoped ServiceAccount — RBAC limited to only the namespaces VoidCloud actually needs, never cluster-admin.
 2. Add restart and delete actions, each requiring an explicit confirmation modal AND a re-auth step (re-enter password or 2FA code) before executing.
 3. Live log streaming for a selected pod via WebSocket (tail -f style).
 4. Every restart/delete action writes to the audit service before executing.
-Acceptance: ServiceAccount's RBAC is verifiably scoped (show me the Role/RoleBinding YAML), destructive actions cannot be triggered without re-auth, all actions are audit-logged.
-```
-
-### Prompt 2.7 — Rate limit / abuse dashboard with real enforcement
-```
-Task: Build /admin/security.
-1. Backend: Redis-backed sliding-window rate limiter at the API gateway/ingress level (not just per-service) — this is the actual enforcement layer.
-2. Dashboard visualizes what's being enforced: top IPs by request volume, requests/minute per tenant, current block list.
-3. Block-list CRUD: add/remove IP or tenant from block list, using the existing IpBlockList schema.
-4. Blocked IPs/tenants get a 429 with a clear (but not overly detailed) error at the gateway before hitting any service.
-Acceptance: the dashboard reflects real enforced limits (not a separate mocked view), adding an IP to the block list actually blocks it within the same request cycle.
+Acceptance: ServiceAccount's RBAC is verifiably scoped (show the Role/RoleBinding YAML), destructive actions cannot be triggered without re-auth, all actions are audit-logged.
 ```
 
 ### Prompt 2.8 — Activity timeline
@@ -334,7 +286,7 @@ Acceptance: wizard is skippable at every step but resumable from the dashboard c
 ### Prompt 2.10 — Dark/light theme toggle
 ```
 Task: Add a theme toggle to the header/nav, wired to the existing ThemeContext.
-1. Toggle button (sun/moon icon) persists choice (React context + a cookie or DB-backed user preference, not localStorage per the artifact rules — this is a real app so a DB column on the user profile is fine).
+1. Toggle button (sun/moon icon) persists choice via a DB-backed user preference (not localStorage — this is a real app so a DB column on the user profile is fine).
 2. Respect system preference on first load if no explicit choice made yet.
 Acceptance: toggle works across every page, persists across sessions and refresh.
 ```
@@ -346,8 +298,6 @@ Task: Extend the existing SUPER_ADMIN TOTP 2FA (services/auth/.../two-factor.ser
 2. Reuse the existing backend service — this should mostly be a role-gate change plus frontend page, not a new implementation.
 Acceptance: ADMIN accounts can enroll/disable 2FA identically to SUPER_ADMIN; login flow correctly prompts for 2FA code when enabled.
 ```
-
----
 
 ### Prompt 2.12 — Sign up / login with Google and GitHub (OAuth, role-aware)
 ```
@@ -372,7 +322,7 @@ Backend:
 2. Endpoints: GET /auth/google, GET /auth/google/callback, GET /auth/github, GET /auth/github/callback — each accepting a signed state param carrying { context: admin_signup | user_signup | agent_accept | link, inviteToken? }.
 3. Implement the per-role branching above inside the callback handler as one clearly-commented decision tree, not scattered conditionals — this logic is security-relevant and needs to be auditable in one place.
 4. On success, issue the same JWT the email/password flow issues, so downstream RoleGuard and routing work unchanged.
-5. Store Google/GitHub client ID + client secret in the Platform Secrets Manager (Prompt 0.4), not raw env vars.
+5. Store Google/GitHub client ID + client secret in Kubernetes Secrets (do not build a DB-backed secrets UI yet — see deferred items).
 6. CSRF/state validation (including the signed context payload) on every callback to prevent authorization-code injection or context tampering.
 
 Frontend:
@@ -386,7 +336,7 @@ Acceptance:
 - An OAuth attempt on the agent-invite page with a matching pending invite creates the AGENT correctly scoped to that tenant and consumes the invite; the same attempt with no matching invite creates nothing and shows a clear error.
 - No sequence of requests can result in a SUPER_ADMIN account being created or logged into via OAuth.
 - An existing email/password AGENT can link Google afterward from settings and log in via either method into the same account.
-- OAuth app secrets are stored via the Platform Secrets Manager, not hardcoded or raw env vars.
+- OAuth app secrets are stored as Kubernetes Secrets, not hardcoded in any committed file.
 ```
 
 ---
@@ -445,7 +395,7 @@ Acceptance: a PR touching only services/vps triggers only that service's pipelin
 ```
 Task: Add deploy stages to the GitHub Actions workflow (or .gitlab-ci.yml, whichever is canonical — confirm and consolidate to one).
 1. Auto-deploy to staging namespace on merge to main.
-2. Manual-approval gate before production deploy (a human clicks "approve" in the GitHub Actions UI — this is not the "manual deployment commands" you want to avoid, it's a safety gate on an otherwise automated pipeline).
+2. Manual-approval gate before production deploy (a human clicks "approve" in the GitHub Actions UI).
 3. Post-deploy health check step: hit each deployed service's /health endpoint and fail/rollback the deploy if any fail to report healthy within a timeout.
 Acceptance: a broken image that fails health checks post-deploy triggers automatic rollback to the last known-good image tag, with a Slack/notification alert.
 ```
@@ -467,7 +417,7 @@ Acceptance: a test PR with a DROP COLUMN migration fails the check by default, p
 
 ---
 
-## TIER 5 — INNOVATION FEATURES (original "additional")
+## TIER 5 — INNOVATION FEATURES
 
 ### Prompt 5.1 — Predictive scaling + AI resource optimization
 ```
@@ -518,7 +468,7 @@ Acceptance: registering a webhook for "lead.created" and creating a test lead tr
 ```
 Task: Add report export to Billing and VPS usage views.
 1. CSV export: straightforward server-side generation from existing query results.
-2. PDF export: use the pdf skill/toolchain for a clean, branded report layout (VoidCloud logo, tenant name, date range, summary table, chart image if applicable).
+2. PDF export: use a PDF generation toolchain for a clean, branded report layout (VoidCloud logo, tenant name, date range, summary table, chart image if applicable).
 Acceptance: exported PDF renders correctly (no layout breakage) for both a small dataset and a large one (100+ rows / long date range).
 ```
 
@@ -541,7 +491,7 @@ Acceptance: widget appears platform-wide; help center search returns relevant ar
 
 ---
 
-## TIER 6 — PROFESSIONAL/INFRA ENHANCEMENTS (from suggested list)
+## TIER 6 — PROFESSIONAL/INFRA ENHANCEMENTS
 
 ### Prompt 6.1 — Structured logging + correlation IDs
 ```
@@ -578,7 +528,7 @@ Acceptance: a deliberately thrown test error in a page appears in Sentry with fu
 
 ### Prompt 6.5 — Database backup + verified restore drill
 ```
-Task: This is the highest-priority infra item — your own platform DB has no verified backup process.
+Task: Automated nightly PostgreSQL backups and a verified restore process.
 1. Automated nightly PostgreSQL backups (pg_dump or WAL-based, your choice) to off-cluster storage (S3-compatible or equivalent).
 2. Scripted restore procedure (restore-drill.sh) that spins up a scratch Postgres instance and restores the latest backup into it.
 3. Run this restore drill on a schedule (e.g. weekly, via CI or a cron job) and alert if it fails.
@@ -609,11 +559,34 @@ Task:
 Acceptance: `docker-compose up` (or equivalent) gives a working local environment; each service's /api/docs renders a complete, accurate API reference.
 ```
 
+### Prompt 6.9 — Platform Secrets Manager (deferred from Tier 0, revisit once solo → team)
+```
+Task: Build a "Platform Secrets" section at /admin/settings for SUPER_ADMIN to store and manage runtime secrets (SMTP credentials, Stripe keys, WhatsApp API tokens, OAuth client secrets, and similar) directly from the dashboard, instead of only via K8s secrets.
+
+Scope — what belongs here vs. what stays out:
+- IN: SMTP password, Stripe secret key, WhatsApp Business API token, OAuth client secrets, and similar runtime, third-party service credentials.
+- OUT (keep these in K8s Secrets / CI secrets only): the master encryption key used below, database/Redis/RabbitMQ connection strings, and CI/CD pipeline credentials (Docker registry push, kubeconfig, deploy signing keys).
+
+Backend:
+1. Prisma model PlatformSecret (key, encryptedValue, description, lastRotatedAt, updatedBy).
+2. Encrypt every value with AES-256-GCM before storing — reuse the same crypto.util.ts pattern already used for Proxmox cluster tokenSecret. The AES master key itself comes from an env var / K8s Secret, never from this table.
+3. CRUD endpoints, SUPER_ADMIN-only: list (masked values only), create/update (accepts plaintext, encrypts server-side), a separate "reveal" endpoint returning the decrypted value only on explicit request.
+4. Audit-log every list view, reveal action, and edit.
+5. Services that need these values read them at request-time from this store (with a short in-memory cache + TTL), falling back to env vars only if not present — incremental migration, not a hard cutover.
+
+Frontend:
+1. Table of secrets: key name, description, masked value, last rotated date, last updated by.
+2. "Reveal" button per secret (own audit-logged action, ideally requiring a re-auth/2FA step).
+3. Add/edit form with a plaintext input cleared immediately after successful save.
+
+Acceptance: adding an SMTP password here and removing it from env vars results in services/email still sending mail correctly by reading from this store; every reveal action produces an audit log entry; the encryption master key itself is verifiably absent from this table and from any committed file.
+```
+
 ---
 
-## TIER 7 — UI/UX POLISH & PROFESSIONAL FEEL
+## TIER 7 — UI/UX POLISH
 
-These aren't checklist features — they're the difference between "a working admin panel" and one that feels professional to use daily across 13 services and 4 roles. Sequence these after Tier 2/3 are functionally complete, since several depend on real data (notifications, audit trail) already flowing.
+Sequence these after Tier 2/3 are functionally complete — several depend on real data (notifications, audit trail) already flowing.
 
 ### Prompt 7.1 — Global command palette
 ```
@@ -628,7 +601,7 @@ Acceptance: typing a tenant or user's name/email from anywhere in the app jumps 
 ```
 Task:
 1. Add breadcrumb navigation to every nested page (e.g. Admin → Tenants → {Tenant Name} → VPS → {vps-id}), each segment clickable.
-2. Add a "Recently viewed" widget to the Super Admin dashboard listing the last 5-10 tenants/users/VPS instances visited, persisted per admin user (not shared across admins).
+2. Add a "Recently viewed" widget to the Super Admin dashboard listing the last 5-10 tenants/users/VPS instances visited, persisted per admin user.
 Acceptance: breadcrumbs render correctly at every nesting depth; recently-viewed list updates on each detail-page visit and survives a page refresh.
 ```
 
@@ -636,8 +609,8 @@ Acceptance: breadcrumbs render correctly at every nesting depth; recently-viewed
 ```
 Task: Add a notification bell in the header, backed by the existing notification service's WebSocket connection.
 1. Bell shows an unread count; clicking opens a dropdown/panel of recent events (failed payments, service DOWN alerts, new tenant signups, impersonation sessions if multiple super-admins exist).
-2. Persist notifications (read/unread state) per user in the DB, not just in-memory, so they survive a refresh/reconnect.
-3. Add toast notifications for background job outcomes the user is actively waiting on (VPS provisioning finished, backup completed, broadcast sent) so they don't have to babysit a spinner.
+2. Persist notifications (read/unread state) per user in the DB, not just in-memory.
+3. Add toast notifications for background job outcomes the user is actively waiting on (VPS provisioning finished, backup completed, broadcast sent).
 Acceptance: triggering a real event (e.g. a failed payment webhook) produces both a toast (if the user is on a relevant page) and a persistent entry in the notification center.
 ```
 
@@ -656,44 +629,44 @@ Acceptance: a saved filter persists across sessions and correctly re-applies; bu
 Task: Audit every data-driven page (clusters, monitoring, billing, VPS, CRM, audit log) and ensure each has:
 1. A real empty state with a specific next action ("No clusters yet — add your first Proxmox host" + button), not a blank table.
 2. Skeleton loaders instead of spinners for initial data loads.
-3. A per-page error boundary so one broken widget (e.g. a Grafana iframe failing) shows a contained error card instead of blanking the whole page.
+3. A per-page error boundary so one broken widget shows a contained error card instead of blanking the whole page.
 Acceptance: killing the network mid-load on any of the audited pages shows a graceful error state, not a blank screen or unhandled exception.
 ```
 
 ### Prompt 7.6 — Trust and transparency affordances
 ```
 Task:
-1. Add "Last updated: {relative time}" labels to any dashboard showing live/cached data (health status grid, MRR chart, cluster resource usage), sourced from the actual data timestamp, not just page-load time.
-2. Add before/after diffs to confirmation modals for high-stakes edits (tenant quota changes, cluster deletion, role changes) — show the specific old value → new value, not a generic "are you sure?"
-3. Add "Last modified by {admin}, {date}" inline on tenant/user/VPS detail pages, sourced from the audit service, rather than requiring a trip to a separate audit log page.
-Acceptance: a quota change confirmation modal shows the actual before/after numbers; a stale monitoring panel visibly indicates its data is out of date rather than looking falsely current.
+1. Add "Last updated: {relative time}" labels to any dashboard showing live/cached data (health status grid, MRR chart, cluster resource usage), sourced from the actual data timestamp.
+2. Add before/after diffs to confirmation modals for high-stakes edits (tenant quota changes, cluster deletion, role changes) — show the specific old value → new value.
+3. Add "Last modified by {admin}, {date}" inline on tenant/user/VPS detail pages, sourced from the audit service.
+Acceptance: a quota change confirmation modal shows the actual before/after numbers; a stale monitoring panel visibly indicates its data is out of date.
 ```
 
 ### Prompt 7.7 — Accessibility, responsiveness, and interaction feedback
 ```
 Task:
 1. Add full keyboard navigation (tab order, arrow-key row selection) to all data tables.
-2. Make monitoring and billing dashboards usable on mobile viewport widths (read-heavy views, not necessarily full editing capability).
-3. Audit every button that triggers an async action and ensure it shows a loading/disabled state during the request — no button should be clickable multiple times or leave the user uncertain whether their click registered.
-Acceptance: a full keyboard-only pass through the tenants table (navigate, select, open detail) works without a mouse; monitoring dashboard is legible and functional on a 390px-wide viewport.
+2. Make monitoring and billing dashboards usable on mobile viewport widths.
+3. Audit every button that triggers an async action and ensure it shows a loading/disabled state during the request.
+Acceptance: a full keyboard-only pass through the tenants table works without a mouse; monitoring dashboard is legible and functional on a 390px-wide viewport.
 ```
 
 ### Prompt 7.8 — High-stakes page-specific improvements
 ```
 Task:
-1. Monitoring dashboard: add a 24h uptime sparkline per service alongside current status, so a flapping service (down every ~10 min) is visually distinguishable from a stable one, not just shown as "currently UP."
-2. Cluster management: replace raw CPU/RAM/disk numbers with a visual capacity bar per Proxmox host, for faster scanning when manually placing a VM.
-3. Impersonation: make the "You are impersonating {user}" banner large, persistently visible (not a small badge), and present on every page for the duration of the session — this is the highest-risk place for an admin to lose track of which account they're acting as.
+1. Monitoring dashboard: add a 24h uptime sparkline per service alongside current status, so a flapping service is visually distinguishable from a stable one.
+2. Cluster management: replace raw CPU/RAM/disk numbers with a visual capacity bar per Proxmox host.
+3. Impersonation: make the "You are impersonating {user}" banner large, persistently visible, and present on every page for the duration of the session.
 Acceptance: a service with intermittent downtime is visually distinct from a stable one on the monitoring grid; the impersonation banner is unmissable and present after any in-app navigation during an active impersonation session.
 ```
 
 ---
 
-## TIER 8 — SUB2API PIVOT (separate track — different product, different stack target)
+## TIER 8 — SUB2API PIVOT (independent track)
 
-**Context on this pivot:** the existing `sub2api/` code in your repo is a NestJS clone of an API-key/subscription-management SaaS. You've decided not to finish integrating it as-is into VoidCloud — instead, repurpose the concept into a standalone tool that scaffolds **new React + Supabase applications from scratch** (an app-builder, similar in spirit to Lovable/bolt.new). Below are prompts written **for Lovable specifically** (since Lovable's own build target is React + Supabase), broken into four independent phases. Paste one at a time into a new Lovable project.
+**Context:** the existing `sub2api/` code is a NestJS clone of an API-key/subscription-management SaaS, not being integrated into VoidCloud as-is. Instead, repurpose the concept into a standalone tool that scaffolds new React + Supabase applications from scratch. These prompts are written for Lovable specifically, in four independent phases, fully separate from the VoidCloud NestJS/K8s stack — can be worked in parallel whenever you have spare cycles.
 
-### Lovable Prompt 7.1 — Core scaffold + prompt-to-project engine
+### Lovable Prompt 8.1 — Core scaffold + prompt-to-project engine
 ```
 Build the foundation of an AI-powered app generator called "sub2api Studio."
 
@@ -703,52 +676,64 @@ Core flow: a user describes an app in natural language on a landing/dashboard pa
 3. Store each generated project's metadata (name, description, created date, status) in Supabase, associated with the logged-in user.
 4. Build a projects dashboard listing all of a user's generated projects with status (draft, generating, ready, failed) and a "view" action.
 
-Use Supabase for auth (email/password to start) and as the database for storing projects, generation logs, and user accounts. Keep the UI clean, modern, and minimal — this is a developer tool, not a consumer app, so favor clarity and information density over decoration.
+Use Supabase for auth (email/password to start) and as the database for storing projects, generation logs, and user accounts. Keep the UI clean, modern, and minimal.
 
 Do not implement the actual code-generation logic yet — this phase is the shell: auth, project CRUD, dashboard, and the generation-status UI wired to a placeholder that just marks a project "ready" after a delay.
 ```
 
-### Lovable Prompt 7.2 — Supabase project provisioning per generated app
+### Lovable Prompt 8.2 — Supabase project provisioning per generated app
 ```
-Extend sub2api Studio: when a user's generated app needs its own backend, provision a real Supabase project for it (not just use the Studio's own Supabase instance for everything).
+Extend sub2api Studio: when a user's generated app needs its own backend, provision a real Supabase project for it.
 
 1. Add a "Backend" tab per project showing: Supabase project status (not provisioned / provisioning / ready), and once ready, the project URL and anon key (masked, with a reveal button).
-2. Use the Supabase Management API to programmatically create a new Supabase project for each generated app (this requires a Supabase organization access token — store it securely as a server-side secret, never exposed to the client).
-3. Once provisioned, run an initial schema migration against the new project based on the app description's inferred data model (e.g., if the user described "a todo app with users and tasks," create users and tasks tables with sensible columns and RLS policies enabled by default).
+2. Use the Supabase Management API to programmatically create a new Supabase project for each generated app (requires a Supabase organization access token — store it securely as a server-side secret, never exposed to the client).
+3. Once provisioned, run an initial schema migration against the new project based on the app description's inferred data model.
 4. Handle provisioning failures gracefully with a clear error state and retry action.
 Acceptance: creating a new project in the Studio results in a real, separate Supabase project existing under your organization, with an initial schema applied and Row Level Security enabled on every table by default.
 ```
 
-### Lovable Prompt 7.3 — Code generation engine (React scaffold output)
+### Lovable Prompt 8.3 — Code generation engine (React scaffold output)
 ```
-Extend sub2api Studio to actually generate a working React codebase for each project, not just a backend.
+Extend sub2api Studio to actually generate a working React codebase for each project.
 
-1. Based on the app description and the inferred data model from the previous phase, generate a React app structure: pages/components for each core entity (list view, detail view, create/edit form), wired to the provisioned Supabase project's client (using the project's own URL/anon key from Prompt 7.2).
-2. Store generated files in Supabase Storage (or a similar object store) as a downloadable project archive (zip), and show a file-tree preview in the UI so the user can inspect generated code before downloading.
+1. Based on the app description and the inferred data model, generate a React app structure: pages/components for each core entity (list view, detail view, create/edit form), wired to the provisioned Supabase project's client.
+2. Store generated files in Supabase Storage as a downloadable project archive (zip), and show a file-tree preview in the UI.
 3. Add a "Download project" button that packages the generated code, a README with setup instructions, and a .env.example pointing at the project's Supabase credentials.
 4. Add basic regeneration: user can tweak the description and regenerate specific pages without starting over.
 Acceptance: downloading a generated project, running `npm install && npm run dev`, and pointing it at the provisioned Supabase project results in a working CRUD app for the described entities.
 ```
 
-### Lovable Prompt 7.4 — Auth, billing, and project management polish
+### Lovable Prompt 8.4 — Auth, billing, and project management polish
 ```
 Finish sub2api Studio with account and lifecycle management.
 
-1. Add a proper account settings page: profile, connected Supabase organization token management (re-enter/rotate the Management API token securely), API usage/quota display (number of projects generated this month vs. plan limit).
+1. Add a proper account settings page: profile, connected Supabase organization token management, API usage/quota display (number of projects generated this month vs. plan limit).
 2. Add a simple plan/quota system: free tier (e.g. 3 projects), paid tier (unlimited or higher limit) — Stripe integration for upgrade, using Supabase to store subscription status synced via Stripe webhooks.
-3. Add project deletion (with confirmation) that also offers to deprovision the associated Supabase project via the Management API, not just delete the Studio's own record.
-4. Add a simple activity log per project (created, regenerated, downloaded, deleted) visible on the project detail page.
+3. Add project deletion (with confirmation) that also offers to deprovision the associated Supabase project via the Management API.
+4. Add a simple activity log per project (created, regenerated, downloaded, deleted).
 Acceptance: a free-tier user is blocked from generating a 4th project until upgrading; deleting a project with the "also deprovision" option removes the real Supabase project, not just the local record.
 ```
 
 ---
 
-## SUGGESTED SEQUENCE SUMMARY
+## SEQUENCE SUMMARY
 
-1. **Tier 0** (security) — do this week, non-negotiable.
-2. **Tier 1** (testing) — before Tier 2, so new features don't ship on an unverified base.
-3. **Tier 2 → Tier 3** — core feature completion, in the order listed (VPS provisioner and quotas first since billing/impersonation build on them).
-4. **Tier 4** (CI/CD) — can run in parallel with Tier 2/3 once Tier 1's tests exist to actually run in the pipeline.
-5. **Tier 5 → Tier 6** — lower urgency, higher polish; sequence by what matters most to your actual early customers.
-6. **Tier 7** (UI/UX polish) — layer in once Tier 2/3's core pages exist and real data is flowing (notifications, audit trail, and saved filters need actual events/data to be meaningful).
-7. **Tier 8** (sub2api pivot) — fully independent track, different codebase/target (Lovable + Supabase), can be worked on in parallel by a separate effort/session since it doesn't touch VoidCloud's NestJS/K8s stack at all.
+1. **Manual steps** (credential rotation — not a Lovable prompt, do this yourself first, see note below).
+2. **Tier 0** (0.1 → 0.13) — foundation hardening, strict order, do not skip ahead.
+3. **Tier 1** (1.1 → 1.3) — minimum test net.
+4. **Tier 2** (2.1 → 2.12) — core revenue features, quota enforcement before billing dashboard.
+5. **Tier 3** — role panel completions.
+6. **Tier 4** — CI/CD, can run in parallel with Tier 2/3 once Tier 1's tests exist.
+7. **Tier 5 → Tier 6** — polish and infra maturity, sequence by what matters most to early customers. Tier 6.9 (Platform Secrets Manager) revisit once you're no longer solo.
+8. **Tier 7** — UI/UX polish, once Tier 2/3 pages exist with real data flowing.
+9. **Tier 8** — fully independent, work whenever, doesn't touch VoidCloud's stack.
+
+---
+
+## MANUAL STEPS (not Lovable prompts — do these yourself)
+
+1. Rotate: Proxmox API token, SMTP credentials (consider migrating off personal Gmail to a transactional provider), JWT_SECRET, WhatsApp app secret/access token/verify token/webhook secret, Docker Hub token, Cloudflare Tunnel secret, kubeconfig/cluster client cert.
+2. Update the rotated values in K8s secrets, CI secrets, and any local `.env` files, then redeploy.
+3. Check git history for any of these values ever being committed; scrub with `git filter-repo` if found, force-push, have collaborators re-clone.
+4. Ignore secret files going forward (`.gitignore`), keep only `*.example` versions with placeholder values in the repo.
+5. Manually verify `database/prisma/seed.ts` has no hardcoded admin password, and spot-check one admin endpoint with a USER-role token via curl before handing RBAC work to Lovable.
