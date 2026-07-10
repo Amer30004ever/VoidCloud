@@ -1,0 +1,249 @@
+{
+  "generatedAt": "2026-07-10T00:27:37.108Z",
+  "entries": [
+    {
+      "file": "/dev-server/services/auth/src/auth/auth.controller.ts",
+      "snippet": "@Get('me')"
+    },
+    {
+      "file": "/dev-server/services/auth/src/auth/auth.controller.ts",
+      "snippet": "@Post('change-password')"
+    },
+    {
+      "file": "/dev-server/services/auth/src/auth/auth.controller.ts",
+      "snippet": "@Post('two-factor/enable')"
+    },
+    {
+      "file": "/dev-server/services/auth/src/auth/auth.controller.ts",
+      "snippet": "@Post('two-factor/verify')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Get('customers')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Get('customers/:id')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Get('deals')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Get('leads')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Get('tasks')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Post('customers')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Post('deals')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Post('leads')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Post('tasks')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Put('customers/:id')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Put('deals/:id/stage')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Put('leads/:id/convert')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/crm/crm.controller.ts",
+      "snippet": "@Put('tasks/:id/complete')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/whatsapp/whatsapp.controller.ts",
+      "snippet": "@Get('contacts')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/whatsapp/whatsapp.controller.ts",
+      "snippet": "@Get('messages/:phone')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/whatsapp/whatsapp.controller.ts",
+      "snippet": "@Get('status')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/whatsapp/whatsapp.controller.ts",
+      "snippet": "@Post('send')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/whatsapp/whatsapp.controller.ts",
+      "snippet": "@Post('sync-contact')"
+    },
+    {
+      "file": "/dev-server/services/crm/src/whatsapp/whatsapp.controller.ts",
+      "snippet": "@Post('webhook')"
+    },
+    {
+      "file": "/dev-server/services/email/src/email/email.controller.ts",
+      "snippet": "@Get('templates')"
+    },
+    {
+      "file": "/dev-server/services/email/src/email/email.controller.ts",
+      "snippet": "@Post('invoice/send')"
+    },
+    {
+      "file": "/dev-server/services/email/src/email/email.controller.ts",
+      "snippet": "@Post('notification/send')"
+    },
+    {
+      "file": "/dev-server/services/email/src/email/email.controller.ts",
+      "snippet": "@Post('send')"
+    },
+    {
+      "file": "/dev-server/services/email/src/email/email.controller.ts",
+      "snippet": "@Post('templates')"
+    },
+    {
+      "file": "/dev-server/services/email/src/email/email.controller.ts",
+      "snippet": "@Post('verify/send')"
+    },
+    {
+      "file": "/dev-server/services/email/src/email/email.controller.ts",
+      "snippet": "@Post('welcome/send')"
+    },
+    {
+      "file": "/dev-server/services/monitoring/src/monitoring/monitoring.controller.ts",
+      "snippet": "@Get('alerts')"
+    },
+    {
+      "file": "/dev-server/services/monitoring/src/monitoring/monitoring.controller.ts",
+      "snippet": "@Get('cluster/nodes')"
+    },
+    {
+      "file": "/dev-server/services/monitoring/src/monitoring/monitoring.controller.ts",
+      "snippet": "@Get('cluster/pods')"
+    },
+    {
+      "file": "/dev-server/services/monitoring/src/monitoring/monitoring.controller.ts",
+      "snippet": "@Get('health')"
+    },
+    {
+      "file": "/dev-server/services/monitoring/src/monitoring/monitoring.controller.ts",
+      "snippet": "@Get('metrics')"
+    },
+    {
+      "file": "/dev-server/services/monitoring/src/monitoring/monitoring.controller.ts",
+      "snippet": "@Get('namespaces')"
+    },
+    {
+      "file": "/dev-server/services/monitoring/src/monitoring/monitoring.controller.ts",
+      "snippet": "@Post('alerts')"
+    },
+    {
+      "file": "/dev-server/services/notification/src/notifications/notifications.controller.ts",
+      "snippet": "@Get('ws')"
+    },
+    {
+      "file": "/dev-server/services/notification/src/notifications/notifications.controller.ts",
+      "snippet": "@Get()"
+    },
+    {
+      "file": "/dev-server/services/notification/src/notifications/notifications.controller.ts",
+      "snippet": "@Post()"
+    },
+    {
+      "file": "/dev-server/services/notification/src/notifications/notifications.controller.ts",
+      "snippet": "@Put(':id/read')"
+    },
+    {
+      "file": "/dev-server/services/sub2api/src/auth/auth.controller.ts",
+      "snippet": "@Post('login')"
+    },
+    {
+      "file": "/dev-server/services/sub2api/src/auth/auth.controller.ts",
+      "snippet": "@Post('refresh')"
+    },
+    {
+      "file": "/dev-server/services/sub2api/src/auth/auth.controller.ts",
+      "snippet": "@Post('register')"
+    },
+    {
+      "file": "/dev-server/services/sub2api/src/billing/billing.controller.ts",
+      "snippet": "@Get()"
+    },
+    {
+      "file": "/dev-server/services/sub2api/src/subscriptions/subscriptions.controller.ts",
+      "snippet": "@Get()"
+    },
+    {
+      "file": "/dev-server/services/sub2api/src/usage/usage.controller.ts",
+      "snippet": "@Get()"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Delete(':id')"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Get(':id')"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Get(':id/backups')"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Get(':id/console')"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Get(':id/status')"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Get()"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Post(':id/clone')"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Post(':id/restart')"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Post(':id/snapshot')"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Post(':id/start')"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Post(':id/stop')"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Post()"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Put(':id')"
+    },
+    {
+      "file": "/dev-server/services/vps/src/vps/vps.controller.ts",
+      "snippet": "@Put(':id/resources')"
+    }
+  ]
+}
