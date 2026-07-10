@@ -6,7 +6,10 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -24,7 +27,9 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly twoFactorService: TwoFactorService,
+    private readonly jwtService: JwtService,
   ) {}
+
 
   @Public()
   @Post('register')
@@ -51,27 +56,25 @@ export class AuthController {
   async loginVerifyTwoFactor(
     @Body() body: { pendingToken: string; code: string },
   ) {
-    const { pendingToken, code } = body ?? {} as any;
+    const { pendingToken, code } = (body ?? {}) as {
+      pendingToken?: string;
+      code?: string;
+    };
     if (!pendingToken || !code) {
-      throw new (await import('@nestjs/common')).BadRequestException(
-        'pendingToken and code are required',
-      );
+      throw new BadRequestException('pendingToken and code are required');
     }
     let payload: any;
     try {
-      payload = await (this as any).authService['jwtService'].verifyAsync(pendingToken);
+      payload = await this.jwtService.verifyAsync(pendingToken);
     } catch {
-      throw new (await import('@nestjs/common')).UnauthorizedException(
-        'Invalid or expired pending 2FA token',
-      );
+      throw new UnauthorizedException('Invalid or expired pending 2FA token');
     }
     if (payload?.scope !== '2fa_pending' || !payload?.sub) {
-      throw new (await import('@nestjs/common')).UnauthorizedException(
-        'Token is not a 2FA challenge token',
-      );
+      throw new UnauthorizedException('Token is not a 2FA challenge token');
     }
     return this.authService.completeTwoFactorLogin(payload.sub, code);
   }
+
 
 
   @Public()
