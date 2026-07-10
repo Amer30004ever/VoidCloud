@@ -48,37 +48,23 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // 2FA challenge
+    // 2FA challenge — never returns a full-scope JWT from /auth/login for a 2FA user.
+    // Instead we issue a short-lived, scope-restricted "pending 2FA" token that is
+    // ONLY accepted by /auth/two-factor/login-verify. Every other endpoint (guarded
+    // by JwtAuthGuard) rejects it because the strategy validates `scope`.
     if (user.twoFactorEnabled && user.twoFactorSecret) {
-      const token = (loginDto.twoFactorToken ?? '').trim();
-      if (!token) {
-        return { requires2FA: true, userId: user.id };
-      }
-      const totpOk = speakeasy.totp.verify({
-        secret: user.twoFactorSecret,
-        encoding: 'base32',
-        token,
-        window: 1,
-      });
-      let ok = totpOk;
-      if (!ok && user.recoveryCodes?.length) {
-        for (const hash of user.recoveryCodes) {
-          if (await bcrypt.compare(token, hash)) {
-            ok = true;
-            await this.prisma.user.update({
-              where: { id: user.id },
-              data: {
-                recoveryCodes: user.recoveryCodes.filter((c) => c !== hash),
-              },
-            });
-            break;
-          }
-        }
-      }
-      if (!ok) throw new UnauthorizedException('Invalid 2FA code');
+      const pendingToken = this.jwtService.sign(
+        { sub: user.id, scope: '2fa_pending' },
+        { expiresIn: '5m' },
+      );
+      return {
+        requires2FA: true,
+        pendingToken,
+        expiresIn: 300,
+      };
     }
 
-    const payload = { email: user.email, sub: user.id, role: user.role };
+    const payload = { email: user.email, sub: user.id, role: user.role, scope: 'access' };
 
     // Fetch user permissions from RBAC
     const userPermissions = await this.rbacService.getUserPermissions(user.id);
@@ -95,6 +81,57 @@ export class AuthService {
       },
     };
   }
+
+  /**
+   * Exchange a pending-2FA token + TOTP (or recovery code) for a real access JWT.
+   * Called by the AuthController /auth/two-factor/login-verify endpoint.
+   */
+  async completeTwoFactorLogin(userId: string, code: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+      throw new UnauthorizedException('2FA not required');
+    }
+    const cleaned = (code ?? '').trim();
+    if (!cleaned) throw new UnauthorizedException('Missing 2FA code');
+
+    const totpOk = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: cleaned,
+      window: 1,
+    });
+    let ok = totpOk;
+    if (!ok && user.recoveryCodes?.length) {
+      for (const hash of user.recoveryCodes) {
+        if (await bcrypt.compare(cleaned, hash)) {
+          ok = true;
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+              recoveryCodes: user.recoveryCodes.filter((c) => c !== hash),
+            },
+          });
+          break;
+        }
+      }
+    }
+    if (!ok) throw new UnauthorizedException('Invalid 2FA code');
+
+    const userPermissions = await this.rbacService.getUserPermissions(user.id);
+    const payload = { email: user.email, sub: user.id, role: user.role, scope: 'access' };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        permissions: userPermissions,
+        mustChangePassword: user.mustChangePassword ?? false,
+      },
+    };
+  }
+
 
   async register(registerDto: RegisterDto) {
     const email = registerDto.email.toLowerCase().trim();

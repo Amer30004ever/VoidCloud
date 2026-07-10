@@ -980,7 +980,6 @@ jobs:
           echo "🔄 Running database migrations..."
           AUTH_IMAGE="${{ env.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_HUB_REPO }}-auth-service:${IMAGE_TAG}"
           kubectl delete job voidcloud-db-migrate -n ${NAMESPACE} --ignore-not-found --wait=true
-          kubectl delete job voidcloud-db-seed -n ${NAMESPACE} --ignore-not-found --wait=true
           sed "s|amer30004ever/voidcloud-auth-service:latest|${AUTH_IMAGE}|g" kubernetes/migrate-job.yaml | kubectl apply -f -
           if ! kubectl wait --for=condition=complete job/voidcloud-db-migrate -n ${NAMESPACE} --timeout=300s; then
             echo "❌ Migration job failed — logs:"
@@ -989,7 +988,12 @@ jobs:
             exit 1
           fi
           kubectl logs job/voidcloud-db-migrate -n ${NAMESPACE}
-          kubectl logs job/voidcloud-db-seed -n ${NAMESPACE} || true
+
+          # NOTE: seed-job.yaml is intentionally NOT applied here. It is a one-time
+          # bootstrap step and must be applied manually against a fresh cluster:
+          #   kubectl apply -f kubernetes/seed-job.yaml
+          # See kubernetes/seed-job.yaml for the full procedure.
+
 
           # Wait for services to be ready (kubectl set image already triggered rollouts)
           for SERVICE in $SERVICES_TO_DEPLOY; do
