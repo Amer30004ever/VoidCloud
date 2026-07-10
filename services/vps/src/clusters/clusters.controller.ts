@@ -2,25 +2,30 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   Param,
   Post,
   Put,
   UseGuards,
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../decorators/roles.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { ClustersService, ClusterInput, ScheduleRequest } from './clusters.service';
 
 /**
  * Super-admin-only Proxmox cluster registry.
- * Endpoints under /clusters/*.
+ * Endpoints under /clusters/*. Enforced at the API layer via RolesGuard —
+ * frontend redirects are cosmetic; this is the source of truth.
  */
 @Controller('clusters')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.SUPER_ADMIN)
 export class ClustersController {
   constructor(private readonly clusters: ClustersService) {}
+
 
   private assertSuperAdmin(user: { role?: string }) {
     if (user?.role !== 'SUPER_ADMIN') {
