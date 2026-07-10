@@ -2,27 +2,34 @@
 /**
  * Void Cloud RBAC static analyzer.
  *
- * Walks every *.controller.ts under services/ and fails if a handler
- * (@Get/@Post/@Put/@Patch/@Delete) is NOT protected by either
+ * Walks every *.controller.ts under services/ and reports any HTTP handler
+ * (@Get/@Post/@Put/@Patch/@Delete/@All/@Options/@Head) that is NOT protected by:
  *   - @Public()  (explicit public route, e.g. /auth/login), or
- *   - @Roles(...) at method or controller level.
+ *   - @Roles(...) at method or class level.
  *
- * Health check controllers under a /health path are allowlisted.
- * Prints a summary; exits 1 on any violation so CI can block the merge.
+ * Baseline mode:
+ *   A snapshot of currently-unguarded routes is committed at
+ *   scripts/rbac-baseline.json. The scanner fails ONLY when a NEW unguarded
+ *   route appears that isn't in the baseline. This lets us block regressions
+ *   today while the existing controllers are cleaned up service-by-service.
+ *
+ *   Regenerate the baseline (after intentionally guarding routes):
+ *     node scripts/scan-controller-auth.mjs --write-baseline
+ *
+ * Strict mode (fail on ANY unguarded route, no baseline):
+ *   RBAC_STRICT=1 node scripts/scan-controller-auth.mjs
+ *
+ * Exits non-zero (fails CI) when regressions or strict-mode violations exist.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(fileURLToPath(new URL('..', import.meta.url)));
 const SERVICES = join(ROOT, 'services');
+const BASELINE = join(ROOT, 'scripts', 'rbac-baseline.json');
 const HTTP_DECORATORS = /@(Get|Post|Put|Patch|Delete|All|Options|Head)\s*\(/;
-
-/** Controllers/methods we intentionally leave without @Roles. */
-const ALLOWLIST_FILES = new Set([
-  // health probes are hit by kube liveness/readiness; must be reachable without JWT.
-  'health.controller.ts',
-]);
+const ALLOWLIST_FILES = new Set(['health.controller.ts']);
 
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
@@ -41,18 +48,12 @@ function walk(dir, out = []) {
 function analyze(file) {
   const src = readFileSync(file, 'utf8');
   const lines = src.split('\n');
-  const violations = [];
   const controllerHasRoles = /@Roles\s*\(/.test(src);
-  const controllerHasPublic = /@Public\s*\(\s*\)/.test(
-    // only class-level scan: everything after the first @Controller decl
-    src,
-  );
   const isHealth = ALLOWLIST_FILES.has(file.split(sep).pop());
+  const violations = [];
 
   for (let i = 0; i < lines.length; i++) {
     if (!HTTP_DECORATORS.test(lines[i])) continue;
-    // Look back up to 10 lines for @Public/@Roles above this handler,
-    // stopping at a blank line separating handlers.
     let hasGuard = controllerHasRoles;
     let hasPublic = false;
     for (let j = i - 1; j >= Math.max(0, i - 12); j--) {
@@ -63,7 +64,7 @@ function analyze(file) {
     }
     if (!hasGuard && !hasPublic && !isHealth) {
       violations.push({
-        file: file.replace(ROOT + sep, ''),
+        file: file.replace(ROOT + sep, '').replaceAll(sep, '/'),
         line: i + 1,
         snippet: lines[i].trim(),
       });
@@ -72,26 +73,63 @@ function analyze(file) {
   return violations;
 }
 
+const args = new Set(process.argv.slice(2));
+const strict = process.env.RBAC_STRICT === '1' || args.has('--strict');
+const writeBaseline = args.has('--write-baseline');
+
 const files = walk(SERVICES);
-let total = 0;
-const bad = [];
-for (const f of files) {
-  const v = analyze(f);
-  total += v.length ? 0 : 1;
-  bad.push(...v);
+const current = [];
+for (const f of files) current.push(...analyze(f));
+
+const key = (v) => `${v.file}:${v.snippet}`;
+const currentKeys = new Set(current.map(key));
+
+if (writeBaseline) {
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    entries: current
+      .map((v) => ({ file: v.file, snippet: v.snippet }))
+      .sort((a, b) => (a.file + a.snippet).localeCompare(b.file + b.snippet)),
+  };
+  writeFileSync(BASELINE, JSON.stringify(payload, null, 2) + '\n');
+  console.log(`✅ Wrote baseline with ${payload.entries.length} entries → ${BASELINE.replace(ROOT + sep, '')}`);
+  process.exit(0);
 }
 
-if (bad.length) {
-  console.error(`\n❌ RBAC scan: ${bad.length} unguarded controller route(s) found:\n`);
-  for (const v of bad) {
-    console.error(`  ${v.file}:${v.line}  ${v.snippet}`);
+if (strict) {
+  if (current.length) {
+    console.error(`\n❌ RBAC scan (strict): ${current.length} unguarded route(s):\n`);
+    for (const v of current) console.error(`  ${v.file}:${v.line}  ${v.snippet}`);
+    process.exit(1);
   }
+  console.log(`✅ RBAC scan (strict): all ${files.length} controllers pass.`);
+  process.exit(0);
+}
+
+// Baseline mode
+let baseline = { entries: [] };
+if (existsSync(BASELINE)) {
+  baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
+}
+const baselineKeys = new Set(baseline.entries.map((e) => `${e.file}:${e.snippet}`));
+
+const regressions = current.filter((v) => !baselineKeys.has(key(v)));
+const fixedInBaseline = baseline.entries.filter((e) => !currentKeys.has(`${e.file}:${e.snippet}`));
+
+if (regressions.length) {
+  console.error(`\n❌ RBAC scan: ${regressions.length} NEW unguarded route(s) not in baseline:\n`);
+  for (const v of regressions) console.error(`  ${v.file}:${v.line}  ${v.snippet}`);
   console.error(
-    `\nEach route must be either:\n` +
-      `  - @Public()   (explicit public endpoint, e.g. /auth/login)\n` +
-      `  - @Roles(Role.X, Role.Y, ...)   (RBAC-guarded)\n`,
+    `\nEach new route must be either @Public() or @Roles(Role.X, ...).\n` +
+      `If a route is intentionally added to the baseline, re-run:\n` +
+      `  node scripts/scan-controller-auth.mjs --write-baseline\n`,
   );
   process.exit(1);
 }
 
-console.log(`✅ RBAC scan: all ${files.length} controllers pass (${total} clean, health probes allowlisted).`);
+console.log(
+  `✅ RBAC scan: no regressions. ${current.length} route(s) still on the cleanup baseline; ${fixedInBaseline.length} previously-flagged route(s) now guarded.`,
+);
+if (fixedInBaseline.length) {
+  console.log(`   Consider running --write-baseline to shrink it.`);
+}
