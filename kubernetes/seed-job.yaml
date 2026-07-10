@@ -1,0 +1,50 @@
+# One-time bootstrap seed. NEVER apply on every deploy.
+# Apply manually only when provisioning a fresh cluster:
+#
+#   kubectl apply -f kubernetes/seed-job.yaml
+#   kubectl wait --for=condition=complete job/voidcloud-db-seed -n voidcloud --timeout=180s
+#   kubectl logs job/voidcloud-db-seed -n voidcloud
+#   kubectl delete job voidcloud-db-seed -n voidcloud
+#
+# Requires SEED_ENABLED=true, SEED_ADMIN_EMAIL, and SEED_ADMIN_PASSWORD to be
+# present in the voidcloud-secrets Secret. The seed script skips the admin user
+# entirely if one already exists — safe to re-run, but should not be automated.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: voidcloud-db-seed
+  namespace: voidcloud
+  annotations:
+    voidcloud.io/manual-only: "true"
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: seed
+          image: amer30004ever/voidcloud-auth-service:latest
+          imagePullPolicy: Always
+          command: ["npx", "prisma", "db", "seed"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: DATABASE_URL
+            - name: SEED_ENABLED
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: SEED_ENABLED
+            - name: SEED_ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: SEED_ADMIN_EMAIL
+            - name: SEED_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: SEED_ADMIN_PASSWORD
