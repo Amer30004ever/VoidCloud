@@ -62,4 +62,21 @@ jobs:
             exit 1
           else
             echo "✅ Self-test passed: gitleaks correctly detected the injected secret."
+          if gitleaks detect --no-git --source=.ci-selftest --config=.gitleaks.toml -v; then
+            echo "❌ Self-test FAILED: gitleaks did not detect the injected fake secret."
+            exit 1
+          else
+            echo "✅ Self-test passed: gitleaks correctly detected the injected secret."
           fi
+
+  rbac-scan:
+    name: RBAC controller scan (no undecorated routes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run RBAC scanner (baseline mode)
+        run: node scripts/scan-controller-auth.mjs
+
