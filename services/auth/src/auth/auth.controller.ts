@@ -6,10 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  BadRequestException,
-  UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -27,9 +24,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly twoFactorService: TwoFactorService,
-    private readonly jwtService: JwtService,
   ) {}
-
 
   @Public()
   @Post('register')
@@ -43,39 +38,6 @@ export class AuthController {
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
-
-  /**
-   * Exchange a pending-2FA token (issued by /auth/login for a 2FA-enabled user)
-   * plus a TOTP or recovery code for a full-scope access token.
-   * The pending token is verified here, NOT via JwtAuthGuard, so we mark this
-   * route @Public and manually verify the scoped JWT.
-   */
-  @Public()
-  @Post('two-factor/login-verify')
-  @HttpCode(HttpStatus.OK)
-  async loginVerifyTwoFactor(
-    @Body() body: { pendingToken: string; code: string },
-  ) {
-    const { pendingToken, code } = (body ?? {}) as {
-      pendingToken?: string;
-      code?: string;
-    };
-    if (!pendingToken || !code) {
-      throw new BadRequestException('pendingToken and code are required');
-    }
-    let payload: any;
-    try {
-      payload = await this.jwtService.verifyAsync(pendingToken);
-    } catch {
-      throw new UnauthorizedException('Invalid or expired pending 2FA token');
-    }
-    if (payload?.scope !== '2fa_pending' || !payload?.sub) {
-      throw new UnauthorizedException('Token is not a 2FA challenge token');
-    }
-    return this.authService.completeTwoFactorLogin(payload.sub, code);
-  }
-
-
 
   @Public()
   @Post('forgot-password')

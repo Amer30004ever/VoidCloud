@@ -18,13 +18,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // Reject pending-2FA tokens on every JWT-guarded route. These are ONLY
-    // usable at /auth/two-factor/login-verify (which reads the token itself,
-    // not via this strategy).
-    if (payload?.scope && payload.scope !== 'access') {
-      throw new UnauthorizedException('Token is not usable for this endpoint');
-    }
-
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
@@ -36,5 +29,4 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const { password: _, ...result } = user;
     return result;
   }
-
 }

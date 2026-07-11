@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as https from 'https';
+import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptSecret, decryptSecret, maskSecret } from './crypto.util';
 
@@ -21,7 +22,17 @@ export interface ScheduleRequest {
   cpu: number;
   ramMB: number;
   diskGB: number;
+  requestId?: string;
+  ttlSeconds?: number;
 }
+
+export interface Actor {
+  id?: string;
+  email?: string;
+  role?: string;
+}
+
+const DEFAULT_RESERVATION_TTL_SECONDS = 10 * 60;
 
 @Injectable()
 export class ClustersService {
@@ -31,6 +42,34 @@ export class ClustersService {
   });
 
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Emit an audit log row for a cluster mutation / credential reveal. */
+  private async writeAudit(
+    action: string,
+    actor: Actor | undefined,
+    cluster: { id: string; name?: string } | null,
+    details?: Record<string, unknown>,
+  ) {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          action,
+          userId: actor?.id ?? undefined,
+          adminId: actor?.role === 'SUPER_ADMIN' ? actor?.id : undefined,
+          userEmail: actor?.email ?? undefined,
+          resource: cluster ? `proxmox_cluster:${cluster.id}` : 'proxmox_cluster',
+          details: {
+            clusterId: cluster?.id ?? null,
+            clusterName: cluster?.name ?? null,
+            ...(details ?? {}),
+          } as any,
+          status: 'SUCCESS',
+        },
+      });
+    } catch (e: any) {
+      this.logger.warn(`audit log failed (${action}): ${e?.message ?? e}`);
+    }
+  }
 
   private serialize(row: any) {
     return {
@@ -71,7 +110,7 @@ export class ClustersService {
     return this.serialize(row);
   }
 
-  async create(input: ClusterInput) {
+  async create(input: ClusterInput, actor?: Actor) {
     if (!input.name || !input.host) {
       throw new BadRequestException('name and host are required');
     }
@@ -86,39 +125,101 @@ export class ClustersService {
         status: 'ACTIVE',
       },
     });
+    await this.writeAudit('cluster.create', actor, row, {
+      host: row.host,
+      port: row.port,
+      hasCredentials: Boolean(input.tokenId && input.tokenSecret),
+    });
     return this.serialize(row);
   }
 
-  async update(id: string, input: Partial<ClusterInput> & { status?: string }) {
-    await this.get(id);
+  async update(
+    id: string,
+    input: Partial<ClusterInput> & { status?: string },
+    actor?: Actor,
+  ) {
+    const before = await this.prisma.proxmoxCluster.findUnique({ where: { id } });
+    if (!before) throw new NotFoundException('Cluster not found');
     const data: any = {};
-    if (input.name !== undefined) data.name = input.name;
-    if (input.host !== undefined) data.host = input.host;
-    if (input.port !== undefined) data.port = input.port;
-    if (input.username !== undefined) data.username = input.username;
-    if (input.tokenId !== undefined) data.tokenId = input.tokenId;
+    const changedFields: string[] = [];
+    const credentialFields: string[] = [];
+    if (input.name !== undefined && input.name !== before.name) {
+      data.name = input.name; changedFields.push('name');
+    }
+    if (input.host !== undefined && input.host !== before.host) {
+      data.host = input.host; changedFields.push('host');
+    }
+    if (input.port !== undefined && input.port !== before.port) {
+      data.port = input.port; changedFields.push('port');
+    }
+    if (input.username !== undefined && input.username !== before.username) {
+      data.username = input.username; changedFields.push('username');
+    }
+    if (input.tokenId !== undefined && input.tokenId !== before.tokenId) {
+      data.tokenId = input.tokenId;
+      changedFields.push('tokenId');
+      credentialFields.push('tokenId');
+    }
     if (input.tokenSecret !== undefined && input.tokenSecret) {
       data.tokenSecret = encryptSecret(input.tokenSecret);
+      changedFields.push('tokenSecret');
+      credentialFields.push('tokenSecret');
     }
-    if (input.status !== undefined) data.status = input.status;
+    if (input.status !== undefined && input.status !== before.status) {
+      data.status = input.status; changedFields.push('status');
+    }
     const row = await this.prisma.proxmoxCluster.update({ where: { id }, data });
+    await this.writeAudit('cluster.update', actor, row, {
+      changedFields,
+      credentialFields,
+    });
     return this.serialize(row);
   }
 
-  async remove(id: string) {
-    await this.get(id);
+  async remove(id: string, actor?: Actor) {
+    const row = await this.prisma.proxmoxCluster.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('Cluster not found');
     await this.prisma.proxmoxCluster.delete({ where: { id } });
+    await this.writeAudit('cluster.delete', actor, row, {
+      host: row.host,
+      hadCredentials: Boolean(row.tokenId && row.tokenSecret),
+    });
     return { success: true };
   }
 
   /**
-   * Test connectivity + refresh capacity metrics from the Proxmox host.
-   * Uses PVE REST: GET /api2/json/nodes then /api2/json/nodes/:node/status.
+   * Return decrypted credentials for a cluster. This is a credential-reveal
+   * operation and is always audit-logged.
    */
-  async testAndRefresh(id: string) {
+  async revealCredentials(id: string, actor?: Actor) {
     const row = await this.prisma.proxmoxCluster.findUnique({ where: { id } });
     if (!row) throw new NotFoundException('Cluster not found');
-    const secret = decryptSecret(row.tokenSecret);
+    const tokenSecret = row.tokenSecret ? decryptSecret(row.tokenSecret) : null;
+    await this.writeAudit('cluster.reveal_credentials', actor, row, {
+      tokenId: row.tokenId,
+      hasSecret: Boolean(tokenSecret),
+    });
+    return {
+      id: row.id,
+      name: row.name,
+      host: row.host,
+      port: row.port,
+      username: row.username,
+      tokenId: row.tokenId,
+      tokenSecret,
+    };
+  }
+
+  /**
+   * Test connectivity + refresh capacity metrics from the Proxmox host.
+   * Decrypts credentials to talk to Proxmox, so this is a credential-use
+   * action and is audit-logged.
+   */
+  async testAndRefresh(id: string, actor?: Actor) {
+    const row = await this.prisma.proxmoxCluster.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('Cluster not found');
+    await this.writeAudit('cluster.test', actor, row, {});
+    const secret = row.tokenSecret ? decryptSecret(row.tokenSecret) : '';
     if (!row.tokenId || !secret) {
       await this.prisma.proxmoxCluster.update({
         where: { id },
@@ -151,9 +252,9 @@ export class ClustersService {
           nodeCount: list.length || 1,
           cpuTotal,
           cpuUsed,
-          ramTotal: BigInt(Math.round(ramTotal / (1024 * 1024))), // MB
+          ramTotal: BigInt(Math.round(ramTotal / (1024 * 1024))),
           ramUsed: BigInt(Math.round(ramUsed / (1024 * 1024))),
-          diskTotal: BigInt(Math.round(diskTotal / (1024 * 1024 * 1024))), // GB
+          diskTotal: BigInt(Math.round(diskTotal / (1024 * 1024 * 1024))),
           diskUsed: BigInt(Math.round(diskUsed / (1024 * 1024 * 1024))),
           vmCount,
         },
@@ -170,41 +271,145 @@ export class ClustersService {
   }
 
   /**
-   * Smart scheduler — pick the ACTIVE cluster with the most free capacity that
-   * satisfies the requested cpu/ram/disk. Returns null if none fit.
+   * Race-safe scheduler.
+   *
+   * Runs inside a Serializable transaction so that two concurrent callers
+   * cannot both read the same "free capacity" snapshot and pick the same
+   * cluster. Free capacity is computed as
+   *   total - used - sum(active PendingAllocation)
+   * so a reservation created by another in-flight scheduling request is
+   * visible to us. On selecting a cluster we insert a PendingAllocation
+   * inside the same transaction; the next concurrent scheduler will then
+   * see reduced free capacity and either pick a different cluster or fail.
+   *
+   * Pending rows auto-expire after `ttlSeconds` (default 10 min); the
+   * scheduler releases any expired rows on each call. Callers should invoke
+   * commitAllocation() once the VM is provisioned or releaseAllocation()
+   * on failure — otherwise the reservation is reclaimed on TTL expiry.
    */
-  async schedule(req: ScheduleRequest) {
-    const clusters = await this.prisma.proxmoxCluster.findMany({
-      where: { status: 'ACTIVE' },
-    });
-    const candidates = clusters
-      .map((c) => ({
-        row: c,
-        freeCpu: c.cpuTotal - c.cpuUsed,
-        freeRam: Number(c.ramTotal) - Number(c.ramUsed),
-        freeDisk: Number(c.diskTotal) - Number(c.diskUsed),
-      }))
-      .filter(
-        (c) =>
-          c.freeCpu >= req.cpu &&
-          c.freeRam >= req.ramMB &&
-          c.freeDisk >= req.diskGB,
-      )
-      // score: normalized free-capacity sum, higher = more room
-      .sort((a, b) => {
-        const sa = a.freeCpu / Math.max(1, a.row.cpuTotal) + a.freeRam / Math.max(1, Number(a.row.ramTotal)) + a.freeDisk / Math.max(1, Number(a.row.diskTotal));
-        const sb = b.freeCpu / Math.max(1, b.row.cpuTotal) + b.freeRam / Math.max(1, Number(b.row.ramTotal)) + b.freeDisk / Math.max(1, Number(b.row.diskTotal));
-        return sb - sa;
-      });
+  async schedule(req: ScheduleRequest, actor?: Actor) {
+    const requestId = req.requestId ?? crypto.randomUUID();
+    const ttl = (req.ttlSeconds ?? DEFAULT_RESERVATION_TTL_SECONDS) * 1000;
 
-    if (candidates.length === 0) {
-      return { chosen: null, reason: 'No cluster has enough free capacity', alternatives: clusters.length };
-    }
-    const chosen = candidates[0].row;
-    return {
-      chosen: this.serialize(chosen),
-      candidates: candidates.length,
-    };
+    return this.prisma.$transaction(
+      async (tx) => {
+        const now = new Date();
+        // Release expired pending reservations first so their capacity is
+        // available to this scheduling round.
+        await tx.pendingAllocation.updateMany({
+          where: { status: 'PENDING', expiresAt: { lt: now } },
+          data: { status: 'RELEASED' },
+        });
+
+        const clusters = await tx.proxmoxCluster.findMany({
+          where: { status: 'ACTIVE' },
+        });
+        const pendings = await tx.pendingAllocation.groupBy({
+          by: ['clusterId'],
+          where: { status: 'PENDING' },
+          _sum: { cpu: true, ramMB: true, diskGB: true },
+        });
+        const pendingByCluster = new Map<string, { cpu: number; ram: number; disk: number }>();
+        for (const p of pendings) {
+          pendingByCluster.set(p.clusterId, {
+            cpu: p._sum.cpu ?? 0,
+            ram: p._sum.ramMB ?? 0,
+            disk: p._sum.diskGB ?? 0,
+          });
+        }
+
+        const candidates = clusters
+          .map((c) => {
+            const p = pendingByCluster.get(c.id) ?? { cpu: 0, ram: 0, disk: 0 };
+            const freeCpu = c.cpuTotal - c.cpuUsed - p.cpu;
+            const freeRam = Number(c.ramTotal) - Number(c.ramUsed) - p.ram;
+            const freeDisk = Number(c.diskTotal) - Number(c.diskUsed) - p.disk;
+            return { row: c, freeCpu, freeRam, freeDisk };
+          })
+          .filter(
+            (c) =>
+              c.freeCpu >= req.cpu &&
+              c.freeRam >= req.ramMB &&
+              c.freeDisk >= req.diskGB,
+          )
+          .sort((a, b) => {
+            const sa =
+              a.freeCpu / Math.max(1, a.row.cpuTotal) +
+              a.freeRam / Math.max(1, Number(a.row.ramTotal)) +
+              a.freeDisk / Math.max(1, Number(a.row.diskTotal));
+            const sb =
+              b.freeCpu / Math.max(1, b.row.cpuTotal) +
+              b.freeRam / Math.max(1, Number(b.row.ramTotal)) +
+              b.freeDisk / Math.max(1, Number(b.row.diskTotal));
+            return sb - sa;
+          });
+
+        if (candidates.length === 0) {
+          return {
+            chosen: null,
+            reason: 'No cluster has enough free capacity',
+            alternatives: clusters.length,
+            requestId,
+            allocationId: null,
+          };
+        }
+
+        const chosen = candidates[0].row;
+        const allocation = await tx.pendingAllocation.create({
+          data: {
+            clusterId: chosen.id,
+            requestId,
+            cpu: req.cpu,
+            ramMB: req.ramMB,
+            diskGB: req.diskGB,
+            expiresAt: new Date(Date.now() + ttl),
+          },
+        });
+
+        return {
+          chosen: this.serialize(chosen),
+          candidates: candidates.length,
+          requestId,
+          allocationId: allocation.id,
+        };
+      },
+      { isolationLevel: 'Serializable' as any },
+    );
+  }
+
+  /** Convert a pending reservation into consumed capacity on the cluster. */
+  async commitAllocation(allocationId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const alloc = await tx.pendingAllocation.findUnique({ where: { id: allocationId } });
+      if (!alloc || alloc.status !== 'PENDING') return { ok: false };
+      await tx.proxmoxCluster.update({
+        where: { id: alloc.clusterId },
+        data: {
+          cpuUsed: { increment: alloc.cpu },
+          ramUsed: { increment: BigInt(alloc.ramMB) },
+          diskUsed: { increment: BigInt(alloc.diskGB) },
+          vmCount: { increment: 1 },
+        },
+      });
+      await tx.pendingAllocation.update({
+        where: { id: allocationId },
+        data: { status: 'COMMITTED' },
+      });
+      return { ok: true };
+    });
+  }
+
+  /** Release a pending reservation without committing it. */
+  async releaseAllocation(allocationId: string) {
+    const alloc = await this.prisma.pendingAllocation.findUnique({
+      where: { id: allocationId },
+    });
+    if (!alloc || alloc.status !== 'PENDING') return { ok: false };
+    await this.prisma.pendingAllocation.update({
+      where: { id: allocationId },
+      data: { status: 'RELEASED' },
+    });
+    return { ok: true };
   }
 
   private pveGet(host: string, port: number, tokenId: string, tokenSecret: string, path: string): Promise<any> {

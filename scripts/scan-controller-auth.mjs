@@ -1,135 +1,140 @@
 #!/usr/bin/env node
 /**
- * Void Cloud RBAC static analyzer.
+ * RBAC controller-auth scanner.
  *
- * Walks every *.controller.ts under services/ and reports any HTTP handler
- * (@Get/@Post/@Put/@Patch/@Delete/@All/@Options/@Head) that is NOT protected by:
- *   - @Public()  (explicit public route, e.g. /auth/login), or
- *   - @Roles(...) at method or class level.
+ * Walks every services/<svc>/src/**\/*.controller.ts, parses each HTTP handler
+ * (methods decorated with @Get/@Post/@Put/@Patch/@Delete), and reports which
+ * ones are missing an @Roles(...) decorator on either the method OR the
+ * enclosing controller class.
  *
  * Baseline mode:
- *   A snapshot of currently-unguarded routes is committed at
- *   scripts/rbac-baseline.json. The scanner fails ONLY when a NEW unguarded
- *   route appears that isn't in the baseline. This lets us block regressions
- *   today while the existing controllers are cleaned up service-by-service.
+ *   node scripts/scan-controller-auth.mjs            → fail on any NEW entries
+ *   node scripts/scan-controller-auth.mjs --write    → refresh scripts/rbac-baseline.json
+ *   node scripts/scan-controller-auth.mjs --list     → print current findings
  *
- *   Regenerate the baseline (after intentionally guarding routes):
- *     node scripts/scan-controller-auth.mjs --write-baseline
- *
- * Strict mode (fail on ANY unguarded route, no baseline):
- *   RBAC_STRICT=1 node scripts/scan-controller-auth.mjs
- *
- * Exits non-zero (fails CI) when regressions or strict-mode violations exist.
+ * The baseline holds the historic set of undecorated routes. New findings
+ * (routes added or route files touched after the baseline was written) MUST
+ * either get an @Roles decoration or be explicitly re-baselined. Existing
+ * baseline entries should be worked down in batches (see task tracker).
  */
-import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from 'node:fs';
-import { join, sep } from 'node:path';
+import { readdirSync, readFileSync, writeFileSync, statSync, existsSync } from 'node:fs';
+import { join, relative, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = join(fileURLToPath(new URL('..', import.meta.url)));
-const SERVICES = join(ROOT, 'services');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BASELINE = join(ROOT, 'scripts', 'rbac-baseline.json');
-const HTTP_DECORATORS = /@(Get|Post|Put|Patch|Delete|All|Options|Head)\s*\(/;
-const ALLOWLIST_FILES = new Set(['health.controller.ts']);
+const METHOD_DECORATORS = ['Get', 'Post', 'Put', 'Patch', 'Delete', 'All'];
 
-function walk(dir, out = []) {
+/** Recursively find every *.controller.ts under services/. */
+function findControllers(dir) {
+  const out = [];
+  if (!existsSync(dir)) return out;
   for (const entry of readdirSync(dir)) {
-    const p = join(dir, entry);
-    const s = statSync(p);
-    if (s.isDirectory()) {
-      if (entry === 'node_modules' || entry === 'dist' || entry === '.turbo') continue;
-      walk(p, out);
-    } else if (entry.endsWith('.controller.ts')) {
-      out.push(p);
-    }
+    if (entry === 'node_modules' || entry === 'dist') continue;
+    const full = join(dir, entry);
+    const st = statSync(full);
+    if (st.isDirectory()) out.push(...findControllers(full));
+    else if (full.endsWith('.controller.ts')) out.push(full);
   }
   return out;
 }
 
-function analyze(file) {
-  const src = readFileSync(file, 'utf8');
-  const lines = src.split('\n');
-  const controllerHasRoles = /@Roles\s*\(/.test(src);
-  const isHealth = ALLOWLIST_FILES.has(file.split(sep).pop());
-  const violations = [];
+function parseController(path) {
+  const src = readFileSync(path, 'utf8');
+  const rel = relative(ROOT, path);
 
+  // Find class name and check for class-level @Roles.
+  const classMatch = src.match(/@Controller\([^)]*\)\s*(?:@[\w.]+\([^)]*\)\s*)*export\s+class\s+(\w+)/);
+  const controller = classMatch ? classMatch[1] : rel;
+
+  // Class-level guards: look at the block of decorators immediately preceding
+  // the `export class ...` line and check for @Roles(.
+  const classDecoratorsBlock = src.slice(0, classMatch?.index ?? 0);
+  const classHasRoles = /@Roles\s*\(/.test(
+    // last ~500 chars of decorators cover the typical decorator stack
+    classDecoratorsBlock.slice(-800),
+  );
+
+  const findings = [];
+
+  // Walk every line looking for @Get(...) / @Post(...) etc. For each, look
+  // back a few lines to see if @Roles(...) sits on the same method.
+  const lines = src.split('\n');
   for (let i = 0; i < lines.length; i++) {
-    if (!HTTP_DECORATORS.test(lines[i])) continue;
-    let hasGuard = controllerHasRoles;
-    let hasPublic = false;
-    for (let j = i - 1; j >= Math.max(0, i - 12); j--) {
-      const l = lines[j].trim();
-      if (l === '' || l === '}') break;
-      if (/@Roles\s*\(/.test(l)) hasGuard = true;
-      if (/@Public\s*\(\s*\)/.test(l)) hasPublic = true;
+    const m = lines[i].match(/^\s*@(\w+)\s*\(/);
+    if (!m || !METHOD_DECORATORS.includes(m[1])) continue;
+
+    // Method name is on the next non-decorator/non-blank line.
+    let j = i + 1;
+    while (j < lines.length && (lines[j].trim().startsWith('@') || lines[j].trim() === '')) j++;
+    const methodMatch = lines[j]?.match(/^\s*(?:async\s+)?(\w+)\s*\(/);
+    const method = methodMatch ? methodMatch[1] : `line${i + 1}`;
+
+    // Look backwards up to 6 lines for @Roles( on this same handler.
+    let hasRoles = false;
+    for (let k = i - 1; k >= Math.max(0, i - 6); k--) {
+      const t = lines[k].trim();
+      if (t === '' || t.startsWith('//')) continue;
+      if (t.startsWith('@Roles(')) { hasRoles = true; break; }
+      if (!t.startsWith('@')) break; // reached previous method's body
     }
-    if (!hasGuard && !hasPublic && !isHealth) {
-      violations.push({
-        file: file.replace(ROOT + sep, '').replaceAll(sep, '/'),
+
+    if (!hasRoles && !classHasRoles) {
+      findings.push({
+        file: rel,
+        controller,
+        method,
+        httpVerb: m[1].toUpperCase(),
         line: i + 1,
-        snippet: lines[i].trim(),
       });
     }
   }
-  return violations;
+
+  return findings;
 }
 
-const args = new Set(process.argv.slice(2));
-const strict = process.env.RBAC_STRICT === '1' || args.has('--strict');
-const writeBaseline = args.has('--write-baseline');
-
-const files = walk(SERVICES);
-const current = [];
-for (const f of files) current.push(...analyze(f));
-
-const key = (v) => `${v.file}:${v.snippet}`;
-const currentKeys = new Set(current.map(key));
-
-if (writeBaseline) {
-  const payload = {
-    generatedAt: new Date().toISOString(),
-    entries: current
-      .map((v) => ({ file: v.file, snippet: v.snippet }))
-      .sort((a, b) => (a.file + a.snippet).localeCompare(b.file + b.snippet)),
-  };
-  writeFileSync(BASELINE, JSON.stringify(payload, null, 2) + '\n');
-  console.log(`✅ Wrote baseline with ${payload.entries.length} entries → ${BASELINE.replace(ROOT + sep, '')}`);
-  process.exit(0);
+function key(f) {
+  return `${f.file}::${f.controller}.${f.method}`;
 }
 
-if (strict) {
-  if (current.length) {
-    console.error(`\n❌ RBAC scan (strict): ${current.length} unguarded route(s):\n`);
-    for (const v of current) console.error(`  ${v.file}:${v.line}  ${v.snippet}`);
+function main() {
+  const mode = process.argv[2] ?? 'check';
+  const controllers = findControllers(join(ROOT, 'services'));
+  const findings = controllers.flatMap(parseController);
+  const findingKeys = new Set(findings.map(key));
+
+  if (mode === '--list') {
+    console.log(JSON.stringify(findings, null, 2));
+    process.exit(0);
+  }
+
+  if (mode === '--write') {
+    writeFileSync(BASELINE, JSON.stringify(findings, null, 2) + '\n');
+    console.log(`Wrote baseline with ${findings.length} entries to ${relative(ROOT, BASELINE)}`);
+    process.exit(0);
+  }
+
+  const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : [];
+  const baselineKeys = new Set(baseline.map(key));
+
+  const introduced = findings.filter((f) => !baselineKeys.has(key(f)));
+  const fixed = baseline.filter((f) => !findingKeys.has(key(f)));
+
+  console.log(`RBAC scan: ${findings.length} undecorated routes total`);
+  console.log(`  baseline: ${baseline.length}`);
+  console.log(`  new (not in baseline): ${introduced.length}`);
+  console.log(`  fixed since baseline:  ${fixed.length}`);
+
+  if (fixed.length) {
+    console.log('\nFixed since baseline (remove these from scripts/rbac-baseline.json):');
+    for (const f of fixed) console.log(`  - ${key(f)}`);
+  }
+  if (introduced.length) {
+    console.log('\nNEW undecorated routes (must add @Roles or explicitly baseline):');
+    for (const f of introduced) console.log(`  - ${key(f)} (${f.httpVerb} at line ${f.line})`);
     process.exit(1);
   }
-  console.log(`✅ RBAC scan (strict): all ${files.length} controllers pass.`);
   process.exit(0);
 }
 
-// Baseline mode
-let baseline = { entries: [] };
-if (existsSync(BASELINE)) {
-  baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
-}
-const baselineKeys = new Set(baseline.entries.map((e) => `${e.file}:${e.snippet}`));
-
-const regressions = current.filter((v) => !baselineKeys.has(key(v)));
-const fixedInBaseline = baseline.entries.filter((e) => !currentKeys.has(`${e.file}:${e.snippet}`));
-
-if (regressions.length) {
-  console.error(`\n❌ RBAC scan: ${regressions.length} NEW unguarded route(s) not in baseline:\n`);
-  for (const v of regressions) console.error(`  ${v.file}:${v.line}  ${v.snippet}`);
-  console.error(
-    `\nEach new route must be either @Public() or @Roles(Role.X, ...).\n` +
-      `If a route is intentionally added to the baseline, re-run:\n` +
-      `  node scripts/scan-controller-auth.mjs --write-baseline\n`,
-  );
-  process.exit(1);
-}
-
-console.log(
-  `✅ RBAC scan: no regressions. ${current.length} route(s) still on the cleanup baseline; ${fixedInBaseline.length} previously-flagged route(s) now guarded.`,
-);
-if (fixedInBaseline.length) {
-  console.log(`   Consider running --write-baseline to shrink it.`);
-}
+main();

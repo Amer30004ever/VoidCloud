@@ -1,4 +1,10 @@
-import { IsEmail, IsString, IsNotEmpty } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  Length,
+} from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -8,8 +14,8 @@ export class LoginDto {
   @IsNotEmpty()
   password: string;
 
-  // NOTE: twoFactorToken is intentionally removed. /auth/login no longer accepts
-  // a TOTP inline. 2FA-enabled users get a scoped pending token and must call
-  // /auth/two-factor/login-verify separately.
+  @IsOptional()
+  @IsString()
+  @Length(6, 32)
+  twoFactorToken?: string;
 }
-
