@@ -33,6 +33,8 @@ export class VpsService {
 
   async create(dto: CreateVpsDto, user: { id: string }) {
     // Smart-select a Proxmox cluster with enough free capacity.
+    // schedule() reserves the requested CPU/RAM/disk atomically as a
+    // PendingAllocation so concurrent create() calls cannot double-allocate.
     // Non-fatal: if no registered clusters, falls back to env-configured host.
     const scheduled = await this.clusters
       .schedule({
@@ -40,17 +42,29 @@ export class VpsService {
         ramMB: dto.memory ?? 1024,
         diskGB: Math.ceil((dto.storage ?? 10240) / 1024),
       })
-      .catch(() => ({ chosen: null } as { chosen: unknown }));
+      .catch(() => ({ chosen: null, allocationId: null } as { chosen: unknown; allocationId: string | null }));
 
-    const provision = await this.proxmox.createContainer({
-      hostname: dto.name,
-      cpuCores: dto.cpu ?? 1,
-      ramMB: dto.memory ?? 1024,
-      storageGB: Math.ceil((dto.storage ?? 10240) / 1024),
-      planSlug: dto.planSlug,
-    });
+    let provision;
+    try {
+      provision = await this.proxmox.createContainer({
+        hostname: dto.name,
+        cpuCores: dto.cpu ?? 1,
+        ramMB: dto.memory ?? 1024,
+        storageGB: Math.ceil((dto.storage ?? 10240) / 1024),
+        planSlug: dto.planSlug,
+      });
+    } catch (err) {
+      // Provisioning failed — release the reservation so the capacity
+      // returns to the pool immediately (don't wait for TTL expiry).
+      if ((scheduled as any)?.allocationId) {
+        await this.clusters
+          .releaseAllocation((scheduled as any).allocationId)
+          .catch(() => undefined);
+      }
+      throw err;
+    }
 
-    return this.prisma.cloudDeployment.create({
+    const deployment = await this.prisma.cloudDeployment.create({
       data: {
         userId: user.id,
         name: dto.name,
@@ -70,6 +84,15 @@ export class VpsService {
           : undefined,
       } as never,
     });
+
+    // Convert the reservation into consumed cluster capacity.
+    if ((scheduled as any)?.allocationId) {
+      await this.clusters
+        .commitAllocation((scheduled as any).allocationId)
+        .catch(() => undefined);
+    }
+
+    return deployment;
   }
 
 
