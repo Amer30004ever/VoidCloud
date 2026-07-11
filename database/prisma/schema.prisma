@@ -1625,8 +1625,32 @@ model ProxmoxCluster {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  pendingAllocations PendingAllocation[]
+
   @@index([status])
   @@map("proxmox_clusters")
+}
+
+/// Reservation of cluster capacity while a VPS is being provisioned.
+/// The scheduler creates a PENDING row inside the same transaction that reads
+/// current free capacity, so concurrent scheduling requests see the reservation
+/// and cannot double-allocate. On successful provisioning the row is marked
+/// COMMITTED (and free capacity is instead accounted for by the real VM row).
+/// On failure or TTL expiry the row is RELEASED and its capacity returns to the pool.
+model PendingAllocation {
+  id        String   @id @default(uuid())
+  clusterId String
+  cluster   ProxmoxCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  requestId String   @unique
+  cpu       Int
+  ramMB     Int
+  diskGB    Int
+  status    String   @default("PENDING") // PENDING | COMMITTED | RELEASED
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([clusterId, status, expiresAt])
+  @@map("pending_allocations")
 }
 
 
