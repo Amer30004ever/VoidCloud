@@ -1668,6 +1668,9 @@ model ServiceHealthLog {
   status           String   // UP | DEGRADED | DOWN
   responseTimeMs   Int?
   errorMessage     String?
+  /// Failure classification when status != UP.
+  /// TIMEOUT | NETWORK | HTTP_5XX | HTTP_4XX | MALFORMED | UNKNOWN
+  failureType      String?
   uptimePercentage Float    @default(100)
   checkedAt        DateTime @default(now())
 
@@ -1675,6 +1678,24 @@ model ServiceHealthLog {
   @@index([checkedAt])
   @@index([status])
   @@map("service_health_logs")
+}
+
+/// Rolled-up hourly aggregates of ServiceHealthLog. The retention job collapses
+/// raw per-check rows older than 48h into one row per (service, hour).
+model ServiceHealthHourlyRollup {
+  id             String   @id @default(uuid())
+  serviceName    String
+  hourStart      DateTime
+  sampleCount    Int
+  upCount        Int
+  degradedCount  Int
+  downCount      Int
+  avgResponseMs  Int?
+  uptimePercent  Float
+
+  @@unique([serviceName, hourStart])
+  @@index([hourStart])
+  @@map("service_health_hourly_rollups")
 }
 
 /// WhatsApp broadcast campaign records
