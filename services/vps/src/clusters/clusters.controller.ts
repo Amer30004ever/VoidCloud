@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
@@ -50,9 +51,34 @@ export class ClustersController {
     return this.clusters.update(id, body, user);
   }
 
+  /**
+   * Delete a cluster. Blocked when active VMs reference it unless
+   * `?force=true` is passed AND `confirmName` in the body matches the
+   * cluster's name exactly. Prefer PUT /:id/disable for reversible removal.
+   */
   @Delete(':id')
-  remove(@Param('id') id: string, @CurrentUser() user: Actor) {
-    return this.clusters.remove(id, user);
+  remove(
+    @Param('id') id: string,
+    @Query('force') force: string | undefined,
+    @Body() body: { confirmName?: string } | undefined,
+    @CurrentUser() user: Actor,
+  ) {
+    return this.clusters.remove(id, user, {
+      force: force === 'true' || force === '1',
+      confirmName: body?.confirmName,
+    });
+  }
+
+  /** Mark a cluster DISABLED — scheduler skips it, existing VMs untouched. */
+  @Put(':id/disable')
+  disable(@Param('id') id: string, @CurrentUser() user: Actor) {
+    return this.clusters.setEnabled(id, false, user);
+  }
+
+  /** Re-enable a previously disabled cluster. */
+  @Put(':id/enable')
+  enable(@Param('id') id: string, @CurrentUser() user: Actor) {
+    return this.clusters.setEnabled(id, true, user);
   }
 
   @Post(':id/test')
