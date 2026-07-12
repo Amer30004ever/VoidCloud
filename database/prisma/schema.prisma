@@ -1615,7 +1615,11 @@ model ProxmoxCluster {
   tokenId     String?
   /// Encrypted at application layer — AES-256-GCM. See schema doc above.
   tokenSecret String?
-  status      String   @default("ACTIVE")
+  status      String   @default("ACTIVE") // ACTIVE | DISABLED | UNREACHABLE | MISCONFIGURED
+  /// Classification of last connection failure (null when healthy).
+  /// AUTH | TIMEOUT | NETWORK | MALFORMED | UNKNOWN
+  lastErrorType    String?
+  lastErrorMessage String?
   cpuTotal    Int      @default(0)
   ramTotal    BigInt   @default(0)
   diskTotal   BigInt   @default(0)
@@ -1628,6 +1632,7 @@ model ProxmoxCluster {
   updatedAt   DateTime @updatedAt
 
   pendingAllocations PendingAllocation[]
+  deployments        CloudDeployment[]
 
   @@index([status])
   @@map("proxmox_clusters")
