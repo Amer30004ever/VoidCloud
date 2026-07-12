@@ -1,8 +1,8 @@
 import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import { JwtAuthGuard } from '../monitoring/guards/jwt-auth.guard';
-import { RolesGuard } from '../monitoring/guards/roles.guard';
-import { Roles } from '../monitoring/decorators/roles.decorator';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../decorators/roles.decorator';
 import { HealthCheckService } from './health-check.service';
 import { HealthCheckScheduler } from './health-check.scheduler';
 
