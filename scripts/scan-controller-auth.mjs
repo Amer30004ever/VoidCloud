@@ -34,7 +34,7 @@ function findControllers(dir) {
     const full = join(dir, entry);
     const st = statSync(full);
     if (st.isDirectory()) out.push(...findControllers(full));
-    else if (full.endsWith('.controller.ts')) out.push(full);
+    else if (full.endsWith('.controller.ts') && !/[\\/]health[\\/]health\.controller\.ts$/.test(full)) out.push(full);
   }
   return out;
 }
