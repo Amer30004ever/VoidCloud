@@ -39,9 +39,34 @@ export default function AdminClustersPage() {
       load();
     } finally { setBusyId(null); }
   }
+  async function disable(id: string, name: string) {
+    if (!confirm(`Disable cluster "${name}"?\nExisting VMs and history stay intact; the scheduler will stop placing new VMs here. You can re-enable at any time.`)) return;
+    try { await cloudApi.admin.clusters.disable(id); setMsg(`Cluster "${name}" disabled`); load(); }
+    catch (e: any) { setMsg(e?.response?.data?.message ?? e.message); }
+  }
+  async function enable(id: string, name: string) {
+    try { await cloudApi.admin.clusters.enable(id); setMsg(`Cluster "${name}" re-enabled`); load(); }
+    catch (e: any) { setMsg(e?.response?.data?.message ?? e.message); }
+  }
   async function remove(id: string, name: string) {
-    if (!confirm(`Remove Proxmox cluster "${name}"?`)) return;
-    await cloudApi.admin.clusters.remove(id); load();
+    if (!confirm(`PERMANENTLY delete cluster "${name}"?\nThis drops the cluster registry row (existing VMs keep their history but lose their cluster link). Prefer Disable for reversible removal.`)) return;
+    try {
+      await cloudApi.admin.clusters.remove(id);
+      setMsg(`Cluster "${name}" deleted`); load();
+    } catch (e: any) {
+      const m = e?.response?.data?.message ?? e.message;
+      // Backend blocked delete due to active VMs — offer force flow.
+      if (/active VPS deployment/i.test(String(m))) {
+        const confirmName = prompt(`${m}\n\nType the cluster name to force-delete:`);
+        if (!confirmName) return;
+        try {
+          await cloudApi.admin.clusters.remove(id, { force: true, confirmName });
+          setMsg(`Cluster "${name}" force-deleted`); load();
+        } catch (e2: any) { setMsg(e2?.response?.data?.message ?? e2.message); }
+      } else {
+        setMsg(m);
+      }
+    }
   }
   async function runSchedule() {
     setMsg(null);
