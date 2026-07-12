@@ -34,6 +34,28 @@ export interface Actor {
 
 const DEFAULT_RESERVATION_TTL_SECONDS = 10 * 60;
 
+/**
+ * Classify a Proxmox API error into a UI-actionable category.
+ * AUTH        — 401/403 response or explicit auth-related message
+ * TIMEOUT     — the request timed out (no response)
+ * NETWORK     — connection refused / DNS / socket-level failure
+ * MALFORMED   — 2xx but JSON parse or unexpected shape
+ * UNKNOWN     — anything else
+ */
+export function classifyPveError(err: unknown): 'AUTH' | 'TIMEOUT' | 'NETWORK' | 'MALFORMED' | 'UNKNOWN' {
+  const msg = (err as { message?: string } | null)?.message ?? String(err ?? '');
+  const code = (err as { code?: string } | null)?.code ?? '';
+  if (/PVE 401|PVE 403|permission denied|invalid ticket|no token|authentication/i.test(msg)) return 'AUTH';
+  if (/timeout/i.test(msg) || code === 'ETIMEDOUT') return 'TIMEOUT';
+  if (
+    ['ECONNREFUSED', 'ENOTFOUND', 'EHOSTUNREACH', 'ENETUNREACH', 'ECONNRESET', 'EAI_AGAIN'].includes(code) ||
+    /getaddrinfo|connect|refused|unreachable/i.test(msg)
+  ) return 'NETWORK';
+  if (/JSON|Unexpected token|Unexpected end/i.test(msg)) return 'MALFORMED';
+  if (/PVE 5\d\d/.test(msg)) return 'NETWORK';
+  return 'UNKNOWN';
+}
+
 @Injectable()
 export class ClustersService {
   private readonly logger = new Logger(ClustersService.name);
