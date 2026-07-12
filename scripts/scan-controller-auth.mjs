@@ -57,27 +57,43 @@ function parseController(path) {
 
   const findings = [];
 
-  // Walk every line looking for @Get(...) / @Post(...) etc. For each, look
-  // back a few lines to see if @Roles(...) sits on the same method.
+  // Walk every line looking for @Get(...) / @Post(...) etc. For each handler,
+  // check the WHOLE decorator stack (both above and below @Get) for @Roles.
+  // The codebase convention is `@Get(...)` then `@Roles(...)` on the next line,
+  // so a backward-only scan under-reports coverage (the previous bug that
+  // inflated the baseline from ~60 to ~155).
   const lines = src.split('\n');
+  const seenMethods = new Set();
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(/^\s*@(\w+)\s*\(/);
     if (!m || !METHOD_DECORATORS.includes(m[1])) continue;
 
-    // Method name is on the next non-decorator/non-blank line.
+    // Collect the whole decorator stack for this handler by scanning forward
+    // through any consecutive @Decorator lines / blanks until the method sig.
+    const stack = [lines[i].trim()];
     let j = i + 1;
-    while (j < lines.length && (lines[j].trim().startsWith('@') || lines[j].trim() === '')) j++;
-    const methodMatch = lines[j]?.match(/^\s*(?:async\s+)?(\w+)\s*\(/);
-    const method = methodMatch ? methodMatch[1] : `line${i + 1}`;
-
-    // Look backwards up to 6 lines for @Roles( on this same handler.
-    let hasRoles = false;
-    for (let k = i - 1; k >= Math.max(0, i - 6); k--) {
+    while (j < lines.length) {
+      const t = lines[j].trim();
+      if (t === '' || t.startsWith('//')) { j++; continue; }
+      if (t.startsWith('@')) { stack.push(t); j++; continue; }
+      break;
+    }
+    // Also include decorators immediately above @Get (rarely used, but safe).
+    for (let k = i - 1; k >= 0; k--) {
       const t = lines[k].trim();
       if (t === '' || t.startsWith('//')) continue;
-      if (t.startsWith('@Roles(')) { hasRoles = true; break; }
-      if (!t.startsWith('@')) break; // reached previous method's body
+      if (t.startsWith('@')) { stack.push(t); continue; }
+      break;
     }
+
+    const methodMatch = lines[j]?.match(/^\s*(?:async\s+)?(\w+)\s*\(/);
+    const method = methodMatch ? methodMatch[1] : `line${i + 1}`;
+    // Skip when the previous @Http on the SAME method already produced an entry
+    const dedupeKey = `${method}@${j}`;
+    if (seenMethods.has(dedupeKey)) continue;
+    seenMethods.add(dedupeKey);
+
+    const hasRoles = stack.some((d) => d.startsWith('@Roles('));
 
     if (!hasRoles && !classHasRoles) {
       findings.push({
