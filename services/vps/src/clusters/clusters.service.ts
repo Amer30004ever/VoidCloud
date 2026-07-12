@@ -111,6 +111,8 @@ export class ClustersService {
       diskTotal: Number(row.diskTotal),
       diskUsed: Number(row.diskUsed),
       vmCount: row.vmCount,
+      lastErrorType: row.lastErrorType ?? null,
+      lastErrorMessage: row.lastErrorMessage ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       freeCpu: Math.max(0, row.cpuTotal - row.cpuUsed),
