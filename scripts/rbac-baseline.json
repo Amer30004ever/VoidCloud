@@ -51,23 +51,9 @@
   {
     "file": "services/audit/src/audit/audit.controller.ts",
     "controller": "AuditController",
-    "method": "logs",
-    "httpVerb": "GET",
-    "line": 13
-  },
-  {
-    "file": "services/audit/src/audit/audit.controller.ts",
-    "controller": "AuditController",
     "method": "userLogs",
     "httpVerb": "GET",
     "line": 29
-  },
-  {
-    "file": "services/audit/src/audit/audit.controller.ts",
-    "controller": "AuditController",
-    "method": "export",
-    "httpVerb": "GET",
-    "line": 34
   },
   {
     "file": "services/audit/src/audit/audit.controller.ts",
@@ -163,76 +149,6 @@
   {
     "file": "services/auth/src/rbac/rbac.controller.ts",
     "controller": "RbacController",
-    "method": "getAllRoles",
-    "httpVerb": "GET",
-    "line": 25
-  },
-  {
-    "file": "services/auth/src/rbac/rbac.controller.ts",
-    "controller": "RbacController",
-    "method": "createRole",
-    "httpVerb": "POST",
-    "line": 32
-  },
-  {
-    "file": "services/auth/src/rbac/rbac.controller.ts",
-    "controller": "RbacController",
-    "method": "getAllPermissions",
-    "httpVerb": "GET",
-    "line": 39
-  },
-  {
-    "file": "services/auth/src/rbac/rbac.controller.ts",
-    "controller": "RbacController",
-    "method": "createPermission",
-    "httpVerb": "POST",
-    "line": 46
-  },
-  {
-    "file": "services/auth/src/rbac/rbac.controller.ts",
-    "controller": "RbacController",
-    "method": "assignPermissionToRole",
-    "httpVerb": "POST",
-    "line": 58
-  },
-  {
-    "file": "services/auth/src/rbac/rbac.controller.ts",
-    "controller": "RbacController",
-    "method": "removePermissionFromRole",
-    "httpVerb": "DELETE",
-    "line": 68
-  },
-  {
-    "file": "services/auth/src/rbac/rbac.controller.ts",
-    "controller": "RbacController",
-    "method": "getAllTenants",
-    "httpVerb": "GET",
-    "line": 78
-  },
-  {
-    "file": "services/auth/src/rbac/rbac.controller.ts",
-    "controller": "RbacController",
-    "method": "createTenant",
-    "httpVerb": "POST",
-    "line": 85
-  },
-  {
-    "file": "services/auth/src/rbac/rbac.controller.ts",
-    "controller": "RbacController",
-    "method": "assignUserToTenant",
-    "httpVerb": "POST",
-    "line": 96
-  },
-  {
-    "file": "services/auth/src/rbac/rbac.controller.ts",
-    "controller": "RbacController",
-    "method": "removeUserFromTenant",
-    "httpVerb": "DELETE",
-    "line": 107
-  },
-  {
-    "file": "services/auth/src/rbac/rbac.controller.ts",
-    "controller": "RbacController",
     "method": "getUserPermissions",
     "httpVerb": "GET",
     "line": 117
@@ -285,27 +201,6 @@
     "method": "listPlans",
     "httpVerb": "GET",
     "line": 47
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "createPlan",
-    "httpVerb": "POST",
-    "line": 52
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "updatePlan",
-    "httpVerb": "PUT",
-    "line": 58
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "deletePlan",
-    "httpVerb": "DELETE",
-    "line": 64
   },
   {
     "file": "services/billing/src/billing/billing.controller.ts",
@@ -651,20 +546,6 @@
     "line": 26
   },
   {
-    "file": "services/sub2api/src/admin/admin.controller.ts",
-    "controller": "AdminController",
-    "method": "getSettings",
-    "httpVerb": "GET",
-    "line": 12
-  },
-  {
-    "file": "services/sub2api/src/admin/admin.controller.ts",
-    "controller": "AdminController",
-    "method": "getUsers",
-    "httpVerb": "GET",
-    "line": 18
-  },
-  {
     "file": "services/sub2api/src/api-keys/api-keys.controller.ts",
     "controller": "ApiKeysController",
     "method": "findAll",
@@ -677,13 +558,6 @@
     "method": "create",
     "httpVerb": "POST",
     "line": 18
-  },
-  {
-    "file": "services/sub2api/src/api-keys/api-keys.controller.ts",
-    "controller": "ApiKeysController",
-    "method": "delete",
-    "httpVerb": "DELETE",
-    "line": 23
   },
   {
     "file": "services/sub2api/src/api-keys/api-keys.controller.ts",
@@ -728,13 +602,6 @@
     "line": 10
   },
   {
-    "file": "services/sub2api/src/channels/channels.controller.ts",
-    "controller": "ChannelsController",
-    "method": "getChannels",
-    "httpVerb": "GET",
-    "line": 12
-  },
-  {
     "file": "services/sub2api/src/subscriptions/subscriptions.controller.ts",
     "controller": "SubscriptionsController",
     "method": "getSubscriptions",
@@ -751,44 +618,9 @@
   {
     "file": "services/sub2api/src/users/users.controller.ts",
     "controller": "UsersController",
-    "method": "findAll",
-    "httpVerb": "GET",
-    "line": 13
-  },
-  {
-    "file": "services/sub2api/src/users/users.controller.ts",
-    "controller": "UsersController",
     "method": "getProfile",
     "httpVerb": "GET",
     "line": 19
-  },
-  {
-    "file": "services/sub2api/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "findOne",
-    "httpVerb": "GET",
-    "line": 24
-  },
-  {
-    "file": "services/sub2api/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "create",
-    "httpVerb": "POST",
-    "line": 30
-  },
-  {
-    "file": "services/sub2api/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "update",
-    "httpVerb": "PUT",
-    "line": 36
-  },
-  {
-    "file": "services/sub2api/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "remove",
-    "httpVerb": "DELETE",
-    "line": 42
   },
   {
     "file": "services/tenant/src/health/health.controller.ts",
@@ -798,130 +630,11 @@
     "line": 7
   },
   {
-    "file": "services/tenant/src/tenants/tenants.controller.ts",
-    "controller": "TenantsController",
-    "method": "list",
-    "httpVerb": "GET",
-    "line": 27
-  },
-  {
-    "file": "services/tenant/src/tenants/tenants.controller.ts",
-    "controller": "TenantsController",
-    "method": "create",
-    "httpVerb": "POST",
-    "line": 33
-  },
-  {
-    "file": "services/tenant/src/tenants/tenants.controller.ts",
-    "controller": "TenantsController",
-    "method": "get",
-    "httpVerb": "GET",
-    "line": 39
-  },
-  {
-    "file": "services/tenant/src/tenants/tenants.controller.ts",
-    "controller": "TenantsController",
-    "method": "update",
-    "httpVerb": "PUT",
-    "line": 45
-  },
-  {
-    "file": "services/tenant/src/tenants/tenants.controller.ts",
-    "controller": "TenantsController",
-    "method": "delete",
-    "httpVerb": "DELETE",
-    "line": 51
-  },
-  {
-    "file": "services/tenant/src/tenants/tenants.controller.ts",
-    "controller": "TenantsController",
-    "method": "getSettings",
-    "httpVerb": "GET",
-    "line": 57
-  },
-  {
-    "file": "services/tenant/src/tenants/tenants.controller.ts",
-    "controller": "TenantsController",
-    "method": "updateSettings",
-    "httpVerb": "POST",
-    "line": 63
-  },
-  {
     "file": "services/user/src/health/health.controller.ts",
     "controller": "HealthController",
     "method": "health",
     "httpVerb": "GET",
     "line": 7
-  },
-  {
-    "file": "services/user/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "list",
-    "httpVerb": "GET",
-    "line": 29
-  },
-  {
-    "file": "services/user/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "search",
-    "httpVerb": "GET",
-    "line": 35
-  },
-  {
-    "file": "services/user/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "create",
-    "httpVerb": "POST",
-    "line": 41
-  },
-  {
-    "file": "services/user/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "get",
-    "httpVerb": "GET",
-    "line": 50
-  },
-  {
-    "file": "services/user/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "update",
-    "httpVerb": "PUT",
-    "line": 56
-  },
-  {
-    "file": "services/user/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "delete",
-    "httpVerb": "DELETE",
-    "line": 66
-  },
-  {
-    "file": "services/user/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "assignRole",
-    "httpVerb": "POST",
-    "line": 75
-  },
-  {
-    "file": "services/user/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "suspend",
-    "httpVerb": "POST",
-    "line": 85
-  },
-  {
-    "file": "services/user/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "activate",
-    "httpVerb": "POST",
-    "line": 95
-  },
-  {
-    "file": "services/user/src/users/users.controller.ts",
-    "controller": "UsersController",
-    "method": "resetPassword",
-    "httpVerb": "POST",
-    "line": 101
   },
   {
     "file": "services/vps/src/clusters/clusters.controller.ts",
