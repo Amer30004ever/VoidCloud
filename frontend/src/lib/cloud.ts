@@ -175,14 +175,22 @@ export const cloudApi = {
       create: async (body: ClusterInput) => (await api.post("/clusters", body)).data as ProxmoxClusterRow,
       update: async (id: string, body: Partial<ClusterInput> & { status?: string }) =>
         (await api.put(`/clusters/${id}`, body)).data as ProxmoxClusterRow,
-      remove: async (id: string) => api.delete(`/clusters/${id}`),
-      test: async (id: string) => (await api.post(`/clusters/${id}/test`)).data as { ok: boolean; error?: string; cluster?: ProxmoxClusterRow },
+      remove: async (id: string, opts?: { force?: boolean; confirmName?: string }) =>
+        api.delete(`/clusters/${id}${opts?.force ? "?force=true" : ""}`, {
+          data: opts?.confirmName ? { confirmName: opts.confirmName } : undefined,
+        }),
+      disable: async (id: string) => (await api.put(`/clusters/${id}/disable`)).data as ProxmoxClusterRow,
+      enable: async (id: string) => (await api.put(`/clusters/${id}/enable`)).data as ProxmoxClusterRow,
+      test: async (id: string) =>
+        (await api.post(`/clusters/${id}/test`)).data as { ok: boolean; error?: string; errorType?: string; cluster?: ProxmoxClusterRow },
       schedule: async (req: { cpu: number; ramMB: number; diskGB: number }) =>
         (await api.post("/clusters/schedule", req)).data as { chosen: ProxmoxClusterRow | null; candidates?: number; reason?: string },
     },
     // ── Real-time service health probes (all 13 microservices) ──
     servicesHealth: async () =>
       (await api.get("/monitoring/services/health")).data as ServicesHealthSnapshot,
+    servicesHealthCheckNow: async () =>
+      (await api.post("/monitoring/services/health/check-now")).data as ServicesHealthSnapshot,
     // ── Maintenance mode ──
     maintenance: {
       get: async () => (await api.get("/platform/maintenance")).data as MaintenanceState,

@@ -34,6 +34,28 @@ export interface Actor {
 
 const DEFAULT_RESERVATION_TTL_SECONDS = 10 * 60;
 
+/**
+ * Classify a Proxmox API error into a UI-actionable category.
+ * AUTH        — 401/403 response or explicit auth-related message
+ * TIMEOUT     — the request timed out (no response)
+ * NETWORK     — connection refused / DNS / socket-level failure
+ * MALFORMED   — 2xx but JSON parse or unexpected shape
+ * UNKNOWN     — anything else
+ */
+export function classifyPveError(err: unknown): 'AUTH' | 'TIMEOUT' | 'NETWORK' | 'MALFORMED' | 'UNKNOWN' {
+  const msg = (err as { message?: string } | null)?.message ?? String(err ?? '');
+  const code = (err as { code?: string } | null)?.code ?? '';
+  if (/PVE 401|PVE 403|permission denied|invalid ticket|no token|authentication/i.test(msg)) return 'AUTH';
+  if (/timeout/i.test(msg) || code === 'ETIMEDOUT') return 'TIMEOUT';
+  if (
+    ['ECONNREFUSED', 'ENOTFOUND', 'EHOSTUNREACH', 'ENETUNREACH', 'ECONNRESET', 'EAI_AGAIN'].includes(code) ||
+    /getaddrinfo|connect|refused|unreachable/i.test(msg)
+  ) return 'NETWORK';
+  if (/JSON|Unexpected token|Unexpected end/i.test(msg)) return 'MALFORMED';
+  if (/PVE 5\d\d/.test(msg)) return 'NETWORK';
+  return 'UNKNOWN';
+}
+
 @Injectable()
 export class ClustersService {
   private readonly logger = new Logger(ClustersService.name);
@@ -89,6 +111,8 @@ export class ClustersService {
       diskTotal: Number(row.diskTotal),
       diskUsed: Number(row.diskUsed),
       vmCount: row.vmCount,
+      lastErrorType: row.lastErrorType ?? null,
+      lastErrorMessage: row.lastErrorMessage ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       freeCpu: Math.max(0, row.cpuTotal - row.cpuUsed),
@@ -176,15 +200,64 @@ export class ClustersService {
     return this.serialize(row);
   }
 
-  async remove(id: string, actor?: Actor) {
+  /**
+   * Delete a cluster. Blocks by default when active VPS deployments reference
+   * this cluster; caller may pass `force=true` AND `confirmName` matching the
+   * cluster name to override (the cluster row is dropped; deployments keep
+   * their history via `ON DELETE SET NULL`).
+   */
+  async remove(
+    id: string,
+    actor?: Actor,
+    opts?: { force?: boolean; confirmName?: string },
+  ) {
     const row = await this.prisma.proxmoxCluster.findUnique({ where: { id } });
     if (!row) throw new NotFoundException('Cluster not found');
+
+    const activeStatuses = ['RUNNING', 'PENDING', 'PROVISIONING', 'SUSPENDED', 'STOPPED'];
+    const referencing = await this.prisma.cloudDeployment.count({
+      where: { proxmoxClusterId: id, status: { in: activeStatuses as any } },
+    });
+
+    if (referencing > 0 && !opts?.force) {
+      throw new BadRequestException(
+        `Cluster "${row.name}" has ${referencing} active VPS deployment(s). ` +
+          `Disable the cluster (stops new scheduling, preserves data) or retry ` +
+          `with force=true and confirmName="${row.name}" to drop it anyway.`,
+      );
+    }
+    if (referencing > 0 && opts?.force) {
+      if ((opts.confirmName ?? '').trim() !== row.name) {
+        throw new BadRequestException(
+          `force delete requires confirmName="${row.name}" to match exactly.`,
+        );
+      }
+    }
+
     await this.prisma.proxmoxCluster.delete({ where: { id } });
     await this.writeAudit('cluster.delete', actor, row, {
       host: row.host,
       hadCredentials: Boolean(row.tokenId && row.tokenSecret),
+      forced: Boolean(opts?.force),
+      referencingDeployments: referencing,
     });
-    return { success: true };
+    return { success: true, referencingDeployments: referencing };
+  }
+
+  /** Mark cluster DISABLED — retains data + credentials, scheduler skips it. */
+  async setEnabled(id: string, enabled: boolean, actor?: Actor) {
+    const row = await this.prisma.proxmoxCluster.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('Cluster not found');
+    const newStatus = enabled ? 'ACTIVE' : 'DISABLED';
+    const updated = await this.prisma.proxmoxCluster.update({
+      where: { id },
+      data: { status: newStatus },
+    });
+    await this.writeAudit(enabled ? 'cluster.enable' : 'cluster.disable', actor, row, {
+      previousStatus: row.status,
+      newStatus,
+    });
+    return this.serialize(updated);
   }
 
   /**
@@ -212,8 +285,8 @@ export class ClustersService {
 
   /**
    * Test connectivity + refresh capacity metrics from the Proxmox host.
-   * Decrypts credentials to talk to Proxmox, so this is a credential-use
-   * action and is audit-logged.
+   * Classifies failures into AUTH / TIMEOUT / NETWORK / MALFORMED / UNKNOWN
+   * so the UI can render actionable errors instead of a single UNREACHABLE.
    */
   async testAndRefresh(id: string, actor?: Actor) {
     const row = await this.prisma.proxmoxCluster.findUnique({ where: { id } });
@@ -223,9 +296,13 @@ export class ClustersService {
     if (!row.tokenId || !secret) {
       await this.prisma.proxmoxCluster.update({
         where: { id },
-        data: { status: 'MISCONFIGURED' },
+        data: {
+          status: 'MISCONFIGURED',
+          lastErrorType: 'AUTH',
+          lastErrorMessage: 'Missing API token credentials',
+        },
       });
-      return { ok: false, error: 'Missing API token credentials' };
+      return { ok: false, errorType: 'AUTH', error: 'Missing API token credentials' };
     }
     try {
       const nodes = await this.pveGet(row.host, row.port, row.tokenId, secret, '/api2/json/nodes');
@@ -248,7 +325,11 @@ export class ClustersService {
       const updated = await this.prisma.proxmoxCluster.update({
         where: { id },
         data: {
-          status: 'ACTIVE',
+          // Preserve DISABLED state on successful probe — an operator's disable
+          // must not be flipped back to ACTIVE by a routine connectivity test.
+          status: row.status === 'DISABLED' ? 'DISABLED' : 'ACTIVE',
+          lastErrorType: null,
+          lastErrorMessage: null,
           nodeCount: list.length || 1,
           cpuTotal,
           cpuUsed,
@@ -261,12 +342,17 @@ export class ClustersService {
       });
       return { ok: true, cluster: this.serialize(updated) };
     } catch (e: any) {
-      this.logger.warn(`Cluster test failed for ${row.name}: ${e.message}`);
+      const errorType = classifyPveError(e);
+      this.logger.warn(`Cluster test failed for ${row.name} (${errorType}): ${e.message}`);
       await this.prisma.proxmoxCluster.update({
         where: { id },
-        data: { status: 'UNREACHABLE' },
+        data: {
+          status: row.status === 'DISABLED' ? 'DISABLED' : 'UNREACHABLE',
+          lastErrorType: errorType,
+          lastErrorMessage: String(e?.message ?? e).slice(0, 500),
+        },
       });
-      return { ok: false, error: e.message };
+      return { ok: false, errorType, error: e.message };
     }
   }
 

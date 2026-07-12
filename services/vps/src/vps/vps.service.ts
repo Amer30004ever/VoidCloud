@@ -64,6 +64,7 @@ export class VpsService {
       throw err;
     }
 
+    const chosenClusterId = (scheduled as { chosen?: { id?: string } } | null)?.chosen?.id ?? null;
     const deployment = await this.prisma.cloudDeployment.create({
       data: {
         userId: user.id,
@@ -74,6 +75,7 @@ export class VpsService {
         ipv4Address: provision.ipv4Address,
         proxmoxVMID: provision.vmid,
         proxmoxNode: provision.node,
+        proxmoxClusterId: chosenClusterId,
         cpu: dto.cpu ?? 1,
         memory: dto.memory ?? 1024,
         storage: dto.storage ?? 10240,

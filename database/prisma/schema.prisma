@@ -1064,6 +1064,8 @@ model CloudDeployment {
   rootPasswordHash String?
   proxmoxVMID      Int?
   proxmoxNode      String?
+  proxmoxClusterId String?
+  proxmoxCluster   ProxmoxCluster? @relation(fields: [proxmoxClusterId], references: [id], onDelete: SetNull)
   provisionedAt    DateTime?
   suspendedAt      DateTime?
   terminatedAt     DateTime?
@@ -1613,7 +1615,11 @@ model ProxmoxCluster {
   tokenId     String?
   /// Encrypted at application layer — AES-256-GCM. See schema doc above.
   tokenSecret String?
-  status      String   @default("ACTIVE")
+  status      String   @default("ACTIVE") // ACTIVE | DISABLED | UNREACHABLE | MISCONFIGURED
+  /// Classification of last connection failure (null when healthy).
+  /// AUTH | TIMEOUT | NETWORK | MALFORMED | UNKNOWN
+  lastErrorType    String?
+  lastErrorMessage String?
   cpuTotal    Int      @default(0)
   ramTotal    BigInt   @default(0)
   diskTotal   BigInt   @default(0)
@@ -1626,6 +1632,7 @@ model ProxmoxCluster {
   updatedAt   DateTime @updatedAt
 
   pendingAllocations PendingAllocation[]
+  deployments        CloudDeployment[]
 
   @@index([status])
   @@map("proxmox_clusters")
@@ -1661,6 +1668,9 @@ model ServiceHealthLog {
   status           String   // UP | DEGRADED | DOWN
   responseTimeMs   Int?
   errorMessage     String?
+  /// Failure classification when status != UP.
+  /// TIMEOUT | NETWORK | HTTP_5XX | HTTP_4XX | MALFORMED | UNKNOWN
+  failureType      String?
   uptimePercentage Float    @default(100)
   checkedAt        DateTime @default(now())
 
@@ -1668,6 +1678,24 @@ model ServiceHealthLog {
   @@index([checkedAt])
   @@index([status])
   @@map("service_health_logs")
+}
+
+/// Rolled-up hourly aggregates of ServiceHealthLog. The retention job collapses
+/// raw per-check rows older than 48h into one row per (service, hour).
+model ServiceHealthHourlyRollup {
+  id             String   @id @default(uuid())
+  serviceName    String
+  hourStart      DateTime
+  sampleCount    Int
+  upCount        Int
+  degradedCount  Int
+  downCount      Int
+  avgResponseMs  Int?
+  uptimePercent  Float
+
+  @@unique([serviceName, hourStart])
+  @@index([hourStart])
+  @@map("service_health_hourly_rollups")
 }
 
 /// WhatsApp broadcast campaign records
