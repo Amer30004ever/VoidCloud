@@ -135,11 +135,16 @@ export default function AdminClustersPage() {
                 <td className="px-4 py-3">{fmtMB(r.freeRamMB)}/{fmtMB(r.ramTotal)}</td>
                 <td className="px-4 py-3">{fmtGB(r.freeDiskGB)}/{fmtGB(r.diskTotal)}</td>
                 <td className="px-4 py-3">{r.vmCount}</td>
-                <td className="px-4 py-3 text-right">
-                  <button disabled={busyId === r.id} onClick={() => testCluster(r.id)} className="mr-2 rounded-lg border border-white/20 px-3 py-1 text-xs hover:bg-white/10 disabled:opacity-50">
-                    {busyId === r.id ? "Testing…" : "Test & refresh"}
+                <td className="px-4 py-3 text-right space-x-2">
+                  <button disabled={busyId === r.id} onClick={() => testCluster(r.id)} className="rounded-lg border border-white/20 px-3 py-1 text-xs hover:bg-white/10 disabled:opacity-50">
+                    {busyId === r.id ? "Testing…" : "Test"}
                   </button>
-                  <button onClick={() => remove(r.id, r.name)} className="rounded-lg border border-red-500/30 px-3 py-1 text-xs text-red-300 hover:bg-red-500/10">Delete</button>
+                  {r.status === "DISABLED" ? (
+                    <button onClick={() => enable(r.id, r.name)} className="rounded-lg border border-emerald-500/40 px-3 py-1 text-xs text-emerald-300 hover:bg-emerald-500/10">Enable</button>
+                  ) : (
+                    <button onClick={() => disable(r.id, r.name)} title="Stop scheduling new VMs here. Existing VMs untouched." className="rounded-lg border border-yellow-500/40 px-3 py-1 text-xs text-yellow-300 hover:bg-yellow-500/10">Disable</button>
+                  )}
+                  <button onClick={() => remove(r.id, r.name)} title="Permanently drop the cluster row" className="rounded-lg border border-red-500/30 px-3 py-1 text-xs text-red-300 hover:bg-red-500/10">Delete</button>
                 </td>
               </tr>
             ))}
