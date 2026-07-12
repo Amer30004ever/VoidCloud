@@ -42,13 +42,6 @@
     "line": 39
   },
   {
-    "file": "services/analytics/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 7
-  },
-  {
     "file": "services/audit/src/audit/audit.controller.ts",
     "controller": "AuditController",
     "method": "userLogs",
@@ -61,13 +54,6 @@
     "method": "create",
     "httpVerb": "POST",
     "line": 40
-  },
-  {
-    "file": "services/audit/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 7
   },
   {
     "file": "services/auth/src/auth/auth.controller.ts",
@@ -140,95 +126,11 @@
     "line": 94
   },
   {
-    "file": "services/auth/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 7
-  },
-  {
     "file": "services/auth/src/rbac/rbac.controller.ts",
     "controller": "RbacController",
     "method": "getUserPermissions",
     "httpVerb": "GET",
     "line": 117
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "listSubscriptions",
-    "httpVerb": "GET",
-    "line": 14
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "createSubscription",
-    "httpVerb": "POST",
-    "line": 19
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "updateSubscription",
-    "httpVerb": "PUT",
-    "line": 27
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "listInvoices",
-    "httpVerb": "GET",
-    "line": 32
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "getInvoice",
-    "httpVerb": "GET",
-    "line": 37
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "processPayment",
-    "httpVerb": "POST",
-    "line": 42
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "listPlans",
-    "httpVerb": "GET",
-    "line": 47
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "createReferral",
-    "httpVerb": "POST",
-    "line": 70
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "referralStats",
-    "httpVerb": "GET",
-    "line": 75
-  },
-  {
-    "file": "services/billing/src/billing/billing.controller.ts",
-    "controller": "BillingController",
-    "method": "requestPayout",
-    "httpVerb": "POST",
-    "line": 80
-  },
-  {
-    "file": "services/billing/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 7
   },
   {
     "file": "services/crm/src/crm/crm.controller.ts",
@@ -320,13 +222,6 @@
     "method": "completeTask",
     "httpVerb": "PUT",
     "line": 71
-  },
-  {
-    "file": "services/crm/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 7
   },
   {
     "file": "services/crm/src/whatsapp/whatsapp.controller.ts",
@@ -427,25 +322,11 @@
     "line": 58
   },
   {
-    "file": "services/email/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 7
-  },
-  {
-    "file": "services/monitoring/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 7
-  },
-  {
     "file": "services/monitoring/src/health-check/health-check.controller.ts",
     "controller": "HealthCheckController",
     "method": "health",
     "httpVerb": "GET",
-    "line": 9
+    "line": 21
   },
   {
     "file": "services/monitoring/src/monitoring/monitoring.controller.ts",
@@ -509,13 +390,6 @@
     "method": "set",
     "httpVerb": "PUT",
     "line": 37
-  },
-  {
-    "file": "services/notification/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 7
   },
   {
     "file": "services/notification/src/notifications/notifications.controller.ts",
@@ -623,74 +497,67 @@
     "line": 19
   },
   {
-    "file": "services/tenant/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 7
-  },
-  {
-    "file": "services/user/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 7
-  },
-  {
     "file": "services/vps/src/clusters/clusters.controller.ts",
     "controller": "ClustersController",
     "method": "list",
     "httpVerb": "GET",
-    "line": 34
+    "line": 35
   },
   {
     "file": "services/vps/src/clusters/clusters.controller.ts",
     "controller": "ClustersController",
     "method": "create",
     "httpVerb": "POST",
-    "line": 39
+    "line": 40
   },
   {
     "file": "services/vps/src/clusters/clusters.controller.ts",
     "controller": "ClustersController",
     "method": "update",
     "httpVerb": "PUT",
-    "line": 44
+    "line": 45
   },
   {
     "file": "services/vps/src/clusters/clusters.controller.ts",
     "controller": "ClustersController",
     "method": "remove",
     "httpVerb": "DELETE",
-    "line": 53
+    "line": 59
+  },
+  {
+    "file": "services/vps/src/clusters/clusters.controller.ts",
+    "controller": "ClustersController",
+    "method": "disable",
+    "httpVerb": "PUT",
+    "line": 73
+  },
+  {
+    "file": "services/vps/src/clusters/clusters.controller.ts",
+    "controller": "ClustersController",
+    "method": "enable",
+    "httpVerb": "PUT",
+    "line": 79
   },
   {
     "file": "services/vps/src/clusters/clusters.controller.ts",
     "controller": "ClustersController",
     "method": "test",
     "httpVerb": "POST",
-    "line": 58
+    "line": 84
   },
   {
     "file": "services/vps/src/clusters/clusters.controller.ts",
     "controller": "ClustersController",
     "method": "reveal",
     "httpVerb": "GET",
-    "line": 64
+    "line": 90
   },
   {
     "file": "services/vps/src/clusters/clusters.controller.ts",
     "controller": "ClustersController",
     "method": "schedule",
     "httpVerb": "POST",
-    "line": 69
-  },
-  {
-    "file": "services/vps/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 7
+    "line": 95
   },
   {
     "file": "services/vps/src/vps/vps.controller.ts",
@@ -789,12 +656,5 @@
     "method": "clone",
     "httpVerb": "POST",
     "line": 94
-  },
-  {
-    "file": "services/whatsapp/src/health/health.controller.ts",
-    "controller": "HealthController",
-    "method": "health",
-    "httpVerb": "GET",
-    "line": 5
   }
 ]
