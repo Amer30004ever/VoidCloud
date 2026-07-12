@@ -1064,6 +1064,8 @@ model CloudDeployment {
   rootPasswordHash String?
   proxmoxVMID      Int?
   proxmoxNode      String?
+  proxmoxClusterId String?
+  proxmoxCluster   ProxmoxCluster? @relation(fields: [proxmoxClusterId], references: [id], onDelete: SetNull)
   provisionedAt    DateTime?
   suspendedAt      DateTime?
   terminatedAt     DateTime?
