@@ -105,4 +105,39 @@ export class AuthController {
   ) {
     return this.twoFactorService.verifyAndActivate(user.id, body.token);
   }
+
+  /**
+   * Logout — revoke exactly THIS token's jti so it's rejected by every service
+   * on its next request (not just the auth service).
+   */
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@CurrentUser() user: { jti?: string; exp?: number }) {
+    return this.authService.logout(user?.jti, user?.exp);
+  }
+
+  /**
+   * Admin-forced revoke of ALL outstanding sessions for a user.
+   * SUPER_ADMIN or ADMIN only.
+   */
+  @Post('admin/users/:id/revoke-sessions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async adminRevokeSessions(@Param('id') id: string) {
+    return this.authService.revokeAllSessions(id);
+  }
+
+  /**
+   * Token introspection — other microservices call this to check revocation
+   * without needing direct Redis access. Returns { active } for the given
+   * jti/sub/iat. Used by shared/token-revocation.ts.
+   */
+  @Public()
+  @Post('introspect')
+  @HttpCode(HttpStatus.OK)
+  async introspect(@Body() body: { jti?: string; sub: string; iat?: number }) {
+    const revoked = await this.revocation.isTokenRevoked(body);
+    return { active: !revoked };
+  }
 }
