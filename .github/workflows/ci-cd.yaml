@@ -696,6 +696,23 @@ jobs:
   # Runs after images are built; non-blocking by default.
   # Set SECURITY_FAIL_ON_CRITICAL=true to make it blocking.
   # ============================================
+  tenant-isolation-scan:
+    # Static audit for Prisma queries on tenant-scoped models missing a
+    # tenantId/userId filter. Fails on any NEW findings not in the baseline
+    # at scripts/tenant-isolation-baseline.json.
+    needs: [detect-changes]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run tenant-isolation scan (CI mode)
+        run: node scripts/scan-tenant-isolation.mjs --ci
+
   security-scan:
     needs: [detect-changes, build-backend, build-frontend]
     if: |
