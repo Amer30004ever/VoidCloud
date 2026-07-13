@@ -29,13 +29,19 @@ function makeService(prisma: any) {
     const jwtService = { sign: jest.fn().mockReturnValue('token') };
     const mailer = { send: jest.fn().mockResolvedValue(undefined) };
     const rbacService = { getUserPermissions: jest.fn().mockResolvedValue([]) };
+    const revocation = {
+        revokeToken: jest.fn().mockResolvedValue(undefined),
+        revokeAllForUser: jest.fn().mockResolvedValue(undefined),
+        isTokenRevoked: jest.fn().mockResolvedValue(false),
+    };
     const service = new AuthService(
         prisma as any,
         jwtService as any,
         mailer as any,
         rbacService as any,
+        revocation as any,
     );
-    return { service, jwtService, mailer, rbacService };
+    return { service, jwtService, mailer, rbacService, revocation };
 }
 
 describe('AuthService.login', () => {
