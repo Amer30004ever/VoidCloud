@@ -101,7 +101,20 @@ export class HealthCheckService {
    *  - HealthCheckScheduler on its 30s interval
    *  - POST /monitoring/services/health/check-now (SUPER_ADMIN force check)
    */
+  // Single-flight guard: concurrent callers (scheduler tick racing with a
+  // SUPER_ADMIN force check, or several force-checks arriving together) all
+  // await the SAME probe round instead of each fanning out 13 new pings.
+  private inFlight: Promise<HealthSnapshot> | null = null;
+
   async probeAllAndPersist(): Promise<HealthSnapshot> {
+    if (this.inFlight) return this.inFlight;
+    this.inFlight = this.doProbeAllAndPersist().finally(() => {
+      this.inFlight = null;
+    });
+    return this.inFlight;
+  }
+
+  private async doProbeAllAndPersist(): Promise<HealthSnapshot> {
     const results = await Promise.all(
       SERVICES.map((s) => this.probe(s.name, s.host, s.port, s.path)),
     );

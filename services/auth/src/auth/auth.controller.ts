@@ -3,10 +3,12 @@ import {
   Post,
   Get,
   Body,
+  Param,
   HttpCode,
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -15,8 +17,11 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { Public } from './decorators/public.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { TwoFactorService } from './cloud-auth/two-factor.service';
+import { TokenRevocationService } from './token-revocation.service';
 
 @Controller('auth')
 @UseGuards(JwtAuthGuard)
@@ -24,6 +29,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly twoFactorService: TwoFactorService,
+    private readonly revocation: TokenRevocationService,
   ) {}
 
   @Public()
@@ -98,5 +104,40 @@ export class AuthController {
     @Body() body: { token: string },
   ) {
     return this.twoFactorService.verifyAndActivate(user.id, body.token);
+  }
+
+  /**
+   * Logout — revoke exactly THIS token's jti so it's rejected by every service
+   * on its next request (not just the auth service).
+   */
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@CurrentUser() user: { jti?: string; exp?: number }) {
+    return this.authService.logout(user?.jti, user?.exp);
+  }
+
+  /**
+   * Admin-forced revoke of ALL outstanding sessions for a user.
+   * SUPER_ADMIN or ADMIN only.
+   */
+  @Post('admin/users/:id/revoke-sessions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async adminRevokeSessions(@Param('id') id: string) {
+    return this.authService.revokeAllSessions(id);
+  }
+
+  /**
+   * Token introspection — other microservices call this to check revocation
+   * without needing direct Redis access. Returns { active } for the given
+   * jti/sub/iat. Used by shared/token-revocation.ts.
+   */
+  @Public()
+  @Post('introspect')
+  @HttpCode(HttpStatus.OK)
+  async introspect(@Body() body: { jti?: string; sub: string; iat?: number }) {
+    const revoked = await this.revocation.isTokenRevoked(body);
+    return { active: !revoked };
   }
 }

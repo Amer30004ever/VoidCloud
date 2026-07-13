@@ -15,6 +15,7 @@ import { RegisterDto } from './dto/register.dto';
 import { MailerService } from '../mailer/mailer.service';
 import { passwordResetEmail } from '../mailer/templates/password-reset';
 import { RbacService } from '../rbac/rbac.service';
+import { TokenRevocationService } from './token-revocation.service';
 
 const RESET_TTL_MINUTES = 30;
 
@@ -27,6 +28,7 @@ export class AuthService {
     private jwtService: JwtService,
     private mailer: MailerService,
     private rbacService: RbacService,
+    private revocation: TokenRevocationService,
   ) { }
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -78,7 +80,8 @@ export class AuthService {
       if (!ok) throw new UnauthorizedException('Invalid 2FA code');
     }
 
-    const payload = { email: user.email, sub: user.id, role: user.role };
+    const jti = crypto.randomBytes(16).toString('hex');
+    const payload = { email: user.email, sub: user.id, role: user.role, jti };
 
     // Fetch user permissions from RBAC
     const userPermissions = await this.rbacService.getUserPermissions(user.id);
@@ -94,6 +97,24 @@ export class AuthService {
         mustChangePassword: user.mustChangePassword ?? false,
       },
     };
+  }
+
+  /**
+   * Logout: revoke exactly this token's jti until it would have expired anyway.
+   * Every subsequent request presenting the same JWT is rejected by JwtStrategy.
+   */
+  async logout(jti: string | undefined, exp: number | undefined) {
+    if (jti && exp) await this.revocation.revokeToken(jti, exp);
+    return { ok: true };
+  }
+
+  /**
+   * Admin-forced revoke of ALL sessions for a user (SUPER_ADMIN/ADMIN).
+   * Also called on password change so leaked-old-password tokens die immediately.
+   */
+  async revokeAllSessions(userId: string) {
+    await this.revocation.revokeAllForUser(userId);
+    return { ok: true, userId };
   }
 
   async register(registerDto: RegisterDto) {
@@ -360,6 +381,8 @@ export class AuthService {
         data: { usedAt: new Date() },
       }),
     ]);
+    // Revoke every outstanding session — old passwords must never keep access.
+    await this.revocation.revokeAllForUser(record.userId);
     return { ok: true };
   }
 
@@ -379,6 +402,8 @@ export class AuthService {
       where: { id: userId },
       data: { password: hashed, mustChangePassword: false },
     });
+    // Password changed → invalidate all outstanding tokens for this user.
+    await this.revocation.revokeAllForUser(userId);
 
     return { success: true, message: 'Password updated successfully' };
   }

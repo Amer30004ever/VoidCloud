@@ -1,0 +1,97 @@
+{
+  "_note": "Existing Prisma queries on tenant-scoped models that the audit script flagged. Each entry MUST have a reason. New findings not in this baseline fail CI. Progressive cleanup: prefer fixing entries here over expanding the baseline.",
+  "_regenerated": "2026-07-13",
+  "findings": [
+    {
+      "file": "services/crm/src/crm/crm.service.ts",
+      "line": 14,
+      "model": "crmContact",
+      "method": "findMany",
+      "reason": "Uses this.tenantFilter(user) helper which applies { userId: user.id } (or tenantId for admins). Scanner false-positive on helper-based filters."
+    },
+    {
+      "file": "services/crm/src/crm/crm.service.ts",
+      "line": 35,
+      "model": "crmLead",
+      "method": "findMany",
+      "reason": "Same helper: this.tenantFilter(user)."
+    },
+    {
+      "file": "services/crm/src/crm/crm.service.ts",
+      "line": 66,
+      "model": "crmDeal",
+      "method": "findMany",
+      "reason": "Same helper: this.tenantFilter(user)."
+    },
+    {
+      "file": "services/crm/src/crm/crm.service.ts",
+      "line": 86,
+      "model": "crmTask",
+      "method": "findMany",
+      "reason": "Same helper: this.tenantFilter(user)."
+    },
+    {
+      "file": "services/vps/src/vps/vps.service.ts",
+      "line": 23,
+      "model": "cloudDeployment",
+      "method": "findMany",
+      "reason": "`where` local variable is built above from user context (userId or admin-wide). Verified 2026-07-13."
+    },
+    {
+      "file": "services/vps/src/vps/vps.service.ts",
+      "line": 165,
+      "model": "cloudBackup",
+      "method": "findMany",
+      "reason": "Filtered by deploymentId of a VPS that was ALREADY ownership-checked in the calling method."
+    },
+    {
+      "file": "services/vps/src/clusters/clusters.service.ts",
+      "line": 218,
+      "model": "cloudDeployment",
+      "method": "count",
+      "reason": "Platform-level cluster capacity check — SUPER_ADMIN-only endpoint (see clusters.controller.ts @Roles(SUPER_ADMIN)). Cross-tenant is intentional."
+    },
+    {
+      "file": "services/analytics/src/analytics/analytics.service.ts",
+      "line": 10,
+      "model": "cloudDeployment",
+      "method": "count",
+      "reason": "Platform analytics dashboard, admin-only. Cross-tenant aggregate is intentional."
+    },
+    {
+      "file": "services/analytics/src/analytics/analytics.service.ts",
+      "line": 12,
+      "model": "conversation",
+      "method": "count",
+      "reason": "Platform analytics dashboard, admin-only."
+    },
+    {
+      "file": "services/analytics/src/analytics/analytics.service.ts",
+      "line": 18,
+      "model": "cloudInvoice",
+      "method": "aggregate",
+      "reason": "Platform analytics dashboard, admin-only."
+    },
+    {
+      "file": "services/analytics/src/analytics/analytics.service.ts",
+      "line": 34,
+      "model": "cloudDeployment",
+      "method": "groupBy",
+      "reason": "Platform analytics dashboard, admin-only."
+    },
+    {
+      "file": "services/analytics/src/analytics/analytics.service.ts",
+      "line": 41,
+      "model": "message",
+      "method": "groupBy",
+      "reason": "Platform analytics dashboard, admin-only."
+    },
+    {
+      "file": "services/monitoring/src/monitoring/monitoring.service.ts",
+      "line": 30,
+      "model": "alert",
+      "method": "findMany",
+      "reason": "Platform monitoring dashboard, admin-only."
+    }
+  ]
+}
