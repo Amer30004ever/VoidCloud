@@ -3,10 +3,12 @@ import {
   Post,
   Get,
   Body,
+  Param,
   HttpCode,
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -15,8 +17,11 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { Public } from './decorators/public.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { TwoFactorService } from './cloud-auth/two-factor.service';
+import { TokenRevocationService } from './token-revocation.service';
 
 @Controller('auth')
 @UseGuards(JwtAuthGuard)
@@ -24,6 +29,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly twoFactorService: TwoFactorService,
+    private readonly revocation: TokenRevocationService,
   ) {}
 
   @Public()
