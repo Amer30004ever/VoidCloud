@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RbacModule } from '../rbac/rbac.module';
 import { TwoFactorService } from './cloud-auth/two-factor.service';
+import { TokenRevocationService } from './token-revocation.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { TwoFactorService } from './cloud-auth/two-factor.service';
     RbacModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, TwoFactorService],
-  exports: [AuthService, JwtModule],
+  providers: [AuthService, JwtStrategy, TwoFactorService, TokenRevocationService],
+  exports: [AuthService, JwtModule, TokenRevocationService],
 })
 export class AuthModule {}
