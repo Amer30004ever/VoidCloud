@@ -46,5 +46,6 @@
     "jest": "^30.4.2",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "//zod-pin": "Pinned to zod@^3 pending upgrade — see docs/zod-v3-pin.md (2026-07-15). @hookform/resolvers@^5.4.0 supports both v3 and v4; upgrade blocked only on regenerating lib/api-zod. Remove this note when the upgrade PR lands."
 }
