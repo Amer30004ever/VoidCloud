@@ -24,7 +24,8 @@
  * (used when a service has no Redis client) uses the opposite policy because
  * it depends on a peer HTTP service and must degrade gracefully.
  */
-import { assertNotRevoked, isTokenRevoked } from './token-revocation.service';
+// Contract fixture: the SHARED mirror used by every non-auth service.
+import { assertNotRevoked, isTokenRevoked } from '../common/token-revocation';
 
 describe('shared token-revocation contract (used by every service JwtStrategy)', () => {
   const OLD_ENV = process.env;
@@ -83,7 +84,3 @@ describe('shared token-revocation contract (used by every service JwtStrategy)',
   });
 });
 
-// Silence unused-import lint — the top-level imports above are covered by
-// jest.resetModules() + dynamic import inside each test.
-void assertNotRevoked;
-void isTokenRevoked;
