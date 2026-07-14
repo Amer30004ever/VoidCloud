@@ -114,7 +114,8 @@ for (const file of walk(SERVICES_DIR)) {
 // Baseline: existing findings we haven't fixed yet.
 let baseline = [];
 if (existsSync(BASELINE_PATH)) {
-  baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8')).findings || [];
+  const raw = readFileSync(BASELINE_PATH, 'utf8').trim();
+  if (raw) baseline = (JSON.parse(raw).findings) || [];
 }
 const baselineKeys = new Set(baseline.map((f) => `${f.file}:${f.line}:${f.model}.${f.method}`));
 const newFindings = findings.filter((f) => !baselineKeys.has(`${f.file}:${f.line}:${f.model}.${f.method}`));
