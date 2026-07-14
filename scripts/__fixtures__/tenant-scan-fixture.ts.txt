@@ -1,0 +1,11 @@
+// Fixture consumed by scripts/__tests__/scan-tenant-isolation.test.mjs.
+// NOT compiled — extension is .txt so tsc/nest ignore it. The scanner treats
+// any .ts file under services/ as code, so we point it at a synthetic tree
+// via env var TENANT_SCAN_ROOT for the self-test.
+export async function bad(prisma: any) {
+  // Intentional unscoped query on a tenant-scoped model.
+  return prisma.crmContact.findMany({ orderBy: { createdAt: 'desc' } });
+}
+export async function good(prisma: any, userId: string) {
+  return prisma.crmContact.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+}

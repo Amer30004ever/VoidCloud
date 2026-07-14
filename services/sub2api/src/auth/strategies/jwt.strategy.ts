@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
+import { assertNotRevoked } from '../../common/token-revocation';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -18,10 +19,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    // Cross-service JWT revocation check. See shared/auth/token-revocation.ts.
+    try {
+      await assertNotRevoked({ jti: payload.jti, sub: payload.sub, iat: payload.iat });
+    } catch (e: any) {
+      throw new UnauthorizedException(e?.message || 'Token has been revoked');
+    }
+
     const user = await this.usersService.findOne(payload.sub);
     if (!user) {
       throw new UnauthorizedException();
     }
-    return user;
+    return { ...user, jti: payload.jti, iat: payload.iat };
   }
 }

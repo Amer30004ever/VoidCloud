@@ -26,8 +26,10 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const ROOT = process.cwd();
-const SERVICES_DIR = join(ROOT, 'services');
-const BASELINE_PATH = join(ROOT, 'scripts', 'tenant-isolation-baseline.json');
+// TENANT_SCAN_ROOT lets tests point the scanner at a fixture tree instead of
+// the real services/ directory — see scripts/__tests__/scan-tenant-isolation.test.mjs.
+const SERVICES_DIR = process.env.TENANT_SCAN_ROOT || join(ROOT, 'services');
+const BASELINE_PATH = process.env.TENANT_SCAN_BASELINE || join(ROOT, 'scripts', 'tenant-isolation-baseline.json');
 
 // Tenant-scoped Prisma models — mirror database/prisma/schema.prisma.
 // Models with per-tenant data that MUST be filtered by tenantId/userId.
@@ -112,7 +114,8 @@ for (const file of walk(SERVICES_DIR)) {
 // Baseline: existing findings we haven't fixed yet.
 let baseline = [];
 if (existsSync(BASELINE_PATH)) {
-  baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8')).findings || [];
+  const raw = readFileSync(BASELINE_PATH, 'utf8').trim();
+  if (raw) baseline = (JSON.parse(raw).findings) || [];
 }
 const baselineKeys = new Set(baseline.map((f) => `${f.file}:${f.line}:${f.model}.${f.method}`));
 const newFindings = findings.filter((f) => !baselineKeys.has(`${f.file}:${f.line}:${f.model}.${f.method}`));
