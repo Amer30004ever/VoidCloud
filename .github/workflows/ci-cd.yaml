@@ -710,6 +710,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Scanner self-test (proves detection isn't silently broken)
+        run: node --test scripts/__tests__/scan-tenant-isolation.test.mjs
       - name: Run tenant-isolation scan (CI mode)
         run: node scripts/scan-tenant-isolation.mjs --ci
 
