@@ -15,7 +15,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'mjs', 'cjs', 'json'],
   modulePaths: [path.resolve(__dirname, 'node_modules')],
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
+    '^.+\\.tsx?$': [require.resolve('ts-jest'), {
       tsconfig: {
         module: 'commonjs',
         target: 'ES2021',
