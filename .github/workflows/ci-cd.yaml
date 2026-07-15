@@ -372,6 +372,19 @@ jobs:
             cd ../../
           done
 
+      - name: Install shared jest runner
+        run: cd tests && npm install --no-audit --no-fund
+
+      - name: Link generated Prisma client into shared jest runner
+        run: |
+          mkdir -p tests/node_modules
+          rm -rf tests/node_modules/@prisma tests/node_modules/.prisma
+          ln -s ../../database/node_modules/@prisma tests/node_modules/@prisma
+          ln -s ../../database/node_modules/.prisma tests/node_modules/.prisma
+
+      - name: Run all microservice unit tests (jest + node --test)
+        run: cd tests && npm test
+
   # ============================================
   # FRONTEND TESTS
   # ============================================

@@ -5,13 +5,17 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const SCANNER = join(REPO_ROOT, 'scripts', 'scan-tenant-isolation.mjs');
 
 function runScanner(rootDir, extraArgs = []) {
   return spawnSync(
     process.execPath,
-    [join(process.cwd(), 'scripts', 'scan-tenant-isolation.mjs'), ...extraArgs],
+    [SCANNER, ...extraArgs],
     {
       env: { ...process.env, TENANT_SCAN_ROOT: rootDir, TENANT_SCAN_BASELINE: '/dev/null' },
       encoding: 'utf8',

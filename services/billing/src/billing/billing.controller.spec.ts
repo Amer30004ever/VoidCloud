@@ -52,14 +52,15 @@ describe('BillingController — RBAC', () => {
       expect(guard.canActivate(ctx)).toBe(true);
     });
 
-    it(`${String(method)} — 403 path: non-allowed role is rejected`, () => {
-      const denied: Role = allow.includes(Role.USER)
-        ? // If USER already allowed, deny an unrelated role.
-          Role.SUPER_ADMIN in allow ? Role.USER : Role.SUPER_ADMIN
-        : Role.USER;
-      // Pick a role not in `allow`.
-      const roleToDeny = ([Role.USER, Role.ADMIN, Role.SUPER_ADMIN] as Role[])
-        .find((r) => !allow.includes(r)) ?? denied;
+    // Skip 403 assertion for routes that allow every role — there is no
+    // remaining role to deny.
+    const allRoles: Role[] = [Role.USER, Role.ADMIN, Role.SUPER_ADMIN];
+    const roleToDeny = allRoles.find((r) => !allow.includes(r));
+    if (!roleToDeny) {
+      it.skip(`${String(method)} — 403 path: n/a (route allows every role)`, () => {});
+      continue;
+    }
+    it(`${String(method)} — 403 path: non-allowed role (${roleToDeny}) is rejected`, () => {
       const ctx = mkCtx(handler, { role: roleToDeny });
       expect(() => guard.canActivate(ctx)).toThrow(/Insufficient permissions/);
     });

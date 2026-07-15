@@ -11,7 +11,10 @@
     "build": "cd frontend && bun run build",
     "build:dev": "cd frontend && bun run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "tsc --build"
+    "typecheck": "tsc --build",
+    "test": "cd tests && npm test",
+    "test:jest": "cd tests && npm run test:jest",
+    "test:node": "cd tests && npm run test:node"
   },
   "private": true,
   "overrides": {
