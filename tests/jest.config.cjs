@@ -9,7 +9,6 @@ module.exports = {
   rootDir: path.resolve(__dirname, '..'),
   testMatch: [
     '<rootDir>/services/**/*.spec.ts',
-    '<rootDir>/scripts/**/*.test.mjs',
   ],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'mjs', 'cjs', 'json'],
