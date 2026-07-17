@@ -155,6 +155,40 @@ Task: The zod v3 downgrade (to satisfy @hookform/resolvers v5's type expectation
 Acceptance: either the pin is removed with tests passing on Zod v4, or a clear, dated justification for staying on v3 exists in-repo.
 ```
 
+### Prompt 0.14 — SSRF protection for tenant webhooks
+```
+Task: Before or alongside building Prompt 5.5 (tenant webhook management), add SSRF protection to any endpoint that accepts a tenant-supplied URL for outbound calls (webhook registration, custom domain verification callbacks, or any similar feature).
+
+1. On webhook URL registration/update, validate the URL: resolve its hostname and reject if it resolves to a private/internal IP range (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.0.0/16, and any Kubernetes-internal domains like *.svc.cluster.local or *.cluster.local).
+2. Re-validate at delivery time, not just at registration time — an attacker could register a URL that resolves externally at registration but is re-pointed via DNS to an internal IP before delivery (DNS rebinding). Resolve immediately before each outbound call and reject if the resolved IP is private at send-time.
+3. Disallow non-HTTP(S) schemes (file://, gopher://, etc.) and reject URLs with embedded credentials.
+4. Add a test suite covering: a webhook URL pointing at an internal service hostname is rejected at registration; a URL that resolves to a private IP is rejected; a legitimate external HTTPS URL is accepted; a DNS-rebinding scenario (mock DNS resolution changing between registration and delivery) is caught at delivery time.
+Acceptance: no combination of URL registered through this feature can result in an outbound request reaching any *.svc.cluster.local address or any private IP range, verified by test — including the delivery-time re-check, not just registration-time.
+```
+
+### Prompt 0.15 — Tenant VM network isolation audit
+```
+Task: Audit whether tenant VMs provisioned via services/vps are network-isolated from each other and from the management/control plane, given the current Proxmox setup uses a shared bridge (vmbr1) across the pool.
+
+1. Document the current network topology: are all tenant VMs on the same L2 broadcast domain? Can one tenant's VM ARP-spoof, sniff, or otherwise reach another tenant's VM traffic today?
+2. Confirm whether tenant VMs can reach the Kubernetes cluster's internal network (the same network hosting Postgres, Redis, RabbitMQ, and the 13 microservices) — this would be a critical finding if true, since a compromised tenant VM could then attack the platform's own infrastructure.
+3. Recommend and implement isolation: per-tenant VLANs (if Proxmox/network hardware supports it), or at minimum per-VM firewall rules (Proxmox's built-in firewall, or nftables rules applied per VM) blocking VM-to-VM traffic by default and blocking all tenant VM traffic to the Kubernetes-internal CIDR range.
+4. Add a verification step: provision two test VMs, confirm VM A cannot reach VM B on any port, and confirm neither can reach the K8s-internal service network.
+Acceptance: a report clearly states the current isolation posture (even if the finding is "currently not isolated — here is the fix"); after the fix, the two-VM cross-traffic test and the VM-to-K8s-internal test both confirm blocked access.
+```
+
+### Prompt 0.16 — Local payment method integration (Egypt/MENA market)
+```
+Task: The CloudPaymentMethodType enum already includes FAWRY, INSTAPAY, VODAFONE_CASH, and CASH alongside CREDIT_CARD, and CloudPlan has both priceUSD and priceEGP — indicating local Egyptian payment methods are a real product requirement, not just credit cards via Stripe.
+
+1. Integrate a payment gateway that supports these local rails (e.g. Paymob or Fawaterak — evaluate both for API quality, settlement time, and fee structure, and document the choice with reasoning).
+2. Extend services/billing to support a payment-method-specific flow: credit card follows a standard hosted-checkout or tokenized flow; Fawry/Vodafone Cash typically generate a reference code the customer pays at a physical point or via a mobile wallet app, requiring a "pending payment" state until the gateway webhook confirms payment.
+3. Update CloudInvoice status handling to correctly reflect this pending-then-confirmed lifecycle for cash-based methods (not just PENDING → PAID as if it were instant).
+4. Frontend: payment method selection UI showing the correct flow per method (redirect for card, reference-code display + instructions for Fawry/Vodafone Cash), and a way for the customer to check pending payment status.
+5. Webhook handler for the chosen gateway, verified with signature validation (do not trust unauthenticated webhook payloads).
+Acceptance: a test payment via at least one non-card method (Fawry or Vodafone Cash) completes the full flow — reference code generated, webhook received and signature-verified, invoice status transitions from PENDING to PAID, and the tenant's subscription activates correctly.
+```
+
 ---
 
 ## TIER 1 — MINIMUM VIABLE TEST NET
@@ -489,6 +523,46 @@ Task:
 Acceptance: widget appears platform-wide; help center search returns relevant articles for a few test queries.
 ```
 
+### Prompt 5.9 — Referral program UI
+```
+Task: Surface the existing Referral, ReferralEarning, and ReferralPayoutRequest models in the frontend — the backend data model exists but has no UI.
+1. USER/ADMIN dashboard widget: personal referral code/link, count of successful referrals, total earnings, pending payout balance.
+2. Referral history table: referred user (masked if needed), signup date, conversion status, earning amount.
+3. Payout request flow: form to request payout (method + destination per existing schema fields), status tracking (pending/processed).
+4. Super Admin view: all referrals platform-wide, approve/reject pending payout requests, referral program settings (commission rate, if configurable).
+Acceptance: a test referral signup produces a visible earning entry tied to the referrer; a payout request is submitted and appears in the Super Admin's approval queue.
+```
+
+### Prompt 5.10 — Custom image / snapshot marketplace UI
+```
+Task: Surface the existing CustomImage and CustomImageShare models — snapshot/custom-image creation exists at the data layer with no UI.
+1. VPS detail page: "Save as custom image" action, creating a CustomImage from the current VM state (via existing Proxmox snapshot mechanics).
+2. Custom images library page: list of the tenant's own saved images, with name/description/size, and a "deploy new VPS from this image" action feeding into the existing provisioner (Prompt 2.1).
+3. Sharing: share an image with another user by email (CustomImageShare), and a "shared with me" section showing images others have shared.
+4. If isPublic is set, a lightweight public marketplace browse view (read-only for now) showing publicly shared images available to any tenant.
+Acceptance: creating a custom image from a running VPS and deploying a new VPS from it results in a correctly cloned instance; sharing an image with a specific user's email makes it visible only to that recipient, not all tenants.
+```
+
+### Prompt 5.11 — Public status page
+```
+Task: Build a public status page at /status backed by the existing Incident and IncidentUpdate models (already in schema and already in the frontend route list).
+1. Public, unauthenticated page showing current platform status (operational / degraded / partial outage / major outage) derived from open Incidents, plus a rolling uptime history (reuse ServiceHealthLog hourly rollups from Prompt 0.10 if suitable, or a simpler public-facing aggregate).
+2. Incident timeline: list of past incidents with their IncidentUpdate history (investigating → identified → monitoring → resolved), timestamps, and affected services.
+3. Admin-only incident management: create/update an incident and post updates, which immediately reflect on the public page.
+4. Optional: email/webhook subscription for status updates (can be deferred to a follow-up if scope is too large for one turn).
+Acceptance: creating an incident and posting an update in the admin panel is visible on the public /status page within seconds, with no auth required to view it; historical incidents remain visible after resolution.
+```
+
+### Prompt 5.12 — One-click app marketplace
+```
+Task: Surface the existing CloudDeployment.apps and installedApps fields — an app-install mechanism exists in schema with no UI or install logic.
+1. Define a small initial catalog (e.g. WordPress, Docker, a basic LEMP/LAMP stack) as a static config, each with an install script/method for Proxmox-provisioned VMs.
+2. VPS detail page: "Install app" flow — pick from catalog, confirm, queue install as an async RabbitMQ job (matching the pattern from Prompt 2.1), track status (installing/installed/failed).
+3. Store installed app metadata in installedApps (version, install date, install method) and update the apps array.
+4. Show installed apps on the VPS detail page with basic management (view logs, uninstall where feasible).
+Acceptance: installing WordPress on a test VPS results in a working, reachable WordPress instance at the VPS's IP/domain; installedApps correctly reflects what's actually running.
+```
+
 ---
 
 ## TIER 6 — PROFESSIONAL/INFRA ENHANCEMENTS
@@ -719,14 +793,26 @@ Acceptance: a free-tier user is blocked from generating a 4th project until upgr
 ## SEQUENCE SUMMARY
 
 1. **Manual steps** (credential rotation — not a Lovable prompt, do this yourself first, see note below).
-2. **Tier 0** (0.1 → 0.13) — foundation hardening, strict order, do not skip ahead.
+2. **Tier 0** (0.1 → 0.16) — foundation hardening, strict order, do not skip ahead. 0.14–0.16 (SSRF, tenant VM network isolation, local payment methods) were added after reviewing the actual schema/infra files — they close real gaps the original tier didn't cover: 0.14 should land before or alongside Prompt 5.5 (webhooks), 0.15 is an infra audit independent of app code, 0.16 is a prerequisite for Prompt 2.4/6.x billing work given the schema's existing FAWRY/INSTAPAY/VODAFONE_CASH/priceEGP fields.
 3. **Tier 1** (1.1 → 1.3) — minimum test net.
 4. **Tier 2** (2.1 → 2.12) — core revenue features, quota enforcement before billing dashboard.
 5. **Tier 3** — role panel completions.
 6. **Tier 4** — CI/CD, can run in parallel with Tier 2/3 once Tier 1's tests exist.
-7. **Tier 5 → Tier 6** — polish and infra maturity, sequence by what matters most to early customers. Tier 6.9 (Platform Secrets Manager) revisit once you're no longer solo.
+7. **Tier 5 → Tier 6** — polish and infra maturity, sequence by what matters most to early customers. Prompts 5.9–5.12 (referral UI, custom image marketplace, public status page, app marketplace) surface existing Prisma models that already have no frontend — cheap wins once core tiers are done, since the data layer is already built. Tier 6.9 (Platform Secrets Manager) revisit once you're no longer solo.
 8. **Tier 7** — UI/UX polish, once Tier 2/3 pages exist with real data flowing.
 9. **Tier 8** — fully independent, work whenever, doesn't touch VoidCloud's stack.
+
+---
+
+## CHANGELOG (v2 → v3)
+
+- Added **Prompt 0.14** — SSRF protection for tenant webhooks (DNS rebinding, private IP blocking, delivery-time re-validation).
+- Added **Prompt 0.15** — tenant VM network isolation audit (shared vmbr1 bridge, VM-to-VM and VM-to-K8s-internal exposure).
+- Added **Prompt 0.16** — local payment method integration (Fawry/InstaPay/Vodafone Cash), since the schema already models these and the original Tier 2/6 billing prompts only assumed Stripe/card payments.
+- Added **Prompt 5.9** — referral program UI (Referral/ReferralEarning/ReferralPayoutRequest models exist, no frontend).
+- Added **Prompt 5.10** — custom image/snapshot marketplace UI (CustomImage/CustomImageShare models exist, no frontend).
+- Added **Prompt 5.11** — public status page (Incident/IncidentUpdate models + existing /status route exist, not wired up).
+- Added **Prompt 5.12** — one-click app marketplace (CloudDeployment.apps/installedApps fields exist, no install logic or UI).
 
 ---
 
