@@ -47,13 +47,15 @@ function parseController(path) {
   const classMatch = src.match(/@Controller\([^)]*\)\s*(?:@[\w.]+\([^)]*\)\s*)*export\s+class\s+(\w+)/);
   const controller = classMatch ? classMatch[1] : rel;
 
-  // Class-level guards: look at the block of decorators immediately preceding
-  // the `export class ...` line and check for @Roles(.
-  const classDecoratorsBlock = src.slice(0, classMatch?.index ?? 0);
-  const classHasRoles = /@Roles\s*\(/.test(
-    // last ~500 chars of decorators cover the typical decorator stack
-    classDecoratorsBlock.slice(-800),
-  );
+  // Class-level guards: check the ENTIRE decorator stack that sits between
+  // (and including) @Controller(...) up to `export class Foo`. The previous
+  // implementation sliced `src.slice(0, classMatch.index)` — i.e. everything
+  // BEFORE @Controller — which missed @Roles decorators placed alongside
+  // @Controller/@UseGuards (the codebase's canonical placement), inflating
+  // the baseline with ~90 false positives.
+  const classDecoratorsBlock = classMatch ? classMatch[0] : '';
+  const classHasRoles = /@Roles\s*\(/.test(classDecoratorsBlock);
+
 
   const findings = [];
 
