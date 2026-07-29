@@ -5,27 +5,12 @@ import { useCallback, useEffect, useState, useMemo } from "react";
 import { cloudApi, ProxmoxClusterRow, ClusterInput } from "@/features/vps/cloud";
 import { useToast } from "@/components/ui/Toast";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { CapacityBar } from "@/components/ui/CapacityBar";
 
 const EMPTY: ClusterInput = { name: "", host: "", port: 8006, username: "root@pam", tokenId: "", tokenSecret: "" };
 
 function fmtMB(mb: number) { return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`; }
 function fmtGB(gb: number) { return gb >= 1024 ? `${(gb / 1024).toFixed(2)} TB` : `${gb} GB`; }
-
-function CapacityBar({ used, total, label, format }: { used: number; total: number; label: string; format?: (n: number) => string }) {
-  const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
-  const color = pct > 90 ? "bg-red-500" : pct > 70 ? "bg-yellow-500" : "bg-cyan-400";
-  return (
-    <div className="min-w-[120px]">
-      <div className="flex justify-between text-xs mb-1">
-        <span className="text-white/60">{label}</span>
-        <span className="font-mono text-white/80">{format ? format(used) : used} / {format ? format(total) : total}</span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-white/10">
-        <div className={`h-full ${color} transition-all`} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
 
 export default function AdminClustersPage() {
   const [rows, setRows] = useState<ProxmoxClusterRow[]>([]);
