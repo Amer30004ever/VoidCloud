@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { UsersService } from './users.service';
@@ -21,8 +22,14 @@ import {
 } from './dto/create-user.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 
+type CurrentUserPayload = {
+  id: string;
+  role: Role;
+  impersonatedBy?: string;
+};
+
 @Controller('users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -42,9 +49,9 @@ export class UsersController {
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   create(
     @Body() dto: CreateUserDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.usersService.createUser(dto, user.id);
+    return this.usersService.createUser(dto, user.id, user.impersonatedBy);
   }
 
   @Get(':id')
@@ -58,18 +65,18 @@ export class UsersController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.usersService.updateUser(id, dto, user.id);
+    return this.usersService.updateUser(id, dto, user.id, user.impersonatedBy);
   }
 
   @Delete(':id')
   @Roles(Role.SUPER_ADMIN)
   delete(
     @Param('id') id: string,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.usersService.deleteUser(id, user.id);
+    return this.usersService.deleteUser(id, user.id, user.impersonatedBy);
   }
 
   @Post(':id/role')
@@ -77,9 +84,9 @@ export class UsersController {
   assignRole(
     @Param('id') id: string,
     @Body() dto: AssignRoleDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.usersService.assignRole(id, dto.role, user.id);
+    return this.usersService.assignRole(id, dto.role, user.id, user.impersonatedBy);
   }
 
   @Post(':id/suspend')
@@ -87,15 +94,15 @@ export class UsersController {
   suspend(
     @Param('id') id: string,
     @Body() body: { reason?: string },
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.usersService.suspendUser(id, body?.reason, user.id);
+    return this.usersService.suspendUser(id, body?.reason, user.id, user.impersonatedBy);
   }
 
   @Post(':id/activate')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  activate(@Param('id') id: string, @CurrentUser() user: { id: string }) {
-    return this.usersService.activateUser(id, user.id);
+  activate(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.usersService.activateUser(id, user.id, user.impersonatedBy);
   }
 
   @Post(':id/reset-password')
@@ -103,8 +110,8 @@ export class UsersController {
   resetPassword(
     @Param('id') id: string,
     @Body() dto: ResetPasswordDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.usersService.resetUserPassword(id, dto, user.id);
+    return this.usersService.resetUserPassword(id, dto, user.id, user.impersonatedBy);
   }
 }

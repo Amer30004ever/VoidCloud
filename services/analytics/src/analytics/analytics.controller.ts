@@ -1,8 +1,9 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
+import { CurrentUser } from '../decorators/current-user.decorator';
 import { AnalyticsService } from './analytics.service';
 
 @Controller('analytics')
@@ -39,5 +40,17 @@ export class AnalyticsController {
   @Get('export')
   export() {
     return this.analytics.exportCsv();
+  }
+
+  @Get('usage/me')
+  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN, Role.AGENT)
+  myUsage(@CurrentUser() user: { id: string; tenantId?: string }, @Query('days') days?: string) {
+    return this.analytics.tenantUsage(user.id, user.tenantId, Number(days || 30));
+  }
+
+  @Get('usage/tenants')
+  @Roles(Role.SUPER_ADMIN)
+  allTenants(@Query('days') days?: string) {
+    return this.analytics.allTenantsUsage(Number(days || 30));
   }
 }

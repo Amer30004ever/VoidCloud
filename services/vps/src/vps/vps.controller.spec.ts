@@ -5,6 +5,23 @@ import { RolesGuard } from '../guards/roles.guard';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { VpsController } from './vps.controller';
 
+jest.mock('@kubernetes/client-node', () => ({
+  KubeConfig: jest.fn().mockImplementation(() => ({
+    loadFromDefault: jest.fn(),
+    makeApiClient: jest.fn().mockReturnValue({
+      createNamespacedDeployment: jest.fn(),
+      patchNamespacedDeployment: jest.fn(),
+      deleteNamespacedDeployment: jest.fn(),
+      readNamespacedDeployment: jest.fn(),
+      createNamespacedService: jest.fn(),
+      patchNamespacedService: jest.fn(),
+      deleteNamespacedService: jest.fn(),
+    }),
+  })),
+  CoreV1Api: jest.fn(),
+  AppsV1Api: jest.fn(),
+}));
+
 /**
  * RolesGuard behaviour test for VpsController — first 10 routes in the
  * VPS RBAC batch. Each route asserts both the declared @Roles metadata

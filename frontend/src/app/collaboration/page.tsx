@@ -1,13 +1,13 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHeader } from "@workspace/ui-kit/page-header";
 import { MessageSquare, Users, BookOpen, Send, Search, Pin, Archive, Loader2, GitPullRequest, CheckCircle, XCircle, AlertTriangle, Filter, Calendar, Edit } from "lucide-react";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { AddItemButton, IconAddButton } from "@/components/ui/create-item-dialog";
-import { TeamChatPanel } from "@/components/collaboration/TeamChatPanel";
-import { collaborationApi } from "@/lib/collaboration";
+import { AddItemButton, IconAddButton } from "@workspace/ui-kit/create-item-dialog";
+import { TeamChatPanel } from "@/features/crm/TeamChatPanel";
+import { collaborationApi } from "@/features/crm/collaboration";
 
 function CollaborationPageContent() {
   const searchParams = useSearchParams();

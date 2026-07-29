@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Resend } from 'resend';
+import { PrismaService } from '../prisma/prisma.service';
+import { decryptSecret } from '../../../shared/crypto/crypto.util';
 
 /**
  * MailerService — sends transactional emails.
@@ -15,45 +17,64 @@ import { Resend } from 'resend';
  *
  * Falls back to Resend (RESEND_API_KEY) when SMTP is not configured.
  * Falls back to logging when neither is configured.
+ *
+ * If SMTP_PASS is missing from env vars, falls back to the PlatformSecrets store.
  */
 @Injectable()
-export class MailerService {
+export class MailerService implements OnModuleInit {
   private readonly logger = new Logger(MailerService.name);
   private transporter: nodemailer.Transporter | null = null;
   private resend: Resend | null = null;
+  private initialized = false;
   readonly from: string;
 
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async onModuleInit() {
     this.from =
       process.env.EMAIL_FROM ||
       (process.env.SMTP_USER
         ? `VoidCloud <${process.env.SMTP_USER}>`
         : 'VoidCloud <support.voidcloud@gmail.com>');
+    await this.initTransporter();
+    this.initialized = true;
+  }
 
-    if (
-      process.env.SMTP_HOST &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASS
-    ) {
+  private async initTransporter() {
+    if (this.transporter) return;
+    if (this.initialized) return;
+
+    const host = process.env.SMTP_HOST;
+    const user = process.env.SMTP_USER;
+    let pass = process.env.SMTP_PASS;
+
+    if (!pass && host && user) {
+      try {
+        const record = await this.prisma.platformSecret.findUnique({ where: { key: 'smtp_pass' } });
+        if (record) {
+          pass = decryptSecret(record.encryptedValue);
+        }
+      } catch {
+        this.logger.warn('Failed to load smtp_pass from PlatformSecret store');
+      }
+    }
+
+    if (host && user && pass) {
       const port = Number(process.env.SMTP_PORT || 587);
       this.transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
+        host,
         port,
-        secure: port === 465, // STARTTLS for 587 (Outlook), TLS for 465
+        secure: port === 465,
         requireTLS: port === 587,
-        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+        auth: { user, pass },
         tls: { ciphers: 'TLSv1.2' },
       });
-      this.logger.log(
-        `SMTP transport ready (${process.env.SMTP_HOST}:${port})`,
-      );
+      this.logger.log(`SMTP transport ready (${host}:${port})` + (process.env.SMTP_PASS ? '' : ' [value from secrets store]'));
     } else if (process.env.RESEND_API_KEY) {
       this.resend = new Resend(process.env.RESEND_API_KEY);
       this.logger.log('Resend transport ready');
     } else {
-      this.logger.warn(
-        'No SMTP_* or RESEND_API_KEY configured; emails will be logged only.',
-      );
+      this.logger.warn('No SMTP_* or RESEND_API_KEY configured; emails will be logged only.');
     }
   }
 
@@ -63,6 +84,8 @@ export class MailerService {
     html: string,
     text?: string,
   ): Promise<void> {
+    await this.initTransporter();
+
     if (this.transporter) {
       try {
         const info = await this.transporter.sendMail({

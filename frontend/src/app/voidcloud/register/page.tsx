@@ -38,6 +38,7 @@ function RegisterInner() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [tosAccepted, setTosAccepted] = useState(false);
 
   useEffect(() => {
     api.get("/cloud/plans").then((r) => setPlans(r.data ?? [])).catch(() => setPlans([]));
@@ -61,6 +62,7 @@ function RegisterInner() {
         password,
         phone: phone || undefined,
         planSlug,
+        tosAccepted: true,
       });
       setDone(true);
     } catch (e: unknown) {
@@ -130,9 +132,41 @@ function RegisterInner() {
           </div>
         </div>
 
-        <button disabled={busy} className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 py-3 font-semibold text-slate-950 disabled:opacity-60">
-          {busy ? "Creatingâ€¦" : "Create account â†’"}
+        <label className="flex items-start gap-2 text-sm text-white/80">
+          <input
+            type="checkbox"
+            checked={tosAccepted}
+            onChange={(e) => setTosAccepted(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-cyan-400"
+            required
+          />
+          <span>
+            I agree to the <Link href="/tos" target="_blank" className="text-cyan-300 hover:underline">Terms of Service</Link> and <Link href="/privacy" target="_blank" className="text-cyan-300 hover:underline">Privacy Policy</Link>.
+          </span>
+        </label>
+
+        <button disabled={busy || !tosAccepted} className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 py-3 font-semibold text-slate-950 disabled:opacity-60">
+          {busy ? "Creating…" : "Create account →"}
         </button>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-white/10" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-slate-950/80 px-2 text-white/50">Or continue with</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => window.location.href = '/api/v1/auth/google?context=user_signup'} className="rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-white hover:bg-white/10">
+            Google
+          </button>
+          <button type="button" onClick={() => window.location.href = '/api/v1/auth/github?context=user_signup'} className="rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-white hover:bg-white/10">
+            GitHub
+          </button>
+        </div>
+
         <p className="text-center text-sm text-white/60">
           Already have an account? <Link href="/voidcloud/login" className="text-cyan-300 hover:underline">Sign in</Link>
         </p>

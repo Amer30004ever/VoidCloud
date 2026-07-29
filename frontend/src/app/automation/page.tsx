@@ -1,14 +1,14 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
-import { LoadingState } from "@/components/ui/loading-state";
-import { ErrorState } from "@/components/ui/error-state";
-import { AddItemButton } from "@/components/ui/create-item-dialog";
+import { PageHeader } from "@workspace/ui-kit/page-header";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
+import { LoadingState } from "@workspace/ui-kit/loading-state";
+import { ErrorState } from "@workspace/ui-kit/error-state";
+import { AddItemButton } from "@workspace/ui-kit/create-item-dialog";
 import { Bot, Play, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { automationApi, type AutomationScript, type AutomationWorkflow } from "@/lib/automation";
+import { automationApi, type AutomationScript, type AutomationWorkflow } from "@/features/admin/automation";
 import { useState } from "react";
 
 type Tab = "scripts" | "workflows";

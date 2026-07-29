@@ -1,15 +1,15 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/AppLayout";
-import { HomelabSections } from "@/components/dashboard/HomelabSections";
-import { PageHeader } from "@/components/ui/page-header";
+import { HomelabSections } from "@/features/vps/HomelabSections";
+import { PageHeader } from "@workspace/ui-kit/page-header";
 import { GitBranch, Rocket, Server, Layers, Loader2, AlertTriangle, FileText, Play, ArrowRight, Activity, Cpu, HardDrive, Scale, RefreshCw, Trash2, Settings, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, Download } from "lucide-react";
-import { useStats, useFailedPods, useRecentDeployments, useRecentActivity, usePodStatus, useServiceStatus, useClusterHealth } from "@/hooks/useStats";
-import type { ClusterHealthData } from "@/lib/stats";
+import { useStats, useFailedPods, useRecentDeployments, useRecentActivity, usePodStatus, useServiceStatus, useClusterHealth } from "@/features/vps/useStats";
+import type { ClusterHealthData } from "@/features/vps/stats";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { exportToCsv, exportToPdf } from "@/lib/export";
-import { useMetricsWebSocket } from "@/hooks/useMetricsWebSocket";
+import { exportToCsv, exportToPdf } from "@/features/marketplace/export";
+import { useMetricsWebSocket } from "@/features/vps/useMetricsWebSocket";
 
 function getClusterUsageAverages(clusterHealth?: ClusterHealthData) {
   const nodes = clusterHealth?.nodes ?? [];
@@ -88,11 +88,11 @@ export default function DashboardPage() {
       })),
     ];
 
-    exportToCsv(`amer-portal-dashboard-${new Date().toISOString().slice(0, 10)}`, rows);
+    exportToCsv(`voidcloud-dashboard-${new Date().toISOString().slice(0, 10)}`, rows);
   };
 
   const handleExportPdf = () => {
-    exportToPdf("Amer Portal Dashboard Report", [
+    exportToPdf("VoidCloud Dashboard Report", [
       {
         heading: "KPI Summary",
         rows: [

@@ -43,15 +43,20 @@ export class UsersService {
     userEmail?: string,
     resource?: string,
     details?: unknown,
+    impersonatedBy?: string,
   ) {
     try {
+      const mergedDetails = {
+        ...(details as Record<string, unknown> | undefined),
+        ...(impersonatedBy ? { impersonatedBy } : {}),
+      };
       await this.prisma.auditLog.create({
         data: {
           action,
           userId,
           userEmail,
           resource,
-          details: details ? (details as Prisma.InputJsonValue) : undefined,
+          details: mergedDetails as Prisma.InputJsonValue,
         },
       });
     } catch (error) {
@@ -96,7 +101,7 @@ export class UsersService {
     return { user };
   }
 
-  async createUser(dto: CreateUserDto, actorId?: string) {
+  async createUser(dto: CreateUserDto, actorId?: string, impersonatedBy?: string) {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -134,7 +139,7 @@ export class UsersService {
     await this.logAudit('USER_CREATED', actorId, undefined, user.email, {
       role: user.role,
       mustChangePassword,
-    });
+    }, impersonatedBy);
 
     return {
       success: true,
@@ -145,7 +150,7 @@ export class UsersService {
     };
   }
 
-  async updateUser(id: string, dto: UpdateUserDto, actorId?: string) {
+  async updateUser(id: string, dto: UpdateUserDto, actorId?: string, impersonatedBy?: string) {
     const user = await this.prisma.user.update({
       where: { id },
       data: {
@@ -156,11 +161,11 @@ export class UsersService {
       },
       select: userSelect,
     });
-    await this.logAudit('USER_UPDATED', actorId, user.email, user.id, dto);
+    await this.logAudit('USER_UPDATED', actorId, user.email, user.id, dto, impersonatedBy);
     return { success: true, user };
   }
 
-  async assignRole(id: string, role: Role, actorId?: string) {
+  async assignRole(id: string, role: Role, actorId?: string, impersonatedBy?: string) {
     const user = await this.prisma.user.update({
       where: { id },
       data: { role },
@@ -168,11 +173,11 @@ export class UsersService {
     });
     await this.logAudit('USER_ROLE_ASSIGNED', actorId, user.email, user.id, {
       role,
-    });
+    }, impersonatedBy);
     return { success: true, user };
   }
 
-  async suspendUser(id: string, reason?: string, actorId?: string) {
+  async suspendUser(id: string, reason?: string, actorId?: string, impersonatedBy?: string) {
     const user = await this.prisma.user.update({
       where: { id },
       data: {
@@ -184,11 +189,11 @@ export class UsersService {
     });
     await this.logAudit('USER_SUSPENDED', actorId, user.email, user.id, {
       reason,
-    });
+    }, impersonatedBy);
     return { success: true, user };
   }
 
-  async activateUser(id: string, actorId?: string) {
+  async activateUser(id: string, actorId?: string, impersonatedBy?: string) {
     const user = await this.prisma.user.update({
       where: { id },
       data: {
@@ -198,11 +203,11 @@ export class UsersService {
       },
       select: userSelect,
     });
-    await this.logAudit('USER_ACTIVATED', actorId, user.email, user.id);
+    await this.logAudit('USER_ACTIVATED', actorId, user.email, user.id, undefined, impersonatedBy);
     return { success: true, user };
   }
 
-  async resetUserPassword(id: string, dto: ResetPasswordDto, actorId?: string) {
+  async resetUserPassword(id: string, dto: ResetPasswordDto, actorId?: string, impersonatedBy?: string) {
     const existing = await this.prisma.user.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('User not found');
 
@@ -230,7 +235,7 @@ export class UsersService {
 
     await this.logAudit('USER_PASSWORD_RESET', actorId, user.email, user.id, {
       mustChangePassword,
-    });
+    }, impersonatedBy);
 
     return {
       success: true,
@@ -241,14 +246,14 @@ export class UsersService {
     };
   }
 
-  async deleteUser(id: string, actorId?: string) {
+  async deleteUser(id: string, actorId?: string, impersonatedBy?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
       select: userSelect,
     });
     if (!user) throw new NotFoundException('User not found');
     await this.prisma.user.delete({ where: { id } });
-    await this.logAudit('USER_DELETED', actorId, user.email, id);
+    await this.logAudit('USER_DELETED', actorId, user.email, id, undefined, impersonatedBy);
     return { success: true, message: 'User deleted' };
   }
 }

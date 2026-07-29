@@ -56,3 +56,9 @@ database/node_modules/
 *.sst
 *.log
 **/.next/
+
+# Vendored third-party forks (tracked, built)
+# reference-only/ is gitignored below
+
+reference-only/
+

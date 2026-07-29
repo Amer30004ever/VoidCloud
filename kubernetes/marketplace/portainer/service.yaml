@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: portainer
+  namespace: voidcloud
+  labels:
+    app.kubernetes.io/name: portainer
+    app.kubernetes.io/managed-by: voidcloud-marketplace
+spec:
+  selector:
+    app.kubernetes.io/name: portainer
+  ports:
+    - port: 9000
+      targetPort: 9000
+      name: http
+  type: ClusterIP

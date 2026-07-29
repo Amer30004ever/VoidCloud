@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { cloudOrgs, type OrgMember, type OrgRole } from "@/lib/cloud";
+import { cloudOrgs, type OrgMember, type OrgRole } from "@/features/vps/cloud";
 
 const ROLES: OrgRole[] = ["ADMIN", "MEMBER", "VIEWER"];
 

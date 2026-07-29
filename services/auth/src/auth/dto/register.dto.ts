@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
+  IsBoolean,
   IsString,
   Matches,
   MinLength,
@@ -35,4 +36,8 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(Role)
   role?: Role;
+
+  @IsOptional()
+  @IsBoolean()
+  tosAccepted?: boolean;
 }

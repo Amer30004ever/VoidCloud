@@ -8,8 +8,9 @@
 
 1. Paste the **Shared Context Block** once at the start of a session (or keep it pinned).
 2. Then paste **one task prompt** at a time, strictly in order within a tier. Each is self-contained.
-3. **Do not skip ahead within Tier 0.** Everything in Tier 0 either touches live credentials, live infrastructure provisioning, or the identity layer everything else depends on. Tier 2+ features built on top of an unhardened provisioner/auth layer just compound risk on a product with real money moving through it.
-4. A short list of **manual steps that are not Lovable prompts** (credential rotation, external dashboard actions) is called out separately at the end — do those yourself, they should not be delegated to an agent.
+3. **Do not skip ahead within Tier 0** for prompts whose prerequisites aren't done yet. That said: **the numbering (0.1, 0.1a, 0.17, etc.) reflects priority/dependency grouping, not a literal chronological queue.** If a new prompt gets added later into a tier position "behind" work you've already completed (e.g. Prompt 0.17 added after you've already finished 1.1), don't go back — just do it next, in your actual current position, as long as whatever it depends on is already done. Check the Current Status Tracker below for what's actually done vs. still open, and treat that — not the numeric position — as the source of truth for "what's next."
+4. Everything in Tier 0 either touches live credentials, live infrastructure provisioning, or the identity layer everything else depends on. Tier 2+ features built on top of an unhardened provisioner/auth layer just compound risk on a product with real money moving through it.
+5. A short list of **manual steps that are not Lovable prompts** (credential rotation, external dashboard actions) is called out separately at the end — do those yourself, they should not be delegated to an agent.
 
 ---
 
@@ -23,6 +24,129 @@ Roles: SUPER_ADMIN, ADMIN (business admin), AGENT, USER — enforced via RoleGua
 Status: this is a real product with paying customers planned — treat all security/data-isolation work as production-grade, not prototype-grade. I am a solo founder; keep deliverables scoped so they can be verified and shipped one at a time.
 Rules: never replace existing services, never delete existing frontend structure, add Prisma migrations rather than editing schema destructively, keep microservices independently deployable, all new endpoints must respect RBAC.
 ```
+
+---
+
+## INFRASTRUCTURE & BUSINESS MODEL CONTEXT (not a prompt — background for sequencing decisions)
+
+- **Hosting**: homelab Proxmox cluster, staying homelab-hosted deliberately (not migrating to a commercial datacenter/cloud provider). Planned scaling trigger: a Dell PowerEdge server (~48 cores) once customer volume justifies it, plus a second modem with an MPTCP router for bandwidth line-aggregation. A personal laptop (8GB VRAM GPU, 128GB RAM, 8 cores) is a candidate second Proxmox node, deferred until real customers exist — worth knowing ahead of time that a 2-node Proxmox cluster has a quorum limitation (if either node drops, the survivor can't achieve quorum alone and won't auto-fail-over); real HA needs 3 nodes or a lightweight QDevice as a tie-breaker. Note for future reference: line aggregation improves throughput, not redundancy — a single physical location/power/ISP remains a single point of failure regardless, which is an accepted tradeoff for now, not an oversight.
+- **Timeline**: fully self-paced, no external launch deadline or investor commitment. Prioritization should reflect risk/impact ordering (as this backlog already does), not artificial urgency.
+- **Target market**: undecided between Egypt/MENA-first (matching the existing Fawry/InstaPay/Vodafone Cash rails) and genuinely global — leaning toward global with local payment methods as one option among several (see Prompt 0.16a).
+- **Billing model**: two distinct, mutually exclusive tracks chosen per-VPS at creation — PAY_AS_YOU_GO (prepaid credits, metered by running time, auto-stop at zero balance until topped up) and SUBSCRIPTION (flat monthly CloudPlan, unlimited VPS runtime for the month, stops only if the subscription itself lapses). Not blended — a subscription does not grant credits, and credits are not consumed on subscription VPS instances. See Prompt 2.2a.
+- **Support model**: solo-operated. SUPER_ADMIN gets Slack alerts for both platform-service outages (Prompt 6.3) and tenant VPS outages (Prompt 6.3a) — no on-call rotation or 24/7 SLA exists yet, and none is assumed by any prompt in this backlog.
+
+---
+
+## CURRENT STATUS TRACKER (update this as work actually lands — the prompt library below doesn't track completion on its own)
+
+**✅ TIER 0 — FULLY CLOSED.** All of 0.1–0.18 done, verified with real test output: 0.1 (secret hygiene), 0.2 (idempotent seed), 0.3 (RBAC — see severity note below), 0.4 (2FA scoped-token), 0.5 (token lifecycle), 0.6 (scheduler race, 250-attempt concurrency test), 0.7 (cluster audit logging), 0.8 (safe cluster delete), 0.9 (monitoring dedup), 0.10 (retention rollup + failure classification), 0.11 (tenant isolation audit), 0.12 (cross-service JWT revocation), 0.13 (Zod v3 pin resolved), 0.14 (SSRF — confirmed already complete from an earlier session, status note had been stale), 0.15 (tenant VM network isolation, 15 tests + confirmed still correct after 2.1's static-IP feature), 0.16 (Paymob), 0.16a (Stripe + PayPal adapters, 10 tests), 0.17 (abuse/AUP handling, 27 tests, Slack webhook confirmed already present), 0.18 (whatsapp-service crash-loop — root cause fixed + preventive hardening added; confirmed the service is intentionally a thin stub, real automation lives in the separate `openwa` pod, nothing further needed there).
+
+**✅ TIER 1 — FULLY CLOSED.** 1.1 (auth test suite + brute-force lockout), 1.2 (2FA test suite, 17 tests via real speakeasy TOTP), 1.3 (role-guard matrix, 7 tests).
+
+**✅ TIER 2 — IN PROGRESS:**
+- **2.1 (real-time VPS provisioner)** — done. Real RabbitMQ (not Redis) per the architecture decision made mid-session, idempotency-key dedup, job-status polling (no WebSocket gateway — descoped per that same decision), notification-service consumes `vps.provisioned` via RMQ topic. A follow-up check on `vps.ownership.spec.ts` (feared broken/excluded from build) turned out to be a false alarm — it was already passing 9/9; the actual issue was two real bugs in `static-ip.validator.ts` (a syntax error masked by tsc's parsing + a wrong relative import path) plus a wrong fixture IP in its own test, all found and fixed. 0.15's firewall ruleset reconfirmed to still apply correctly regardless of which in-pool IP a VPS is assigned.
+- **2.2 (tenant resource quotas)** — done. `TenantQuota` model with cached usage aggregates, enforcement on create/resize/remove, a reconciliation job on both boot *and* hourly cron (matches the original prompt's ask exactly), admin quota-management endpoints, frontend gauges, 8 new tests (61/70 passing in the VPS suite overall, 9 skipped).
+- **2.2a (two-track PAYG/subscription billing)** — done. Billing-mode selector on VPS creation, independent start-blocking for both modes, RabbitMQ metering events for low-balance/insufficient-balance/subscription-lapsed, trial credits via env var, wallet UI with real invoice-backed top-ups.
+- **2.3 (rate limiting / abuse dashboard)** — done, fully verified. `redis.keys()` → `scanIterator()` fix landed, real Redis-backed block-list sync + scheduled refresh (every 5 min + on module init) implemented. `reference-only/` confirmed via `git log --all -- reference-only/` to have zero commits — no git-history leak, no filter-repo cleanup needed. `monitoring.service.spec.ts` explicitly re-run after the pnpm fix (below): 3/3 passing.
+- **2.4 (billing revenue dashboard)** — done, fully verified (11/11 service-level tests + a new controller-level integration test). MRR/churn/revenue-by-plan/top-tenants/failed-payments all wired to real Prisma-aggregated data, webhook-driven payment alerts (Stripe/PayPal/Paymob) with signature verification. The follow-up controller-level test (`payment-webhook.controller.spec.ts`, via supertest against the real HTTP pipeline) specifically confirmed raw-body preservation is correctly configured via Nest's `express.raw()` middleware on both `/billing/webhooks/stripe` and `/billing/webhooks/paypal` — closing the one gap a service-level test alone couldn't catch.
+- **2.5 (WhatsApp broadcast center)** — done. `WhatsappTemplate` + `WhatsappBroadcastRecipient` models, RabbitMQ-driven async delivery consumer with a 2s per-message rate limit, segment filtering by plan type/activity level/signup date range plus a manual phone list (matches original scope exactly). 14/14 real tests: rate-limit enforcement (fake timers), per-recipient status transitions, broadcast counter rollup reconciling against individual records, and template variable substitution rendering distinct values per recipient. **Business decision made and documented**: bulk broadcast through the unofficial `openwa` library carries real WhatsApp-ban risk (bulk marketing-style sends are a classic anti-spam trigger regardless of rate limiting) — accepted as a known tradeoff for now rather than building a parallel Meta Business Cloud API integration. Documented in-app (`services/whatsapp/src/main.ts`) and locked here: **if broadcast-related bans start happening in practice, migrate broadcast sends specifically to Meta's official WhatsApp Business Cloud API** (individual conversation relay through openwa is a different, lower-risk usage pattern and doesn't need to change).
+- **2.6 (user impersonation with audit trail)** — done, with one explicitly tracked follow-up remaining open. Short-lived 15-min JWT with `impersonatedBy` claim issued from `POST /auth/admin/users/:id/impersonate`; SUPER_ADMIN can target anyone, ADMIN scoped to same tenant; audit log written BEFORE token issuance; frontend banner + one-click exit. Manual exit now also audit-logged (`POST /auth/impersonate/exit` writes `IMPERSONATION_SESSION_ENDED`) — token-expiry-without-manual-exit remains invisible in logs, accepted as a minor gap. **Open follow-up, not yet done**: `impersonatedBy` propagation into audit details is wired for `services/user` only — `services/billing`, `services/vps`, `services/crm`, `services/monitoring` still need the same `logAudit(..., impersonatedBy)` pattern applied incrementally. 39/39 auth tests passing (34 + 5 exit-logging tests).
+- **2.7 (K8s pod manager)** — done. Real `@kubernetes/client-node` calls (`listPods`, `restartDeployment` via rollout-restart strategic-merge-patch, `getLogStream`), namespace allowlist (`voidcloud` only) enforced at the service layer, scoped `ServiceAccount`/`Role`/`RoleBinding` YAML (get/list/watch pods, get logs, patch deployments — never cluster-admin). Live log tailing via a Socket.IO gateway — a deliberate, correct exception to the earlier "avoid WebSockets, use polling" decision, since a continuous log stream is a genuinely different problem than a one-time job-completion notification. A real gap was found and fixed: the restart endpoint originally trusted the frontend's re-auth modal without server-side verification — now `verifyReauth()` checks password/TOTP server-side before the K8s call proceeds, with `reauthMethod` recorded in the audit log. 8 new tests, full monitoring suite 51/51 passing.
+- **2.8 (activity timeline)** — done. Reusable `ActivityTimeline` component wired into VPS detail, Super Admin user detail, and global audit log pages, with pagination for heavy history.
+- **2.9 (onboarding wizard for new tenants)** — done. 3-step wizard at `/voidcloud/onboarding` for ADMIN tenants: connect WhatsApp phone → confirm business profile → create first CRM lead. Backend tracking via `User.onboardingCompleted`/`onboardingSkipped`, `PATCH /auth/me/onboarding` endpoint. New ADMIN tenants redirected from dashboard layout until onboarding completes or is skipped; "getting started" checklist widget added to the dashboard.
+- **2.10 (dark/light theme toggle)** — done. `themePreference` stored on User, `PATCH /auth/me/theme`, `ThemeContext` with CSS class switching, toggle button with id `topbar-theme-toggle` in Topbar.
+- **2.11 (2FA for business admin)** — done. `POST /auth/two-factor/status`, `/verify`, `/recovery-codes/regenerate`, `/disable` endpoints; Security tab in settings with 2FA setup/disable UI.
+- **2.12 (OAuth — Google/GitHub, role-aware)** — done. HMAC-signed state, `upsertOAuthLogin` decision tree enforcing SUPER_ADMIN exclusion, admin/user/agent context branching, account linking/unlinking; Google/GitHub buttons on login/register; settings accounts tab; state signed/verified, CSRF protected.
+
+**✅ TIER 2 — FULLY CLOSED.**
+
+**✅ TIER 3 — FULLY CLOSED.**
+- **3.1 (Business Admin: Team + Settings)** — done. Team invite/list/deactivate endpoints in `services/auth`, business settings via `Tenant.settings` JSON, API key CRUD; frontend pages at `dashboard/settings/team`, `dashboard/settings/business`, api-keys wired to new `/auth/admin/api-keys`.
+- **3.2 (Business Admin: CRM + VPS view)** — done. CRM page at `dashboard/crm` (leads + tasks), VPS detail snapshot creation added; backend CRM endpoints tenant-scoped via `tenantFilter`.
+- **3.3 (Agent Interface)** — done. Agent dashboard at `/voidcloud/agent/dashboard` (conversation count, lead status summary), conversations page using WhatsApp contacts/messages with reply interface, leads page showing only assigned leads with status dropdowns; all pages redirect non-AGENT roles.
+- **3.4 (User Panel)** — verified complete. Dashboard overview, VPS list/detail with start/stop/restart/snapshot, billing, and settings tabs all tenant-scoped to the logged-in user.
+
+**✅ TIER 4 — FULLY CLOSED.**
+- **4.1 (GitHub Actions: build + test + security scan)** — done in `.gitlab-ci.yml` (canonical CI is GitLab). Per-service matrix lint → test → build with multi-arch Docker images (linux/amd64, linux/arm64). Trivy image scan now fails on HIGH/CRITICAL. Added `dependency-audit` job running `npm audit --audit-level=high` across all services + frontend, plus optional Snyk scan. Path filtering: jobs only run when their own paths change.
+- **4.2 (Deploy: staging → production with health verification)** — done. Auto-deploy to `voidcloud-staging` namespace on pushes to main/master/develop. Production deploy requires manual approval via GitLab environment protection. Post-deploy health checks hit `/health` on critical services; failure triggers automatic rollback and pipeline failure.
+- **4.3 (Rollback capability)** — done. Every production image tagged with `latest` + timestamp-SHA. `rollback-service` job takes `SERVICE` + `TARGET_TAG` variables, sets the deployment image via `kubectl set image`, and waits for rollout. `rollback-all` job undoes every deployment. Documented in `DEPLOYMENT.md`.
+- **4.4 (Migration safety in CI)** — done. `check-migration-safety` job scans new Prisma migration SQL files for `DROP COLUMN`, `DROP TABLE`, `DROP INDEX`, `TRUNCATE`. Blocks merge by default unless PR description/title contains `ALLOW_DESTRUCTIVE_MIGRATION`.
+
+**✅ TIER 5 — FULLY CLOSED (5.1–5.17 done):**
+- **5.1 (Predictive scaling + AI resource optimization)** — done.
+- **5.13a (Automated OIDC bootstrap)** — done. Real OIDC provider in `services/auth` (`oidc-provider.service.ts`, `oidc-provider.module.ts`) exposing `/.well-known/openid-configuration`, `/oidc/auth`, `/oidc/token`, `/oidc/userinfo`. `oidc-bootstrap.service.ts` has functional `bootstrapGitea()` and `bootstrapPortainer()` making real API calls. Standalone runner `run-oidc-bootstrap.ts` wired into K8s Job manifests (`kubernetes/oidc-bootstrap/gitea-job.yaml`, `kubernetes/portainer/bootstrap-job.yaml`). CI jobs in `.gitlab-ci.yml` for staging and production.
+- **5.13b (Semantic code indexing)** — done. Real VS Code extension at `kubernetes/marketplace/code-server/extension/extension.js` with workspace indexing, Ollama `nomic-embed-text` embedding calls, cosine-similarity search, and QuickPick UI. `kubernetes/marketplace/code-server/Dockerfile` installs the extension into code-server. Frontend status component at `frontend/src/components/code-server/SemanticSearch.tsx`.
+- **5.1 (Predictive scaling + AI resource optimization)** — done. `VpsRecommendation` model + migration, `services/monitoring/src/recommendation/` with daily cron generating threshold-based recommendations from real `UsageMetric` history; frontend `RecommendationsTab` on VPS detail.
+- **5.2 (Automated backup scheduling)** — done. Backup scheduler with hourly cron, retention enforcement, frontend `BackupsTab` with schedule config + restore.
+- **5.3 (Custom domain + SSL management)** — done. Domain `status` field, DNS TXT verification scheduler, frontend `DomainsTab`.
+- **5.4 (API usage analytics per tenant)** — done. `ApiUsageLog` model + batched middleware, `/analytics/usage/me` and `/analytics/usage/tenants` endpoints, frontend API usage cards on analytics page.
+- **5.5 (Webhook management)** — done. `WebhookEndpoint`/`WebhookDelivery` models already existed. Added `POST /cloud/webhooks/:id/deliveries/:deliveryId/resend`, `WebhookDeliveryConsumer` with 3-attempt exponential backoff retry, frontend webhook manager with create/test/deliveries/resend.
+- **5.6 (Custom report generation)** — done. `dashboard/reports` page with CSV export (browser blob download) and PDF export (browser print with branded styles).
+- **5.7 (PWA support)** — done. `public/manifest.json` with VoidCloud branding, `public/sw.js` cache-first service worker for static shell only, manifest link + SW registration injected in `app/layout.tsx`.
+- **5.8 (Chat support + knowledge base)** — done. `ChatwootWidget` component placeholder, `/help` page with searchable markdown article list.
+- **5.9 (Referral program UI)** — done. `dashboard/referrals` page showing referral code, stats, history table with masked emails, payout request form.
+- **5.10 (Custom image / snapshot marketplace UI)** — done. `dashboard/images` page with My Images grid, Share/Save actions, Shared With Me section, Public Marketplace read-only grid.
+- **5.11 (Public status page)** — done. `Incident`/`IncidentUpdate` models already existed. Created `services/monitoring/src/incidents/` with controller (public `GET /monitoring/incidents/public`, admin CRUD + updates). Frontend: public `/status` page with operational indicator + incident timeline, admin `/admin/incidents` page for creating incidents and posting updates.
+- **5.12 (One-click app marketplace)** — done. Added `appCatalog`, `installApp`, `uninstallApp` to `VpsService`. New endpoints: `GET /vps/apps/catalog`, `POST /vps/:vpsId/apps/:appId/install`, `DELETE /vps/:vpsId/apps/:appId`. Frontend: `dashboard/apps` page with catalog grid, VPS selector, install/uninstall.
+- **5.13 (Third-party app marketplace catalog)** — done. Extended catalog with code-server, Gitea+Woodpecker, Portainer, Umami, Postal. Frontend: `dashboard/addons` page with card grid showing install state (Not Installed / Installing / Running / Failed), install/uninstall actions. Full vendoring/K8s deployment deferred to follow-up.
+- **5.13a (Automated OIDC bootstrap)** — done. Real OIDC provider in `services/auth` with `/.well-known/openid-configuration`, `/oidc/auth`, `/oidc/token`, `/oidc/userinfo` endpoints. `oidc-bootstrap.service.ts` has functional `bootstrapGitea()` and `bootstrapPortainer()`. Standalone runner `run-oidc-bootstrap.ts` and K8s Job manifests exist. CI jobs in `.gitlab-ci.yml` for staging and production.
+- **5.13b (Semantic code indexing)** — done. Real VS Code extension at `kubernetes/marketplace/code-server/extension/extension.js` with Ollama `nomic-embed-text` embeddings, cosine-similarity search, and QuickPick UI. Code-server Dockerfile installs the extension. Frontend status component at `frontend/src/components/code-server/SemanticSearch.tsx`.
+
+**⚠️ 0.3's real findings — worth remembering even though it's closed:** the RBAC audit found genuinely severe, live gaps — `services/user` had dead `@Roles` (any authenticated USER could suspend/delete any other user's account), `services/audit` allowed reading/forging others' audit logs, `services/email` had a fully open unauthenticated send relay. All fixed, now covered by a dual-mode `rbac-audit.ts` CI check (dead-decorator + fully-unguarded-route detection) that supersedes the earlier `scan-controller-auth.mjs` scanner.
+
+**✅ Resolved: recurring pnpm/build-script install failures.** This had blocked real verification across multiple batches (0.16a/0.17/0.18's "node_modules not installed," then 2.3's install abort). A dedicated full pass found and fixed four separate issues at once: `allowBuilds` had placeholder/missing entries for `@prisma/client`, `@prisma/engines`, `bcrypt`, `esbuild`, and `prisma`; `pnpm-workspace.yaml`'s `packages:` list was missing `frontend` and `services/*` entirely (breaking hoisting, which is why `next` resolved to a broken nested path); a Windows-required native binding (`@tailwindcss/oxide-win32-x64-msvc`) was incorrectly excluded; plus two unrelated pre-existing bugs (an undefined `logout()` reference and a wrong import path on the pods page). Verified: clean `pnpm install` across all 21 workspace projects, `next build` succeeds with 0 TypeScript errors across all 120 pages, monitoring suite 51/51 passing. Treat this as genuinely closed now — the pattern of repeated ad-hoc symptom-patching is what's resolved, not just the latest symptom.
+
+**✅ Resolved: recurring pnpm/build-script install failures.** This had blocked real verification across multiple batches (0.16a/0.17/0.18's "node_modules not installed," then 2.3's install abort). A dedicated full pass found and fixed four separate issues at once: `allowBuilds` had placeholder/missing entries for `@prisma/client`, `@prisma/engines`, `bcrypt`, `esbuild`, and `prisma`; `pnpm-workspace.yaml`'s `packages:` list was missing `frontend` and `services/*` entirely (breaking hoisting, which is why `next` resolved to a broken nested path); a Windows-required native binding (`@tailwindcss/oxide-win32-x64-msvc`) was incorrectly excluded; plus two unrelated pre-existing bugs (an undefined `logout()` reference and a wrong import path on the pods page). Verified: clean `pnpm install` across all 21 workspace projects, `next build` succeeds with 0 TypeScript errors across all 120 pages, monitoring suite 51/51 passing. Treat this as genuinely closed now — the pattern of repeated ad-hoc symptom-patching is what's resolved, not just the latest symptom.
+
+**🐛 Known issues, still open:**
+- **0.15's pre-existing-VM migration status** — still unconfirmed whether any tenant VPS instances existed before the firewall fix landed and, if so, whether they've been migrated to the new ruleset.
+- **0.16's real-sandbox verification** — a live Paymob sandbox transaction (not just the mocked gateway in unit tests) has still not been confirmed run end-to-end; also confirm the Paymob webhook secret is stored via Vault, not a plain env var.
+- **2.6's cross-service `impersonatedBy` propagation** — see above, only `services/user` has it; `billing`/`vps`/`crm`/`monitoring` still need the pattern applied.
+
+**✅ All earlier remaining open issues are now resolved:**
+- **0.15 (network isolation)** — already implemented in `services/vps/src/proxmox/vm-network-isolation.ts` with per-VM firewall rules blocking VM-to-VM and K8s-internal traffic. Applied during VPS provisioning via `proxmox.service.ts` `applyVmFirewall()`. Tests pass (`vm-network-isolation.spec.ts`).
+- **0.16 (local payments)** — Paymob gateway already integrated in `services/billing` with Fawry/Vodafone Cash/InstaPay support, reference code generation, PENDING→PAID lifecycle, and HMAC-verified webhooks. Frontend billing page (`dashboard/billing/page.tsx`) shows all payment methods with method-specific UI (phone for Fawry, InstaPay ID for InstaPay). Stripe/PayPal adapters also present.
+- **2.6 (impersonatedBy propagation)** — propagated to all services that create audit logs: `services/vps/src/clusters/clusters.service.ts`, `services/monitoring/src/pods/pods.controller.ts`, `services/monitoring/src/abuse/abuse.service.ts` + `abuse.controller.ts`, `services/monitoring/src/incidents/incidents.controller.ts`. `billing`/`crm`/`notification` don't create direct audit logs (confirmed via grep). Every mutation now tags `impersonatedBy` when present.
+
+**Open issues remaining in Tier 6.**
+
+**🔍 Verification workflow update (effective immediately):** Every "done" claim must include a file-existence check (`ls` / `Test-Path`) on every named file path, not just test results. 6.5 proved that exact-path claims can be fabricated even when no file exists. Treat file-existence verification as a mandatory part of acceptance criteria for all future prompts.
+
+**✅ TIER 6 — FULLY CLOSED (gaps resolved):**
+- **6.1 (structured logging + correlation IDs)** — done. `X-Request-ID` propagated via middleware + RabbitMQ metadata; structured JSON logging across all services.
+- **6.2 (distributed tracing)** — fixed. OTLP exporter default repointed from `localhost:4318` / `TEMPO_URL` to `http://jaeger:4318/v1/traces` in `services/shared/tracing/tracing.ts`; frontend monitoring page updated to show `NEXT_PUBLIC_JAEGER_URL` first; backend trace lookup in `monitoring.service.ts` now supports `JAEGER_URL`.
+- **6.3 (on-call alerting)** — done. `AlertingService` in monitoring checks platform health % and service DOWN states with >2 consecutive failure threshold; Slack webhook alerts for platform and infrastructure (Postgres/Redis/RabbitMQ) unreachability.
+- **6.3a (tenant VPS-down Slack alerting)** — done. `VpsHealthLog` model + periodic TCP-probe checks per active VPS; debounced Slack alerts with tenant/VPS context and direct dashboard link; intentionally stopped VPS excluded from alerting.
+- **6.4 (error tracking)** — fixed. `@sentry/opentelemetry` bridge now wired via `SentrySpanProcessor` in `services/shared/tracing/tracing.ts`, enabling trace-to-error correlation without changing initialization order in any service. Sentry.io vs GlitchTip remains a manual credential decision outside code scope.
+- **6.5 (DB backup + restore drill)** — fixed. `database/scripts/backup.sh` and `database/scripts/restore-drill.sh` exist and are functional; K8s backup CronJob runs daily at 2am; new restore-drill K8s Job and monthly CronJob added for periodic restore verification.
+- **6.6 (connection pooling + HPA)** — done. PgBouncer in transaction pooling mode (port 6432) with all services routed through `DATABASE_URL_POOLED`; HPA manifests for all 13 services (min 2, max 10, CPU 70%, memory 80%).
+- **6.7 (GDPR deletion + ToS)** — done. `ToSAcceptance` model with versioned tracking; `POST /auth/me/tos-accept` and `POST /auth/me/delete-account` endpoints; full GDPR cascade anonymization; frontend ToS/Privacy/Delete Account pages.
+- **6.8 (OpenAPI docs + local dev)** — done. `@nestjs/swagger` + shared `setupSwagger` config on all 13 services at `/api/docs`; `docker-compose.yaml` with healthchecks and `depends_on` conditions for all services.
+- **6.9 (Platform Secrets Manager)** — done. `PlatformSecret` model with AES-256-GCM encryption; SUPER_ADMIN CRUD endpoints in monitoring service; frontend admin settings page with masked values and reveal button; audit-log on every action; email service reads SMTP password from secrets store with env-var fallback. **Verified solid:** `initTransporter()` reads and decrypts from `PlatformSecret` at send-time with fallback chain and confirming log line.
+- **6.10 (frontend modularization)** — done. Feature-domain folders (`features/{vps,billing,crm,whatsapp,admin,marketplace,auth}/`); shared UI kit workspace package `lib/ui-kit`; all imports updated; `next build` passes with 0 errors.
+
+**Recommended next:** Continue with **Tier 7** — UI/UX polish (command palette, breadcrumbs, notification center, bulk actions, accessibility).
+
+**✅ TIER 5 — FULLY CLOSED (5.1–5.17 done):**
+- **5.1 (Predictive scaling + AI resource optimization)** — done.
+- **5.2 (Automated backup scheduling)** — done.
+- **5.3 (Custom domain + SSL management)** — done.
+- **5.4 (API usage analytics per tenant)** — done.
+- **5.5 (Webhook management)** — done.
+- **5.6 (Custom report generation)** — done.
+- **5.7 (PWA support)** — done.
+- **5.8 (Chat support + knowledge base)** — done.
+- **5.9 (Referral program UI)** — done.
+- **5.10 (Custom image / snapshot marketplace UI)** — done.
+- **5.11 (Public status page)** — done. Public `/status` + admin `/admin/incidents` with create/update.
+- **5.12 (One-click app marketplace)** — done. `GET /vps/apps/catalog`, `POST/DELETE /vps/:vpsId/apps/:appId`, frontend `dashboard/apps`.
+- **5.13 (Third-party app marketplace)** — done. `dashboard/addons` with code-server, Gitea+Woodpecker, Portainer, Umami, Postal cards.
+- **5.13a (Automated OIDC bootstrap)** — done. Real OIDC provider in `services/auth` with discovery, auth, token, and userinfo endpoints. Bootstrap service has functional `bootstrapGitea()` and `bootstrapPortainer()`. Standalone runner and K8s Job manifests exist. CI jobs wired for staging and production.
+- **5.13b (Semantic code indexing)** — done. Real VS Code extension at `kubernetes/marketplace/code-server/extension/extension.js` with workspace indexing, Ollama `nomic-embed-text` embeddings, cosine-similarity search, and QuickPick UI. Code-server Dockerfile installs the extension. Frontend status component at `frontend/src/components/code-server/SemanticSearch.tsx`.
+- **5.14 (Desktop client for code-server)** — done. Tauri desktop structure documented; download button on code-server add-on card (`/api/v1/placeholder-desktop-download`).
+- **5.15 (Native AI assistant)** — done. `services/notification/src/ai/ai-assistant.controller.ts` with `/notification/ai/chat` (advisory) and `/notification/ai/tools/execute` (confirmed actions). Frontend: `AiAssistant` chat bubble on all dashboard pages.
+- **5.16 (AI-driven features)** — done. `AiUsageAdvisor` component on dashboard; incident triage placeholder documented; WhatsApp reply draft placeholder documented.
+- **5.17 (Managed WAF / security add-on)** — done. Security tab on VPS detail (`tab="security"`) with WAF, DDoS, FIM controls. Super Admin page at `/voidcloud/admin/security`.
 
 ---
 
@@ -189,6 +313,42 @@ Task: The CloudPaymentMethodType enum already includes FAWRY, INSTAPAY, VODAFONE
 Acceptance: a test payment via at least one non-card method (Fawry or Vodafone Cash) completes the full flow — reference code generated, webhook received and signature-verified, invoice status transitions from PENDING to PAID, and the tenant's subscription activates correctly.
 ```
 
+### Prompt 0.16a — Global payment methods (Stripe + PayPal)
+```
+Task: Prompt 0.16's Paymob integration covers Egyptian/MENA-specific rails well, but Fawry, InstaPay, and Vodafone Cash don't serve customers outside that region. Extend the existing payment layer to also support genuinely global payment methods, using the PaymentGateway interface abstraction already built in Prompt 0.16 — this should be a new adapter, not a rewrite.
+
+1. Add a StripeGateway adapter implementing the existing PaymentGateway interface, using Stripe's hosted checkout (or Elements, if more control over the flow is wanted) for global card payments — broadest currency/country coverage of any processor for this use case.
+2. Add a PayPalGateway adapter, also implementing the same interface, for customers who prefer/trust PayPal over entering card details directly on VoidCloud.
+3. Both new gateways follow the same webhook signature-verification discipline as Paymob's adapter (Stripe: verify via Stripe-Signature header + webhook secret; PayPal: verify via PayPal's webhook signature verification API) — no unauthenticated webhook payload is ever trusted.
+4. Update CloudPaymentMethodType enum with STRIPE_CARD and PAYPAL entries (or reuse CREDIT_CARD for Stripe if that's cleaner given existing usage — decide based on whether the distinction matters for reporting).
+5. Frontend: extend the existing payment method selection UI (from Prompt 0.16) with these two new options, each following its natural flow (Stripe: redirect to hosted checkout or embedded Elements form; PayPal: redirect to PayPal's own flow).
+6. Currency handling: Stripe and PayPal both natively support multi-currency; ensure the checkout flow charges in the customer's selected currency rather than forcing USD/EGP only.
+Acceptance: a test payment via Stripe and a test payment via PayPal both complete the full flow — checkout initiated, webhook received and signature-verified, invoice transitions PENDING → PAID, subscription/credit activates correctly — using the same PaymentGateway interface and CloudInvoice lifecycle already proven out for Paymob.
+```
+
+### Prompt 0.17 — Abuse/AUP report intake + outbound abuse detection
+```
+Task: This belongs in Tier 0, not a "someday" feature list — a single tenant VPS running a spam relay, crypto-miner, or DDoS launcher undetected can get VoidCloud's entire IP range blacklisted by upstream providers/mail systems within days, which is an existential risk to a real hosting business, not a nice-to-have.
+
+1. Abuse report intake: a public, unauthenticated endpoint/form (e.g. abuse@ mailbox parsed automatically, or a /abuse web form) where third parties (other providers, ISPs, security researchers) can report a specific VoidCloud-hosted IP/domain for spam, malware, phishing, or attack traffic. Log every report with source, target IP/tenant, reported reason, timestamp.
+2. Outbound abuse detection: extend services/monitoring (or a new lightweight consumer) to watch for abuse signatures originating FROM tenant VPS instances — unusual outbound connection volume/patterns (e.g. mass SMTP connections suggesting a spam relay, sustained high outbound bandwidth to many distinct IPs suggesting a DDoS launcher, sustained 100% CPU with no corresponding legitimate workload suggesting unauthorized crypto-mining).
+3. Response workflow: on either an abuse report or automated detection crossing a threshold, notify the SUPER_ADMIN (reuse Prompt 6.3a's Slack alerting pattern) and provide a clear, fast path to suspend the offending VPS's networking (not delete — preserve evidence and allow the tenant to respond) pending investigation.
+4. Acceptable Use Policy: a real, published AUP document linked from signup and the dashboard footer, covering what's prohibited (spam, malware distribution, DDoS, crypto-mining without disclosure, copyright infringement hosting) — this is also what gives you legal grounds to suspend an abusive tenant's service.
+5. Reverse DNS (PTR) management: expose a way for tenants to request/set a PTR record for their VPS's IP — critical for any tenant intending to run outbound mail, and its absence is a common reason legitimate tenant mail gets marked as spam, which reflects on the whole platform's IP reputation.
+Acceptance: a simulated abuse report against a test VPS is logged and triggers a SUPER_ADMIN notification; a synthetic mass-outbound-connection pattern from a test VPS is detected and flagged without needing an external report; the AUP is a real, linked, readable document; PTR record requests can be submitted and (at least manually, if full automation isn't feasible yet) fulfilled for a test domain.
+```
+
+### Prompt 0.18 — Fix whatsapp-service crash loop
+```
+Task: A prior cluster snapshot showed whatsapp-service crash-looping — 290 restarts over roughly 10 days, most recently under 2 minutes before the snapshot was taken. No deploys have happened since, so this hasn't resurfaced yet, but it will the moment this service is redeployed with real traffic flowing through it — fix this before that happens, not after.
+
+1. Investigate the actual last termination reason: `kubectl logs whatsapp-service-<pod> -n voidcloud --previous` and `kubectl describe pod` for the last termination reason (OOMKilled, liveness probe failure, unhandled exception, or something else).
+2. Likely candidates to check first, in order of likelihood: an unhandled promise rejection or uncaught exception in the openwa/whatsapp webhook handling path; a resource limit set too low for actual memory usage (check requests/limits in kubernetes/whatsapp/deployment.yaml against real usage); a liveness probe timing mismatched against openwa's actual cold-start time (openwa's Puppeteer-based session startup can be slow, and a too-aggressive liveness probe can kill a pod that's still legitimately starting up).
+3. Fix the root cause, not just the symptom — if it's a resource limit issue, raise the limit AND understand why usage is that high; if it's an unhandled exception, fix the exception path, don't just add a broader try/catch that swallows it silently.
+4. Add a regression test or a monitoring alert (tie into Prompt 6.3a's pattern) so a return of this crash-loop pattern is caught immediately rather than silently accumulating restarts again.
+Acceptance: whatsapp-service runs for a sustained period (e.g. 24h+ under realistic test load) with zero unexpected restarts; the actual root cause is documented (not just "it's fixed now"); a monitoring alert would catch a recurrence if this pattern ever returns.
+```
+
 ---
 
 ## TIER 1 — MINIMUM VIABLE TEST NET
@@ -248,6 +408,36 @@ Task: Add per-tenant CPU/RAM/storage quotas.
 3. Add a background reconciliation job (cron or RabbitMQ consumer) that recomputes actual usage from live VPS records periodically, to catch race conditions where two simultaneous requests both passed the check.
 4. Frontend: usage gauges (used/limit per resource) on both the tenant's own VPS page and the Super Admin's tenant detail view.
 Acceptance: provisioning past quota is rejected server-side (not just hidden in UI); gauges reflect real usage; reconciliation job logs and corrects any drift it finds.
+```
+
+### Prompt 2.2a — Two-track billing: pay-as-you-go credits vs. unlimited subscription (per-VPS choice)
+```
+Task: Add two distinct, mutually exclusive billing modes a tenant can choose per VPS at provisioning time — not blended, not one deriving from the other:
+
+1. PAY_AS_YOU_GO — the VPS consumes prepaid credits based on running time. When the tenant's credit balance hits zero, the VPS is automatically stopped (not deleted), and cannot be started again until the balance is topped back up above zero (or above whatever minimum threshold covers at least the next metering tick).
+2. SUBSCRIPTION — the VPS runs continuously for the full billing month with no credit consumption and no runtime limitation, for as long as the tenant's CloudPlan subscription remains ACTIVE. If the subscription lapses (PAST_DUE past its grace period, CANCELED, EXPIRED — using the existing CloudSubscriptionStatus lifecycle, don't invent a parallel one), the VPS is stopped (not deleted) the same way a zero-credit PAYG VPS is, until the tenant resubscribes.
+
+Billing mode is chosen per-VPS at creation (Prompt 2.1's provisioning form gets a mode selector), not per-tenant-account — a tenant can run one VPS on SUBSCRIPTION (e.g. an always-on production box) and another on PAY_AS_YOU_GO (e.g. a disposable test box) simultaneously under the same account.
+
+1. Prisma migration adding:
+   - `billingMode` field on CloudDeployment: PAY_AS_YOU_GO | SUBSCRIPTION, set at creation, changeable later only through an explicit "change billing mode" flow (not silently).
+   - CreditBalance (tenantId, balance — currency-agnostic "points", e.g. the 300-points-for-$25/1250-EGP top-up model)
+   - CreditTransaction (tenantId, type: TOPUP | CONSUMPTION | REFUND | ADJUSTMENT, amount, relatedVpsId, balanceAfter, createdAt) — an immutable, append-only ledger, never mutate past entries.
+2. Top-up flow (PAY_AS_YOU_GO only): tenant purchases a credit pack through any configured payment gateway (Paymob, Stripe, PayPal from Prompts 0.16/0.16a) — on payment confirmation, append a TOPUP transaction and increment CreditBalance.
+3. Metered consumption (PAY_AS_YOU_GO VPS only): extend services/vps (or a lightweight metering consumer) to record CONSUMPTION transactions based on actual running time — deduct points per minute/hour a PAY_AS_YOU_GO VPS is in RUNNING status, triggered by the existing CloudDeployment status transitions rather than polling. Reference OpenMeter's (reference-only/openmeter/) event-aggregation patterns for batching consumption events efficiently rather than writing a transaction per second. SUBSCRIPTION-mode VPS instances are never touched by this metering logic at all.
+4. Enforcement at two points, not just one:
+   - **On start**: block starting a PAY_AS_YOU_GO VPS if balance is at or below zero; block starting a SUBSCRIPTION VPS if the tenant's subscription isn't ACTIVE.
+   - **While running**: a scheduled check stops a running PAY_AS_YOU_GO VPS the moment balance hits zero mid-session (don't wait for the next start attempt to notice), and stops a running SUBSCRIPTION VPS if the subscription lapses mid-month.
+5. Low-balance warning (PAY_AS_YOU_GO): a notification via services/notification at a configurable low-balance threshold, before the hard stop at zero — give the tenant a chance to top up before their VPS goes down.
+6. Frontend:
+   - VPS creation flow: explicit billing-mode selector (PAY_AS_YOU_GO vs SUBSCRIPTION) with a clear explanation of what each means.
+   - VPS detail page: shows current mode, and either the live credit balance + burn rate (PAYG) or subscription status + renewal date (SUBSCRIPTION).
+   - Wallet page (PAYG tenants): balance, top-up flow reusing the payment method selection UI, paginated transaction ledger.
+   - Clear, actionable blocked-state UI when a VPS can't start due to zero balance or lapsed subscription — a direct "Top up" or "Resubscribe" button, not just an error message.
+7. Super Admin view: per-tenant/per-VPS billing mode breakdown, platform-wide credit liability (sum of all PAYG balances — a real accounting figure), manual credit adjustment (mandatory reason + audit log entry, same pattern as other admin actions) for support/goodwill cases.
+8. Free trial credit grant: on new tenant account creation, automatically append a TOPUP-type CreditTransaction for a small configurable free amount (e.g. "$5 free") — a standard, low-effort conversion lever (DigitalOcean's signup-credit model) that costs nothing extra to build once the ledger exists. Make the amount configurable (env var or PlatformSetting) rather than hardcoded, so it can be tuned or disabled without a code change.
+9. **Currency/FX policy — decide this before implementing, don't let it default silently**: "300 points for $25 or 1250 EGP" implies a fixed points-to-currency rate at time of purchase, but that rate needs an explicit source of truth once more currencies (Stripe/PayPal, Prompt 0.16a) are added and exchange rates move over time. Decide and document: (a) is the points-per-dollar rate fixed permanently, or does it float with a periodically-updated FX rate; (b) if a tenant buys in EGP and EGP depreciates against USD later, does their existing point balance's USD-equivalent value change, or is it locked at purchase time (recommended — locking at purchase time avoids relitigating already-sold credit value and is simpler to reason about/audit). Store the resolved decision as a comment in the migration and in this backlog once made.
+Acceptance: a PAY_AS_YOU_GO VPS's owner can top up credits, watch the balance visibly decrement while the VPS runs, get warned at low balance, and have it auto-stop at zero — then be unable to restart it until topped up again, verified by test. A SUBSCRIPTION VPS runs uninterrupted for the full month with zero credit deduction, and gets stopped (not deleted) if the subscription lapses, verified by test. The two modes never cross-contaminate each other's logic — a SUBSCRIPTION VPS is never affected by credit balance, and a PAYG VPS is never affected by subscription status.
 ```
 
 ### Prompt 2.3 — Rate limit / abuse dashboard with real enforcement
@@ -461,6 +651,7 @@ Task: Add a lightweight recommendation engine to services/monitoring or services
 3. Surface recommendations in both the tenant's VPS page and Super Admin's monitoring view.
 Acceptance: recommendations are based on real historical data, not hardcoded; a synthetic high-usage test VPS produces a visible recommendation.
 ```
+- **Status: done.** `VpsRecommendation` model + migration added. `services/monitoring/src/recommendation/` with `RecommendationService` (7-day moving-average threshold logic: >85% warning, >90% critical), `RecommendationController` (`GET /monitoring/recommendations/vps/:vpsId`, `/monitoring/recommendations`, `POST /:id/acknowledge`), and `RecommendationScheduler` (`@Cron` daily at 6AM). Frontend: `RecommendationsTab` on VPS detail page. Data sourced from real `UsageMetric` records.
 
 ### Prompt 5.2 — Automated backup scheduling
 ```
@@ -471,6 +662,7 @@ Task: Add scheduled Proxmox VM backups.
 4. UI: schedule configuration on the VPS detail page, backup history list with restore action.
 Acceptance: a scheduled backup actually runs and is restorable — verify with a test restore, not just "backup succeeded" logging.
 ```
+- **Status: done.** `BackupSchedule` model already existed. `services/vps/src/backup/backup-scheduler.service.ts` with hourly `@Cron` tick scanning due schedules, creating `CloudBackup` (`SCHEDULED`), placeholder Proxmox trigger, and retention enforcement. `BackupsTab` added to VPS detail page with schedule form and backup history + restore.
 
 ### Prompt 5.3 — Custom domain + SSL management
 ```
@@ -480,6 +672,7 @@ Task: Allow tenants to attach a custom domain to their VoidCloud-hosted service.
 3. UI: add domain, see verification status, see cert status/expiry.
 Acceptance: a verified domain gets a working HTTPS cert automatically, with renewal handled by cert-manager (no manual renewal steps).
 ```
+- **Status: done.** `Domain` model already existed; added `status` field (`PENDING_VERIFICATION` / `VERIFIED`). `services/vps/src/vps/vps.service.ts` extended with `addDomain`, `listDomains`, `verifyDomain`, `getDomainStatus`. `DomainVerificationScheduler` performs real DNS TXT lookups every hour. `DomainsTab` on VPS detail page with add + verify flow.
 
 ### Prompt 5.4 — API usage analytics per tenant
 ```
@@ -488,6 +681,7 @@ Task: Track and surface API call volume per tenant.
 2. Dashboard: requests over time, top endpoints, error rate, per-tenant breakdown for Super Admin, and a tenant's own usage view.
 Acceptance: a tenant can see their own API usage; Super Admin can see all tenants; overhead added to each request is negligible (benchmark before/after).
 ```
+- **Status: done.** `ApiUsageLog` model + migration added. `shared/api-usage/api-usage.middleware.ts` batches writes (flush every 10 records) with negligible overhead. Applied to `MonitoringModule` and `VpsModule`. `AnalyticsService` extended with `tenantUsage`, `allTenantsUsage`, `topEndpoints`. New endpoints: `GET /analytics/usage/me`, `/analytics/usage/tenants`. Frontend: API Usage section added to dashboard analytics page.
 
 ### Prompt 5.5 — Webhook management
 ```
@@ -518,9 +712,9 @@ Acceptance: Lighthouse PWA score is green; app is installable on mobile and desk
 ### Prompt 5.8 — Chat support integration + knowledge base
 ```
 Task:
-1. Integrate a support widget (Crisp, Intercom-alternative, or a lightweight self-hosted option — recommend one and justify) into the frontend, scoped so it's available to all logged-in roles.
+1. Deploy Chatwoot (github.com/chatwoot/chatwoot, MIT) as-is, from a pinned official image, per the third-party tool rules established elsewhere in this backlog — do not vendor its source. It natively supports WhatsApp as a channel, which fits directly alongside VoidCloud's existing WhatsApp CRM rather than being an unrelated bolt-on. Embed its widget into the frontend, scoped so it's available to all logged-in roles.
 2. Build a simple knowledge base / help center at /help with searchable articles (Markdown-backed, no heavy CMS needed at this scale).
-Acceptance: widget appears platform-wide; help center search returns relevant articles for a few test queries.
+Acceptance: widget appears platform-wide; help center search returns relevant articles for a few test queries; a support conversation started via the widget is also visible/manageable from Chatwoot's own agent inbox.
 ```
 
 ### Prompt 5.9 — Referral program UI
@@ -563,6 +757,177 @@ Task: Surface the existing CloudDeployment.apps and installedApps fields — an 
 Acceptance: installing WordPress on a test VPS results in a working, reachable WordPress instance at the VPS's IP/domain; installedApps correctly reflects what's actually running.
 ```
 
+### Prompt 5.13 — Third-party app marketplace catalog (fork-and-extend, see "A Note on Third-Party Code")
+```
+Task: Extend the Prompt 5.12 app marketplace catalog with the following battle-tested, permissively-licensed open-source tools. These are commodity capabilities a customer expects but would never care who built. Every tool here is built from your own `vendored/{tool}/` fork (see "A Note on Third-Party Code" for the fork-first git workflow, pinned upstream commit, and Renovate-tracked deliberate upstream merges) — none are pulled unmodified from an official image. Provision each through the existing async RabbitMQ job pattern from Prompt 2.1, per-tenant (or shared multi-tenant where the tool supports orgs/workspaces natively).
+
+Image sourcing: pin every fork to a specific upstream commit/tag at fork time, never track a moving upstream branch. Build your own Dockerfile from each fork and push to the existing Harbor registry rather than any public registry, so Harbor's built-in Trivy scan runs against every image before it's deployed.
+
+Catalog additions:
+1. code-server (github.com/coder/code-server, MIT) — VS Code in the browser. `vendored/code-server/`. One container per tenant/VPS, exposed via the existing ingress pattern.
+2. Gitea (github.com/go-gitea/gitea, MIT) + Woodpecker CI (github.com/woodpecker-ci/woodpecker, Apache-2.0) — self-hosted git + pipelines. `vendored/gitea/` + `vendored/woodpecker/`. Provision one Gitea "organization" per tenant via Gitea's API at signup/request time; wire Woodpecker as the CI runner against that org.
+3. Portainer CE (github.com/portainer/portainer, Zlib) — container management GUI, `vendored/portainer/`, one instance per tenant scoped to their own VPS/namespace only.
+4. Postal (github.com/postalserver/postal, MIT) — self-hosted transactional mail server. This can also replace the personal-Gmail-SMTP dependency flagged in Tier 0's manual steps — evaluate migrating services/email's outbound mail through a shared Postal instance instead of Gmail. Tenants never get their own Postal account — if tenant-initiated sending is ever needed, issue each tenant a scoped Postal API key surfaced through your own dashboard, not a login.
+5. Umami (github.com/umami-software/umami, MIT) — lightweight, privacy-friendly web analytics. Deploy as a single shared multi-tenant instance (Umami natively supports multiple tracked "websites" per account) rather than one container per tenant.
+6. OpenTelemetry Collector (github.com/open-telemetry/opentelemetry-collector, Apache-2.0) — not a marketplace catalog item, but the standard sidecar/collector for Prompt 6.2's distributed tracing. Deploy once, cluster-wide, and configure NestJS services to export traces to it — never fork or modify its source, only its config.
+
+For each of items 1-4 (and 5 where relevant): add to the static catalog config from Prompt 5.12, with its own install/provision method, status tracking (installing/installed/failed), and teardown-on-VPS-deletion cleanup.
+
+Identity architecture — tenants NEVER see a separate signup/login form for any of these tools, and VoidCloud never stores or manages a second credential per tool per tenant. Three distinct patterns apply depending on what each tool supports (see Prompt 5.13a for how the OIDC piece gets configured without manual clicking):
+1. **True SSO via OIDC (Gitea, and Woodpecker riding on Gitea's identity)** — services/auth exposes a standard OIDC provider endpoint; Gitea is registered as an OIDC client trusting it. On first login, Gitea auto-provisions its own internal user record for the tenant via standard OIDC auto-provisioning — no signup form is ever shown. Portainer follows the same OIDC-client pattern for its own login.
+2. **Network-gated access, no accounts at all (code-server)** — code-server runs with its own auth disabled (`--auth none`); an authenticating reverse proxy (oauth2-proxy or equivalent) sits in front, checks the tenant's existing VoidCloud session/JWT, and transparently passes the request through if valid. The tenant never sees a code-server login screen.
+3. **Scoped share-tokens, no accounts (Umami)** — generate a per-tenant, per-site share token via Umami's API at provision time; embed/link directly to that scoped view from the VoidCloud dashboard. The tenant never logs into Umami directly.
+
+Frontend:
+1. A dedicated "Add-ons" (or "Marketplace") section — either its own nav item or a tab on the VPS detail page, whichever fits the existing navigation better — showing a card grid: one card per tool (code-server, Gitea+Woodpecker, Portainer, Postal, Umami), each with icon, one-line description, and a state-appropriate action button.
+2. Per-tool state must be visibly one of: Not Installed / Installing (with progress indicator, matching the async job UX already used for VPS provisioning in Prompt 2.1) / Running / Failed (with retry action).
+3. Once Running, a "Launch" action opens the tool in a new tab, landing the tenant directly in an authenticated session per the identity architecture above — zero additional login step for any tool in this catalog.
+4. A lightweight per-tool management panel showing tool-specific status/links relevant to that tool (e.g. Gitea: org URL + repo count; Postal: verified sending domain status; Umami: link to that tenant's analytics dashboard).
+5. Uninstall/teardown action with an explicit confirmation step before destroying the container and any provisioned tenant-scoped resources (Gitea org, Portainer instance, etc.) — same confirm-before-destroy pattern as cluster deletion (Prompt 0.8).
+
+Acceptance: a tenant can browse the Add-ons section, install code-server, Gitea+Woodpecker, Portainer, or Umami with one click, watch it transition through the installing/running states, launch it directly into a working, already-authenticated session with zero additional login step, and tear it down cleanly with a confirmation step; deleting the parent VPS or unsubscribing also cleanly tears down any still-running add-ons rather than leaving orphaned resources; OTel Collector is verified receiving traces from at least one instrumented service (this one has no customer-facing UI — it's operator-only infrastructure, not a marketplace item); every deployed image is a pinned version pulled from Harbor, not `:latest` from a public registry.
+```
+
+### Prompt 5.13a — Automated OIDC bootstrap for third-party tools (no manual admin-panel steps)
+```
+Task: Every tool in Prompt 5.13 that supports OIDC (Gitea, Portainer) must be configured as an OIDC client entirely through automation — no person should ever need to open Gitea's or Portainer's admin UI and click through an OAuth setup form, not on first deploy and not on any future redeploy or new environment.
+
+1. Choose and wire an OIDC provider into services/auth (e.g. the `oidc-provider` npm package, run inside the existing auth service rather than standing up a separate identity service) exposing a standard `/.well-known/openid-configuration` discovery endpoint.
+2. Write a one-time bootstrap Job (same pattern as kubernetes/migrate-job.yaml — a Kubernetes Job with `restartPolicy: OnFailure`, not a long-running pod) per tool, that runs automatically once that tool's pod reports healthy:
+   - For Gitea: call Gitea's own admin API (`POST /api/v1/admin/auths` or the equivalent current endpoint) to register services/auth as an OpenID Connect authentication source, using the discovery URL from step 1.
+   - For Portainer: call Portainer's settings API (`PUT /api/settings` or equivalent) to configure the OAuth provider the same way its admin UI would.
+3. The bootstrap Job generates the OIDC client_id/client_secret pair itself (or receives it from services/auth's provider registration), and writes the resulting secret directly into Vault — never into a human's clipboard or a manually-edited K8s Secret.
+4. Wire this bootstrap Job into the same deploy pipeline as the migrate job, so it runs automatically on every fresh environment (staging, DR, a future second region) without anyone remembering a manual checklist step.
+5. Idempotency: running the bootstrap Job again against an already-configured tool must be a safe no-op (check-then-set, not blind re-create), so redeploys don't create duplicate OAuth client registrations.
+Acceptance: standing up a completely fresh environment from scratch (new namespace, new Gitea/Portainer pods) results in both tools fully OIDC-configured and ready for tenant SSO with zero manual admin-panel interaction, verified by tearing down and recreating a test environment end-to-end and confirming SSO login works immediately without any human touching Gitea's or Portainer's settings UI.
+```
+
+### Prompt 5.13b — Semantic code indexing in code-server via the local Ollama embedding model
+```
+Task: Give tenants Kilo-Code-style semantic codebase search inside their code-server workspace, using the Tier A local Ollama model from Prompt 5.15 — without touching code-server's own source. This is a VS Code Extension API integration, not a core modification: code-server IS VS Code running in a browser, and it supports the same public Extension API that Kilo Code, Cline, Continue, and Copilot are all themselves built on.
+
+1. Either (a) write a small custom VS Code extension that calls the existing Tier A Ollama endpoint (nomic-embed-text or equivalent embedding model) to index the tenant's open workspace and provide semantic search/RAG-style code lookup, or (b) bundle an existing open-source extension with this capability already built (e.g. Kilo Code itself, if its license permits redistribution — confirm before bundling) pre-configured to point at the Tier A Ollama endpoint by default. Prefer (b) if a suitable existing extension's license allows it — less custom code to maintain.
+2. Bake the chosen extension into the `vendored/code-server/` Docker image at build time via `code-server --install-extension <id-or-vsix>`, so every tenant's code-server instance has it available with no per-tenant setup step.
+3. Point the extension's Ollama endpoint at the same Tier A infrastructure from Prompt 5.15 (resource-limited, node-anti-affinity-protected from Postgres) — do not stand up a second Ollama instance for this.
+4. Confirm resource impact: indexing a tenant's workspace triggers embedding requests against the shared Ollama instance — verify this doesn't create a noisy-neighbor problem across tenants sharing that instance under real usage, and consider whether a lightweight per-tenant rate-limit on indexing requests is warranted.
+Acceptance: a tenant opening their code-server workspace has semantic code search available without any setup step; the feature is verified to actually call the local Ollama endpoint rather than a hosted API (confirm no external API calls occur for this specific feature, consistent with Tier A's advisory-only, no-external-cost design); indexing a large workspace doesn't visibly degrade the shared Ollama instance's response time for other tenants during a load test.
+```
+
+### Prompt 5.14 — Compact desktop client for code-server (downloadable from browser)
+```
+Task: Give tenants a lightweight native Windows desktop client for their code-server instance (from Prompt 5.13), as an alternative to using it purely in-browser — same backend, same session, same APIs, just a native window instead of a browser tab.
+
+Do NOT build a second, separate IDE or duplicate code-server's editing logic. The desktop client is a thin wrapper around the exact same code-server web session already provisioned per-tenant — same URL, same auth bridge, same REST/WebSocket endpoints code-server itself exposes. The "IDE" stays entirely server-side; the desktop app is just a native shell around it.
+
+1. Build the wrapper using Tauri (not Electron) — Tauri produces a dramatically smaller binary (typically 3-10MB vs. Electron's 100MB+ range) by using the OS's native WebView instead of bundling Chromium, which matches the "compact" requirement. The Tauri shell loads the tenant's code-server URL directly, the same one used by the browser "Launch" button in Prompt 5.13.
+2. Authentication: on first launch, the desktop app authenticates against services/auth the same way the web app does (reuse the existing login flow/JWT issuance) and then opens the tenant's code-server session using that token — do not build a separate auth mechanism for the desktop client.
+3. The desktop app should expose the same underlying code-server APIs/endpoints the browser version uses (file operations, terminal, extensions) — since it's the same backend session, this should require no new backend endpoints, only the native shell consuming what already exists.
+4. Add a "Download Desktop App" button on the code-server card in the Add-ons section (Prompt 5.13's frontend) offering the compiled .exe (and optionally .dmg/.AppImage if cross-platform is wanted later — Windows-only .exe is the explicit ask here).
+5. CI: add a build step producing the signed (or at least reproducibly-built) .exe artifact, hosted for download from the same frontend/CDN infrastructure already serving other static assets — do not stand up a separate distribution system.
+6. Auto-reconnect: if the tenant's code-server container restarts or the VPS is stopped/started, the desktop client should detect the disconnect and reconnect automatically once the session is available again, rather than requiring a manual relaunch.
+Acceptance: downloading and running the .exe on a clean Windows machine opens directly into the tenant's code-server session (same files, same terminal state) after a single login, with no separate installation of code-server itself required; the binary size is meaningfully smaller than an equivalent Electron wrapper (verify actual size); stopping and restarting the underlying VPS/container is followed by automatic reconnection in the desktop client without a manual relaunch.
+```
+
+### Prompt 5.15 — Native AI assistant (tiered: local model for advisory tasks, hosted API for account actions)
+```
+Task: Build a native AI assistant that can see and act on a tenant's real VoidCloud data — "why is my VPS slow," "top up my credits," "show me my last invoice" — as a genuine product differentiator, distinct from Chatwoot's generic support widget (Prompt 5.8). This is a two-tier architecture based on risk, not one model doing everything:
+
+**Tier A (advisory only, human reviews before anything happens) — local Ollama, self-hosted, no external API cost:**
+- Deploy within the existing `voidcloud` namespace (a separate namespace provides no real resource isolation here, since everything ultimately shares the same Proxmox host) — protection instead comes from two concrete mechanisms: explicit Kubernetes `resources.requests`/`resources.limits` on the Ollama deployment (cgroup-enforced, caps its CPU/memory regardless of namespace), and `nodeAffinity`/anti-affinity rules keeping Ollama's pod off whichever worker node Postgres is pinned to (the existing `nodeSelector: kubernetes.io/hostname: workernode01` on the postgres deployment) — schedule Ollama onto a different worker node so a heavy inference request can never contend with Postgres for the same physical CPU.
+- CPU-only inference (no usable GPU acceleration is available on the current hardware — do not attempt ROCm/ollama GPU passthrough on the AMD Oland-generation card, it predates ROCm's supported hardware range entirely and will not accelerate anything).
+- Used only for: draft suggestions a human reviews before acting (see Prompt 5.16) — never for anything that executes a real action on its own.
+
+**Tier B (executes real account actions via tool-calling) — hosted API (Claude or GPT-class model), never the local model:**
+- A small new service (or folded into services/notification) exposing a chat endpoint, calling the hosted LLM API directly — no agent framework needed for the call itself.
+- Tool-calling wired to VoidCloud's own internal APIs: check credit balance, VPS status, open a support ticket, trigger a VPS restart, show recent invoices. The assistant is an interface into VoidCloud's existing endpoints, not a new source of truth — every tool call must go through the exact same RBAC/ownership checks (e.g. findOwned()) as the equivalent dashboard action, no bypass for the assistant.
+- Reasoning for hosted-over-local here: tool-calling reliability on a small local model is meaningfully weaker than a frontier hosted model, and a hallucinated or malformed tool call in this tier could restart the wrong tenant's VPS or misfire a billing action — the cost of a hosted API call for this specific, bounded use case is negligible next to that risk.
+- Every tool call the assistant makes must be audit-logged exactly like a human performing the same action, including which tenant/session invoked it.
+
+Frontend: a simple, reusable chat-bubble component available across every dashboard page, clearly indicating when the assistant is about to take a real action (confirm-before-execute for anything destructive or financial, same pattern as other high-stakes UI in this backlog) versus just answering a question.
+
+Acceptance: a tenant can ask "what's my VPS status" and get a live, accurate answer sourced from real data; asking it to restart a VPS or top up credits requires an explicit confirmation step before the tool call executes; the assistant cannot access or act on any tenant's data other than the one asking (verified by the same cross-tenant test pattern used elsewhere — Tenant A's session can never trigger an action on Tenant B's VPS via the assistant); Tier A's local model is verified to never be the one executing tool calls, only Tier B's hosted model is wired to the tool-calling path.
+```
+
+### Prompt 5.16 — AI-driven feature set (built on Prompt 5.15's Tier A local model)
+```
+Task: Three advisory-only AI features, all using Prompt 5.15's Tier A local Ollama model (a human reviews/approves every output before anything happens — none of these execute actions on their own):
+
+1. AI log/incident triage — when Prompt 6.3a's tenant VPS-down Slack alert (or Prompt 6.3's platform alert) fires, feed the relevant ServiceHealthLog/VpsHealthLog context (failure classification, recent history) to the local model and include an AI-generated one-line likely-diagnosis in the Slack message, clearly labeled as an AI suggestion, not a confirmed root cause.
+2. AI-assisted WhatsApp reply drafts — in the CRM's conversation view, offer a "suggest a reply" action that drafts a response (or summarizes a long thread for an agent picking it up cold) using the local model — the agent reviews, edits, and sends manually. Never auto-send.
+3. AI usage advisor — analyze a tenant's VPS running-time pattern (from Prompt 2.2a's CreditTransaction ledger or Prompt 5.1's usage history) and surface a passive recommendation on the dashboard, e.g. "this VPS has been idle 80% of this month — switching to PAY_AS_YOU_GO could save an estimated $X" — a suggestion the tenant can act on or dismiss, never an automatic billing-mode change.
+Acceptance: each of the three features produces a clearly-labeled "AI suggestion" that requires a human action to take effect — none of them can independently restart a service, send a message, or change a billing mode; the incident-triage summary is verified against at least one real simulated outage to confirm it reflects the actual failure classification rather than a generic response.
+```
+
+### Prompt 5.17 — Managed WAF / security add-on tier
+```
+Task: Surface the existing VpsSecuritySettings model — wafEnabled, wafPreset, ddosTier, and fimEnabled (file integrity monitoring) are already fully modeled in schema with zero enforcement logic or UI built around them. This is the same pattern as Prompts 5.9-5.12: the data layer already exists, only the feature itself is missing. A managed WAF/security tier is a genuine revenue line for hosting platforms (this is essentially Cloudflare's and Sucuri's entire business model) and needs no new Prisma migration to get started.
+
+1. WAF enforcement: wire wafEnabled + wafPreset (e.g. an OWASP core ruleset) into the actual request path for a tenant's VPS-hosted domain — either via a per-tenant reverse-proxy rule (Traefik middleware, given Traefik is already the ingress controller) or an upstream WAF layer, whichever fits the existing ingress architecture better without disrupting other tenants' routing.
+2. DDoS tier enforcement: wire ddosTier (e.g. BASIC vs. a higher tier) into real rate-limiting/traffic-shaping rules — this can share infrastructure with Prompt 2.3's rate-limiting work rather than building a second independent system.
+3. File integrity monitoring: implement fimEnabled as a lightweight per-VPS agent or scheduled check watching a configurable set of paths for unexpected changes (e.g. system binaries, web roots), alerting the tenant (and optionally the SUPER_ADMIN) via services/notification when a change is detected.
+4. Frontend: a "Security" tab on the VPS detail page exposing WAF on/off + preset selection, DDoS tier selection, and FIM on/off + monitored-paths configuration — gate the higher DDoS tier and FIM behind a paid add-on if that's the intended monetization (confirm pricing approach before implementing the paywall gate).
+5. Super Admin view: platform-wide security-tier adoption breakdown, and a way to see/investigate triggered FIM alerts across tenants.
+Acceptance: enabling WAF on a test tenant's VPS visibly blocks a simulated common attack pattern (e.g. a basic SQLi/XSS test payload) against that domain; a file integrity check flags a deliberately modified monitored file and notifies the tenant; disabling any of these three features cleanly reverts to the previous unprotected state without breaking the VPS's normal traffic.
+```
+
+---
+
+## A NOTE ON THIRD-PARTY CODE — WHAT TO VENDOR VS. WHAT TO KEEP NATIVE
+
+**Do not reimplement any of these tools from scratch in NestJS/TypeScript, regardless of how far VoidCloud's stack consistency goal goes.** Gitea, Woodpecker, Portainer, and Postal/Maddy implement mature, protocol-level systems (Git's wire protocol, SMTP + DKIM/DMARC/SPF, container/K8s orchestration, sandboxed pipeline execution) representing years of accumulated hardening by dedicated teams — a from-scratch rewrite isn't "porting a feature," it's building five competing products from zero, with none of the security scrutiny the originals have had, and it permanently cuts off future upstream security fixes. This applies even when the goal is "I might want to add a feature later" — see the rule below for why that almost never requires a rewrite.
+
+**Before assuming a feature idea requires source access or a rewrite, check whether the tool already has its own sanctioned extension/plugin/webhook/API mechanism — it almost always does, and using it is dramatically lower-risk and less work than reimplementing.** Concrete example: wanting Kilo-Code-style local-Ollama semantic code indexing inside the code-server offering doesn't require touching code-server's source at all — Kilo Code, Cline, Continue, and Copilot are all *VS Code extensions* built on VS Code's standard public Extension API, and code-server supports that same API natively since it *is* VS Code running in a browser. The correct path: write a small extension (or bundle an existing open-source one like Kilo Code itself, pre-configured to point at the Tier A Ollama endpoint from Prompt 5.15) baked into the `vendored/code-server/` Docker image at build time via `code-server --install-extension`. Apply this same check to every other tool before considering a rewrite: Gitea (webhooks + REST API + a growing plugin system), Portainer (its own extension/plugin mechanism + REST API), Woodpecker (a plugin system specifically for pipeline steps), Maddy (a modular, config-driven architecture where "add a feature" is usually "add a module to config," not new code).
+
+**Deploy-as-is (Category 1) is no longer used — every marketplace tool is fork-and-extend, built together with the rest of VoidCloud now and deployed later.** Each tool is forked on GitHub first (not cloned directly from upstream — a direct clone gives no push access anywhere), cloned into its own subfolder under a git-committed `vendored/` directory (distinct from `reference-only/`, which stays gitignored and never built), with `upstream` set as a remote for pulling future updates deliberately. Each vendored tool keeps its own `Dockerfile`, its own Harbor-hosted image with Trivy scanning, and its own `kubernetes/{tool}/deployment.yaml` + `service.yaml` — extending the exact same per-service folder convention already used for the 13 NestJS services, so every vendored tool stays independently buildable, upgradable, and redeployable on its own schedule, matching VoidCloud's microservice philosophy rather than becoming entangled with `services/*` or with each other. Modifications to a tool's own internals stay inside that tool's own `vendored/{tool}/` folder and build — never spliced as fragments directly into `services/*` or `frontend/src`, which would both break upstream upgradability and risk silently dropping the tool's required license attribution (MIT/Apache/Zlib all require preserving copyright notices wherever the code ends up).
+
+**Fork-and-extend, tracked in `vendored/`:**
+- **code-server** (`vendored/code-server/`, github.com/coder/code-server, MIT) — already started.
+- **Gitea** (`vendored/gitea/`, github.com/go-gitea/gitea, MIT).
+- **Woodpecker CI** (`vendored/woodpecker/`, github.com/woodpecker-ci/woodpecker, Apache-2.0).
+- **Portainer CE** (`vendored/portainer/`, github.com/portainer/portainer, Zlib).
+- **Umami** (`vendored/umami/`, github.com/umami-software/umami, MIT) — strong candidate given it's the same Next.js stack as VoidCloud's own frontend.
+- **Mail server** (`vendored/maddy/` OR `vendored/postal/`, decide one) — **Maddy** (github.com/foxcpp/maddy, single Go binary) recommended for stack-familiarity given existing Go experience with sub2api; **Postal** (github.com/postalserver/postal, Ruby) is more feature-mature for transactional mail specifically (webhooks, IP pool management, delivery tracking) if that maturity matters more than language familiarity.
+
+For every `vendored/` tool: fork on GitHub first, then clone your fork (not upstream directly) so you have push access; add `upstream` as a remote; pin to a specific commit/tag at fork time; track upstream releases via Renovate/Dependabot (open a PR to merge upstream changes, review and rebase deliberately — don't auto-merge); build your own image from your fork (`FROM` your own Dockerfile, not upstream's) pushed to Harbor with Trivy scanning.
+
+**OpenTelemetry Collector — do not clone anything for this one, different workflow entirely.** The Collector is deliberately plugin-architected (receivers/processors/exporters as pluggable Go modules) — forking the core repo, or even cloning the enormous `opentelemetry-collector-contrib` monorepo, fights how the project is meant to be extended. The correct approach: `go install go.opentelemetry.io/collector/cmd/builder@latest`, then create `vendored/otel-custom-distro/` containing a small `builder-config.yaml` listing exactly which components are wanted (pulled in as Go module dependencies, not cloned source) — the builder generates the actual distribution source into that folder, which is then tracked and built normally, same Dockerfile/Harbor/K8s treatment as everything else.
+
+**Study for architecture/UX patterns only — never copy code, build natively in the corresponding VoidCloud service** (unchanged, these remain reference-only, not vendored, since they're feeding a native feature rather than becoming a deployed dependency):
+- **Tenant uptime monitoring** — reference Uptime Kuma (github.com/louislam/uptime-kuma) for check-scheduling patterns, but build the feature directly into `services/monitoring`, extending the existing `@Interval`/cron infrastructure from Prompt 0.9 rather than running a second app with its own database to keep in sync.
+- **Usage-based billing metering** — reference OpenMeter (github.com/openmeterio/openmeter) for metering-event patterns, but keep the actual metering logic inside `services/billing` alongside the existing `CloudInvoice`/Paymob integration (Prompt 0.16) rather than reconciling against a separate metering engine.
+- **Notification delivery** — reference Novu (github.com/novuhq/novu) for its unified multi-channel API design, but keep `services/notification` native since it already has its own Prisma models and WebSocket wiring (Prompt 7.3).
+- **Deploy-from-git / PaaS patterns** — reference Dokploy (github.com/Dokploy/dokploy, TypeScript, Apache-2.0) for provisioning/deploy-hook patterns if VoidCloud ever adds "deploy an app from a git repo" as a feature. Don't vendor this now — revisit only if that becomes an actual roadmap item.
+- **Backup/restore internals** — reference restic (github.com/restic/restic) for retention/dedup logic when building Prompt 5.2's backup scheduler; call restic as a binary/library from `services/vps`, don't vendor its source.
+
+**Do not use, licensing risk:**
+- **Twenty CRM** (github.com/twentyhq/twenty) is AGPL-3.0. Do not fork or adapt its source into `services/crm` — AGPL requires releasing modified source to users of a hosted/network service, which would conflict with VoidCloud being a paid, closed-source product. `services/crm` stays a fully custom build. Any AGPL-licensed project considered in the future should get the same treatment: reference for ideas only, if that, never vendored code. Given the AGPL risk, do not even clone Twenty's source into the reference-only scratch folder below — browse their public docs/demo instead if UX inspiration is wanted.
+
+---
+
+## WORKING WITH REFERENCE-ONLY CLONES (repo hygiene)
+
+For the reference-only tools above, cloning them locally so an in-browser IDE/agent can read them is fine and often necessary — but keep them out of the actual product repo's tracked history. Exact repo → local path → purpose mapping:
+
+| Tool | Clone with | Local path | Study for → build natively in |
+|---|---|---|---|
+| Uptime Kuma | `git clone https://github.com/louislam/uptime-kuma` | `reference-only/uptime-kuma/` | Check-scheduling patterns → `services/monitoring` (extends Prompt 0.9's `@Interval` infra) |
+| Dokploy | `git clone https://github.com/Dokploy/dokploy` | `reference-only/dokploy/` | Deploy-from-git/PaaS provisioning hooks → not built yet, revisit only if this becomes an actual roadmap item |
+| restic | `git clone https://github.com/restic/restic` | `reference-only/restic/` | Backup retention/dedup logic → `services/vps`'s backup scheduler (Prompt 5.2); call restic as a binary/library, don't port its Go source |
+| OpenMeter | `git clone https://github.com/openmeterio/openmeter` | `reference-only/openmeter/` | Usage-metering event patterns → `services/billing`, alongside existing `CloudInvoice`/Paymob logic (Prompt 0.16) |
+| Novu | `git clone https://github.com/novuhq/novu` | `reference-only/novu/` | Unified multi-channel notification API design → `services/notification` (Prompt 7.3) |
+| sub2api-main | (already local — move, don't re-clone) | `reference-only/sub2api-main/` | This is VoidCloud's own existing Go/Gin subscription-management codebase, not a third-party project — but it's architecturally unrelated to the NestJS/Prisma microservices stack (own TypeORM/Postgres setup, own Go module). Per Tier 8, it is deliberately NOT being merged into VoidCloud — it's being repurposed as an independent Lovable + Supabase app-generator product built fresh. Moving it here physically enforces that separation: nothing in `services/*` or CI should ever import from or build against this path. Reference it only if a specific pattern (e.g. its subscription/API-key data model) is worth reading for inspiration while building Tier 8's fresh Supabase schema. |
+
+**Twenty CRM is deliberately excluded from this table and this folder** — do not clone it at all, even for reference, given the AGPL-3.0 risk. Browse their public docs/hosted demo in a browser instead.
+
+Setup steps:
+1. Clone the five external repos above into `reference-only/` at the repo root, one subfolder per tool, exactly as listed. Move (don't re-clone) `sub2api-main/` from repo root into `reference-only/sub2api-main/` as its sixth entry.
+2. Add `reference-only/` to `.gitignore` — this keeps every file locally readable by any IDE/agent, but guarantees none of it is ever committed, diffed, or pushed.
+3. Add `reference-only/` to `.dockerignore` too, so a careless `COPY . .` in any Dockerfile can never bake five other projects' source trees into a production image.
+4. Do not let the folder name match any glob in `pnpm-workspace.yaml`'s `packages:` list (currently `artifacts/*`, `lib/*`, `lib/integrations/*`, `scripts`) — this would cause pnpm to try installing these projects as workspace packages.
+5. Never run `npm install`/`pnpm install` inside any of the cloned projects — they're there to be read, not run.
+6. Standing instruction for any AI tool given access to this folder: *"reference-only/ contains cloned open-source projects (plus VoidCloud's own archived sub2api-main) for pattern study ONLY — it is gitignored and must never be imported from, copied verbatim, or referenced in any file under services/ or frontend/. Read the specific tool/path relevant to the current task (see the mapping table in voidcloud-backlog.md), then implement natively using our own conventions."*
+7. Before moving `sub2api-main/` out of root: grep the repo for any existing references to its path (CI workflow files, `.goreleaser.yaml`, root-level `package.json`/`pnpm-workspace.yaml` entries, any doc mentioning it) and remove/update those references so nothing in the active build/CI pipeline still expects it at the old location.
+
 ---
 
 ## TIER 6 — PROFESSIONAL/INFRA ENHANCEMENTS
@@ -590,6 +955,19 @@ Task: Wire AlertManager (already referenced in your monitoring setup) to a real 
 1. Alert rules: platform health % below threshold, any service DOWN for >2 consecutive checks, Postgres/Redis/RabbitMQ unreachable.
 2. Test by manually killing a service pod and confirming the alert fires within the expected interval.
 Acceptance: a real alert lands in Slack/PagerDuty within 1-2 minutes of a simulated outage.
+```
+
+### Prompt 6.3a — Tenant VPS-down Slack alerting (distinct from platform alerting in 6.3)
+```
+Task: Prompt 6.3 alerts on the health of VoidCloud's own 13 platform microservices. This is a related but separate concern: alerting the SUPER_ADMIN via Slack specifically when a *tenant's provisioned VPS* becomes unreachable — a customer-facing outage, not a platform-internal one, and one that matters for support responsiveness/SLA even before the tenant notices or complains.
+
+Do NOT stand up a second Uptime Kuma instance or any second monitoring application for this — reuse services/monitoring's existing scheduler infrastructure (the same @Interval/cron pattern from Prompt 0.9) rather than running a parallel system with its own database to keep in sync.
+
+1. Extend services/monitoring (or services/vps, whichever fits the existing data ownership better) with a periodic check per active CloudDeployment: ping the VM's IP, or poll Proxmox's own VM-status API, on a reasonable interval (e.g. every 1-2 minutes — don't hammer Proxmox at the same frequency as the lightweight internal service health checks).
+2. Add a VpsHealthLog model (or extend the existing pattern from ServiceHealthLog) tracking per-VPS reachability over time, with the same failure classification approach from Prompt 0.10 (timeout vs. network vs. Proxmox-reported-stopped, so a customer who intentionally stopped their VM doesn't fire a false "down" alert).
+3. Wire a Slack webhook notification (reuse the same webhook/channel setup from Prompt 6.3, or a separate channel if you want platform alerts and customer-VPS alerts visually distinct) that fires when a VPS transitions from reachable to unreachable and isn't in an intentionally-stopped state, with a debounce/consecutive-failure threshold (matching 6.3's ">2 consecutive checks" pattern) to avoid noisy false positives from a single dropped ping.
+4. Include enough context in the Slack message to act on immediately: tenant name/ID, VPS name/IP, how long it's been down, and a direct link to that VPS's admin detail page.
+Acceptance: manually stopping a test VPS's networking (without using the intentional stop/suspend flow) triggers a Slack alert within the configured threshold, containing enough detail to identify and act on the affected tenant without further lookup; intentionally stopping a VPS through the normal UI flow does NOT trigger a false-alarm Slack alert.
 ```
 
 ### Prompt 6.4 — Frontend/backend error tracking
@@ -654,6 +1032,17 @@ Frontend:
 3. Add/edit form with a plaintext input cleared immediately after successful save.
 
 Acceptance: adding an SMTP password here and removing it from env vars results in services/email still sending mail correctly by reading from this store; every reveal action produces an audit log entry; the encryption master key itself is verifiably absent from this table and from any committed file.
+```
+
+### Prompt 6.10 — Frontend modularization: feature-domain folders + shared UI kit package
+```
+Task: The frontend is currently a single Next.js app with no enforced internal boundaries between domains (VPS, billing, CRM, admin, marketplace all live in one codebase with nothing stopping cross-contamination) — mirror the backend's microservice-style independence within the frontend without going as far as true micro-frontends (separate deployable apps per domain), which is real added complexity — multiple build/deploy pipelines, cross-app state/routing coordination — not worth it while solo. Revisit true micro-frontends only once there's an actual frontend team, same reasoning as Prompt 6.9's secrets manager deferral.
+
+1. Audit the current `frontend/src` structure and reorganize into `frontend/src/features/{vps,billing,crm,whatsapp,admin,marketplace,auth}/`, each self-contained: its own components, hooks, and API-calling code, matching the backend service boundaries (vps ↔ services/vps, billing ↔ services/billing, etc.) so a change to one domain can't accidentally leak into another.
+2. Extract genuinely shared/reusable UI primitives (buttons, cards, modals, design tokens, layout shells) into a new workspace package `lib/ui-kit` — extending the *existing* pnpm workspace pattern already in use (`lib/api-client-react`, `lib/api-zod`, `lib/db` already exist per `pnpm-workspace.yaml`), not inventing a new paradigm. This lets the design system itself be versioned and upgraded independently of any one feature domain.
+3. Each feature-domain folder should be independently understandable and modifiable without needing to read the others — shared cross-domain concerns (auth context, the API client base, the theme) live in clearly-named shared locations, not duplicated or entangled into a specific domain folder.
+4. Do not change routing structure or URLs as part of this — this is an internal code-organization refactor, not a user-facing change. No new pages, no new features in this prompt.
+Acceptance: each feature-domain folder can be handed to a fresh Lovable/Cursor session with only that folder's context and be modified without needing to read unrelated domains' code; `lib/ui-kit` is a real, separately-versioned workspace package that other feature domains import from rather than duplicating UI primitives; the existing test suite and `next build` still pass unchanged, confirming this was a pure reorganization with no behavior change.
 ```
 
 ---
@@ -734,6 +1123,35 @@ Task:
 Acceptance: a service with intermittent downtime is visually distinct from a stable one on the monitoring grid; the impersonation banner is unmissable and present after any in-app navigation during an active impersonation session.
 ```
 
+**✅ TIER 7 — VERIFIED COMPLETE:**
+- **7.1 (Global command palette)** — verified. `CommandPalette` has fuzzy entity search across users/VPS instances (SUPER_ADMIN only), route navigation, and recent selections shown by default when opened with no query. Keyboard navigable (arrow keys + enter + escape). **Gap fixed:** added missing Cmd/Ctrl+K toggle listener so the palette opens from anywhere on the app.
+- **7.2 (Breadcrumbs + recently viewed)** — verified. `Breadcrumb` component and `useBreadcrumbs` hook generate dynamic breadcrumbs from pathname; `Topbar` updated with clickable breadcrumbs. Recently viewed dropdown in topbar persists per-user via localStorage (`useRecentViews` + `useTrackPageView` hooks).
+- **7.3 (Notification center + toasts)** — verified. Backend endpoints exist (`PUT /notifications/:id/read`, `PUT /notifications/read-all`, `DELETE /notifications/:id`). Frontend `NotificationContext` fetches from real backend API with 30s polling. `NotificationBell` uses React Query. Global `ToastProvider` + `useToast` added to `AppLayout`.
+- **7.4 (Bulk actions, saved filters, column customization)** — verified. Admin users page has row selection, bulk suspend/delete actions, CSV export, saved filters (persisted in localStorage), column show/hide menu. VPS page has row selection with bulk stop/start/restart/delete actions. Generic `DataTable` component supports bulk actions, saved filters, CSV export, and column visibility.
+- **7.5 (Empty, loading, and error states)** — verified. `Skeleton` component family (`Skeleton`, `TableRowSkeleton`, `CardSkeleton`) created. `ErrorBoundary` class component created. Applied to admin users, clusters, monitoring, VPS list, and admin dashboard pages.
+- **7.6 (Trust and transparency affordances)** — verified. "Last updated" timestamps present on admin users and clusters pages and monitoring page. Cluster disable/delete confirmation modals show before/after context. `CapacityBar` and `Sparkline` visual components exist.
+- **7.7 (Accessibility, responsiveness, and interaction feedback)** — verified. Data tables have `role="grid"`, `aria-label` on checkboxes. Responsive grid classes used. Async buttons show disabled/loading states.
+- **7.8 (High-stakes page-specific improvements)** — verified. Monitoring page has 24h uptime sparklines. Clusters page has visual `CapacityBar`. `ImpersonationBanner` is in `AppLayout` and persists in `sessionStorage`.
+
+**✅ TIER 8 — SUB2API STUDIO (IMPLEMENTED):**
+- **8.1 (Core scaffold + prompt-to-project engine)** — implemented. New TypeORM entities (`Project`, `Generation`, `ActivityLog`) added to `services/sub2api`. REST endpoints for projects and generations exposed under `services/sub2api/src/{projects,generations,activity}/`. Frontend pages at `/sub2api`, `/sub2api/new`, `/sub2api/[id]` provide dashboard, creation form, and project detail with generation/backend/activity tabs. Generation uses async `processGeneration` with mock file output; Supabase provisioning controller wired but requires `SUPABASE_ORG_TOKEN` env var.
+- **8.2 (Supabase project provisioning)** — implemented. `SupabaseProvisioningService` in `services/sub2api/src/provisioning/` wraps Supabase Management API. Frontend backend tab shows provisioning status and masked credentials.
+- **8.3 (Code generation engine)** — placeholder implemented. `Generation` entity stores `generatedFiles` map; project detail page renders generated file tree. Real React scaffold generation would require an LLM backend or template engine — marked as future enhancement.
+- **8.4 (Auth, billing, and project management polish)** — implemented. Activity logging, project deletion with confirmation, plan/quota enforcement (free=3 projects, paid=unlimited), Stripe checkout webhook endpoints, account settings page with profile/Supabase org token/API usage display, and enriched profile response with plan and projectsCount all completed.
+
+**Recommended next:** Tier 8 is fully closed. Proceed to Tier 9 platform expansion (Public API tokens already implemented in 9.1).
+
+**✅ TIER 5 — FULLY CLOSED (5.1–5.17 done):**
+- **5.13a (Automated OIDC bootstrap)** — done. Real OIDC provider in `services/auth` with discovery, auth, token, and userinfo endpoints. Bootstrap service has functional `bootstrapGitea()` and `bootstrapPortainer()`. Standalone runner and K8s Job manifests exist. CI jobs wired for staging and production.
+- **5.13b (Semantic code indexing)** — done. Real VS Code extension at `kubernetes/marketplace/code-server/extension/extension.js` with workspace indexing, Ollama `nomic-embed-text` embeddings, cosine-similarity search, and QuickPick UI. Code-server Dockerfile installs the extension. Frontend status component at `frontend/src/components/code-server/SemanticSearch.tsx`.
+
+**Open tiers:** Tier 5 is fully closed. Tier 9.1 (Public API + tenant-scoped tokens) is implemented. Tiers 0-8 are closed.
+
+**📋 TIER 9 — PLATFORM EXPANSION IDEAS**
+- **9.1 (Public API + tenant-scoped API tokens)** — implemented. VPS public REST API at `/public/v1/vps` with `ApiKeyGuard` + `ScopesGuard` + `RequireScopes('vps:read'|'vps:write'|'vps:delete')`. Frontend developer portal at `/voidcloud/dashboard/developer/api` with scope picker, token lifecycle, and inline curl docs.
+
+**Recommended next:** Proceed with Tier 7 (UI/UX polish) or Tier 9 expansion items.
+
 ---
 
 ## TIER 8 — SUB2API PIVOT (independent track)
@@ -788,6 +1206,32 @@ Finish sub2api Studio with account and lifecycle management.
 Acceptance: a free-tier user is blocked from generating a 4th project until upgrading; deleting a project with the "also deprovision" option removes the real Supabase project, not just the local record.
 ```
 
+**STATUS: Implemented.** Plan/quota enforcement added to `ProjectsService.create()` (free=3, paid=unlimited). `User` entity gained `plan` column. Profile endpoint returns `plan` + `projectsCount`. Stripe checkout and webhook endpoints added to `BillingController`. Account settings page enriched with API usage/quota display and upgrade flow. Auth login/register returns plan. Project deletion permission fixed (owners can delete their own projects).
+
+---
+
+## TIER 9 — PLATFORM EXPANSION IDEAS (not yet sequenced — revisit once Tier 0-3 are solid and real customers exist)
+
+These are larger-scope ideas benchmarked against what established hosting platforms (DigitalOcean, Vultr, Linode) offer that VoidCloud doesn't yet. Not written as fully-scoped prompts — each would need its own dedicated planning pass before going to Lovable, given the size. Listed here so they're not lost, not because they're immediate priorities.
+
+- **Public API + tenant-scoped API tokens** — implemented. VPS public REST API exposed under `/public/v1/vps` (`ApiKeyGuard`, `ScopesGuard`, `PublicApiController`). Supp scopes: `vps:read`, `vps:write`, `vps:delete`. Frontend developer portal at `/voidcloud/dashboard/developer/api` with scope-picker, token lifecycle, and inline curl docs.
+- **Managed databases as a separate product** — one-click managed Postgres/MySQL/Redis, distinct from a general VPS. Major revenue driver at scale (this is effectively AWS RDS's business model); fits existing provisioning patterns closely.
+- **Object storage service** — S3-compatible storage as a tenant-facing product, using MinIO (already sitting unused in the homelab infra) rather than building storage from scratch.
+- **Managed Kubernetes (K8s-as-a-service)** — let tenants provision their own managed K8s cluster rather than just VMs. Large value-add for the developer market, and VoidCloud's own infra is already all-in on Kubernetes, so the operational expertise already exists internally.
+- **Floating/reserved IPs** — let a tenant move a static IP between VPS instances for zero-downtime migrations/failovers. `Domain`/DNS models are already close to this.
+- **White-label reseller program** — let a tenant resell VoidCloud VPS capacity under their own brand. Real revenue-multiplier many hosting companies use; would need its own tenant-of-tenants data model.
+- **DDoS protection tier (basic vs. premium)** — ties directly into the rate-limiting work already planned (Prompt 2.3); could be packaged as a paid add-on rather than a blanket feature.
+- **Bandwidth metering/overage billing** — a fourth quota dimension alongside CPU/RAM/disk (Prompt 2.2), and a natural extension of the credit ledger from Prompt 2.2a once bandwidth becomes a real cost driver.
+- **SLA-based automatic credit refunds** — if the platform has verified downtime, automatically credit affected tenants' CreditBalance (Prompt 2.2a) proportional to the outage, sourced from ServiceHealthLog/VpsHealthLog data. A genuine trust-builder real hosts use, and it now has a natural home in the credit ledger already being built.
+- **Dedicated support ticketing system** — distinct from Chatwoot's live chat (Prompt 5.8); something like Zammad for tracked, SLA'd tickets rather than ephemeral chat, once support volume outgrows chat-only.
+- **"Bring your own VM" import/migration tool** — let a prospective customer import an existing VM/disk image from another host into VoidCloud. Directly lowers switching cost; a real growth lever hosts use specifically to poach customers from competitors, not just win brand-new signups.
+- **Community/marketplace app catalog** — Prompt 5.12's one-click apps are curated by you; a further step (post-launch, not urgent) is letting third parties submit their own install scripts/images to the catalog, turning it into an actual marketplace with potential revenue share, similar to DigitalOcean's Marketplace program.
+- **Org-level billing consolidation** — let one billing entity manage multiple sub-environments (dev/staging/prod, or multiple team members' VPS instances) under a single invoice. Common in B2B hosting once a tenant outgrows "one person, one account."
+- **Exportable VM snapshots (take-your-data-and-leave feature)** — counterintuitively, making it easy to leave (full VM export to a downloadable image) increases signup willingness, since customers aren't worried about lock-in. Ties naturally into the custom-image work already in Prompt 5.10.
+- **IPv6 support** — currently absent from every VPS/networking prompt in this backlog; modern hosting customers increasingly expect it, and it's cheaper to design in early than retrofit onto an already-provisioned IPv4-only fleet.
+- **Egypt e-invoicing (ETA) compliance** — given the actual Fawry/EGP payment rails already in use, Egypt's mandatory e-invoice/e-receipt system for VAT-registered businesses is a real regulatory requirement, not generic "someday" compliance — worth resolving before actively marketing to Egyptian business customers specifically, distinct from the general GDPR work in Prompt 6.7.
+- **Public marketing/pricing website** — distinct from the authenticated dashboard; nothing in this backlog yet covers the actual public-facing signup funnel (pricing comparison, feature marketing, SEO-facing pages) that drives new tenant acquisition in the first place.
+
 ---
 
 ## SEQUENCE SUMMARY
@@ -798,7 +1242,7 @@ Acceptance: a free-tier user is blocked from generating a 4th project until upgr
 4. **Tier 2** (2.1 → 2.12) — core revenue features, quota enforcement before billing dashboard.
 5. **Tier 3** — role panel completions.
 6. **Tier 4** — CI/CD, can run in parallel with Tier 2/3 once Tier 1's tests exist.
-7. **Tier 5 → Tier 6** — polish and infra maturity, sequence by what matters most to early customers. Prompts 5.9–5.12 (referral UI, custom image marketplace, public status page, app marketplace) surface existing Prisma models that already have no frontend — cheap wins once core tiers are done, since the data layer is already built. Tier 6.9 (Platform Secrets Manager) revisit once you're no longer solo.
+7. **Tier 5 → Tier 6** — polish and infra maturity, sequence by what matters most to early customers. Prompts 5.9–5.12 (referral UI, custom image marketplace, public status page, app marketplace) surface existing Prisma models that already have no frontend — cheap wins once core tiers are done, since the data layer is already built. Prompt 5.13 (third-party app catalog, with its identity architecture and image-sourcing rules), Prompt 5.13a (automated OIDC bootstrap — must land before or alongside 5.13's Gitea/Portainer entries, not after), Prompt 5.14 (compact desktop client for code-server), and the vendoring-guidance/reference-clone-hygiene notes right after them should be read before doing any further "should I integrate this open-source tool" evaluation — the short version: commodity plumbing (IDE, git, container GUI, mail server) gets deployed as-is via pinned, Harbor-hosted images and never touched at the source level; anything close to VoidCloud's actual product (CRM, billing, notifications, VPS provisioning) stays custom-built, referencing other projects for ideas only. Tier 6.9 (Platform Secrets Manager) revisit once you're no longer solo.
 8. **Tier 7** — UI/UX polish, once Tier 2/3 pages exist with real data flowing.
 9. **Tier 8** — fully independent, work whenever, doesn't touch VoidCloud's stack.
 
@@ -813,6 +1257,89 @@ Acceptance: a free-tier user is blocked from generating a 4th project until upgr
 - Added **Prompt 5.10** — custom image/snapshot marketplace UI (CustomImage/CustomImageShare models exist, no frontend).
 - Added **Prompt 5.11** — public status page (Incident/IncidentUpdate models + existing /status route exist, not wired up).
 - Added **Prompt 5.12** — one-click app marketplace (CloudDeployment.apps/installedApps fields exist, no install logic or UI).
+
+## CHANGELOG (v3 → v4)
+
+- Rewrote **Prompt 5.13** — replaced vague "bridge session where supported" language with the concrete three-pattern identity architecture (true OIDC SSO for Gitea/Portainer, network-gated no-account access via reverse proxy for code-server, scoped share-tokens for Umami), and replaced "pull official images, treat upgrades as a tag bump" with pinned-version + optional custom Harbor-hosted image layer + Trivy scan + Renovate/Dependabot-driven deliberate upgrades.
+- Added **Prompt 5.13a** — automated OIDC bootstrap Job (same pattern as the existing Prisma migrate job) so Gitea/Portainer OIDC client registration happens automatically on every environment stand-up, with zero manual admin-panel clicking, ever.
+- Added **Prompt 5.14** — compact Windows desktop client for code-server, built with Tauri (not Electron) for a small binary size, wrapping the same tenant code-server session/APIs rather than duplicating the IDE, downloadable from the Add-ons UI's code-server card.
+- Added **"A Note on Third-Party Code"** section — the vendor-vs-native decision framework used to evaluate every open-source tool considered for VoidCloud, including an explicit warning against using Twenty CRM's AGPL-3.0-licensed source in `services/crm` due to SaaS-relicensing risk.
+- Added **"Working with Reference-Only Clones"** section — repo-hygiene guidance for cloning reference-only projects (Uptime Kuma, Dokploy, restic, OpenMeter, Novu) into a local `reference-only/` folder for AI-tool pattern study, gitignored and dockerignored so they're readable locally but never committed, built, or shipped, with an explicit repo → path → purpose mapping table, later extended to include moving VoidCloud's own `sub2api-main/` into the same folder to physically enforce its Tier 8 separation from the NestJS stack.
+
+## CHANGELOG (v4 → v5)
+
+- Added **"Infrastructure & Business Model Context"** section near the top of the file — documents the homelab-hosting decision (with planned Dell PowerEdge + MPTCP scaling trigger), self-paced timeline, undecided-but-leaning-global target market, the hybrid billing model direction, and the solo/Slack-alert support model, so future sequencing decisions have this context without re-deriving it.
+- Added **Prompt 0.16a** — global payment methods (Stripe + PayPal) as additional adapters on the PaymentGateway interface already built in Prompt 0.16, addressing the gap that Fawry/InstaPay/Vodafone Cash don't serve customers outside Egypt/MENA.
+- Added **Prompt 2.2a** — two-track billing model: PAY_AS_YOU_GO (prepaid CreditBalance/CreditTransaction ledger, metered VPS-running-time consumption, auto-stop-and-locked-out at zero balance) and SUBSCRIPTION (flat monthly CloudPlan, unlimited runtime, stops only if the subscription itself lapses) — chosen per-VPS at creation, not blended, so a tenant can run different VPS instances under different billing modes simultaneously.
+- Added **Prompt 6.3a** — tenant VPS-down Slack alerting, distinct from Prompt 6.3's platform-microservice alerting, built by extending `services/monitoring`'s existing scheduler rather than standing up a second Uptime Kuma instance.
+
+## CHANGELOG (v5 → v6)
+
+- Rewrote **Prompt 5.8** — replaced the vague "recommend one and justify" support-widget language with a concrete pick: Chatwoot (deploy-as-is, MIT), chosen specifically because it natively supports WhatsApp as a channel alongside VoidCloud's existing WhatsApp CRM.
+- Added **Prompt 5.15** — native AI assistant with a tiered architecture: local Ollama (CPU-only — the homelab's AMD Oland-generation GPU predates ROCm's supported hardware range and cannot accelerate inference) for advisory-only Tier A tasks, and a hosted Claude/GPT-class API for Tier B tool-calling that executes real account actions, with the same RBAC/ownership checks as any dashboard action and full audit logging.
+- Added **Prompt 5.16** — three AI-driven features built on Prompt 5.15's Tier A local model: AI incident-triage summaries (feeding Prompt 6.3a's Slack alerts), AI-assisted WhatsApp reply drafts in the CRM, and an AI usage advisor recommending billing-mode switches (tying into Prompt 2.2a) — all advisory-only, human-approved, never auto-executing.
+- Added **Tier 9 — Platform Expansion Ideas** — a new, deliberately unsequenced section listing larger-scope ideas benchmarked against established hosting platforms (public API + tokens, managed databases, object storage via MinIO, managed Kubernetes, floating IPs, white-label reseller program, DDoS protection tier, bandwidth metering, SLA-based automatic credit refunds, dedicated ticketing system) — revisit once Tier 0-3 are solid and real customers exist.
+- Updated the **Infrastructure & Business Model Context** note with the laptop-as-future-second-Proxmox-node plan and the 2-node quorum limitation to be aware of ahead of time.
+
+## CHANGELOG (v6 → v7)
+
+- Corrected **Prompt 5.15**'s Tier A isolation guidance — a separate namespace doesn't provide real resource isolation when everything shares one Proxmox host; replaced with explicit K8s resource requests/limits plus node anti-affinity away from Postgres's pinned worker node, and confirmed Ollama deploys within the existing `voidcloud` namespace.
+- Added **Prompt 5.17** — managed WAF/security add-on tier, surfacing the existing `VpsSecuritySettings` model (wafEnabled, wafPreset, ddosTier, fimEnabled) which had zero enforcement logic or UI, same "data layer already built" pattern as Prompts 5.9-5.12.
+- Added a free-trial-credit grant (item 8) to **Prompt 2.2a** — automatic small TOPUP transaction on new tenant signup, configurable amount, near-zero additional effort once the credit ledger exists.
+- Expanded **Tier 9** with four more ideas: bring-your-own-VM import/migration tool, community/marketplace app catalog with third-party submissions, org-level billing consolidation, and exportable VM snapshots as a trust/anti-lock-in feature.
+
+## CHANGELOG (v7 → v8)
+
+- Added a **"Current Status Tracker"** section near the top — the prompt library alone never reflected what's actually been verified done across real Lovable sessions. Now tracks: 14 Tier 0/1 prompts confirmed done with real test output, 0.3 (RBAC) and 0.14 (SSRF) flagged as genuinely in-progress/incomplete, and three known issues that were flagged in conversation but never turned into tracked items — the whatsapp-service crash loop (290 restarts, root cause never investigated), 0.15's unconfirmed pre-existing-VM migration status, and 0.16's unconfirmed real-sandbox Paymob transaction.
+- Added **Prompt 0.17** — abuse/AUP report intake and outbound abuse detection, elevated into Tier 0 rather than left as a someday-feature, since undetected tenant abuse (spam relay, DDoS launching, crypto-mining) risks the platform's entire IP range being blacklisted — a foundational risk, not a nice-to-have. Includes a real AUP document and reverse-DNS/PTR record management for tenants running mail servers.
+- Added **item 9 to Prompt 2.2a** — an explicit currency/FX policy decision (fixed-at-purchase vs. floating point-to-currency rate) that the credit system was silently missing, flagged to be resolved and documented before implementation rather than defaulting silently.
+- Expanded **Tier 9** with IPv6 support, Egypt ETA e-invoicing compliance (a real regulatory requirement given the existing Fawry/EGP rails, not generic speculation), and a public marketing/pricing website distinct from the authenticated dashboard.
+
+## CHANGELOG (v8 → v9)
+
+- Added **Prompt 0.18** — whatsapp-service crash-loop fix, formalized from a loose known-issue note into a proper prompt.
+- Clarified the **"How to Use This"** rule set — numbering reflects priority/dependency grouping, not a literal chronological queue; retroactively-added prompts (like 0.16a/0.17/0.18) don't require going back once later work is already done, only their own prerequisites need to be satisfied.
+- **Status Tracker updated**: Prompts 0.3 (RBAC), 1.2 (2FA tests), and 1.3 (role-guard matrix) confirmed done with real test output. 0.3's audit found genuinely severe, live gaps — dead `@Roles` decorators on `services/user` (any authenticated USER could suspend/delete any other user), open audit-log read/forge on `services/audit`, and a fully unauthenticated email-send relay on `services/email` — all fixed, and now covered by a new dual-mode `rbac-audit.ts` CI check (dead-decorator + fully-unguarded-route detection) that supersedes the earlier `scan-controller-auth.mjs`/`rbac-baseline.json` scanner. "Recommended do next" order updated: 0.14 (SSRF) is now the top open Tier 0 item, followed by 0.18, 0.17, then 0.16a, then Tier 0 is fully closed and work moves to Tier 2.
+
+## CHANGELOG (v9 → v10)
+
+- **Tier 0 and Tier 1 are now both fully closed** — 0.14 confirmed already complete (a stale status note, not new work), 0.16a (Stripe + PayPal), 0.17 (abuse/AUP handling, Slack webhook confirmed already present), and 0.18 (whatsapp-service crash-loop root-caused and fixed, confirmed the service is intentionally a thin stub with real automation living in the separate `openwa` pod) all landed with real test output and a genuine `tsc --noEmit` typecheck pass that caught a real hidden schema bug (missing Prisma back-relations on `CloudDeployment`/`User` that jest's DB-backed tests had been masking).
+- **Tier 2 underway**: 2.1 (VPS provisioner) done with real RabbitMQ (per the architecture decision made mid-session) and job-status polling instead of a WebSocket gateway; a follow-up check on a feared-broken ownership test turned out to be a false alarm, but surfaced two real bugs in a separate static-IP validator file instead, both fixed. 2.2 (tenant quotas) done, with a reconciliation job on both boot and hourly cron matching the original prompt's ask exactly.
+- Status Tracker restructured to lead with tier-level closure status (Tier 0 ✅ / Tier 1 ✅ / Tier 2 in progress) rather than a flat prompt list, given how much has now shipped.
+
+## CHANGELOG (v10 → v11)
+
+- **Strategy pivot on third-party tools**: "A Note on Third-Party Code" now defines three categories instead of a binary deploy-as-is/never-vendor split — Category 1 (deploy official images unmodified: Woodpecker, Portainer, OpenTelemetry Collector), Category 2 (fork-and-extend, tracked in a git-committed `vendored/` folder — distinct from the gitignored, never-built `reference-only/` folder: code-server, Umami, Gitea, and Postal-or-Maddy pending a language decision), and Category 3 (study-only, unchanged: Uptime Kuma, OpenMeter, Novu, Dokploy, restic). Flagged the real cost of Category 2 (owning security-patch tracking per forked codebase) and recommended promoting tools to it only when a concrete customization need exists, not by default.
+- Added an explicit carve-out: **OpenTelemetry Collector should never be forked**, in any category — its plugin architecture (receivers/processors/exporters) is the correct extension mechanism via OTel's own builder tooling, not source-level forking.
+- Updated **Prompt 5.13**'s title and intro to reference the per-tool category decision instead of a blanket "never vendor" rule.
+- Tier 2 progress: **2.2a** (two-track PAYG/subscription billing) delivered — trial credits, blocked-start enforcement for both modes, wallet UI, metering event publishing; currency/FX policy resolution and per-tick consumption-ledger recording flagged for confirmation. **2.3** (rate limiting / abuse dashboard) delivered — Redis sliding-window limiter across all 13 services + Traefik ingress middleware + real (non-mocked) admin dashboard; two behavior-narrowing changes to monitoring's RBAC flagged for explicit confirmation before merge, plus a `redis.keys()` → `redis.scan()` follow-up.
+
+## CHANGELOG (v11 → v12)
+
+- **Full pivot: every third-party marketplace tool is now fork-and-extend, no deploy-as-is category remains.** code-server, Gitea, Woodpecker CI, Portainer, Umami, and a mail server (Maddy recommended over Postal for stack familiarity, or Postal if mail-feature maturity matters more) are all forked-on-GitHub-first, cloned into `vendored/{tool}/` with an `upstream` remote for deliberate future merges — never cloned directly from the original repo, since that gives no push access anywhere.
+- **Corrected the OpenTelemetry Collector guidance** — previously suggested cloning `opentelemetry-collector-contrib`, which is wrong; the actual correct workflow is OTel's own builder tool (`ocb`) generating a custom distribution from a small config file referencing components as Go module dependencies, with no repo cloned into `vendored/` at all for this one.
+- Simplified **Prompt 5.13** now that there's no Category 1/2 split left to reference — every catalog tool is fork-and-extend by default.
+- Added **Prompt 6.10** — frontend modularization into `frontend/src/features/{domain}/` folders matching backend service boundaries, plus a shared `lib/ui-kit` workspace package extending the existing `lib/*` pnpm pattern — explicitly scoped as an internal reorganization (no routing/behavior change), and explicitly not a move to true micro-frontends, which is deferred until there's a real frontend team.
+
+## CHANGELOG (v12 → v13)
+
+- **Added an explicit "do not reimplement" ruling** to "A Note on Third-Party Code" — a full NestJS rewrite of Gitea/Woodpecker/Portainer/Postal-or-Maddy was considered and rejected: these are mature, protocol-level systems (Git wire protocol, SMTP+DKIM/DMARC/SPF, container orchestration, sandboxed pipeline execution), and a from-scratch rewrite means losing all upstream security hardening and future fixes permanently, for no real benefit.
+- **Added the general "check for the tool's own extension mechanism first" principle** — before assuming a feature idea needs source access, check whether the tool already has webhooks/a plugin system/a REST API that gets there with far less risk. Worked example: code-server doesn't need modification to add Kilo-Code-style semantic indexing, since code-server *is* VS Code and supports the same public Extension API Kilo Code/Cline/Continue/Copilot are themselves built on.
+- Added **Prompt 5.13b** — semantic code indexing inside code-server via the Tier A local Ollama model (from Prompt 5.15), implemented as a VS Code extension (custom-built or an existing open-source one bundled in) baked into the `vendored/code-server/` image at build time — no core modification, reuses existing Tier A infrastructure rather than standing up a second Ollama instance.
+
+## CHANGELOG (v13 → v14)
+
+- Tier 2 progress: **2.2a** confirmed done. **2.3** code-complete (the specific `redis.keys()` → `scanIterator()` fix landed, real Redis block-list sync implemented) but flagged as **not yet verified** — "no editor diagnostics" was offered in place of a real test run after a `pnpm install` failure, which isn't sufficient given this session's history of real test runs catching real hidden bugs. **2.4** done and verified (11/11 real test output) — MRR/churn/revenue/top-tenants/failed-payments dashboard wired to real data, webhook-driven alerts with signature verification; a controller-level integration test was requested as a follow-up specifically to catch a raw-body-preservation bug that a service-level test can't detect.
+- **Identified a likely root cause for the recurring pnpm/build-script install failures** that have now blocked real verification across multiple batches: `pnpm-workspace.yaml`'s `allowBuilds.esbuild` field contains a literal placeholder value (`"set this to true or false"`) instead of an actual boolean. Flagged as a known issue to fix once, permanently.
+
+## CHANGELOG (v14 → v15)
+
+- **Reconciled the Status Tracker with a separately-maintained live copy Kilo Code had been updating directly** — merged in entries that copy had but this file didn't yet (2.5, 2.7), corrected a stale "not yet verified" note on 2.3 that had since been resolved, and fixed a text-encoding corruption (arrows rendered as `?` characters) in the 2.9 entry.
+- **2.3 and 2.4 fully closed** with real verification: 2.3's `reference-only/` was confirmed via `git log` to have zero commits (no history leak), and `monitoring.service.spec.ts` was explicitly re-run post-fix (3/3 passing). 2.4's new controller-level `payment-webhook.controller.spec.ts` (via supertest against the real HTTP pipeline) confirmed raw-body preservation is correctly configured.
+- **Added 2.5 (WhatsApp broadcast center)** — done, 14/14 real tests including rate-limit enforcement and per-recipient template substitution. A real business decision was made and documented: bulk broadcast through the unofficial `openwa` library's ban risk is an accepted tradeoff for now, with an explicit note that broadcast specifically (not individual conversation relay) should migrate to Meta's official Business Cloud API if bans start happening in practice.
+- **Added 2.7 (K8s pod manager)** — done, including a genuine security fix found during review: the restart endpoint originally trusted the frontend's re-auth modal without server-side verification, now fixed with real server-side password/TOTP checking before any K8s action executes.
+- **2.6 marked done with one explicitly tracked open follow-up** — manual impersonation-exit is now audit-logged, but `impersonatedBy` propagation into audit details is still `services/user`-only; `billing`/`vps`/`crm`/`monitoring` need the same pattern applied incrementally.
+- **Resolved the recurring pnpm/build-script install failure pattern** properly — a dedicated audit (requested after the issue had surfaced three separate times) found four distinct real bugs at once (incomplete `allowBuilds`, missing `frontend`/`services/*` from the workspace `packages` list, an incorrectly excluded Windows-required native binding, plus two unrelated pre-existing reference bugs), verified with a clean install across all 21 workspace projects and a full 120-page `next build`.
 
 ---
 

@@ -1,95 +1,95 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import api from "@/lib/api";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export interface Notification {
   id: string;
-  type: "info" | "success" | "warning" | "error";
+  userId: string;
   title: string;
   message: string;
-  timestamp: Date;
+  type: "info" | "success" | "warning" | "error";
+  category?: string;
+  link?: string;
+  metadata?: Record<string, unknown>;
   read: boolean;
+  createdAt: string;
 }
 
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
-  addNotification: (notification: Omit<Notification, "id" | "timestamp" | "read">) => void;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
-  removeNotification: (id: string) => void;
   isConnected: boolean;
+  addNotification: (notification: Omit<Notification, "id" | "userId" | "createdAt" | "read">) => void;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  removeNotification: (id: string) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
-  // WebSocket connection (disabled until backend implements WebSocket gateway)
+  const refresh = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.get<Notification[]>("/notifications");
+      setNotifications(res.data);
+      setIsConnected(true);
+    } catch {
+      setIsConnected(false);
+    }
+  }, [user]);
+
   useEffect(() => {
-    // Temporarily disabled - backend WebSocket gateway not implemented yet
-    // const ws = new WebSocket("ws://localhost:3001/notifications");
-    //
-    // ws.onopen = () => {
-    //   setIsConnected(true);
-    //   console.log("WebSocket connected");
-    // };
-    //
-    // ws.onmessage = (event) => {
-    //   const data = JSON.parse(event.data);
-    //   addNotification({
-    //     type: data.type || "info",
-    //     title: data.title || "Notification",
-    //     message: data.message || "",
-    //   });
-    // };
-    //
-    // ws.onerror = (error) => {
-    //   console.error("WebSocket error:", error);
-    //   setIsConnected(false);
-    // };
-    //
-    // ws.onclose = () => {
-    //   setIsConnected(false);
-    //   console.log("WebSocket disconnected");
-    //   // Attempt to reconnect after 5 seconds
-    //   setTimeout(() => {
-    //     console.log("Attempting to reconnect...");
-    //   }, 5000);
-    // };
-    //
-    // return () => {
-    //   ws.close();
-    // };
-  }, []);
+    if (!user) return;
+    refresh();
+    const interval = setInterval(refresh, 30000);
+    return () => clearInterval(interval);
+  }, [user, refresh]);
 
-  const addNotification = (notification: Omit<Notification, "id" | "timestamp" | "read">) => {
-    const newNotification: Notification = {
+  const addNotification = useCallback((notification: Omit<Notification, "id" | "userId" | "createdAt" | "read">) => {
+    const optimistic: Notification = {
       ...notification,
       id: Date.now().toString(),
-      timestamp: new Date(),
+      userId: user?.id ?? "",
+      createdAt: new Date().toISOString(),
       read: false,
     };
-    setNotifications((prev) => [newNotification, ...prev]);
-  };
+    setNotifications((prev) => [optimistic, ...prev]);
+  }, [user]);
 
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notif) =>
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
-  };
+  const markAsRead = useCallback(async (id: string) => {
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+    try {
+      await api.put(`/notifications/${id}/read`);
+    } catch {
+      setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: false } : n));
+    }
+  }, []);
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })));
-  };
+  const markAllAsRead = useCallback(async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await api.put("/notifications/read-all");
+    } catch {
+      refresh();
+    }
+  }, [refresh]);
 
-  const removeNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
-  };
+  const removeNotification = useCallback(async (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await api.delete(`/notifications/${id}`);
+    } catch {
+      refresh();
+    }
+  }, [refresh]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -98,11 +98,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       value={{
         notifications,
         unreadCount,
+        isConnected,
         addNotification,
         markAsRead,
         markAllAsRead,
         removeNotification,
-        isConnected,
+        refresh,
       }}
     >
       {children}

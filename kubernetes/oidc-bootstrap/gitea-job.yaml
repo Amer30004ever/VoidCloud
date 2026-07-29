@@ -1,0 +1,117 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: voidcloud-oidc-bootstrap-gitea
+  namespace: voidcloud
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-gitea
+          image: curlimages/curl:8.5.0
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://gitea.voidcloud.svc.cluster.local:3000/api/v1/version; do
+                echo "waiting for gitea..."
+                sleep 5
+              done
+      containers:
+        - name: bootstrap-gitea
+          image: amer30004ever/voidcloud-auth-service:latest
+          imagePullPolicy: Always
+          command: ["node", "dist/oidc/run-oidc-bootstrap.js", "gitea"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: DATABASE_URL
+            - name: GITEA_URL
+              value: "http://gitea.voidcloud.svc.cluster.local:3000"
+            - name: GITEA_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: GITEA_ADMIN_TOKEN
+            - name: OIDC_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: voidcloud-config
+                  key: OIDC_ISSUER
+                  optional: true
+            - name: OIDC_GITEA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: OIDC_GITEA_CLIENT_ID
+                  optional: true
+            - name: OIDC_GITEA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: OIDC_GITEA_CLIENT_SECRET
+                  optional: true
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: voidcloud-oidc-bootstrap-portainer
+  namespace: voidcloud
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-portainer
+          image: curlimages/curl:8.5.0
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://portainer.voidcloud.svc.cluster.local:9000/api/status; do
+                echo "waiting for portainer..."
+                sleep 5
+              done
+      containers:
+        - name: bootstrap-portainer
+          image: amer30004ever/voidcloud-auth-service:latest
+          imagePullPolicy: Always
+          command: ["node", "dist/oidc/run-oidc-bootstrap.js", "portainer"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: DATABASE_URL
+            - name: PORTAINER_URL
+              value: "http://portainer.voidcloud.svc.cluster.local:9000"
+            - name: PORTAINER_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: PORTAINER_ADMIN_TOKEN
+            - name: OIDC_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: voidcloud-config
+                  key: OIDC_ISSUER
+                  optional: true
+            - name: OIDC_PORTAINER_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: OIDC_PORTAINER_CLIENT_ID
+                  optional: true
+            - name: OIDC_PORTAINER_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: voidcloud-secrets
+                  key: OIDC_PORTAINER_CLIENT_SECRET
+                  optional: true

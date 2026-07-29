@@ -1,59 +1,107 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import api from "@/lib/api";
 
-interface Check {
+type Incident = {
   id: string;
-  name: string;
-  url?: string;
-  status?: "Up" | "Down" | "Degraded" | "Unknown";
-}
+  title: string;
+  description: string;
+  severity: string;
+  status: string;
+  createdAt: string;
+  resolvedAt?: string;
+  updates: Array<{ id: string; message: string; status: string; createdAt: string }>;
+};
 
-export default function StatusPage() {
-  const [checks, setChecks] = useState<Check[]>([]);
+export default function PublicStatusPage() {
+  const [data, setData] = useState<{ overall: string; incidents: Incident[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("amer.uptime");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (raw) setChecks(JSON.parse(raw));
-    } catch { /* noop */ }
+    api.get("/monitoring/incidents/public").then((r) => setData(r.data)).catch(() => setData({ overall: "OPERATIONAL", incidents: [] })).finally(() => setLoading(false));
   }, []);
 
-  const up = checks.filter((c) => c.status === "Up").length;
-  const overall = checks.length === 0 ? "Unknown" : up === checks.length ? "All systems operational" : "Some systems degraded";
+  const statusColor: Record<string, string> = {
+    OPERATIONAL: "text-emerald-300",
+    DEGRADED: "text-yellow-300",
+    PARTIAL_OUTAGE: "text-orange-300",
+    MAJOR_OUTAGE: "text-red-300",
+  };
 
-  const color = (s?: string) => s === "Up" ? "bg-green-500" : s === "Down" ? "bg-red-500" : s === "Degraded" ? "bg-yellow-500" : "bg-gray-400";
+  const severityColor: Record<string, string> = {
+    DEGRADED: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+    PARTIAL_OUTAGE: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+    MAJOR_OUTAGE: "bg-red-500/20 text-red-300 border-red-500/30",
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+        <div className="text-center">
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent mx-auto" />
+          <p className="text-sm text-white/60">Loading status...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="mx-auto max-w-3xl space-y-6">
-        <header>
-          <h1 className="text-3xl font-bold text-foreground">System Status</h1>
-          <p className="mt-2 text-lg text-muted-foreground">{overall}</p>
-        </header>
-        {checks.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
-            No monitored services yet. Add checks at <code>/uptime</code>.
+    <div className="min-h-screen bg-slate-950">
+      <div className="mx-auto max-w-3xl px-4 py-16">
+        <h1 className="text-3xl font-bold text-white">VoidCloud Status</h1>
+        <p className="mt-2 text-sm text-white/60">Real-time platform status and incident history.</p>
+
+        <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+          <div className="text-center">
+            <div className={`text-2xl font-bold ${statusColor[data?.overall || 'OPERATIONAL'] || 'text-emerald-300'}`}>
+              {data?.overall || 'OPERATIONAL'}
+            </div>
+            <p className="mt-2 text-sm text-white/60">
+              {data?.overall === 'OPERATIONAL' ? 'All systems operational.' : 'Some systems are experiencing issues.'}
+            </p>
           </div>
-        ) : (
-          <div className="space-y-2">
-            {checks.map((c) => (
-              <div key={c.id} className="flex items-center justify-between rounded-lg border border-border bg-card p-4">
-                <div>
-                  <div className="font-medium text-foreground">{c.name}</div>
-                  {c.url && <div className="text-xs text-muted-foreground">{c.url}</div>}
+        </div>
+
+        <div className="mt-12">
+          <h2 className="text-xl font-semibold text-white">Incident History</h2>
+          <div className="mt-4 space-y-4">
+            {data?.incidents?.length === 0 && (
+              <p className="text-center text-white/50 py-8">No incidents reported.</p>
+            )}
+            {(data?.incidents || []).map((incident) => (
+              <div key={incident.id} className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold text-white">{incident.title}</h3>
+                    <p className="mt-1 text-sm text-white/60">{incident.description}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full border px-3 py-1 text-xs ${severityColor[incident.severity] || 'bg-gray-500/20 text-gray-300'}`}>
+                    {incident.severity}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`h-3 w-3 rounded-full ${color(c.status)}`} />
-                  <span className="text-sm font-medium">{c.status ?? "Unknown"}</span>
+
+                {incident.updates?.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {incident.updates.map((update) => (
+                      <div key={update.id} className="rounded-lg border border-white/5 bg-white/5 p-3 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-white/50">{new Date(update.createdAt).toLocaleString()}</span>
+                          <span className="text-xs text-cyan-300">{update.status}</span>
+                        </div>
+                        <p className="mt-1 text-white/80">{update.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-3 text-xs text-white/40">
+                  {new Date(incident.createdAt).toLocaleString()} {incident.resolvedAt && `· Resolved ${new Date(incident.resolvedAt).toLocaleString()}`}
                 </div>
               </div>
             ))}
           </div>
-        )}
-        <footer className="border-t border-border pt-4 text-center text-xs text-muted-foreground">
-          Auto-generated from <code>/uptime</code> data · Last refresh {new Date().toLocaleTimeString()}
-        </footer>
+        </div>
       </div>
     </div>
   );

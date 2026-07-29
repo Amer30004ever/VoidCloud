@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { cloudApi, CloudPlan } from "@/lib/cloud";
+import { cloudApi, CloudPlan } from "@/features/vps/cloud";
 
 export default function VoidCloudLanding() {
   const [plans, setPlans] = useState<CloudPlan[]>([]);

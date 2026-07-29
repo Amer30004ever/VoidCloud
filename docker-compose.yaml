@@ -14,17 +14,30 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics check_port_connectivity > /dev/null 2>&1 || rabbitmq-diagnostics ping > /dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   auth:
     build:
@@ -45,6 +58,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   user:
     build:
@@ -60,6 +81,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   tenant:
     build:
@@ -75,6 +104,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   vps:
     build:
@@ -94,6 +131,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   billing:
     build:
@@ -109,6 +156,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   crm:
     build:
@@ -124,6 +179,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   whatsapp:
     build:
@@ -139,6 +202,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   email:
     build:
@@ -158,6 +229,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   notification:
     build:
@@ -173,6 +252,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   monitoring:
     build:
@@ -188,6 +277,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   audit:
     build:
@@ -203,6 +300,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   analytics:
     build:
@@ -218,6 +323,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   sub2api:
     build:
@@ -233,6 +346,38 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  agent:
+    build:
+      context: .
+      dockerfile: services/agent/Dockerfile
+    environment:
+      PORT: 3014
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: dev_secret_key_for_local_development_only_32_chars
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3014:3014"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:'+process.env.PORT+'/api/v1/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   frontend:
     build:
@@ -244,19 +389,38 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - auth
-      - user
-      - tenant
-      - vps
-      - billing
-      - crm
-      - whatsapp
-      - email
-      - notification
-      - monitoring
-      - audit
-      - analytics
-      - sub2api
+      auth:
+        condition: service_healthy
+      user:
+        condition: service_healthy
+      tenant:
+        condition: service_healthy
+      vps:
+        condition: service_healthy
+      billing:
+        condition: service_healthy
+      crm:
+        condition: service_healthy
+      whatsapp:
+        condition: service_healthy
+      email:
+        condition: service_healthy
+      notification:
+        condition: service_healthy
+      monitoring:
+        condition: service_healthy
+      audit:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+      sub2api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"(require('http').get('http://localhost:3000',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1)))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   postgres_data:

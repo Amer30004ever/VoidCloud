@@ -1,11 +1,11 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
-import { LoadingState } from "@/components/ui/loading-state";
-import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@workspace/ui-kit/page-header";
+import { LoadingState } from "@workspace/ui-kit/loading-state";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
 import { useQuery } from "@tanstack/react-query";
-import { securityApi } from "@/lib/security";
+import { securityApi } from "@/features/admin/security";
 import { ShieldCheck } from "lucide-react";
 
 /**

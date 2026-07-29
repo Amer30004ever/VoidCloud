@@ -3,8 +3,7 @@
   "exclude": [
     "node_modules",
     "dist",
-    "src/guards/permissions.guard.ts",
-    "src/guards/tenant.guard.ts",
-    "src/routes"
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts"
   ]
 }

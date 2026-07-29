@@ -13,3 +13,7 @@ data:
   FRONTEND_URL: "https://voidcloud.cc.cd"
   CORS_ORIGINS: "https://voidcloud.cc.cd,https://www.voidcloud.cc.cd"
   NEXT_PUBLIC_API_URL: "https://api.voidcloud.cc.cd/api/v1"
+  # Tenant VM network isolation (Prompt 0.15). Override PROXMOX_K8S_INTERNAL_CIDRS
+  # to match the real Kubernetes-internal CIDRs in your cluster.
+  PROXMOX_K8S_INTERNAL_CIDRS: "10.42.0.0/16,10.43.0.0/16,10.244.0.0/16,10.96.0.0/12,172.16.0.0/12"
+  PROXMOX_VLAN_PER_TENANT: "false"

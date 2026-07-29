@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { cloudApi, CloudInvoice } from "@/lib/cloud";
+import { cloudApi, CloudInvoice } from "@/features/vps/cloud";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 export default function InvoicesPage() {
+  useTrackPageView();
   const [items, setItems] = useState<CloudInvoice[]>([]);
   useEffect(() => { cloudApi.billing.invoices().then(setItems); }, []);
   return (

@@ -20,8 +20,8 @@ export default function DocsPage() {
       <h2>API reference</h2>
       <p>
         The full OpenAPI / Swagger spec is published at{" "}
-        <a href="https://api.amer-portal.cc.cd/api/docs" target="_blank" rel="noreferrer">
-          api.amer-portal.cc.cd/api/docs
+        <a href="https://api.voidcloud.cc.cd/api/docs" target="_blank" rel="noreferrer">
+          api.voidcloud.cc.cd/api/docs
         </a>
         . Authenticate with a Bearer JWT from <code>POST /api/v1/auth/login</code>.
       </p>
@@ -39,3 +39,4 @@ export default function DocsPage() {
     </LegalPage>
   );
 }
+

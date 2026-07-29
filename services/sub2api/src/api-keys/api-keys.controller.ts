@@ -6,16 +6,18 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 
 @Controller('api-keys')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RoleGuard)
 export class ApiKeysController {
   constructor(private readonly apiKeysService: ApiKeysService) {}
 
   @Get()
+  @Roles('user', 'admin', 'agent', 'super_admin')
   async findAll(@Request() req) {
     return this.apiKeysService.findAll(req.user.id);
   }
 
   @Post()
+  @Roles('user', 'admin', 'agent', 'super_admin')
   async create(@Request() req, @Body() createApiKeyDto: CreateApiKeyDto) {
     return this.apiKeysService.create(req.user.id, createApiKeyDto);
   }
@@ -27,6 +29,7 @@ export class ApiKeysController {
   }
 
   @Post(':id/regenerate')
+  @Roles('user', 'admin', 'agent', 'super_admin')
   async regenerate(@Param('id') id: string, @Request() req) {
     return this.apiKeysService.regenerate(id, req.user.id);
   }

@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { cloudApiKeys } from "@/features/vps/cloud";
+import { API_BASE_URL } from "@/lib/constants";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 export default function ApiKeysPage() {
+  useTrackPageView();
   const [keys, setKeys] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [created, setCreated] = useState<string | null>(null);
@@ -13,7 +15,7 @@ export default function ApiKeysPage() {
 
   async function refresh() {
     try {
-      const { data } = await api.get("/platform/api-keys");
+      const data = await cloudApiKeys.list();
       setKeys(data);
     } catch {
       setKeys([]);
@@ -27,8 +29,8 @@ export default function ApiKeysPage() {
 
   async function create() {
     try {
-      const { data } = await api.post("/platform/api-keys", { name });
-      setCreated(data.key ?? data.plaintext ?? "amer_" + Math.random().toString(36).slice(2));
+      const data = await cloudApiKeys.create(name);
+      setCreated(data.key);
       setName("");
       refresh();
     } catch {
@@ -39,7 +41,7 @@ export default function ApiKeysPage() {
   async function revoke(id: string) {
     if (!confirm("Revoke this key? Any service using it will lose access immediately.")) return;
     try {
-      await api.delete(`/platform/api-keys/${id}`);
+      await cloudApiKeys.remove(id);
       refresh();
     } catch {
       /* ignore */

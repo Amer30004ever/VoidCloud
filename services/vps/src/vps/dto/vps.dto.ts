@@ -1,4 +1,5 @@
-import { IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsInProxmoxPool } from './static-ip.validator';
 
 export class CreateVpsDto {
   @IsString()
@@ -20,6 +21,15 @@ export class CreateVpsDto {
   @IsOptional()
   @IsString()
   planSlug?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsInProxmoxPool()
+  staticIp?: string;
+
+  @IsOptional()
+  @IsIn(['PAY_AS_YOU_GO', 'SUBSCRIPTION'])
+  billingMode?: 'PAY_AS_YOU_GO' | 'SUBSCRIPTION';
 }
 
 export class UpdateVpsDto {

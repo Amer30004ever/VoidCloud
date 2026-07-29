@@ -1,0 +1,86 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: portainer-oidc-bootstrap
+  namespace: voidcloud
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: bootstrap
+          image: curlimages/curl:8.5.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+              PORTAINER_URL="${PORTAINER_URL:-http://portainer-service.voidcloud.svc.cluster.local:9000}"
+              PORTAINER_ADMIN_TOKEN="${PORTAINER_ADMIN_TOKEN:?PORTAINER_ADMIN_TOKEN required}"
+              OIDC_ISSUER="${OIDC_ISSUER:-https://api.voidcloud.cc.cd}"
+              OIDC_CLIENT_ID="${OIDC_PORTAINER_CLIENT_ID:-portainer}"
+              OIDC_CLIENT_SECRET="${OIDC_PORTAINER_CLIENT_SECRET:?OIDC_PORTAINER_CLIENT_SECRET required}"
+
+              echo "=== Portainer OIDC Bootstrap ==="
+              echo "Target: $PORTAINER_URL"
+              echo "Issuer: $OIDC_ISSUER"
+              echo "Client ID: $OIDC_CLIENT_ID"
+
+              # Check if Portainer is reachable
+              for i in $(seq 1 30); do
+                if curl -sf "$PORTAINER_URL/api/status" > /dev/null 2>&1; then
+                  echo "Portainer is reachable"
+                  break
+                fi
+                echo "Waiting for Portainer... ($i/30)"
+                sleep 2
+              done
+
+              # Check if OIDC is already configured (idempotency)
+              EXISTING=$(curl -sf -H "Authorization: Bearer $PORTAINER_ADMIN_TOKEN" \
+                "$PORTAINER_URL/api/settings" 2>/dev/null || echo "{}")
+
+              if echo "$EXISTING" | grep -q "VoidCloud"; then
+                echo "✓ Portainer OIDC already configured (idempotent skip)"
+                exit 0
+              fi
+
+              # Configure OIDC settings
+              RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
+                -H "Authorization: Bearer $PORTAINER_ADMIN_TOKEN" \
+                -H "Content-Type: application/json" \
+                "$PORTAINER_URL/api/settings" \
+                -d "{
+                  \"OAuthSettings\": {
+                    \"DefaultOAuthProvider\": \"oidc\",
+                    \"OAuthProviders\": [
+                      {
+                        \"Name\": \"VoidCloud\",
+                        \"DisplayName\": \"VoidCloud SSO\",
+                        \"ClientId\": \"$OIDC_CLIENT_ID\",
+                        \"ClientSecret\": \"$OIDC_CLIENT_SECRET\",
+                        \"AuthorizationURL\": \"$OIDC_ISSUER/oidc/auth\",
+                        \"TokenURL\": \"$OIDC_ISSUER/oidc/token\",
+                        \"UserInfoURL\": \"$OIDC_ISSUER/oidc/userinfo\",
+                        \"Scopes\": [\"openid\", \"profile\", \"email\"],
+                        \"MapUserInfoTo\": {
+                          \"Email\": \"email\",
+                          \"Name\": \"name\",
+                          \"Username\": \"preferred_username\"
+                        }
+                      }
+                    ]
+                  }
+                }")
+
+              HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+              BODY=$(echo "$RESPONSE" | sed '$d')
+
+              if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "204" ]; then
+                echo "✓ Portainer OIDC bootstrap completed successfully"
+              else
+                echo "❌ Portainer OIDC bootstrap failed: HTTP $HTTP_CODE"
+                echo "$BODY"
+                exit 1
+              fi

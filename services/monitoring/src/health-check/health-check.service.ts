@@ -168,6 +168,16 @@ export class HealthCheckService {
     return { status: 'DOWN', failureType: 'UNKNOWN', error: `HTTP ${statusCode ?? '?'}` };
   }
 
+  async getHistory(hours: number): Promise<{ serviceName: string; checkedAt: string; status: string; responseTimeMs: number | null }[]> {
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const rows = await this.prisma.serviceHealthLog.findMany({
+      where: { checkedAt: { gte: since }, serviceName: { in: SERVICES.map((s) => s.name) } },
+      orderBy: { checkedAt: 'asc' },
+      select: { serviceName: true, checkedAt: true, status: true, responseTimeMs: true },
+    });
+    return rows.map((r) => ({ serviceName: r.serviceName, checkedAt: r.checkedAt.toISOString(), status: r.status, responseTimeMs: r.responseTimeMs }));
+  }
+
   private probe(name: string, host: string, port: number, path = '/health'): Promise<ServiceProbe> {
     return new Promise((resolve) => {
       const start = Date.now();

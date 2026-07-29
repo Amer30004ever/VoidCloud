@@ -727,6 +727,8 @@ jobs:
         run: node --test scripts/__tests__/scan-tenant-isolation.test.mjs
       - name: Run tenant-isolation scan (CI mode)
         run: node scripts/scan-tenant-isolation.mjs --ci
+      - name: Crash-loop probe guard (Prompt 0.18)
+        run: node scripts/check-probes.mjs
 
   security-scan:
     needs: [detect-changes, build-backend, build-frontend]
@@ -1116,7 +1118,7 @@ jobs:
       - name: Remove old frontend images from nodes
         if: github.event.inputs.force_pull == 'true' || github.event_name == 'push'
         run: |
-          echo "🗑️ Removing old Amer Portal frontend images from cluster nodes..."
+           echo "🗑️ Removing old VoidCloud frontend images from cluster nodes..."
           NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
           for NODE in $NODES; do
             ssh -o StrictHostKeyChecking=no $NODE "sudo crictl images | grep 'voidcloud-frontend' | awk '{print \$3}' | xargs -r sudo crictl rmi" 2>/dev/null || echo "⚠️ Could not clean images on $NODE"

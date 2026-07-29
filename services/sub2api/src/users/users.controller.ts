@@ -18,7 +18,12 @@ export class UsersController {
 
   @Get('me')
   async getProfile(@Request() req) {
-    return this.usersService.findOne(req.user.id);
+    return this.usersService.getProfile(req.user.id);
+  }
+
+  @Put('me/supabase-token')
+  async updateSupabaseToken(@Request() req, @Body() body: { token: string }) {
+    return this.usersService.updateSupabaseToken(req.user.id, body.token);
   }
 
   @Get(':id')

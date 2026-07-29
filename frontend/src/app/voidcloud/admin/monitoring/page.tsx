@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cloudApi, ServicesHealthSnapshot, MaintenanceState } from "@/lib/cloud";
+import { cloudApi, ServicesHealthSnapshot, MaintenanceState } from "@/features/vps/cloud";
 
 export default function AdminMonitoringPage() {
   const [snap, setSnap] = useState<ServicesHealthSnapshot | null>(null);

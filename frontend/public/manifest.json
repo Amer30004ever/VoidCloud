@@ -1,0 +1,11 @@
+{
+  "name": "VoidCloud — Managed Cloud Platform",
+  "short_name": "VoidCloud",
+  "start_url": "/voidcloud/dashboard",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "any", "type": "image/x-icon", "purpose": "any maskable" }
+  ]
+}

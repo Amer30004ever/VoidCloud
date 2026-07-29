@@ -35,6 +35,7 @@ const cols = [
       ["Terms", "/terms"],
       ["Security", "/security"],
       ["GDPR", "/gdpr"],
+      ["Acceptable Use", "/aup"],
     ],
   },
 ] as const;

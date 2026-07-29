@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
-import { cloudApi } from "@/lib/cloud";
+import { cloudApi } from "@/features/vps/cloud";
 
 export default function AdminTransactionsPage() {
   const [tx, setTx] = useState<any[]>([]);

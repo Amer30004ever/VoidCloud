@@ -60,7 +60,7 @@ import {
   MessageSquareQuote,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 
 interface NavSection {
   title: string;
@@ -186,6 +186,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/integrations/slack", label: "Slack", icon: Puzzle },
       { href: "/integrations/webhooks", label: "Webhooks", icon: Zap },
+      { href: "/sub2api", label: "sub2api Studio", icon: Code2 },
     ],
   },
   {
@@ -257,7 +258,7 @@ export function Sidebar() {
             <Terminal className="h-4 w-4 text-primary-foreground" />
           </div>
           <span className="text-base font-bold tracking-tight text-sidebar-foreground">
-            Amer Portal
+            VoidCloud
           </span>
         </div>
 
@@ -342,7 +343,7 @@ export function Sidebar() {
           <span className="flex-1">{theme === "light" ? "Dark Mode" : "Light Mode"}</span>
         </button>
         <p className="mt-2 px-3 text-xs text-sidebar-foreground/40">
-          Amer Portal v1.0.0
+          VoidCloud v1.0.0
         </p>
       </div>
     </aside>

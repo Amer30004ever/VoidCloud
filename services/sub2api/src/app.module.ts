@@ -12,6 +12,10 @@ import { BillingModule } from './billing/billing.module';
 import { AdminModule } from './admin/admin.module';
 import { ChannelsModule } from './channels/channels.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { ProjectsModule } from './projects/projects.module';
+import { GenerationsModule } from './generations/generations.module';
+import { ActivityModule } from './activity/activity.module';
+import { ProvisioningModule } from './provisioning/provisioning.module';
 
 declare const __dirname: string;
 
@@ -59,6 +63,10 @@ declare const __dirname: string;
     AdminModule,
     ChannelsModule,
     SubscriptionsModule,
+    ProjectsModule,
+    GenerationsModule,
+    ActivityModule,
+    ProvisioningModule,
   ],
   controllers: [AppController],
   providers: [AppService],

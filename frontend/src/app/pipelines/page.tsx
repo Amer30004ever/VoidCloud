@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHeader } from "@workspace/ui-kit/page-header";
 import { Loader2, GitBranch, Plus, Play, RotateCcw, Settings, Clock, CheckCircle2, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { pipelinesApi, TriggerPipelineRequest, CreateCustomPipelineRequest } from "@/lib/pipelines";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";

@@ -27,6 +27,7 @@ export class AuditController {
   }
 
   @Get('logs/user/:id')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   userLogs(@Param('id') id: string, @Query('limit') limit?: string) {
     return this.audit.getUserLogs(id, limit ? parseInt(limit, 10) : 50);
   }
@@ -38,6 +39,7 @@ export class AuditController {
   }
 
   @Post('logs')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   create(@Body() body: Record<string, unknown>) {
     return this.audit.createLog(body as never);
   }

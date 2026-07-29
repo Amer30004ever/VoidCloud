@@ -6,6 +6,7 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-security-headers@kubernetescrd,traefik-rate-limit@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
@@ -103,6 +104,13 @@ spec:
             name: sub2api-service
             port:
               number: 3013
+      - path: /api/v1/agent
+        pathType: Prefix
+        backend:
+          service:
+            name: agent-service
+            port:
+              number: 3014
       - path: /api/v1/webhooks
         pathType: Prefix
         backend:

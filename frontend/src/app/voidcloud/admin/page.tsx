@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { cloudApi } from "@/lib/cloud";
+import { cloudApi } from "@/features/vps/cloud";
 
 
 

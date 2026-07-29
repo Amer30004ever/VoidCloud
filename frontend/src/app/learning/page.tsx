@@ -1,11 +1,11 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHeader } from "@workspace/ui-kit/page-header";
 import { Briefcase, Newspaper, BookOpen, Award, FileText, Search, Download, Share2, Star, Loader2, Calendar, Book } from "lucide-react";
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { AddItemButton } from "@/components/ui/create-item-dialog";
+import { AddItemButton } from "@workspace/ui-kit/create-item-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { learningApi } from "@/lib/learning";
 

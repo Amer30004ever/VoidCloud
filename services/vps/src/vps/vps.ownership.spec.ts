@@ -2,6 +2,23 @@ import { NotFoundException } from '@nestjs/common';
 import { Role, CloudDeploymentStatus } from '@prisma/client';
 import { VpsService } from './vps.service';
 
+jest.mock('@kubernetes/client-node', () => ({
+  KubeConfig: jest.fn().mockImplementation(() => ({
+    loadFromDefault: jest.fn(),
+    makeApiClient: jest.fn().mockReturnValue({
+      createNamespacedDeployment: jest.fn(),
+      patchNamespacedDeployment: jest.fn(),
+      deleteNamespacedDeployment: jest.fn(),
+      readNamespacedDeployment: jest.fn(),
+      createNamespacedService: jest.fn(),
+      patchNamespacedService: jest.fn(),
+      deleteNamespacedService: jest.fn(),
+    }),
+  })),
+  CoreV1Api: jest.fn(),
+  AppsV1Api: jest.fn(),
+}));
+
 /**
  * Ownership isolation — negative tests.
  *
@@ -37,6 +54,7 @@ describe('VpsService — cross-user ownership isolation', () => {
   const mkPrisma = () => ({
     cloudDeployment: {
       findUnique: jest.fn().mockResolvedValue(OTHER_USERS_VPS),
+      findMany: jest.fn().mockResolvedValue([]),
       update: jest.fn().mockResolvedValue({ ...OTHER_USERS_VPS }),
       delete: jest.fn().mockResolvedValue({ ...OTHER_USERS_VPS }),
     },
@@ -53,8 +71,10 @@ describe('VpsService — cross-user ownership isolation', () => {
   const mkService = () => {
     const prisma = mkPrisma();
     const proxmox = mkProxmox();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const svc = new VpsService(prisma as any, proxmox as any, clusters as any);
+    const creditService = { canProvisionVps: jest.fn().mockResolvedValue({ allowed: true }), canStartPaygVps: jest.fn().mockResolvedValue(true) };
+    const k8sApp = { deploy: jest.fn(), remove: jest.fn(), getStatus: jest.fn().mockResolvedValue('not_installed') };
+    const backupScheduler = { getBackups: jest.fn(), getSchedule: jest.fn(), createSchedule: jest.fn(), restoreBackup: jest.fn() };
+    const svc = new VpsService(prisma as any, proxmox as any, clusters as any, creditService as any, backupScheduler as any, k8sApp as any);
     return { svc, prisma, proxmox };
   };
 

@@ -2,13 +2,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { cloudApi, type CloudDeployment, type VpsCurrentUsage } from "@/lib/cloud";
-import { VpsStatusBadge } from "@/components/cloud/VpsStatusBadge";
-import { VpsTerminal } from "@/components/cloud/VpsTerminal";
-import { VpsResizeModal } from "@/components/cloud/VpsResizeModal";
+import api from "@/lib/api";
+import { cloudApi, cloudMonitoring, cloudBackups, cloudDomains, type CloudDeployment, type VpsCurrentUsage } from "@/features/vps/cloud";
+import { VpsStatusBadge } from "@/features/vps/VpsStatusBadge";
+import { VpsTerminal } from "@/features/vps/VpsTerminal";
+import { VpsResizeModal } from "@/features/vps/VpsResizeModal";
+import { auditApiClient } from "@/features/admin/audit";
+import ActivityTimeline from "@/components/ui/activity-timeline";
 
-type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "firewall" | "migration" | "activity";
-type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string };
+type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "firewall" | "migration" | "activity" | "snapshot" | "recommendations" | "security";
+type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string; billingMode?: string; statusMessage?: string };
 
 export default function VpsDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +25,11 @@ export default function VpsDetailPage() {
   const [domainsText, setDomainsText] = useState("");
   const [msg, setMsg] = useState("");
   const [showResize, setShowResize] = useState(false);
+  const [startBlocked, setStartBlocked] = useState<string | null>(null);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [activityError, setActivityError] = useState<string | null>(null);
 
   useEffect(() => {
     cloudApi.deployments.get(id).then((x) => {
@@ -29,7 +37,22 @@ export default function VpsDetailPage() {
       setEnvRows(Object.entries((x as any).envVars ?? {}).map(([k, v]) => ({ key: k, value: String(v) })));
       setDomainsText(((x as any).customDomains ?? []).join("\n"));
     });
+    cloudApi.credits.balance().then(setBalance).catch(() => { });
   }, [id]);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (tab !== "activity" || !id) return;
+    let stop = false;
+    setActivityLoading(true);
+    setActivityError(null);
+    auditApiClient
+      .list({ resource: `vps:${id}`, limit: 100 })
+      .then((logs) => { if (!stop) { setActivityLogs(logs); setActivityLoading(false); } })
+      .catch((e: any) => { if (!stop) { setActivityError(e?.response?.data?.message ?? e?.message); setActivityLoading(false); } });
+    return () => { stop = true; };
+  }, [tab, id]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (tab !== "usage" || !id) return;
@@ -43,6 +66,15 @@ export default function VpsDetailPage() {
   async function action(fn: () => Promise<any>, label: string) {
     setMsg(""); try { await fn(); setMsg(`${label} OK`); cloudApi.deployments.get(id).then((x) => setD(x as Vps)); }
     catch (e: any) { setMsg(e?.response?.data?.message ?? "Failed"); }
+  }
+
+  async function handleStart() {
+    setStartBlocked(null);
+    try {
+      const check = await cloudApi.credits.canStartVps(d?.billingMode);
+      if (!check.allowed) { setStartBlocked(check.reason || "Cannot start VPS"); return; }
+      await action(() => cloudApi.deployments.start(d!.id), "Started");
+    } catch (e: any) { setMsg(e?.response?.data?.message ?? "Failed"); }
   }
 
   async function saveEnv() {
@@ -66,12 +98,13 @@ export default function VpsDetailPage() {
           <div className="mt-2 flex gap-2 items-center"><VpsStatusBadge status={d.status} /><button onClick={() => setShowResize(true)} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200 hover:bg-cyan-400/20">⇅ Change Plan</button></div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => action(() => cloudApi.deployments.start(d.id), "Started")} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10">▶ Start</button>
+          <button onClick={handleStart} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 disabled:opacity-50">▶ Start</button>
           <button onClick={() => action(() => cloudApi.deployments.stop(d.id), "Stopped")} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10">■ Stop</button>
           <button onClick={() => action(() => cloudApi.deployments.restart(d.id), "Restarted")} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10">↻ Restart</button>
           <button
             onClick={async () => { try { const r = await cloudApi.deployments.resetRootPassword(d.id); setTempPw(r.rootPassword); setRevealPw(true); } catch { } }}
             className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10">🔑 Reset root password</button>
+          <button onClick={async () => { const name = prompt("Snapshot name"); if (name) { try { await cloudApi.deployments.snapshot(d.id, name); setMsg("Snapshot created"); } catch { setMsg("Snapshot failed"); } } }} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-200 hover:bg-cyan-400/20">📸 Snapshot</button>
           <button onClick={async () => { if (confirm("Delete this VPS? This is irreversible.")) { await cloudApi.deployments.remove(d.id); router.push("/voidcloud/dashboard/vps"); } }}
             className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300 hover:bg-red-500/20">Delete</button>
         </div>
@@ -80,7 +113,7 @@ export default function VpsDetailPage() {
       {msg && <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-xs text-emerald-200">{msg}</div>}
 
       <div className="mb-4 flex gap-1 border-b border-white/5 overflow-x-auto">
-        {(["overview", "usage", "terminal", "env", "domains", "backups", "alerts", "firewall", "activity"] as Tab[]).map((t) => (
+        {(["overview", "usage", "terminal", "env", "domains", "backups", "alerts", "firewall", "migration", "activity", "snapshot", "recommendations", "security"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm capitalize whitespace-nowrap ${tab === t ? "border-b-2 border-cyan-400 text-white" : "text-white/50 hover:text-white"}`}>{t}</button>
         ))}
       </div>
@@ -89,11 +122,25 @@ export default function VpsDetailPage() {
         {tab === "overview" && (
           <div className="space-y-2 text-sm">
             <Kv k="Status" v={<VpsStatusBadge status={d.status} />} />
+            <Kv k="Billing mode" v={d.billingMode === "PAY_AS_YOU_GO" ? "Pay-as-you-go" : d.billingMode === "SUBSCRIPTION" ? "Subscription" : "—"} />
+            {d.billingMode === "PAY_AS_YOU_GO" && <Kv k="Credit balance" v={balance !== null ? `${balance} pts` : "—"} />}
+            {d.statusMessage && <Kv k="Note" v={<span className="text-amber-300">{d.statusMessage}</span>} />}
             <Kv k="IP Address" v={<span className="font-mono">{d.ipv4Address ?? "—"}</span>} />
             <Kv k="Hostname" v={<span className="font-mono">{d.hostname ?? d.name}</span>} />
             <Kv k="Resources" v={`${d.cpu} CPU · ${d.memory}MB RAM · ${Math.ceil(d.storage / 1024)}GB disk`} />
             <Kv k="Custom domains" v={d.customDomains?.join(", ") || "—"} />
             <Kv k="Created" v={new Date(d.createdAt).toLocaleString()} />
+            {startBlocked && (
+              <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+                {startBlocked}
+                {d.billingMode === "PAY_AS_YOU_GO" && (
+                  <button onClick={() => router.push("/voidcloud/dashboard/wallet")} className="ml-3 text-xs text-cyan-300 hover:underline">Top up →</button>
+                )}
+                {d.billingMode === "SUBSCRIPTION" && (
+                  <button onClick={() => router.push("/voidcloud/dashboard/billing")} className="ml-3 text-xs text-cyan-300 hover:underline">Resubscribe →</button>
+                )}
+              </div>
+            )}
             <div className="pt-3">
               <div className="text-xs uppercase text-white/50 mb-1">Root password</div>
               {tempPw ? (
@@ -145,14 +192,35 @@ export default function VpsDetailPage() {
         )}
 
         {tab === "domains" && (
-          <div className="space-y-3">
-            <textarea rows={5} className={input} value={domainsText} onChange={(e) => setDomainsText(e.target.value)} placeholder="app.example.com&#10;api.example.com" />
-            <button onClick={saveDomains} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">Save domains</button>
+          <DomainsTab vpsId={id} />
+        )}
+
+        {tab === "backups" && (
+          <BackupsTab vpsId={id} />
+        )}
+
+        {tab === "recommendations" && (
+          <RecommendationsTab vpsId={id} />
+        )}
+
+        {tab === "security" && (
+          <SecurityTab vpsId={id} />
+        )}
+
+        {tab === "snapshot" && (
+          <div className="space-y-3 text-sm">
+            <p className="text-white/60">Create a point-in-time snapshot of this VPS.</p>
+            <button onClick={async () => { const name = prompt("Snapshot name"); if (name) { try { await cloudApi.deployments.snapshot(id, name); setMsg("Snapshot created"); } catch { setMsg("Snapshot failed"); } } }} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200 hover:bg-cyan-400/20">Create Snapshot</button>
           </div>
         )}
 
         {tab === "activity" && (
-          <p className="text-sm text-white/60">VPS activity log is coming soon. Account-level audit events live under <span className="text-cyan-300">/voidcloud/admin</span>.</p>
+          <ActivityTimeline
+            logs={activityLogs}
+            loading={activityLoading}
+            error={activityError}
+            emptyMessage="No activity events recorded for this VPS yet."
+          />
         )}
       </div>
       {showResize && <VpsResizeModal vpsId={d.id} onClose={() => setShowResize(false)} onDone={() => cloudApi.deployments.get(d.id).then(setD).catch(() => { })} />}
@@ -184,3 +252,207 @@ function fmtBytes(n: number) {
   return `${v.toFixed(1)} ${u[i]}`;
 }
 const input = "w-full rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 outline-none focus:border-cyan-400/50";
+
+function DomainsTab({ vpsId }: { vpsId: string }) {
+  const [domains, setDomains] = useState<any[]>([]);
+  const [newDomain, setNewDomain] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function refresh() {
+    try { setDomains(await cloudDomains.list(vpsId)); } catch { setDomains([]); }
+  }
+  useEffect(() => { refresh(); }, [vpsId]);
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newDomain) return;
+    setBusy(true);
+    try { await cloudDomains.add(vpsId, newDomain, false); setNewDomain(""); refresh(); } catch { /* ignore */ }
+    setBusy(false);
+  }
+
+  async function verify(id: string) {
+    const token = prompt("Enter the DNS TXT value shown below:");
+    if (!token) return;
+    try { await cloudDomains.verify(id, token); refresh(); } catch { /* ignore */ }
+  }
+
+  return (
+    <div className="space-y-4">
+      <form onSubmit={add} className="flex gap-2">
+        <input value={newDomain} onChange={(e) => setNewDomain(e.target.value)} placeholder="example.com" className={input + " flex-1"} />
+        <button disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">Add</button>
+      </form>
+      <div className="space-y-2">
+        {domains.map((d) => (
+          <div key={d.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+            <div>
+              <div className="font-medium">{d.domain}</div>
+              <div className="text-xs text-white/60">{d.status} {d.verifyToken && `· verify: ${d.verifyToken}`}</div>
+              {d.sslIssuedAt && <div className="text-xs text-white/60">SSL expires: {new Date(d.sslExpiresAt).toLocaleDateString()}</div>}
+            </div>
+            {d.status !== "VERIFIED" && (
+              <button onClick={() => verify(d.id)} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-200 hover:bg-cyan-400/20">Verify</button>
+            )}
+          </div>
+        ))}
+        {domains.length === 0 && <p className="text-center text-white/50 py-8">No domains attached.</p>}
+      </div>
+    </div>
+  );
+}
+
+function BackupsTab({ vpsId }: { vpsId: string }) {
+  const [backups, setBackups] = useState<any[]>([]);
+  const [schedule, setSchedule] = useState<any>(null);
+  const [form, setForm] = useState<{ frequency: "DAILY" | "WEEKLY" | "MONTHLY"; retention: number; hour: number; dayOfWeek: number; dayOfMonth: number }>({ frequency: "DAILY", retention: 7, hour: 0, dayOfWeek: 0, dayOfMonth: 1 });
+
+  async function refresh() {
+    try {
+      const [b, s] = await Promise.all([cloudBackups.listForVps(vpsId), cloudBackups.getSchedule(vpsId)]);
+      setBackups(b); setSchedule(s);
+    } catch { setBackups([]); }
+  }
+  useEffect(() => { refresh(); }, [vpsId]);
+
+  async function saveSchedule(e: React.FormEvent) {
+    e.preventDefault();
+    try { await cloudBackups.updateSchedule(vpsId, form); refresh(); } catch { /* ignore */ }
+  }
+
+  async function restore(id: string) {
+    if (!confirm("Restore this backup? This will replace current data.")) return;
+    try { await cloudBackups.restore(id); alert("Restore queued"); } catch { alert("Restore failed"); }
+  }
+
+  return (
+    <div className="space-y-6">
+      <form onSubmit={saveSchedule} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+        <h3 className="text-sm font-semibold">Backup Schedule</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs text-white/60">Frequency</label>
+            <select value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value as "DAILY" | "WEEKLY" | "MONTHLY" })} className={input}>
+              <option value="HOURLY">Hourly</option>
+              <option value="DAILY">Daily</option>
+              <option value="WEEKLY">Weekly</option>
+              <option value="MONTHLY">Monthly</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-white/60">Retention (backups)</label>
+            <input type="number" value={form.retention} onChange={(e) => setForm({ ...form, retention: Number(e.target.value) })} className={input} />
+          </div>
+        </div>
+        <button className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">Save Schedule</button>
+      </form>
+
+      <div>
+        <h3 className="mb-3 text-sm font-semibold">Backup History</h3>
+        <div className="space-y-2">
+          {backups.map((b) => (
+            <div key={b.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+              <div>
+                <div className="font-medium">{b.name || b.type}</div>
+                <div className="text-xs text-white/60">{new Date(b.createdAt).toLocaleString()} · {b.status}</div>
+              </div>
+              <button onClick={() => restore(b.id)} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-200 hover:bg-cyan-400/20">Restore</button>
+            </div>
+          ))}
+          {backups.length === 0 && <p className="text-center text-white/50 py-8">No backups yet.</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RecommendationsTab({ vpsId }: { vpsId: string }) {
+  const [recs, setRecs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function refresh() {
+    setLoading(true);
+    try { setRecs(await cloudMonitoring.recommendations.forVps(vpsId)); } catch { setRecs([]); }
+    setLoading(false);
+  }
+  useEffect(() => { refresh(); }, [vpsId]);
+
+  async function ack(id: string) {
+    try { await cloudMonitoring.recommendations.acknowledge(id); refresh(); } catch { /* ignore */ }
+  }
+
+  if (loading) return <p className="text-white/50">Loading recommendations…</p>;
+
+  return (
+    <div className="space-y-3">
+      {recs.length === 0 && <p className="text-center text-white/50 py-8">No recommendations. They are generated daily based on 7-day averages.</p>}
+      {recs.map((r) => (
+        <div key={r.id} className="flex items-start justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+          <div>
+            <div className="font-medium">{r.message}</div>
+            <div className="text-xs text-white/60">{r.type} · {r.currentValue}{r.unit} → {r.suggestedValue}{r.unit} · {new Date(r.createdAt).toLocaleDateString()}</div>
+          </div>
+          {!r.acknowledged && (
+            <button onClick={() => ack(r.id)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10">Ack</button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SecurityTab({ vpsId }: { vpsId: string }) {
+  const [settings, setSettings] = useState({ wafEnabled: false, wafPreset: 'basic', ddosTier: 'basic', fimEnabled: false, fimPaths: '' });
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function save() {
+    setMsg(null);
+    try {
+      await api.put(`/vps/${vpsId}/security`, settings);
+      setMsg('Saved');
+    } catch (e: any) {
+      setMsg(e?.response?.data?.message ?? 'Save failed');
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-sm font-semibold">Security Settings</h3>
+      {msg && <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-200">{msg}</div>}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+          <div className="text-sm font-medium">WAF</div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={settings.wafEnabled} onChange={(e) => setSettings({ ...settings, wafEnabled: e.target.checked })} />
+            Enable WAF
+          </label>
+          <select value={settings.wafPreset} onChange={(e) => setSettings({ ...settings, wafPreset: e.target.value })} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
+            <option value="basic">Basic (OWASP Core)</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+          <div className="text-sm font-medium">DDoS Protection</div>
+          <select value={settings.ddosTier} onChange={(e) => setSettings({ ...settings, ddosTier: e.target.value })} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
+            <option value="basic">Basic</option>
+            <option value="advanced">Advanced (add-on)</option>
+          </select>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+          <div className="text-sm font-medium">File Integrity Monitoring</div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={settings.fimEnabled} onChange={(e) => setSettings({ ...settings, fimEnabled: e.target.checked })} />
+            Enable FIM
+          </label>
+          <input value={settings.fimPaths} onChange={(e) => setSettings({ ...settings, fimPaths: e.target.value })} placeholder="/var/www, /etc/nginx" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm" />
+          <p className="text-xs text-white/50">Comma-separated paths to monitor.</p>
+        </div>
+      </div>
+
+      <button onClick={save} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">Save Security Settings</button>
+    </div>
+  );
+}

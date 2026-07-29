@@ -1,27 +1,27 @@
-# Exclude all node_modules everywhere
-**/node_modules
-**/.next
-**/dist
-**/build
+# Exclude Kilo worktrees and temp dirs
+.kilo/
+.replit/
+reference-only/
+sub2api-main/
+.agents/
+
+# Exclude service node_modules
+node_modules
+services/*/node_modules
+services/*/*/node_modules
+
+# Exclude build artifacts
+/dist
+/build
+/.next
+/vendored
 
 # Exclude git
 .git
+**/.git
 .gitignore
 
-# Exclude specific frontend folders
-frontend/node_modules
-frontend/.next
-frontend/dist
-frontend/build
-
-# Exclude backend folders (adjust as needed)
-backend/node_modules
-backend/target
-
-# Exclude auth service
-auth/node_modules
-
-# Common files
+# Exclude common files
 *.log
 .DS_Store
 .vscode
@@ -38,3 +38,4 @@ yarn-error.log
 *.pid
 *.seed
 *.pid.lock
+tmp/

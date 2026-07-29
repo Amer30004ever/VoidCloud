@@ -5,6 +5,8 @@
     "dist",
     "src/guards/permissions.guard.ts",
     "src/guards/tenant.guard.ts",
-    "src/routes"
+    "src/routes",
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts"
   ]
 }

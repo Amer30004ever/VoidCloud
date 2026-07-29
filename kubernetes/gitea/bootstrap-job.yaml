@@ -1,0 +1,75 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gitea-oidc-bootstrap
+  namespace: voidcloud
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: bootstrap
+          image: curlimages/curl:8.5.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+              GITEA_URL="${GITEA_URL:-http://gitea-service.voidcloud.svc.cluster.local:3000}"
+              GITEA_ADMIN_TOKEN="${GITEA_ADMIN_TOKEN:?GITEA_ADMIN_TOKEN required}"
+              OIDC_ISSUER="${OIDC_ISSUER:-https://api.voidcloud.cc.cd}"
+              OIDC_CLIENT_ID="${OIDC_GITEA_CLIENT_ID:-gitea}"
+              OIDC_CLIENT_SECRET="${OIDC_GITEA_CLIENT_SECRET:?OIDC_GITEA_CLIENT_SECRET required}"
+              REDIRECT_URI="${OIDC_GITEA_REDIRECT_URI:-${OIDC_ISSUER}/oidc/callback/gitea}"
+
+              echo "=== Gitea OIDC Bootstrap ==="
+              echo "Target: $GITEA_URL"
+              echo "Issuer: $OIDC_ISSUER"
+              echo "Client ID: $OIDC_CLIENT_ID"
+
+              # Check if Gitea is reachable
+              for i in $(seq 1 30); do
+                if curl -sf "$GITEA_URL/api/v1/version" > /dev/null 2>&1; then
+                  echo "Gitea is reachable"
+                  break
+                fi
+                echo "Waiting for Gitea... ($i/30)"
+                sleep 2
+              done
+
+              # Check if OIDC is already configured (idempotency)
+              EXISTING=$(curl -sf -H "Authorization: Bearer $GITEA_ADMIN_TOKEN" \
+                "$GITEA_URL/api/v1/admin/auths/oauth2_generic" 2>/dev/null || echo "[]")
+
+              if echo "$EXISTING" | grep -q "VoidCloud SSO"; then
+                echo "✓ Gitea OIDC already configured (idempotent skip)"
+                exit 0
+              fi
+
+              # Register OIDC auth source
+              RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+                -H "Authorization: Bearer $GITEA_ADMIN_TOKEN" \
+                -H "Content-Type: application/json" \
+                "$GITEA_URL/api/v1/admin/auths/oauth2_generic" \
+                -d "{
+                  \"name\": \"VoidCloud SSO\",
+                  \"provider\": \"oauth2_generic\",
+                  \"clientId\": \"$OIDC_CLIENT_ID\",
+                  \"clientSecret\": \"$OIDC_CLIENT_SECRET\",
+                  \"openidConnectAutoDiscoveryUrl\": \"$OIDC_ISSUER/oidc/.well-known/openid-configuration\",
+                  \"redirectUri\": \"$REDIRECT_URI\",
+                  \"scopes\": [\"openid\", \"profile\", \"email\"]
+                }")
+
+              HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+              BODY=$(echo "$RESPONSE" | sed '$d')
+
+              if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+                echo "✓ Gitea OIDC bootstrap completed successfully"
+                echo "$BODY"
+              else
+                echo "❌ Gitea OIDC bootstrap failed: HTTP $HTTP_CODE"
+                echo "$BODY"
+                exit 1
+              fi

@@ -3,13 +3,25 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cloudTwoFactor, cloudAccount, type CloudProfile, type NotificationPrefs } from "@/lib/cloud";
-import { SSHKeyManager } from "@/components/cloud/SSHKeyManager";
+import api from "@/lib/api";
+import { cloudTwoFactor, cloudAccount, type CloudProfile, type NotificationPrefs } from "@/features/vps/cloud";
+import { SSHKeyManager } from "@/features/vps/SSHKeyManager";
+import dynamic from "next/dynamic";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
-type Tab = "profile" | "security" | "ssh" | "notifications" | "api" | "danger";
+const TeamPage = dynamic(() => import("./team/page"));
+const BusinessSettingsPage = dynamic(() => import("./business/page"));
+
+type Tab = "profile" | "security" | "ssh" | "notifications" | "api" | "accounts" | "danger" | "team" | "business";
 
 export default function SettingsPage() {
+  useTrackPageView();
   const [tab, setTab] = useState<Tab>("profile");
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.get("/auth/me").then((r) => setRole(r.data?.role ?? null)).catch(() => setRole(null));
+  }, []);
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "profile", label: "Profile" },
@@ -17,14 +29,23 @@ export default function SettingsPage() {
     { id: "ssh", label: "SSH Keys" },
     { id: "notifications", label: "Notifications" },
     { id: "api", label: "API Keys" },
+    { id: "accounts", label: "Linked Accounts" },
     { id: "danger", label: "Danger Zone" },
   ];
+
+  const adminTabs = [
+    { id: "team" as Tab, label: "Team" },
+    { id: "business" as Tab, label: "Business" },
+  ];
+
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+  const allTabs = isAdmin ? [...tabs, ...adminTabs] : tabs;
 
   return (
     <div className="max-w-4xl space-y-6">
       <h1 className="text-3xl font-bold">Settings</h1>
       <div className="flex flex-wrap gap-2 border-b border-white/10">
-        {tabs.map((t) => (
+        {allTabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
@@ -44,7 +65,10 @@ export default function SettingsPage() {
       {tab === "ssh" && <SSHKeyManager />}
       {tab === "notifications" && <NotificationsTab />}
       {tab === "api" && <ApiKeysTab />}
+      {tab === "accounts" && <AccountsTab />}
       {tab === "danger" && <DangerTab />}
+      {tab === "team" && <TeamPage />}
+      {tab === "business" && <BusinessSettingsPage />}
     </div>
   );
 }
@@ -311,61 +335,25 @@ function ApiKeysTab() {
 /* ---------- Danger Zone ---------- */
 function DangerTab() {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [pw, setPw] = useState("");
-  const [phrase, setPhrase] = useState("");
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  async function doDelete() {
-    setErr(""); setBusy(true);
-    try {
-      await cloudAccount.deleteAccount(pw);
-      try { localStorage.removeItem("amer_portal_token"); } catch {}
-      router.replace("/voidcloud/register");
-    } catch (e: any) {
-      setErr(e?.response?.data?.message ?? "Failed to delete account");
-    } finally { setBusy(false); }
-  }
 
   return (
     <Section title="Delete account" tone="danger">
       <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100 space-y-2">
         <p className="font-semibold">This action is irreversible.</p>
         <ul className="list-disc pl-5 text-red-200/90 space-y-1">
-          <li>All VPS instances will be terminated immediately.</li>
-          <li>All backups, invoices, and API keys will be deleted.</li>
-          <li>Your subscription will be cancelled. No refund for the current period.</li>
+          <li>All VPS instances will be marked as TERMINATED.</li>
+          <li>Personal data, chats, CRM records, and API keys will be removed.</li>
+          <li>Billing records may be retained for legal compliance but personal info is removed.</li>
+          <li>You will not be able to recover your account.</li>
         </ul>
       </div>
 
-      {!open && (
-        <button onClick={() => setOpen(true)} className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-200">
-          Delete my account
-        </button>
-      )}
-
-      {open && (
-        <div className="rounded-lg border border-red-500/40 bg-slate-950/80 p-4 space-y-3">
-          {err && <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{err}</div>}
-          <Field label='Type "DELETE" to confirm'>
-            <input className={input} value={phrase} onChange={(e) => setPhrase(e.target.value)} />
-          </Field>
-          <Field label="Your password">
-            <input className={input} type="password" value={pw} onChange={(e) => setPw(e.target.value)} />
-          </Field>
-          <div className="flex gap-2">
-            <button onClick={() => { setOpen(false); setPw(""); setPhrase(""); setErr(""); }} className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm">Cancel</button>
-            <button
-              disabled={busy || phrase !== "DELETE" || !pw}
-              onClick={doDelete}
-              className="rounded-lg bg-red-500/80 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              Permanently delete account
-            </button>
-          </div>
-        </div>
-      )}
+      <Link
+        href="/voidcloud/dashboard/settings/delete-account"
+        className="inline-block rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-200 hover:bg-red-500/20"
+      >
+        Delete my account →
+      </Link>
     </Section>
   );
 }
@@ -399,7 +387,66 @@ function Banner({ kind, children }: { kind: "ok" | "err"; children: React.ReactN
     <div className={`rounded-lg border p-3 text-sm ${
       kind === "ok"
         ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
-        : "border-red-500/30 bg-red-500/10 text-red-200"
+        : "border-red-500/30 bg-red-500/10 text-red-300"
     }`}>{children}</div>
+  );
+}
+
+function AccountsTab() {
+  const [providers, setProviders] = useState<string[]>([]);
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api.get("/auth/oauth/providers").then((r) => setProviders(r.data ?? [])).catch(() => setProviders([]));
+  }, []);
+
+  async function link(provider: string) {
+    setMsg(null); setBusy(true);
+    try {
+      const url = provider === 'google'
+        ? 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID + '&redirect_uri=' + encodeURIComponent(window.location.origin + '/api/v1/auth/google/callback') + '&response_type=code&scope=email profile'
+        : 'https://github.com/login/oauth/authorize?client_id=' + process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID + '&redirect_uri=' + encodeURIComponent(window.location.origin + '/api/v1/auth/github/callback') + '&scope=user:email';
+      window.location.href = url + '&state=' + encodeURIComponent(JSON.stringify({ context: 'link' }));
+    } catch (e: any) {
+      setMsg({ kind: "err", text: e?.response?.data?.message ?? "Failed to link" });
+    } finally { setBusy(false); }
+  }
+
+  async function unlink(provider: string) {
+    setMsg(null); setBusy(true);
+    try {
+      await api.post("/auth/oauth/unlink", { provider });
+      setProviders((p) => p.filter((x) => x !== provider));
+      setMsg({ kind: "ok", text: "Unlinked" });
+    } catch (e: any) {
+      setMsg({ kind: "err", text: e?.response?.data?.message ?? "Failed to unlink" });
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="space-y-4">
+      {msg && <Banner kind={msg.kind}>{msg.text}</Banner>}
+      <h3 className="text-sm font-semibold text-foreground">Linked accounts</h3>
+      <p className="text-xs text-white/60">Link social accounts to sign in more conveniently. You must always keep at least one sign-in method.</p>
+      <div className="space-y-3">
+        {['google', 'github'].map((provider) => {
+          const linked = providers.includes(provider);
+          return (
+            <div key={provider} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4">
+              <div>
+                <p className="text-sm font-medium text-foreground capitalize">{provider}</p>
+                <p className="text-xs text-white/60">{linked ? 'Linked' : 'Not linked'}</p>
+              </div>
+              {linked ? (
+                <button disabled={busy || providers.length <= 1} onClick={() => unlink(provider)} className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs text-red-200 disabled:opacity-50">Unlink</button>
+              ) : (
+                <button disabled={busy} onClick={() => link(provider)} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">Link</button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

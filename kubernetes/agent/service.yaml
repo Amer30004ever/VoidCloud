@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-service
+  namespace: voidcloud
+  labels:
+    app: agent-service
+spec:
+  selector:
+    app: agent-service
+  ports:
+    - port: 3014
+      targetPort: 3014
+      name: http

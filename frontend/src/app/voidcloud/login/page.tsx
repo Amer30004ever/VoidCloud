@@ -23,7 +23,12 @@ function LoginInner() {
     try {
       const body: Record<string, string> = { email, password };
       if (needs2FA && twoFactorToken) body.twoFactorToken = twoFactorToken.trim();
-      const { data } = await api.post("/auth/login", body);
+      const { data } = await Promise.race([
+        api.post("/auth/login", body),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Login request timed out. Please check your connection and try again.")), 15000)
+        ),
+      ]);
       if (data?.requires2FA) {
         setNeeds2FA(true);
         setBusy(false);
@@ -31,8 +36,8 @@ function LoginInner() {
       }
       const token = data.access_token ?? data.token;
       if (token) {
-        if (remember) localStorage.setItem("amer_portal_token", token);
-        else sessionStorage.setItem("amer_portal_token", token);
+        if (remember) localStorage.setItem("voidcloud_token", token);
+        else sessionStorage.setItem("voidcloud_token", token);
       }
       const role = data.user?.role;
       const redirect = params.get("redirect");
@@ -44,9 +49,14 @@ function LoginInner() {
         router.push("/voidcloud/user/dashboard");
       }
     } catch (e: unknown) {
-      const status = (e as { response?: { status?: number; data?: { message?: string } } }).response?.status;
-      const message = (e as { response?: { data?: { message?: string } } }).response?.data?.message;
-      setErr(status === 401 ? (message ?? "Invalid credentials. Please try again.") : "Portal API is unreachable. Please check backend health and try again.");
+      const err = e as { message?: string; response?: { status?: number; data?: { message?: string } } };
+      if (err.message && !err.response) {
+        setErr(err.message);
+      } else {
+        const status = err.response?.status;
+        const message = err.response?.data?.message;
+        setErr(status === 401 ? (message ?? "Invalid credentials. Please try again.") : "Portal API is unreachable. Please check backend health and try again.");
+      }
     } finally { setBusy(false); }
   }
 
@@ -67,8 +77,27 @@ function LoginInner() {
           <Link href="/voidcloud/forgot-password" className="text-cyan-300 hover:underline">Forgot password?</Link>
         </label>
         <button disabled={busy} className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 py-3 font-semibold text-slate-950 disabled:opacity-60">
-          {busy ? "Signing inâ€¦" : "Sign in"}
+          {busy ? "Signing in…" : "Sign in"}
         </button>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-white/10" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-slate-950/80 px-2 text-white/50">Or continue with</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => window.location.href = '/api/v1/auth/google?context=user_signup'} className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-white hover:bg-white/10">
+            Google
+          </button>
+          <button type="button" onClick={() => window.location.href = '/api/v1/auth/github?context=user_signup'} className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-white hover:bg-white/10">
+            GitHub
+          </button>
+        </div>
+
         <p className="text-center text-sm text-white/60">
           New to VoidCloud? <Link href="/voidcloud/register" className="text-cyan-300 hover:underline">Create account</Link>
         </p>
@@ -149,4 +178,5 @@ export function Input({ label, type = "text", value, onChange, required, placeho
     </label>
   );
 }
+
 

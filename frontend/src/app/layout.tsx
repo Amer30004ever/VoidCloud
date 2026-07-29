@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+// import { initSentry } from "@/lib/sentry";
+
+// initSentry();
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,11 +17,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Amer Portal — DevOps Project Hub",
+  title: "VoidCloud — Managed Cloud Platform",
   description:
     "Manage your DevOps projects, CI/CD pipelines, deployments, and infrastructure in one unified platform.",
-  manifest: "/manifest.webmanifest",
-  keywords: ["DevOps", "CI/CD", "Kubernetes", "Docker", "Infrastructure", "Monitoring", "Projects"],
+  manifest: "/manifest.json",
+  keywords: ["DevOps", "CI/CD", "Kubernetes", "Docker", "Infrastructure", "Monitoring", "Projects", "VPS"],
 };
 
 export default function RootLayout({
@@ -29,6 +32,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(function(){})}',
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem("theme");var d=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.classList.toggle("dark",d);}catch(e){}})();`,

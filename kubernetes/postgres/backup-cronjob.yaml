@@ -1,0 +1,81 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: voidcloud-db-backup
+  namespace: voidcloud
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800
+      template:
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            fsGroup: 999
+          containers:
+            - name: backup
+              image: postgres:16-alpine
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+              env:
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: voidcloud-secrets
+                      key: DB_HOST
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: voidcloud-secrets
+                      key: DB_PORT
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: voidcloud-secrets
+                      key: DB_NAME
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: voidcloud-secrets
+                      key: DB_USER
+                - name: DB_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: voidcloud-secrets
+                      key: DB_PASS
+                - name: BACKUP_DIR
+                  value: /backups
+                - name: RETENTION_DAYS
+                  value: "7"
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backups
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -euo pipefail
+                  export PGPASSWORD="$DB_PASS"
+                  TIMESTAMP="$(date -u +%Y%m%d%H%M%S)"
+                  FILENAME="voidcloud_backup_${TIMESTAMP}.sql.gz"
+                  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Starting backup of ${DB_NAME}..."
+                  pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
+                    --no-owner --no-privileges --clean --if-exists \
+                    | gzip > "/backups/${FILENAME}"
+                  BACKUP_SIZE="$(du -h "/backups/${FILENAME}" | cut -f1)"
+                  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Backup complete: ${FILENAME} (${BACKUP_SIZE})"
+                  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Pruning backups older than ${RETENTION_DAYS} days..."
+                  find /backups -name 'voidcloud_backup_*.sql.gz' -mtime +"${RETENTION_DAYS}" -delete
+                  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Backup job finished."
+          volumes:
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: voidcloud-backup-pvc

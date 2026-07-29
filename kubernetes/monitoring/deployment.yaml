@@ -15,6 +15,7 @@ spec:
       labels:
         app: monitoring-service
     spec:
+      serviceAccountName: monitoring-service
       containers:
       - name: monitoring-service
         image: amer30004ever/voidcloud-monitoring-service:latest
@@ -34,6 +35,11 @@ spec:
             secretKeyRef:
               name: voidcloud-secrets
               key: DATABASE_URL
+        - name: DATABASE_URL_POOLED
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: DATABASE_URL_POOLED
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
@@ -62,3 +68,5 @@ spec:
             port: 3010
           initialDelaySeconds: 30
           periodSeconds: 10
+
+

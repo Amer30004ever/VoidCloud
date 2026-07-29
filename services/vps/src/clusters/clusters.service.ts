@@ -73,6 +73,14 @@ export class ClustersService {
     details?: Record<string, unknown>,
   ) {
     try {
+      const auditDetails: Record<string, unknown> = {
+        clusterId: cluster?.id ?? null,
+        clusterName: cluster?.name ?? null,
+        ...(details ?? {}),
+      };
+      if ((actor as any)?.impersonatedBy) {
+        auditDetails.impersonatedBy = (actor as any).impersonatedBy;
+      }
       await this.prisma.auditLog.create({
         data: {
           action,
@@ -80,11 +88,7 @@ export class ClustersService {
           adminId: actor?.role === 'SUPER_ADMIN' ? actor?.id : undefined,
           userEmail: actor?.email ?? undefined,
           resource: cluster ? `proxmox_cluster:${cluster.id}` : 'proxmox_cluster',
-          details: {
-            clusterId: cluster?.id ?? null,
-            clusterName: cluster?.name ?? null,
-            ...(details ?? {}),
-          } as any,
+          details: auditDetails as any,
           status: 'SUCCESS',
         },
       });

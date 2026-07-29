@@ -8,9 +8,5 @@ export default function LoginRedirect() {
   useEffect(() => {
     router.replace("/voidcloud/login");
   }, [router]);
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
-      Redirecting to VoidCloud loginâ€¦
-    </div>
-  );
+  return null;
 }

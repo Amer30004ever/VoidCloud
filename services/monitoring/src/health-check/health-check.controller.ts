@@ -1,4 +1,5 @@
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
@@ -12,6 +13,10 @@ import { HealthCheckScheduler } from './health-check.scheduler';
  * POST /health/rollup    → SUPER_ADMIN manual retention run for debugging.
  */
 @Controller('monitoring/services')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.SUPER_ADMIN)
+@ApiTags('Health Checks')
+@ApiBearerAuth()
 export class HealthCheckController {
   constructor(
     private readonly svc: HealthCheckService,
@@ -23,16 +28,18 @@ export class HealthCheckController {
     return this.svc.getLatestCached();
   }
 
+  @Get('health/history')
+  history(@Query('hours') hours?: string) {
+    const h = hours ? Number(hours) : 24;
+    return this.svc.getHistory(h);
+  }
+
   @Post('health/check-now')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SUPER_ADMIN)
   forceCheck() {
     return this.svc.probeAllAndPersist();
   }
 
   @Post('health/rollup')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SUPER_ADMIN)
   runRollup() {
     return this.scheduler.rollup();
   }

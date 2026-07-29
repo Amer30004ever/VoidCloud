@@ -1,0 +1,27 @@
+{
+  "name": "@workspace/ui-kit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./button": "./src/button.tsx",
+    "./page-header": "./src/page-header.tsx",
+    "./empty-state": "./src/empty-state.tsx",
+    "./loading-state": "./src/loading-state.tsx",
+    "./error-state": "./src/error-state.tsx",
+    "./status-badge": "./src/status-badge.tsx",
+    "./create-item-dialog": "./src/create-item-dialog.tsx"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.14.0",
+    "tailwind-merge": "^3.6.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19"
+  }
+}

@@ -39,6 +39,11 @@ spec:
             secretKeyRef:
               name: voidcloud-secrets
               key: DATABASE_URL
+        - name: DATABASE_URL_POOLED
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: DATABASE_URL_POOLED
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
@@ -84,6 +89,48 @@ spec:
             configMapKeyRef:
               name: voidcloud-config
               key: REDIS_PORT
+        - name: OIDC_ISSUER
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: OIDC_ISSUER
+              optional: true
+        - name: OIDC_GITEA_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: OIDC_GITEA_CLIENT_ID
+              optional: true
+        - name: OIDC_GITEA_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: OIDC_GITEA_CLIENT_SECRET
+              optional: true
+        - name: OIDC_PORTAINER_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: OIDC_PORTAINER_CLIENT_ID
+              optional: true
+        - name: OIDC_PORTAINER_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: OIDC_PORTAINER_CLIENT_SECRET
+              optional: true
+        - name: OIDC_PORTAINER_REDIRECT_URI
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: OIDC_PORTAINER_REDIRECT_URI
+              optional: true
+        - name: OIDC_GITEA_REDIRECT_URI
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: OIDC_GITEA_REDIRECT_URI
+              optional: true
         resources:
           requests:
             memory: "512Mi"
@@ -103,3 +150,5 @@ spec:
             port: 3001
           initialDelaySeconds: 30
           periodSeconds: 5
+
+

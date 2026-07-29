@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { cloudApi, type CloudPlan, type OsTemplate } from "@/lib/cloud";
+import { cloudApi, type CloudPlan, type OsTemplate } from "@/features/vps/cloud";
 
 type EnvRow = { key: string; value: string };
 
@@ -17,6 +17,8 @@ export default function NewVpsPage() {
   const [name, setName] = useState("");
   const [planId, setPlanId] = useState<string>("");
   const [templateId, setTemplateId] = useState<string>("debian-12");
+  const [staticIp, setStaticIp] = useState("");
+  const [billingMode, setBillingMode] = useState<"PAY_AS_YOU_GO" | "SUBSCRIPTION">("SUBSCRIPTION");
 
   const [envRows, setEnvRows] = useState<EnvRow[]>([]);
   const [domainsText, setDomainsText] = useState("");
@@ -42,24 +44,37 @@ export default function NewVpsPage() {
     if (!name.trim() || !plan) { setErr("Name and plan are required"); setStep(1); return; }
     setBusy(true); setErr("");
     try {
-      const envVars: Record<string, string> = {};
-      envRows.forEach((r) => { if (r.key.trim()) envVars[r.key.trim()] = r.value; });
-      const customDomains = domainsText.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
-      const created: any = await cloudApi.deployments.create({
+      const idempotencyKey = crypto.randomUUID();
+      const job = await cloudApi.vps.provision({
         name: name.trim(),
-        type: "DOCKER_IMAGE",
-        source: tpl?.label ?? "debian-12",
-        cpu: plan.cpuLimit,
-        memory: plan.memoryLimit,
-        storage: plan.storageLimit,
-        replicas: 1,
-        customDomains,
-        envVars,
-      } as any);
-      router.push(`/voidcloud/dashboard/vps/${created.id}`);
+        planSlug: plan.slug,
+        staticIp: staticIp.trim() || undefined,
+        billingMode,
+        idempotencyKey,
+      });
+      await pollJob(job.id);
     } catch (e: any) {
-      setErr(e?.response?.data?.message ?? "Failed to create VPS");
+      setErr(e?.response?.data?.message ?? "Failed to start VPS provisioning");
     } finally { setBusy(false); }
+  }
+
+  // Poll the async provisioning job until it reaches a terminal state, then
+  // route to the VPS detail page on success.
+  async function pollJob(jobId: string) {
+    for (let i = 0; i < 120; i++) {
+      const job = await cloudApi.vps.job(jobId).catch(() => null);
+      if (!job) { await new Promise((r) => setTimeout(r, 2000)); continue; }
+      if (job.status === "SUCCEEDED" && job.vpsId) {
+        router.push(`/voidcloud/dashboard/vps/${job.vpsId}`);
+        return;
+      }
+      if (job.status === "FAILED") {
+        setErr(job.errorMessage ?? "Provisioning failed");
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    setErr("Provisioning is taking longer than expected. Check the VPS list shortly.");
   }
 
   return (
@@ -85,6 +100,20 @@ export default function NewVpsPage() {
                   <option key={p.id} value={p.id}>{p.name} â€” {p.cpuLimit} CPU Â· {p.memoryLimit}MB RAM Â· {Math.ceil(p.storageLimit/1024)}GB Â· ${p.priceUSD}/mo</option>
                 ))}
               </select>
+            </Field>
+            <Field label="Billing mode">
+              <div className="grid gap-2 md:grid-cols-2">
+                {[
+                  { value: "SUBSCRIPTION", label: "Subscription", desc: "Flat monthly rate, unlimited runtime while active." },
+                  { value: "PAY_AS_YOU_GO", label: "Pay-as-you-go", desc: "Prepaid credits, metered by running time. Auto-stops at zero." },
+                ].map((opt) => (
+                  <label key={opt.value} className={`cursor-pointer rounded-lg border p-3 ${billingMode === opt.value ? "border-cyan-400 bg-cyan-400/10" : "border-white/10 bg-white/5 hover:bg-white/10"}`}>
+                    <input type="radio" name="billing" className="sr-only" checked={billingMode === opt.value} onChange={() => setBillingMode(opt.value as any)} />
+                    <div className="font-semibold text-sm">{opt.label}</div>
+                    <div className="text-xs text-white/60 mt-1">{opt.desc}</div>
+                  </label>
+                ))}
+              </div>
             </Field>
             <Field label="OS Template">
               <div className="grid gap-2 md:grid-cols-3">
@@ -120,6 +149,7 @@ export default function NewVpsPage() {
             sshKeys={sshKeys} setSshKeys={setSshKeys}
             hostname={hostname} setHostname={setHostname}
             customDns={customDns} setCustomDns={setCustomDns}
+            staticIp={staticIp} setStaticIp={setStaticIp}
             postScript={postScript} setPostScript={setPostScript}
           />
         )}
@@ -136,6 +166,7 @@ export default function NewVpsPage() {
               <Row k="Env vars" v={`${envRows.filter((r) => r.key).length} defined`} />
               <Row k="SSH keys" v={sshKeys ? `${sshKeys.split(/\n/).filter(Boolean).length} key(s)` : "â€”"} />
               <Row k="Hostname" v={hostname || name || "â€”"} />
+              <Row k="Static IP" v={staticIp || "auto-assigned"} />
               <Row k="Post-provision script" v={postScript ? "yes" : "â€”"} />
             </div>
             <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-4 text-sm">
@@ -143,6 +174,9 @@ export default function NewVpsPage() {
               <div className="text-2xl font-bold">${plan?.priceUSD ?? 0}/mo</div>
               <div className="text-xs text-white/60">{plan?.priceEGP ?? 0} EGP/mo</div>
             </div>
+            <p className="text-xs text-white/50">
+              Provisioning runs asynchronously. After you submit, we&apos;ll watch the job and take you to the new VPS once it&apos;s ready — no need to keep this tab open.
+            </p>
           </div>
         )}
 
@@ -151,7 +185,7 @@ export default function NewVpsPage() {
           {step < 4 ? (
             <button onClick={() => setStep(step + 1)} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950">Next â†’</button>
           ) : (
-            <button onClick={submit} disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950 disabled:opacity-50">{busy ? "Provisioningâ€¦" : "ðŸš€ Create VPS"}</button>
+            <button onClick={submit} disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950 disabled:opacity-50">{busy ? "Provisioning…" : "🚀 Create VPS"}</button>
           )}
         </div>
       </div>
@@ -166,10 +200,12 @@ function Collapsibles(props: {
   sshKeys: string; setSshKeys: (s: string) => void;
   hostname: string; setHostname: (s: string) => void;
   customDns: string; setCustomDns: (s: string) => void;
+  staticIp: string; setStaticIp: (s: string) => void;
   postScript: string; setPostScript: (s: string) => void;
 }) {
   const { envRows, setEnvRows, domainsText, setDomainsText, autoSsl, setAutoSsl,
-    sshKeys, setSshKeys, hostname, setHostname, customDns, setCustomDns, postScript, setPostScript } = props;
+    sshKeys, setSshKeys, hostname, setHostname, customDns, setCustomDns,
+    staticIp, setStaticIp, postScript, setPostScript } = props;
   return (
     <div className="space-y-3">
       <h2 className="text-xl font-semibold">Advanced options</h2>
@@ -202,6 +238,9 @@ function Collapsibles(props: {
       <Group title="Network">
         <Field label="Hostname">
           <input className={input} value={hostname} onChange={(e) => setHostname(e.target.value)} placeholder="my-vps-01" />
+        </Field>
+        <Field label="Static IP (optional, must be within the assigned pool)">
+          <input className={input} value={staticIp} onChange={(e) => setStaticIp(e.target.value)} placeholder="10.51.100.42" />
         </Field>
         <Field label="Custom DNS (comma separated)">
           <input className={input} value={customDns} onChange={(e) => setCustomDns(e.target.value)} placeholder="1.1.1.1, 8.8.8.8" />

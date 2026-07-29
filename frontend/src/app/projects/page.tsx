@@ -1,9 +1,9 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
-import { AddItemButton } from "@/components/ui/create-item-dialog";
+import { PageHeader } from "@workspace/ui-kit/page-header";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
+import { AddItemButton } from "@workspace/ui-kit/create-item-dialog";
 import { FolderGit2, Loader2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { projectsApi } from "@/lib/projects";
@@ -27,9 +27,9 @@ export default function ProjectsPage() {
             description="Set up a new DevOps project workspace."
             className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             fields={[
-              { name: "name", label: "Project Name", placeholder: "amer-portal", required: true },
+              { name: "name", label: "Project Name", placeholder: "voidcloud", required: true },
               { name: "repository", label: "Repository URL", placeholder: "https://github.com/org/repo" },
-              { name: "namespace", label: "Namespace", placeholder: "amer-portal" },
+              { name: "namespace", label: "Namespace", placeholder: "voidcloud" },
             ]}
             onSubmit={async (values) => {
               await projectsApi.create({
@@ -71,3 +71,4 @@ export default function ProjectsPage() {
     </AppLayout>
   );
 }
+

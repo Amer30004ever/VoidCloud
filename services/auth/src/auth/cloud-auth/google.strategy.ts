@@ -8,14 +8,16 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     super({
       clientID: process.env.GOOGLE_CLIENT_ID || 'missing',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'missing',
-      callbackURL: `${process.env.BACKEND_URL || ''}/api/v1/cloud/auth/google/callback`,
+      callbackURL: `${process.env.BACKEND_URL || ''}/api/v1/auth/google/callback`,
       scope: ['email', 'profile'],
     });
   }
   async validate(_at: string, _rt: string, profile: any, done: VerifyCallback) {
+    const email = profile.emails?.[0]?.value;
     done(null, {
-      googleId: profile.id,
-      email: profile.emails?.[0]?.value,
+      provider: 'google',
+      providerAccountId: profile.id,
+      email,
       name: profile.displayName,
       avatar: profile.photos?.[0]?.value,
     });

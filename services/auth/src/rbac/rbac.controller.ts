@@ -115,7 +115,7 @@ export class RbacController {
   }
 
   @Get('users/:userId/permissions')
-  @UseGuards(JwtAuthGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @ApiOperation({ summary: 'Get all permissions for a user' })
   async getUserPermissions(@Param('userId') userId: string) {
     return this.rbacService.getUserPermissions(userId);

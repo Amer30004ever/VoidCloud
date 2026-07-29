@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { cloudApi, cloudBackups, type VpsBackup, type CloudDeployment } from "@/lib/cloud";
+import { cloudApi, cloudBackups, type VpsBackup, type CloudDeployment } from "@/features/vps/cloud";
 
 export default function GlobalBackupsPage() {
   const [list, setList] = useState<VpsBackup[]>([]);

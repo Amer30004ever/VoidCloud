@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cloudReferral, type ReferralStats, type ReferralPayoutMethod, type ReferralPayout } from "@/lib/cloud";
+import { cloudReferral, type ReferralStats, type ReferralPayoutMethod, type ReferralPayout } from "@/features/vps/cloud";
 
 export default function ReferralPage() {
   const [stats, setStats] = useState<ReferralStats | null>(null);

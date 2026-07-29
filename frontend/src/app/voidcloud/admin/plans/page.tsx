@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
-import { cloudApi, CloudPlan } from "@/lib/cloud";
+import { cloudApi, CloudPlan } from "@/features/vps/cloud";
 
 export default function AdminPlansPage() {
   const [plans, setPlans] = useState<CloudPlan[]>([]);

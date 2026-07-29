@@ -114,16 +114,44 @@ spec:
             configMapKeyRef:
               name: voidcloud-config
               key: RABBITMQ_PORT
+        # Crash-loop guard tuning (Prompt 0.18)
+        - name: CRASHLOOP_WINDOW_MS
+          value: "600000"
+        - name: CRASHLOOP_THRESHOLD
+          value: "5"
+        - name: CRASHLOOP_MARKER_PATH
+          value: "/tmp/whatsapp-boot.marker"
         resources:
           requests:
             memory: "256Mi"
             cpu: "250m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            # Floor raised from 512Mi so a Puppeteer-based session (openwa)
+            # cold start cannot be OOMKilled mid-boot — a prior crash-loop cause.
+            memory: "1024Mi"
+            cpu: "750m"
+        # Startup probe: gives slow cold starts (openwa/Puppeteer) up to 5m
+        # before the liveness probe is allowed to kill the pod. This directly
+        # addresses the prior crash-loop where a too-aggressive liveness probe
+        # killed a pod still legitimately starting up.
+        startupProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 3007
+          periodSeconds: 10
+          failureThreshold: 30
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 3007
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
         livenessProbe:
           httpGet:
-            path: /health
+            path: /api/v1/health
             port: 3007
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          failureThreshold: 4
+

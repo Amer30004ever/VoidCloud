@@ -1,0 +1,15 @@
+- generic [ref=f3e18]:
+  - img "Portainer" [ref=f3e21]
+  - generic [ref=f3e22]:
+    - paragraph [ref=f3e23]: Log in to your account
+    - paragraph [ref=f3e24]: Welcome back! Please enter your details
+  - generic [ref=f3e27]:
+    - generic [ref=f3e28]:
+      - generic [ref=f3e29]: Username
+      - textbox "Enter your username" [active] [ref=f3e30]
+    - generic [ref=f3e31]:
+      - generic [ref=f3e32]: Password
+      - generic [ref=f3e33]:
+        - textbox "Enter your password" [ref=f3e34]
+        - button [ref=f3e35] [cursor=pointer]
+    - button "Login" [ref=f3e44] [cursor=pointer]

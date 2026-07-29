@@ -34,6 +34,11 @@ spec:
             secretKeyRef:
               name: voidcloud-secrets
               key: DATABASE_URL
+        - name: DATABASE_URL_POOLED
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: DATABASE_URL_POOLED
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
@@ -73,3 +78,5 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 10
           timeoutSeconds: 5
+
+

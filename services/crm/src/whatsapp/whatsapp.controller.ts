@@ -1,10 +1,15 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../decorators/roles.decorator';
+import { Public } from '../decorators/public.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { WhatsappService } from './whatsapp.service';
 
 @Controller('whatsapp')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN, Role.AGENT, Role.SUPER_ADMIN)
 export class WhatsappController {
   constructor(private readonly whatsapp: WhatsappService) {}
 
@@ -37,6 +42,7 @@ export class WhatsappController {
     return this.whatsapp.syncContact(body.phone, body.name, user.id);
   }
 
+  @Public()
   @Post('webhook')
   async handleWebhook(@Body() event: any) {
     return this.whatsapp.handleWebhook(event);

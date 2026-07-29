@@ -10,6 +10,7 @@
 variables:
   DOCKER_HUB_REPO:  voidcloud
   NAMESPACE:        voidcloud
+  STAGING_NAMESPACE: voidcloud-staging
   SERVICES:         "auth user tenant vps billing crm whatsapp email notification monitoring audit analytics sub2api"
   # Override per-job with --build-arg for injecting env at build time
   NEXT_PUBLIC_API_URL: "https://api.voidcloud.cc.cd/api/v1"
@@ -35,7 +36,8 @@ stages:
   - test
   - build
   - security
-  - deploy
+  - deploy-staging
+  - deploy-production
   - verify
   - notify
 
@@ -145,6 +147,66 @@ test-service:
     - changes:
         - services/$SERVICE/**/*
       when: always
+
+test-service-runtime:
+  stage: test
+  extends: .node-base
+  parallel:
+    matrix:
+      - SERVICE: [auth, user, tenant, vps, billing, crm, whatsapp, email, notification, monitoring, audit, analytics]
+  script:
+    - |
+      echo "=== Runtime smoke test: $SERVICE ==="
+      cd services/$SERVICE
+      npm ci --prefer-offline
+      npm run build
+
+      # Extract the port from main.ts or env (default to service convention)
+      PORT=$(grep -oE 'PORT[=: ]+([0-9]+)' src/main.ts 2>/dev/null | head -1 | grep -oE '[0-9]+' || echo "$SERVICE")
+
+      echo "Starting $SERVICE on port $PORT..."
+      timeout 15 node dist/main.js > /tmp/${SERVICE}-runtime.log 2>&1 &
+      PID=$!
+
+      # Wait for startup message (up to 10s)
+      STARTED=0
+      for i in $(seq 1 20); do
+        if grep -qE "running|listening|started|ready|port" /tmp/${SERVICE}-runtime.log 2>/dev/null; then
+          STARTED=1
+          break
+        fi
+        sleep 0.5
+      done
+
+      if [ "$STARTED" -eq "0" ]; then
+        echo "❌ $SERVICE did not produce a startup message within 10s"
+        echo "--- Log output ---"
+        cat /tmp/${SERVICE}-runtime.log 2>/dev/null || true
+        kill $PID 2>/dev/null || true
+        exit 1
+      fi
+
+      # Confirm the process is still alive (didn't crash after startup)
+      if ! kill -0 $PID 2>/dev/null; then
+        echo "❌ $SERVICE crashed after startup"
+        echo "--- Log output ---"
+        cat /tmp/${SERVICE}-runtime.log 2>/dev/null || true
+        exit 1
+      fi
+
+      echo "✓ $SERVICE runtime smoke test passed"
+      kill $PID 2>/dev/null || true
+  artifacts:
+    when: always
+    paths:
+      - /tmp/*-runtime.log
+    expire_in: 7 days
+  rules:
+    - changes:
+        - services/$SERVICE/**/*
+      when: always
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"
     - if: $CI_COMMIT_TAG
 
@@ -369,21 +431,244 @@ container-scan:
         IMAGE="${DOCKER_HUB_USERNAME}/${DOCKER_HUB_REPO}-${SERVICE}-service:latest"
         echo "Scanning: $IMAGE"
         trivy image \
-          --exit-code 0 \
+          --exit-code 1 \
           --severity HIGH,CRITICAL \
           --no-progress \
           --format table \
-          "$IMAGE" 2>/dev/null || echo "⚠ Trivy scan warning for $SERVICE (non-blocking)"
+          "$IMAGE" 2>/dev/null || FAILED=$((FAILED + 1))
       done
-      echo "✓ Security scan complete"
-  allow_failure: true
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"
-    - if: $CI_COMMIT_TAG
 
-# ── Deploy stage ──────────────────────────────────────────────
-deploy-infra:
-  stage: deploy
+      if [ "$FAILED" -gt "0" ]; then
+        echo "❌ $FAILED image(s) failed Trivy scan (HIGH/CRITICAL vulnerabilities)"
+        exit 1
+      fi
+      echo "✓ Security scan passed"
+  allow_failure: false
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# Dependency audit (npm audit + Snyk if configured)
+dependency-audit:
+  stage: security
+  extends: .node-base
+  script:
+    - |
+      echo "=== Running dependency audit ==="
+      FAILED=0
+
+      # Frontend audit
+      if [ -d "frontend" ]; then
+        echo "--- Auditing frontend ---"
+        cd frontend
+        npm ci --prefer-offline
+        npm audit --audit-level=high || FAILED=$((FAILED + 1))
+        cd ..
+      fi
+
+      # Service audits
+      for SERVICE in $SERVICES; do
+        if [ -d "services/$SERVICE" ]; then
+          echo "--- Auditing $SERVICE ---"
+          cd services/$SERVICE
+          npm ci --prefer-offline
+          npm audit --audit-level=high || FAILED=$((FAILED + 1))
+          cd ../..
+        fi
+      done
+
+      # Snyk if configured
+      if [ -n "$SNYK_TOKEN" ]; then
+        echo "--- Running Snyk scan ---"
+        npm install -g snyk
+        snyk auth "$SNYK_TOKEN"
+        snyk test --severity-threshold=high || FAILED=$((FAILED + 1))
+      fi
+
+      if [ "$FAILED" -gt "0" ]; then
+        echo "❌ $FAILED package(s) failed dependency audit"
+        exit 1
+      fi
+      echo "✓ Dependency audit passed"
+  allow_failure: false
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# ── Deploy stage: Staging (auto on main/develop) ────────────
+deploy-infra-staging:
+  stage: deploy-staging
+  extends: .k8s-base
+  needs:
+    - job: build-services
+      optional: true
+    - job: build-frontend
+      optional: true
+    - job: build-database
+      optional: true
+  environment:
+    name: staging
+    url: https://staging.voidcloud.cc.cd
+  script:
+    - |
+      set -e
+      echo "=== Deploying infrastructure to staging ==="
+
+      kubectl apply -f kubernetes/namespace.yaml
+      kubectl apply -f kubernetes/secrets.yaml      --namespace $STAGING_NAMESPACE
+      kubectl apply -f kubernetes/configmaps.yaml   --namespace $STAGING_NAMESPACE
+
+      kubectl apply -f kubernetes/postgres/         --namespace $STAGING_NAMESPACE
+      kubectl apply -f kubernetes/redis/            --namespace $STAGING_NAMESPACE
+      kubectl apply -f kubernetes/rabbitmq/         --namespace $STAGING_NAMESPACE
+
+      echo "Waiting for PostgreSQL..."
+      kubectl -n $STAGING_NAMESPACE rollout status statefulset/postgres --timeout=300s || \
+        kubectl -n $STAGING_NAMESPACE rollout status deployment/postgres --timeout=300s || \
+        echo "⚠ Could not verify postgres rollout"
+
+      kubectl apply -f kubernetes/traefik-middlewares.yaml --namespace $STAGING_NAMESPACE || true
+      kubectl apply -f kubernetes/ingress.yaml             --namespace $STAGING_NAMESPACE || true
+
+      echo "✓ Staging infrastructure deployed"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+deploy-services-staging:
+  stage: deploy-staging
+  extends: .k8s-base
+  needs:
+    - deploy-infra-staging
+    - job: build-services
+      optional: true
+  environment:
+    name: staging
+    url: https://staging.voidcloud.cc.cd
+  script:
+    - |
+      set -e
+      echo "=== Deploying microservices to staging ==="
+
+      for SERVICE in $SERVICES; do
+        echo "→ Deploying $SERVICE to staging"
+        if [ -d "kubernetes/${SERVICE}" ]; then
+          kubectl apply -f kubernetes/${SERVICE}/ --namespace $STAGING_NAMESPACE
+        else
+          echo "  ⚠ No manifest for ${SERVICE}, skipping"
+        fi
+      done
+
+      echo "=== Waiting for critical services ==="
+      for SERVICE in auth user tenant; do
+        echo "Waiting for: ${SERVICE}-service"
+        kubectl -n $STAGING_NAMESPACE rollout status deployment/${SERVICE}-service --timeout=180s || \
+          echo "⚠ ${SERVICE}-service rollout timeout"
+      done
+
+      echo "✓ All services deployed to staging"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+bootstrap-oidc-gitea-staging:
+  stage: deploy-staging
+  extends: .k8s-base
+  needs:
+    - deploy-services-staging
+  environment:
+    name: staging
+    url: https://staging.voidcloud.cc.cd
+  script:
+    - |
+      set -e
+      echo "=== Bootstrapping Gitea OIDC (staging) ==="
+      kubectl delete job gitea-oidc-bootstrap -n $STAGING_NAMESPACE --ignore-not-found=true --wait=true
+      kubectl apply -f kubernetes/oidc-bootstrap/gitea-job.yaml --namespace $STAGING_NAMESPACE
+      kubectl -n $STAGING_NAMESPACE wait --for=condition=complete --timeout=300s job/gitea-oidc-bootstrap || {
+        echo "⚠ Gitea OIDC bootstrap timeout or failed"
+        kubectl -n $STAGING_NAMESPACE logs job/gitea-oidc-bootstrap || true
+      }
+      echo "✓ Gitea OIDC bootstrap staging complete"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+bootstrap-oidc-portainer-staging:
+  stage: deploy-staging
+  extends: .k8s-base
+  needs:
+    - deploy-services-staging
+  environment:
+    name: staging
+    url: https://staging.voidcloud.cc.cd
+  script:
+    - |
+      set -e
+      echo "=== Bootstrapping Portainer OIDC (staging) ==="
+      kubectl delete job portainer-oidc-bootstrap -n $STAGING_NAMESPACE --ignore-not-found=true --wait=true
+      kubectl apply -f kubernetes/portainer/bootstrap-job.yaml --namespace $STAGING_NAMESPACE
+      kubectl -n $STAGING_NAMESPACE wait --for=condition=complete --timeout=300s job/portainer-oidc-bootstrap || {
+        echo "⚠ Portainer OIDC bootstrap timeout or failed"
+        kubectl -n $STAGING_NAMESPACE logs job/portainer-oidc-bootstrap || true
+      }
+      echo "✓ Portainer OIDC bootstrap staging complete"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+deploy-frontend-staging:
+  stage: deploy-staging
+  extends: .k8s-base
+  needs:
+    - deploy-infra-staging
+    - job: build-frontend
+      optional: true
+  environment:
+    name: staging
+    url: https://staging.voidcloud.cc.cd
+  script:
+    - |
+      set -e
+      echo "=== Deploying frontend to staging ==="
+      kubectl apply -f kubernetes/frontend/ --namespace $STAGING_NAMESPACE
+      kubectl -n $STAGING_NAMESPACE rollout status deployment/frontend --timeout=180s
+      echo "✓ Frontend deployed to staging"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+run-migrations-staging:
+  stage: deploy-staging
+  extends: .k8s-base
+  needs:
+    - deploy-services-staging
+  script:
+    - |
+      set -e
+      echo "=== Running database migrations on staging ==="
+
+      kubectl delete job voidcloud-db-migrate voidcloud-db-seed \
+        -n $STAGING_NAMESPACE --ignore-not-found=true
+
+      kubectl apply -f kubernetes/migrate-job.yaml --namespace $STAGING_NAMESPACE
+
+      echo "Waiting for migration job to complete (max 5 min)..."
+      kubectl -n $STAGING_NAMESPACE wait \
+        --for=condition=complete \
+        --timeout=300s \
+        job/voidcloud-db-migrate
+
+      echo "✓ Staging migrations completed"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+# ── Deploy stage: Production (manual approval required) ──────
+deploy-infra-production:
+  stage: deploy-production
   extends: .k8s-base
   needs:
     - job: build-services
@@ -398,38 +683,37 @@ deploy-infra:
   script:
     - |
       set -e
-      echo "=== Deploying infrastructure ==="
+      echo "=== Deploying infrastructure to production ==="
 
-      # Namespace + core infrastructure
       kubectl apply -f kubernetes/namespace.yaml
       kubectl apply -f kubernetes/secrets.yaml      --namespace $NAMESPACE
       kubectl apply -f kubernetes/configmaps.yaml   --namespace $NAMESPACE
 
-      # Data layer: PostgreSQL, Redis, RabbitMQ
       kubectl apply -f kubernetes/postgres/         --namespace $NAMESPACE
       kubectl apply -f kubernetes/redis/            --namespace $NAMESPACE
       kubectl apply -f kubernetes/rabbitmq/         --namespace $NAMESPACE
 
-      # Wait for Postgres to be ready (critical path)
       echo "Waiting for PostgreSQL..."
       kubectl -n $NAMESPACE rollout status statefulset/postgres --timeout=300s || \
         kubectl -n $NAMESPACE rollout status deployment/postgres --timeout=300s || \
-        echo "⚠ Could not verify postgres rollout (may already be running)"
+        echo "⚠ Could not verify postgres rollout"
 
-      # Networking
       kubectl apply -f kubernetes/traefik-middlewares.yaml --namespace $NAMESPACE || true
       kubectl apply -f kubernetes/ingress.yaml             --namespace $NAMESPACE || true
       kubectl apply -f kubernetes/cloudflare-tunnel-config.yaml --namespace $NAMESPACE || true
 
-      echo "✓ Infrastructure deployed"
+      echo "✓ Production infrastructure deployed"
+  environment:
+    name: production
   rules:
     - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG
+  allow_failure: false
 
-deploy-services:
-  stage: deploy
+deploy-services-production:
+  stage: deploy-production
   extends: .k8s-base
   needs:
-    - deploy-infra
+    - deploy-infra-production
     - job: build-services
       optional: true
   environment:
@@ -438,7 +722,7 @@ deploy-services:
   script:
     - |
       set -e
-      echo "=== Deploying microservices ==="
+      echo "=== Deploying microservices to production ==="
 
       for SERVICE in $SERVICES; do
         echo "→ Deploying $SERVICE"
@@ -449,22 +733,71 @@ deploy-services:
         fi
       done
 
-      echo "=== Waiting for critical services to roll out ==="
+      echo "=== Waiting for critical services ==="
       for SERVICE in auth user tenant; do
         echo "Waiting for: ${SERVICE}-service"
         kubectl -n $NAMESPACE rollout status deployment/${SERVICE}-service --timeout=180s || \
-          echo "⚠ ${SERVICE}-service rollout timeout (check manually)"
+          echo "⚠ ${SERVICE}-service rollout timeout"
       done
 
-      echo "✓ All services deployed"
+      echo "✓ All services deployed to production"
+  environment:
+    name: production
   rules:
     - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG
+  allow_failure: false
 
-deploy-frontend:
-  stage: deploy
+bootstrap-oidc-gitea-production:
+  stage: deploy-production
   extends: .k8s-base
   needs:
-    - deploy-infra
+    - deploy-services-production
+  environment:
+    name: production
+    url: https://api.voidcloud.cc.cd
+  script:
+    - |
+      set -e
+      echo "=== Bootstrapping Gitea OIDC (production) ==="
+      kubectl delete job gitea-oidc-bootstrap -n $NAMESPACE --ignore-not-found=true --wait=true
+      kubectl apply -f kubernetes/oidc-bootstrap/gitea-job.yaml --namespace $NAMESPACE
+      kubectl -n $NAMESPACE wait --for=condition=complete --timeout=300s job/gitea-oidc-bootstrap || {
+        echo "⚠ Gitea OIDC bootstrap timeout or failed"
+        kubectl -n $NAMESPACE logs job/gitea-oidc-bootstrap || true
+      }
+      echo "✓ Gitea OIDC bootstrap production complete"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG
+  allow_failure: false
+
+bootstrap-oidc-portainer-production:
+  stage: deploy-production
+  extends: .k8s-base
+  needs:
+    - deploy-services-production
+  environment:
+    name: production
+    url: https://api.voidcloud.cc.cd
+  script:
+    - |
+      set -e
+      echo "=== Bootstrapping Portainer OIDC (production) ==="
+      kubectl delete job portainer-oidc-bootstrap -n $NAMESPACE --ignore-not-found=true --wait=true
+      kubectl apply -f kubernetes/portainer/bootstrap-job.yaml --namespace $NAMESPACE
+      kubectl -n $NAMESPACE wait --for=condition=complete --timeout=300s job/portainer-oidc-bootstrap || {
+        echo "⚠ Portainer OIDC bootstrap timeout or failed"
+        kubectl -n $NAMESPACE logs job/portainer-oidc-bootstrap || true
+      }
+      echo "✓ Portainer OIDC bootstrap production complete"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG
+  allow_failure: false
+
+deploy-frontend-production:
+  stage: deploy-production
+  extends: .k8s-base
+  needs:
+    - deploy-infra-production
     - job: build-frontend
       optional: true
   environment:
@@ -473,28 +806,31 @@ deploy-frontend:
   script:
     - |
       set -e
-      echo "=== Deploying frontend ==="
+      echo "=== Deploying frontend to production ==="
       kubectl apply -f kubernetes/frontend/ --namespace $NAMESPACE
       kubectl -n $NAMESPACE rollout status deployment/frontend --timeout=180s
-      echo "✓ Frontend deployed"
+      echo "✓ Frontend deployed to production"
+  environment:
+    name: production
   rules:
     - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG
+  allow_failure: false
 
-run-migrations:
-  stage: deploy
+run-migrations-production:
+  stage: deploy-production
   extends: .k8s-base
   needs:
-    - deploy-services
+    - deploy-services-production
+  environment:
+    name: production
   script:
     - |
       set -e
-      echo "=== Running database migrations ==="
+      echo "=== Running database migrations on production ==="
 
-      # Clean up any previous migration jobs
       kubectl delete job voidcloud-db-migrate voidcloud-db-seed \
         -n $NAMESPACE --ignore-not-found=true
 
-      # Apply and run migration job
       kubectl apply -f kubernetes/migrate-job.yaml --namespace $NAMESPACE
 
       echo "Waiting for migration job to complete (max 5 min)..."
@@ -503,30 +839,95 @@ run-migrations:
         --timeout=300s \
         job/voidcloud-db-migrate
 
-      echo "✓ Migrations completed"
-      kubectl -n $NAMESPACE logs job/voidcloud-db-migrate --tail=50 || true
+      echo "✓ Production migrations completed"
+  environment:
+    name: production
   rules:
     - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG
+  allow_failure: false
 
 # ── Verify stage ─────────────────────────────────────────────
-verify-deployment:
+verify-staging:
   stage: verify
   extends: .k8s-base
   needs:
-    - deploy-services
-    - deploy-frontend
-    - run-migrations
+    - deploy-services-staging
+    - deploy-frontend-staging
+    - run-migrations-staging
   script:
     - |
       set -e
-      echo "=== Post-deploy verification ==="
+      echo "=== Post-deploy verification (staging) ==="
       FAILED=0
 
-      # Check pod statuses
+      echo "--- Pod status in namespace: $STAGING_NAMESPACE ---"
+      kubectl get pods -n $STAGING_NAMESPACE -o wide
+
+      for DEPLOY in auth-service user-service tenant-service frontend; do
+        READY=$(kubectl -n $STAGING_NAMESPACE get deployment/$DEPLOY \
+          -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+        DESIRED=$(kubectl -n $STAGING_NAMESPACE get deployment/$DEPLOY \
+          -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "1")
+        if [ "${READY:-0}" -lt "${DESIRED:-1}" ]; then
+          echo "❌ $DEPLOY: $READY/$DESIRED replicas ready"
+          FAILED=$((FAILED + 1))
+        else
+          echo "✓ $DEPLOY: $READY/$DESIRED replicas ready"
+        fi
+      done
+
+      echo "--- HTTP health checks ---"
+      for SVC_PORT in "auth:3001 vps:3004 billing:3005"; do
+        SVC=$(echo $SVC_PORT | cut -d: -f1)
+        PORT=$(echo $SVC_PORT | cut -d: -f2)
+        STATUS=$(kubectl -n $STAGING_NAMESPACE run health-check-${SVC} \
+          --image=curlimages/curl:latest \
+          --restart=Never \
+          --rm \
+          --command \
+          --quiet \
+          -- curl -s -o /dev/null -w "%{http_code}" \
+          "http://${SVC}-service.${STAGING_NAMESPACE}.svc.cluster.local:${PORT}/health" \
+          2>/dev/null || echo "000")
+        if echo "200 204" | grep -qw "${STATUS:-000}"; then
+          echo "✓ $SVC health: HTTP $STATUS"
+        else
+          echo "❌ $SVC health: HTTP $STATUS"
+          FAILED=$((FAILED + 1))
+        fi
+      done
+
+      if [ "$FAILED" -gt "0" ]; then
+        echo "❌ $FAILED check(s) failed. Triggering rollback..."
+        kubectl -n $STAGING_NAMESPACE rollout undo deployment/auth-service || true
+        kubectl -n $STAGING_NAMESPACE rollout undo deployment/user-service || true
+        kubectl -n $STAGING_NAMESPACE rollout undo deployment/tenant-service || true
+        kubectl -n $STAGING_NAMESPACE rollout undo deployment/frontend || true
+        echo "⚠ Auto-rollback attempted for staging"
+        exit 1
+      fi
+
+      echo "✅ Staging verification passed!"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+verify-production:
+  stage: verify
+  extends: .k8s-base
+  needs:
+    - deploy-services-production
+    - deploy-frontend-production
+    - run-migrations-production
+  script:
+    - |
+      set -e
+      echo "=== Post-deploy verification (production) ==="
+      FAILED=0
+
       echo "--- Pod status in namespace: $NAMESPACE ---"
       kubectl get pods -n $NAMESPACE -o wide
 
-      # Check all critical deployments are running
       for DEPLOY in auth-service user-service tenant-service frontend; do
         READY=$(kubectl -n $NAMESPACE get deployment/$DEPLOY \
           -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
@@ -540,7 +941,6 @@ verify-deployment:
         fi
       done
 
-      # HTTP health checks (via cluster)
       echo "--- HTTP health checks ---"
       for SVC_PORT in "auth:3001 vps:3004 billing:3005"; do
         SVC=$(echo $SVC_PORT | cut -d: -f1)
@@ -557,31 +957,78 @@ verify-deployment:
         if echo "200 204" | grep -qw "${STATUS:-000}"; then
           echo "✓ $SVC health: HTTP $STATUS"
         else
-          echo "⚠ $SVC health: HTTP $STATUS (non-blocking)"
+          echo "❌ $SVC health: HTTP $STATUS"
+          FAILED=$((FAILED + 1))
         fi
       done
 
       if [ "$FAILED" -gt "0" ]; then
-        echo "❌ $FAILED deployment(s) are not fully ready. Check logs."
+        echo "❌ $FAILED check(s) failed. Triggering rollback..."
+        kubectl -n $NAMESPACE rollout undo deployment/auth-service || true
+        kubectl -n $NAMESPACE rollout undo deployment/user-service || true
+        kubectl -n $NAMESPACE rollout undo deployment/tenant-service || true
+        kubectl -n $NAMESPACE rollout undo deployment/frontend || true
+        echo "⚠ Auto-rollback attempted for production"
         exit 1
       fi
 
-      echo ""
-      echo "✅ Deployment verification passed!"
+      echo "✅ Production verification passed!"
       echo "   Frontend: https://voidcloud.cc.cd"
       echo "   API:      https://api.voidcloud.cc.cd"
   rules:
     - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG
 
-# ── Rollback (manual) ────────────────────────────────────────
-rollback:
+# ── Rollback ──────────────────────────────────────────────────
+rollback-service:
+  stage: deploy
+  extends: .k8s-base
+  when: manual
+  allow_failure: false
+  variables:
+    SERVICE: ""
+    TARGET_TAG: ""
+  script:
+    - |
+      echo "=== SERVICE-SPECIFIC ROLLBACK ==="
+      echo "Service: $SERVICE"
+      echo "Target tag: $TARGET_TAG"
+      echo "Namespace: $NAMESPACE"
+
+      if [ -z "$SERVICE" ] || [ -z "$TARGET_TAG" ]; then
+        echo "❌ SERVICE and TARGET_TAG must be provided"
+        exit 1
+      fi
+
+      IMAGE_BASE="${DOCKER_HUB_USERNAME}/${DOCKER_HUB_REPO}-${SERVICE}-service"
+      FULL_TAG="${IMAGE_BASE}:${TARGET_TAG}"
+
+      echo "=== Setting image to $FULL_TAG ==="
+      kubectl -n $NAMESPACE set image deployment/${SERVICE}-service \
+        ${SERVICE}=${FULL_TAG} || {
+          echo "❌ Failed to set image for ${SERVICE}-service";
+          exit 1;
+        }
+
+      echo "Waiting for rollout..."
+      kubectl -n $NAMESPACE rollout status deployment/${SERVICE}-service --timeout=180s
+
+      echo "✓ Rollback of $SERVICE to $TARGET_TAG complete"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"
+      when: manual
+      allow_failure: false
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+      allow_failure: false
+
+rollback-all:
   stage: deploy
   extends: .k8s-base
   when: manual
   allow_failure: true
   script:
     - |
-      echo "=== MANUAL ROLLBACK ==="
+      echo "=== MANUAL FULL ROLLBACK ==="
       echo "Rolling back all deployments in namespace: $NAMESPACE"
 
       for DEPLOY in $(kubectl -n $NAMESPACE get deployments -o name); do
@@ -598,12 +1045,117 @@ rollback:
     - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"
       when: manual
 
+# ── Migration safety check ────────────────────────────────────
+check-migration-safety:
+  stage: validate
+  image: alpine:latest
+  needs: []
+  before_script:
+    - apk add --no-cache git
+  script:
+    - |
+      echo "=== Checking Prisma migration safety ==="
+
+      # Find new migration files in this PR/branch
+      NEW_MIGRATIONS=$(git diff --name-only origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD | grep -E "^database/prisma/migrations/[0-9]+_.*\.sql$" || true)
+
+      if [ -z "$NEW_MIGRATIONS" ]; then
+        echo "✓ No new migration files detected"
+        exit 0
+      fi
+
+      echo "Found new migration(s):"
+      echo "$NEW_MIGRATIONS"
+
+      DESTRUCTIVE_FOUND=0
+      for MIGRATION in $NEW_MIGRATIONS; do
+        echo "--- Scanning: $MIGRATION ---"
+        if grep -iE "DROP\s+(COLUMN|TABLE|INDEX)|TRUNCATE" "$MIGRATION"; then
+          echo "⚠ DESTRUCTIVE operation found in $MIGRATION"
+          DESTRUCTIVE_FOUND=1
+        fi
+      done
+
+      if [ "$DESTRUCTIVE_FOUND" -eq "1" ]; then
+        if echo "$CI_COMMIT_TITLE $CI_COMMIT_DESCRIPTION" | grep -q "ALLOW_DESTRUCTIVE_MIGRATION"; then
+          echo "⚠ Destructive migration explicitly allowed via ALLOW_DESTRUCTIVE_MIGRATION tag"
+          exit 0
+        else
+          echo "❌ Destructive migration detected but ALLOW_DESTRUCTIVE_MIGRATION tag not found in PR description"
+          echo "   If this is intentional, add ALLOW_DESTRUCTIVE_MIGRATION to the merge request description"
+          exit 1
+        fi
+      fi
+
+      echo "✓ All migrations are non-destructive"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - database/prisma/migrations/**/*.sql
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+      changes:
+        - database/prisma/migrations/**/*.sql
+
+# ── Backup / Restore stage ────────────────────────────────────
+backup-verify:
+  stage: verify
+  image: postgres:16-alpine
+  tags:
+    - homelab
+  before_script:
+    - apk add --no-cache curl gzip findutils
+  script:
+    - |
+      echo "=== Verifying backup infrastructure ==="
+      echo "--- Checking backup script syntax ---"
+      bash -n database/scripts/backup.sh
+      bash -n database/scripts/restore-drill.sh
+      echo "✓ Backup scripts are valid"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+restore-drill:
+  stage: verify
+  image: postgres:16-alpine
+  tags:
+    - homelab
+  variables:
+    DB_HOST: $DB_HOST
+    DB_PORT: "5432"
+    DB_NAME: $DB_NAME
+    DB_USER: $DB_USER
+    DB_PASS: $DB_PASS
+    BACKUP_DIR: /tmp/backups
+  before_script:
+    - mkdir -p /tmp/backups
+    - apk add --no-cache curl gzip findutils postgresql-client
+  script:
+    - |
+      echo "=== Running restore drill ==="
+      chmod +x database/scripts/restore-drill.sh
+      DB_HOST="$DB_HOST" \
+      DB_PORT="$DB_PORT" \
+      DB_NAME="$DB_NAME" \
+      DB_USER="$DB_USER" \
+      DB_PASS="$DB_PASS" \
+      BACKUP_DIR="/tmp/backups" \
+      bash database/scripts/restore-drill.sh
+      echo "✓ Restore drill passed"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG
+      when: manual
+      allow_failure: true
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+      allow_failure: true
+
 # ── Notify stage ─────────────────────────────────────────────
 notify-success:
   stage: notify
   image: curlimages/curl:latest
   needs:
-    - verify-deployment
+    - verify-production
   script:
     - |
       echo "=== Sending deployment notification ==="

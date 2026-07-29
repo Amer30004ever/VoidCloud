@@ -1,4 +1,4 @@
-# 🎯 Amer Portal - Complete Dashboard Feature Specification
+# 🎯 VoidCloud - Complete Dashboard Feature Specification
 
 ## 📍 Access Level Legend
 
@@ -68,8 +68,8 @@
 │                                                                             │
 │                                                                             │
 │  ┌─────────────────────────┐      ┌─────────────────────────────────────┐  │
-│  │                         │      │  🚀 Amer Portal                     │  │
-│  │      Amer Portal Logo   │      │  DevOps Project Hub                 │  │
+│  │                         │      │  🚀 VoidCloud                     │  │
+│  │      VoidCloud Logo   │      │  DevOps Project Hub                 │  │
 │  │                         │      │                                     │  │
 │  │                         │      │  ┌─────────────────────────────────┐│  │
 │  │                         │      │  │ Email                           ││  │

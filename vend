@@ -1,0 +1,71 @@
+{
+  "name": "voidcloud-semantic-search",
+  "displayName": "VoidCloud Semantic Code Search",
+  "description": "Semantic code search using local Ollama embedding model",
+  "version": "1.0.0",
+  "publisher": "voidcloud",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:voidcloud.semanticSearch",
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "voidcloud.semanticSearch",
+        "title": "Semantic Code Search",
+        "category": "VoidCloud"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "voidcloud.semanticSearch",
+        "key": "ctrl+shift+p",
+        "when": "editorFocus"
+      }
+    ],
+    "configuration": {
+      "title": "VoidCloud Semantic Search",
+      "properties": {
+        "voidcloud.semanticSearch.ollamaEndpoint": {
+          "type": "string",
+          "default": "http://ollama.voidcloud.svc.cluster.local:11434",
+          "description": "Ollama API endpoint for embeddings"
+        },
+        "voidcloud.semanticSearch.embeddingModel": {
+          "type": "string",
+          "default": "nomic-embed-text",
+          "description": "Ollama embedding model name"
+        },
+        "voidcloud.semanticSearch.maxResults": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum number of search results"
+        },
+        "voidcloud.semanticSearch.indexOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Index workspace on startup"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/api";
-import { cloudAnalytics, cloudApi, type CostBreakdown, type ResourceTrends, type VpsHistoricalUsage, type CloudDeployment } from "@/lib/cloud";
+import { cloudAnalytics, cloudApi, type CostBreakdown, type ResourceTrends, type VpsHistoricalUsage, type CloudDeployment } from "@/features/vps/cloud";
+import type { ApiUsageSummary, TenantUsageRow } from "@/features/vps/cloud";
 import {
   LineChart, Line, PieChart, Pie, Cell, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
@@ -18,6 +19,13 @@ export default function AnalyticsPage() {
   const [costs, setCosts] = useState<CostBreakdown | null>(null);
   const [trends, setTrends] = useState<ResourceTrends | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [usageDays, setUsageDays] = useState(30);
+  const [myUsage, setMyUsage] = useState<ApiUsageSummary | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.get("/auth/me").then((r) => setRole(r.data?.role ?? null)).catch(() => setRole(null));
+  }, []);
 
   useEffect(() => {
     cloudApi.deployments.list().then((l: CloudDeployment[]) => {
@@ -32,6 +40,10 @@ export default function AnalyticsPage() {
     if (!selVps) return;
     cloudAnalytics.vpsUsage(selVps, hours).then(setUsage).catch((e) => setErr(e?.message ?? "Failed"));
   }, [selVps, hours]);
+
+  useEffect(() => {
+    cloudAnalytics.myUsage(usageDays).then(setMyUsage).catch(() => setMyUsage(null));
+  }, [usageDays]);
 
   const cpuData = useMemo(() => usage?.cpu.map((p) => ({ t: new Date(p.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), v: p.value })) ?? [], [usage]);
   const ramData = useMemo(() => usage?.ram.map((p) => ({ t: new Date(p.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), v: p.value })) ?? [], [usage]);
@@ -127,6 +139,35 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
           </div>
         </div>
+      </Panel>
+
+      <Panel title="API Usage">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs text-white/60">Request volume and response times across your account.</p>
+          <select value={usageDays} onChange={(e) => setUsageDays(+e.target.value)} className="rounded border border-white/10 bg-slate-950 px-2 py-1 text-sm">
+            <option value={1}>Last 1 day</option>
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+          </select>
+        </div>
+        {myUsage && (
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card label="Total requests" value={String(myUsage.totalCalls)} />
+            <Card label="Avg response" value={`${myUsage.avgResponseMs}ms`} />
+            <Card label="Top endpoint" value={myUsage.topEndpoints[0]?.endpoint ?? "—"} />
+          </div>
+        )}
+        {myUsage?.topEndpoints && myUsage.topEndpoints.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {myUsage.topEndpoints.map((ep, i) => (
+              <div key={i} className="flex items-center justify-between rounded-lg border border-white/5 bg-white/5 p-3 text-sm">
+                <span className="font-mono text-cyan-300">{ep.endpoint}</span>
+                <span className="text-white/60">{ep.count} calls · {ep.avgMs}ms avg</span>
+              </div>
+            ))}
+          </div>
+        )}
       </Panel>
     </div>
   );

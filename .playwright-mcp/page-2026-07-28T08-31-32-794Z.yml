@@ -1,0 +1,11 @@
+- generic [ref=f8e1]:
+  - generic [ref=f8e2]:
+    - heading "Sign-in" [level=1] [ref=f8e3]
+    - generic [ref=f8e4]:
+      - textbox "Enter any login" [active] [ref=f8e5]
+      - textbox "and password" [ref=f8e6]
+      - button "Sign-in" [ref=f8e7] [cursor=pointer]
+    - link "[ Cancel ]" [ref=f8e9] [cursor=pointer]:
+      - /url: https://api.voidcloud.cc.cd/oidc/interaction/qvGiE8VwJ2GavgqWq8e537FIIwE8g-w4ZTh1x9gU0uK/abort
+  - group [ref=f8e11]:
+    - generic "(Click to expand) DEBUG information" [ref=f8e12]

@@ -1,12 +1,12 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
-import { LoadingState } from "@/components/ui/loading-state";
-import { ErrorState } from "@/components/ui/error-state";
-import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@workspace/ui-kit/page-header";
+import { LoadingState } from "@workspace/ui-kit/loading-state";
+import { ErrorState } from "@workspace/ui-kit/error-state";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { infrastructureApi } from "@/lib/infrastructure";
+import { infrastructureApi } from "@/features/vps/infrastructure";
 import { Rocket, Trash2 } from "lucide-react";
 import { useState } from "react";
 

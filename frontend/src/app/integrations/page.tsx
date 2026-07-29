@@ -1,12 +1,12 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHeader } from "@workspace/ui-kit/page-header";
 import { MessageSquare, Mail, Webhook, Settings, Loader2, ExternalLink, AlertTriangle } from "lucide-react";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { AddItemButton } from "@/components/ui/create-item-dialog";
-import { integrationsApi } from "@/lib/integrations";
+import { AddItemButton } from "@workspace/ui-kit/create-item-dialog";
+import { integrationsApi } from "@/features/marketplace/integrations";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 function IntegrationsPageContent() {
@@ -135,7 +135,7 @@ function EmailTab({ isLoading }: { isLoading: boolean }) {
             <div className="mb-3 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">From:</span>
-                <span className="text-foreground">noreply@amer-portal.cc</span>
+                <span className="text-foreground">noreply@voidcloud.cc</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Recipients:</span>
@@ -387,3 +387,4 @@ export default function IntegrationsPage() {
     </Suspense>
   );
 }
+

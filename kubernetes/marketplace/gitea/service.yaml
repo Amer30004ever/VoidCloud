@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea
+  namespace: voidcloud
+  labels:
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/managed-by: voidcloud-marketplace
+spec:
+  selector:
+    app.kubernetes.io/name: gitea
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http
+  type: ClusterIP

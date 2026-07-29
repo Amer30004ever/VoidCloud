@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+  namespace: voidcloud
+  labels:
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/managed-by: voidcloud-marketplace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gitea
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gitea
+    spec:
+      containers:
+        - name: gitea
+          image: gitea/gitea:latest
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: USER_UID
+              value: "1000"
+            - name: USER_GID
+              value: "1000"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

@@ -1,20 +1,22 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
-import { Users, Shield, History, Key, Bell, Trash2, Loader2, Palette, Sun, Moon, Download, Upload } from "lucide-react";
+import { PageHeader } from "@workspace/ui-kit/page-header";
+import { Users, Shield, History, Key, Bell, Trash2, Loader2, Palette, Sun, Moon, Download, Upload, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
-import { AddItemButton } from "@/components/ui/create-item-dialog";
-import { AddUserButton } from "@/components/users/create-user-dialog";
+import { AddItemButton } from "@workspace/ui-kit/create-item-dialog";
+import { AddUserButton } from "@/features/admin/create-user-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { settingsApi, PortalUser } from "@/lib/settings";
-import { useAuth } from "@/contexts/AuthContext";
+import { settingsApi, PortalUser } from "@/features/admin/settings";
+import { useAuth } from "@/features/auth/AuthContext";
 import { useRouter } from "next/navigation";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 export default function SettingsPage() {
+  useTrackPageView();
   const { user } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"users" | "rbac" | "audit" | "integrations" | "api-keys" | "notifications" | "theme" | "backup">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "rbac" | "audit" | "security" | "integrations" | "api-keys" | "notifications" | "theme" | "backup">("users");
 
   useEffect(() => {
     if (user && user.role !== "ADMIN") {
@@ -30,6 +32,7 @@ export default function SettingsPage() {
     { id: "users" as const, label: "User Management", icon: Users },
     { id: "rbac" as const, label: "RBAC", icon: Shield },
     { id: "audit" as const, label: "Audit Logs", icon: History },
+    { id: "security" as const, label: "Security", icon: Lock },
     { id: "integrations" as const, label: "Integrations", icon: Key },
     { id: "api-keys" as const, label: "API Keys", icon: Key },
     { id: "notifications" as const, label: "Notifications", icon: Bell },
@@ -41,7 +44,7 @@ export default function SettingsPage() {
     <AppLayout>
       <PageHeader
         title="Settings"
-        description="Configure your Amer Portal workspace"
+        description="Configure your VoidCloud workspace"
       />
 
       {/* Tabs */}
@@ -65,6 +68,7 @@ export default function SettingsPage() {
       {activeTab === "users" && <UsersTab />}
       {activeTab === "rbac" && <RBACTab />}
       {activeTab === "audit" && <AuditTab />}
+      {activeTab === "security" && <SecurityTab />}
       {activeTab === "integrations" && <IntegrationsTab />}
       {activeTab === "api-keys" && <APIKeysTab />}
       {activeTab === "notifications" && <NotificationsTab />}
@@ -236,6 +240,111 @@ function AuditTab() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function SecurityTab() {
+  const [status, setStatus] = useState<{ enabled: boolean; recoveryCodesRemaining: number } | null>(null);
+  const [setup, setSetup] = useState<{ qrCode: string; base32: string } | null>(null);
+  const [otp, setOtp] = useState("");
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  const [disablePw, setDisablePw] = useState("");
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function refresh() { try { setStatus(await settingsApi.twoFactorStatus()); } catch {} }
+  useEffect(() => { refresh(); }, []);
+
+  async function enable2FA() {
+    setMsg(null); setBusy(true);
+    try {
+      const res = await settingsApi.twoFactorEnable();
+      setSetup(res); setOtp("");
+    } catch (e: any) {
+      setMsg({ kind: "err", text: e?.response?.data?.message ?? "Failed to enable 2FA" });
+    } finally { setBusy(false); }
+  }
+
+  async function verify2FA() {
+    setMsg(null); setBusy(true);
+    try {
+      const res = await settingsApi.twoFactorVerify(otp.trim());
+      setRecoveryCodes(res.recoveryCodes); setSetup(null); setOtp(""); await refresh();
+    } catch (e: any) {
+      setMsg({ kind: "err", text: e?.response?.data?.message ?? "Invalid code" });
+    } finally { setBusy(false); }
+  }
+
+  async function regenerateCodes() {
+    setMsg(null); setBusy(true);
+    try {
+      const res = await settingsApi.twoFactorRegenerate();
+      setRecoveryCodes(res.recoveryCodes);
+    } catch (e: any) {
+      setMsg({ kind: "err", text: e?.response?.data?.message ?? "Failed" });
+    } finally { setBusy(false); }
+  }
+
+  async function disable2FA() {
+    setMsg(null); setBusy(true);
+    try {
+      await settingsApi.twoFactorDisable({ password: disablePw });
+      setDisablePw(""); setRecoveryCodes(null); await refresh();
+    } catch (e: any) {
+      setMsg({ kind: "err", text: e?.response?.data?.message ?? "Failed" });
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="space-y-4">
+      {msg && <div className={`rounded-lg border p-3 text-sm ${msg.kind === "ok" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" : "border-red-500/30 bg-red-500/10 text-red-300"}`}>{msg.text}</div>}
+
+      <div className="rounded-xl border border-border bg-card p-6">
+        <h3 className="text-sm font-semibold text-foreground">Two-factor authentication</h3>
+        <p className="text-xs text-muted-foreground mt-1">Add an extra layer of security with TOTP (Google Authenticator, Authy, 1Password).</p>
+
+        {recoveryCodes && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm mt-4">
+            <p className="mb-2 font-semibold text-amber-200">Save these recovery codes now — they will not be shown again.</p>
+            <div className="grid grid-cols-2 gap-2 font-mono text-amber-100">
+              {recoveryCodes.map((c) => <div key={c}>{c}</div>)}
+            </div>
+            <button onClick={() => setRecoveryCodes(null)} className="mt-3 rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs">I&apos;ve saved them</button>
+          </div>
+        )}
+
+        {!status?.enabled && !setup && (
+          <div className="mt-4">
+            <button disabled={busy} onClick={enable2FA} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">Enable 2FA</button>
+          </div>
+        )}
+
+        {setup && (
+          <div className="mt-4 space-y-3">
+            <p className="text-sm text-white/70">1. Scan the QR code in your authenticator app:</p>
+            <img src={setup.qrCode} alt="2FA QR code" className="rounded-lg bg-white p-2" width={200} height={200} />
+            <p className="text-xs text-white/50">Or enter this secret manually: <code className="rounded bg-slate-900 px-2 py-1">{setup.base32}</code></p>
+            <p className="text-sm text-white/70">2. Enter the 6-digit code from your app:</p>
+            <input className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="123456" />
+            <button disabled={busy || otp.length < 6} onClick={verify2FA} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">Verify & activate</button>
+          </div>
+        )}
+
+        {status?.enabled && !setup && (
+          <div className="mt-4 space-y-3">
+            <p className="text-sm text-emerald-300">2FA is enabled · {status.recoveryCodesRemaining} recovery codes remaining</p>
+            <div className="flex gap-2">
+              <button disabled={busy} onClick={regenerateCodes} className="rounded-lg border border-input bg-background px-4 py-2 text-sm hover:bg-accent disabled:opacity-60">Regenerate recovery codes</button>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4 mt-4">
+              <h4 className="text-sm font-medium text-foreground mb-2">Disable 2FA</h4>
+              <input type="password" value={disablePw} onChange={(e) => setDisablePw(e.target.value)} placeholder="Confirm with your password" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+              <button disabled={busy || !disablePw} onClick={disable2FA} className="mt-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-60">Disable 2FA</button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

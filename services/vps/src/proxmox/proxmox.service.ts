@@ -10,6 +10,13 @@ import {
   TEMPLATE_MANIFEST,
   type TemplateId,
 } from './template-manifest';
+import {
+  loadIsolationConfig,
+  buildNet0,
+  buildFirewallRaw,
+  vlanForTenant,
+  type IsolationConfig,
+} from './vm-network-isolation';
 
 export interface ProvisionSpec {
   hostname: string;
@@ -18,6 +25,10 @@ export interface ProvisionSpec {
   storageGB: number;
   planSlug?: string;
   templateId?: TemplateId;
+  /** Tenant that owns this VM. Used for optional per-tenant VLAN tagging. */
+  tenantId?: string | number;
+  /** Optional customer-supplied static IP (must be within the pool). Skips auto-allocation. */
+  staticIp?: string;
 }
 
 export interface ProvisionResult {
@@ -74,6 +85,8 @@ export class ProxmoxService {
   private readonly node = this.nodes[0];
   private readonly storage = process.env.PROXMOX_STORAGE ?? 'local-lvm';
   private readonly bridge = process.env.PROXMOX_BRIDGE ?? 'vmbr0';
+  /** Tenant VM network isolation config (Prompt 0.15): per-VM firewall + optional VLAN. */
+  private readonly isolation: IsolationConfig = loadIsolationConfig();
   private readonly template =
     process.env.PROXMOX_TEMPLATE ??
     'local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst';
@@ -260,6 +273,42 @@ export class ProxmoxService {
 
   // ---------------- Public API ----------------
 
+  /** Compute the VM's network attachment (bridge + optional VLAN) and firewall. */
+  private buildVmNetwork(spec: ProvisionSpec, ip: string) {
+    const vlanTag = this.isolation.vlanPerTenant && spec.tenantId != null
+      ? vlanForTenant(spec.tenantId)
+      : undefined;
+    const net0 = buildNet0(this.isolation, ip, { vlanTag });
+    const firewallRaw = buildFirewallRaw(this.isolation);
+    return { net0, vlanTag, firewallRaw };
+  }
+
+  /** Apply the isolation firewall to a VM (idempotent — overwrites the ruleset). */
+  private async applyVmFirewall(
+    node: string,
+    vmid: number,
+    raw: string,
+  ): Promise<void> {
+    if (!this.isLive()) {
+      this.logger.log(`[STUB] apply VM firewall vmid=${vmid} (${raw.split('\n').length} lines)`);
+      return;
+    }
+    // Enable the VM firewall, then push our generated ruleset.
+    await this.pveRequest('PUT', `/nodes/${node}/lxc/${vmid}/config`, {
+      firewall: 1,
+    }).catch(() => undefined);
+    await this.pveRequest('PUT', `/nodes/${node}/lxc/${vmid}/firewall/options`, {
+      enable: 1,
+      policy_out: 'DROP',
+      policy_in: 'DROP',
+    }).catch(() => undefined);
+    await this.pveRequest('PUT', `/nodes/${node}/lxc/${vmid}/firewall/rules`, {
+      // Proxmox stores a raw ruleset under the firewall "raw" section.
+      type: 'raw',
+      'raw[0]': raw,
+    }).catch(() => undefined);
+  }
+
   async createContainer(spec: ProvisionSpec): Promise<ProvisionResult> {
     const rootPassword = randomBytes(12).toString('base64url');
     const templateId = spec.templateId ?? getTemplateForPlan(spec.planSlug);
@@ -271,9 +320,11 @@ export class ProxmoxService {
 
     if (!this.isLive()) {
       const vmid = 1000 + Math.floor(Math.random() * 9000);
-      const ipv4Address = `${this.ipBase}.${this.nextHostOctet++}`;
+      const ipv4Address = spec.staticIp ?? `${this.ipBase}.${this.nextHostOctet++}`;
+      if (ipv4Address === spec.staticIp) this.inFlightIps.add(ipv4Address);
+      const net = this.buildVmNetwork(spec, ipv4Address);
       this.logger.log(
-        `[STUB] proxmox clone template=${templateId} → vmid=${vmid} ip=${ipv4Address}`,
+        `[STUB] proxmox clone template=${templateId} → vmid=${vmid} ip=${ipv4Address} net0="${net.net0}"`,
       );
       return { vmid, ipv4Address, node: this.node, rootPassword };
     }
@@ -282,7 +333,8 @@ export class ProxmoxService {
     const cfg = this.nodeTemplateConfig(targetNode, templateId);
     const nextId = await this.pveRequest<string>('GET', `/cluster/nextid`);
     const vmid = Number(nextId);
-    const ipv4Address = await this.allocateIp();
+    const ipv4Address = spec.staticIp ?? (await this.allocateIp());
+    const net = this.buildVmNetwork(spec, ipv4Address);
     const cores = Math.max(1, Math.ceil(spec.cpuCores));
     const params = {
       vmid,
@@ -295,7 +347,7 @@ export class ProxmoxService {
       memory: spec.ramMB,
       swap: Math.max(256, Math.floor(spec.ramMB / 2)),
       rootfs: `${cfg.storage}:${spec.storageGB}`,
-      net0: `name=eth0,bridge=${cfg.bridge},ip=${ipv4Address}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
+      net0: net.net0,
       password: rootPassword,
       unprivileged: 1,
       onboot: 1,
@@ -309,8 +361,13 @@ export class ProxmoxService {
       this.inFlightIps.delete(ipv4Address);
       throw e;
     }
+    // Enforce tenant isolation (Prompt 0.15): block VM-to-VM + K8s-internal.
+    await this.applyVmFirewall(targetNode, vmid, net.firewallRaw).catch((e) =>
+      this.logger.warn(`Firewall apply skipped for vmid=${vmid}: ${e.message}`),
+    );
     this.logger.log(
-      `Proxmox created LXC vmid=${vmid} ip=${ipv4Address} node=${targetNode} template=${templateId}`,
+      `Proxmox created LXC vmid=${vmid} ip=${ipv4Address} node=${targetNode} template=${templateId}` +
+        (net.vlanTag ? ` vlan=${net.vlanTag}` : ''),
     );
     return { vmid, ipv4Address, node: targetNode, rootPassword };
   }
@@ -403,6 +460,7 @@ export class ProxmoxService {
     const templateId = spec.templateId ?? getTemplateForPlan(spec.planSlug);
     const cfg = this.nodeTemplateConfig(node, templateId);
     await this.destroyContainer(vmid, node);
+    const net = this.buildVmNetwork(spec, ipv4);
     await this.pveRequest('POST', `/nodes/${node}/lxc`, {
       vmid,
       hostname: spec.hostname,
@@ -411,13 +469,16 @@ export class ProxmoxService {
       memory: spec.ramMB,
       swap: Math.max(256, Math.floor(spec.ramMB / 2)),
       rootfs: `${cfg.storage}:${spec.storageGB}`,
-      net0: `name=eth0,bridge=${cfg.bridge},ip=${ipv4}/24${this.gateway ? `,gw=${this.gateway}` : ''}`,
+      net0: net.net0,
       password: rootPassword,
       unprivileged: 1,
       onboot: 1,
       start: 1,
       features: 'nesting=1',
     });
+    await this.applyVmFirewall(node, vmid, net.firewallRaw).catch((e) =>
+      this.logger.warn(`Firewall apply skipped for vmid=${vmid}: ${e.message}`),
+    );
     return { rootPassword };
   }
 

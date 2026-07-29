@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,7 +29,7 @@ import {
   useRecentDeployments,
   useRunningNamespaces,
   useSystemStatus,
-} from "@/hooks/useStats";
+} from "@/features/vps/useStats";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -379,7 +379,7 @@ export default function LoginPage() {
                 </a>
               </div>
               <p className="mt-3 text-center text-[11px] text-slate-500">
-                Amer Portal · DevOps Project Hub v1.0.0
+                VoidCloud · DevOps Project Hub v1.0.0
               </p>
             </div>
           </aside>
@@ -416,3 +416,4 @@ function Bar({
     </div>
   );
 }
+

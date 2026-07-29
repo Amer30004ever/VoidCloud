@@ -16,7 +16,7 @@ Legend: **P0** critical · **P1** high value · **P2** enhancement · **P3** nic
 | **P1** | Force password change UI | Backend returns `mustChangePassword`; add modal/route on first login |
 | **P1** | Frontend role-based navigation | Hide admin-only settings sections for non-ADMIN users |
 | **P2** | Rename “MaVoid CRM” strings in logs/bootstrap | Branding leftover in `main.ts` |
-| **P2** | Align `.env.example` with `amer_portal` DB name | Was `mavoid_crm`; keep one naming convention |
+| **P2** | Align `.env.example` with `voidcloud` DB name | Was `mavoid_crm`; keep one naming convention |
 | **P2** | Add backend e2e test for auth + health | CI confidence |
 | **P3** | Squash or baseline Prisma migrations | Simplify fresh installs if init-db legacy DBs are gone |
 

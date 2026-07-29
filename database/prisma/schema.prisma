@@ -44,7 +44,7 @@ model RbacPermission {
 
 model RbacRolePermission {
   roleId       String
-  role         RbacRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  role         RbacRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permissionId String
   permission   RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
@@ -62,20 +62,21 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userTenants UserTenant[]
+  userTenants   UserTenant[]
   conversations Conversation[]
+  apiKeys        ApiKey[]
 
   @@map("tenants")
 }
 
 model UserTenant {
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  roleId    String
-  role      RbacRole @relation(fields: [roleId], references: [id])
-  joinedAt  DateTime @default(now())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  roleId   String
+  role     RbacRole @relation(fields: [roleId], references: [id])
+  joinedAt DateTime @default(now())
 
   @@id([userId, tenantId])
   @@map("user_tenants")
@@ -114,136 +115,186 @@ enum AlertSeverity {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  password  String
-  role      Role     @default(USER)
-  isActive  Boolean  @default(true)
-  mustChangePassword Boolean @default(false)
-  avatar             String?
-  emailVerified      Boolean  @default(false)
-  emailVerifyTokenHash String?  @unique
+  id                   String                  @id @default(uuid())
+  email                String                  @unique
+  name                 String
+  password             String
+  role                 Role                    @default(USER)
+  isActive             Boolean                 @default(true)
+  mustChangePassword   Boolean                 @default(false)
+  avatar               String?
+  emailVerified        Boolean                 @default(false)
+  emailVerifyTokenHash String?                 @unique
   emailVerifyExpires   DateTime?
-  phone              String?
-  twoFactorSecret    String?
-  twoFactorEnabled   Boolean  @default(false)
-  recoveryCodes      String[] @default([])
-  webhookUrl         String?
-  githubId           String?  @unique
-  googleId           String?  @unique
-  cloudPlanId        String?
-  cloudPlan          CloudPlan? @relation(fields: [cloudPlanId], references: [id])
-  trialEndsAt        DateTime?
-  subscriptionStatus CloudSubscriptionStatus @default(TRIALING)
-  overrideLimits     Json?
-  notificationPrefs  Json?
-  suspendedAt        DateTime?
-  suspendedReason    String?
-  lastLoginAt        DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  phone                String?
+  twoFactorSecret      String?
+  twoFactorEnabled     Boolean                 @default(false)
+  recoveryCodes        String[]                @default([])
+  webhookUrl           String?
+  githubId             String?                 @unique
+  googleId             String?                 @unique
+  cloudPlanId          String?
+  cloudPlan            CloudPlan?              @relation(fields: [cloudPlanId], references: [id])
+  trialEndsAt          DateTime?
+  subscriptionStatus   CloudSubscriptionStatus @default(TRIALING)
+  overrideLimits       Json?
+  notificationPrefs    Json?
+  suspendedAt          DateTime?
+  suspendedReason      String?
+  lastLoginAt          DateTime?
+  onboardingCompleted  Boolean                 @default(false)
+  onboardingSkipped    Boolean                 @default(false)
+  // Prompt 2.2a: Pay-as-you-go credit balance (in points)
+  creditBalance        Float                   @default(0)
+  themePreference      String?                 @default("system")
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
 
-  conversations   Conversation[]
-  messages        Message[]
-  whatsappContacts WhatsappContact[]
-  documents       Document[]
-  documentVersions DocumentVersion[] @relation("DocumentVersionAuthor")
+  conversations         Conversation[]
+  messages              Message[]
+  whatsappContacts      WhatsappContact[]
+  documents             Document[]
+  documentVersions      DocumentVersion[]      @relation("DocumentVersionAuthor")
   documentCollaborators DocumentCollaborator[]
-  
+
   // CRM relations
-  crmLeads       CrmLead[]
-  crmContacts    CrmContact[]
-  crmCompanies   CrmCompany[]
-  crmDeals       CrmDeal[]
-  crmTasks       CrmTask[]
-  crmActivities  CrmActivity[]
-  
+  crmLeads      CrmLead[]
+  crmContacts   CrmContact[]
+  crmCompanies  CrmCompany[]
+  crmDeals      CrmDeal[]
+  crmTasks      CrmTask[]
+  crmActivities CrmActivity[]
+
   // Learning & Career relations
-  savedJobs           SavedJob[]
-  pathEnrollments     PathEnrollment[]
+  savedJobs             SavedJob[]
+  pathEnrollments       PathEnrollment[]
   certificationTrackers CertificationTracker[]
-  cvs                 CV[]
-  bookTrackers        BookTracker[]
-  conferenceInterests ConferenceInterest[]
-  blogPosts           BlogPost[]
-  
+  cvs                   CV[]
+  bookTrackers          BookTracker[]
+  conferenceInterests   ConferenceInterest[]
+  blogPosts             BlogPost[]
+
   // Automation relations
-  scripts             Script[]
-  workflowTemplates   WorkflowTemplate[]
-  
+  scripts           Script[]
+  workflowTemplates WorkflowTemplate[]
+
   // Collaboration relations
-  channels            Channel[]
-  knowledgeArticles   KnowledgeArticle[]
-  codeReviews         CodeReview[]
-  calendarEvents      CalendarEvent[]
-  
+  channels          Channel[]
+  knowledgeArticles KnowledgeArticle[]
+  codeReviews       CodeReview[]
+  calendarEvents    CalendarEvent[]
+
   // Integrations relations
-  webhooks            Webhook[]
+  webhooks Webhook[]
 
   // Platform relations
-  projects            Project[]
-  apiKeys             ApiKey[]
-  appSecrets          AppSecret[]
-  auditLogs           AuditLog[]
-  adminAuditLogs      AuditLog[] @relation("AdminAuditActions")
-  notes               Note[]
+  projects       Project[]
+  apiKeys        ApiKey[]
+  appSecrets     AppSecret[]
+  auditLogs      AuditLog[]
+  adminAuditLogs AuditLog[]  @relation("AdminAuditActions")
+  notes          Note[]
 
   // RBAC & Multi-tenant relations
-  userTenants         UserTenant[]
-  notifications       Notification[]
-
+  userTenants   UserTenant[]
+  notifications Notification[]
 
   // Cloud (HaaS) relations
-  cloudDeployments    CloudDeployment[]
-  cloudInvoices       CloudInvoice[]
-  cloudPaymentMethods CloudPaymentMethod[]
-  vpsAlertRules       VpsAlertRule[] @relation("UserVpsAlertRules")
-  sshKeys             SSHKey[]
-  firewallRules       FirewallRule[]
-  ownedOrganizations  Organization[]            @relation("OrgOwner")
-  organizationMembers OrganizationMember[]
-  customImages        CustomImage[]
-  customImageShares   CustomImageShare[]
-  domains             Domain[]
-  apiRateLimits       APIRateLimit[]
-  webhookEndpoints    WebhookEndpoint[]
-  vpsSnapshots        VPSSnapshot[]
-  referralsMade       Referral[] @relation("Referrals")
-  referredBy          Referral?  @relation("Referred")
+  cloudDeployments     CloudDeployment[]
+  cloudInvoices        CloudInvoice[]
+  cloudPaymentMethods  CloudPaymentMethod[]
+  creditTransactions   CreditTransaction[]
+  vpsAlertRules        VpsAlertRule[]       @relation("UserVpsAlertRules")
+  sshKeys              SSHKey[]
+  firewallRules        FirewallRule[]
+  ownedOrganizations   Organization[]       @relation("OrgOwner")
+  organizationMembers  OrganizationMember[]
+  customImages         CustomImage[]
+  customImageShares    CustomImageShare[]
+  ptrRecordRequests    PtrRecordRequest[]
+  domains              Domain[]
+  apiRateLimits        APIRateLimit[]
+  webhookEndpoints     WebhookEndpoint[]
+  vpsSnapshots         VPSSnapshot[]
+  referralsMade        Referral[]           @relation("Referrals")
+  referredBy           Referral?            @relation("Referred")
   referralPayoutMethod Json?
-
 
   // Password reset
   passwordResetTokens PasswordResetToken[]
+  oauthIdentities     OAuthIdentity[]
+  agentInvites        AgentInvite[]
+  tosAcceptances      ToSAcceptance[]
+}
+
+model OAuthIdentity {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_identities")
+}
+
+model AgentInvite {
+  id         String    @id @default(uuid())
+  tenantId   String
+  email      String
+  token      String    @unique
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  acceptedAt DateTime?
+  createdBy  String
+  user       User      @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@map("agent_invites")
+}
+
+model ToSAcceptance {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tosVersion    String
+  privacyVersion String
+  acceptedAt    DateTime  @default(now())
+  ipAddress     String?
+  userAgent     String?
+
+  @@unique([userId, tosVersion])
+  @@map("tos_acceptances")
 }
 
 model PasswordResetToken {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String   @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
 }
 
 model Conversation {
-  id          String            @id @default(uuid())
-  userId      String
-  user        User              @relation(fields: [userId], references: [id])
-  tenantId    String?
-  tenant      Tenant?           @relation(fields: [tenantId], references: [id])
-  platform    String
-  contactId   String?
-  platformId  String?
-  title       String?
-  status      ConversationStatus @default(OPEN)
-  assignedTo  String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id         String             @id @default(uuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id])
+  tenantId   String?
+  tenant     Tenant?            @relation(fields: [tenantId], references: [id])
+  platform   String
+  contactId  String?
+  platformId String?
+  title      String?
+  status     ConversationStatus @default(OPEN)
+  assignedTo String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
 
   messages Message[]
 }
@@ -267,54 +318,54 @@ model Notification {
 }
 
 model Message {
-  id             String      @id @default(uuid())
+  id             String        @id @default(uuid())
   conversationId String?
   conversation   Conversation? @relation(fields: [conversationId], references: [id])
   channelId      String?
-  channel        Channel?    @relation(fields: [channelId], references: [id])
+  channel        Channel?      @relation(fields: [channelId], references: [id])
   role           String
   content        String
-  type           MessageType @default(TEXT)
+  type           MessageType   @default(TEXT)
   mediaUrl       String?
   waMessageId    String?
-  direction      String     @default("OUTBOUND")
-  createdAt      DateTime   @default(now())
+  direction      String        @default("OUTBOUND")
+  createdAt      DateTime      @default(now())
 
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
 }
 
 model WhatsappContact {
-  id           String           @id @default(uuid())
+  id           String   @id @default(uuid())
   userId       String
-  user         User             @relation(fields: [userId], references: [id])
-  waId         String           @unique
+  user         User     @relation(fields: [userId], references: [id])
+  waId         String   @unique
   name         String?
   phone        String?
   profilePic   String?
-  isBlocked    Boolean          @default(false)
+  isBlocked    Boolean  @default(false)
   crmContactId String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  messages     WhatsappMessage[]
+  messages WhatsappMessage[]
 
   @@index([userId])
   @@index([crmContactId])
 }
 
 model WhatsappMessage {
-  id             String   @id @default(uuid())
-  contactId      String
-  contact        WhatsappContact @relation(fields: [contactId], references: [id])
-  waMessageId    String   @unique
-  direction      String   // inbound, outbound
-  content        String   @db.Text
-  type           String   @default("text") // text, image, audio, video, document
-  mediaUrl       String?
-  status         String   @default("sent") // sent, delivered, read, failed
-  timestamp      DateTime
-  createdAt      DateTime @default(now())
+  id          String          @id @default(uuid())
+  contactId   String
+  contact     WhatsappContact @relation(fields: [contactId], references: [id])
+  waMessageId String          @unique
+  direction   String // inbound, outbound
+  content     String          @db.Text
+  type        String          @default("text") // text, image, audio, video, document
+  mediaUrl    String?
+  status      String          @default("sent") // sent, delivered, read, failed
+  timestamp   DateTime
+  createdAt   DateTime        @default(now())
 
   @@index([contactId])
   @@index([direction])
@@ -323,95 +374,95 @@ model WhatsappMessage {
 
 // WhatsApp CRM Models
 model CrmLead {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String?
-  email       String?
-  phone       String?
-  source      String   @default("whatsapp") // whatsapp, manual, referral
-  status      String   @default("new") // new, contacted, qualified, lost, converted
-  value       Float?
-  currency    String   @default("USD")
-  notes       String?
-  assignedTo  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String?
+  email      String?
+  phone      String?
+  source     String   @default("whatsapp") // whatsapp, manual, referral
+  status     String   @default("new") // new, contacted, qualified, lost, converted
+  value      Float?
+  currency   String   @default("USD")
+  notes      String?
+  assignedTo String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  deals       CrmDeal[]
-  activities  CrmActivity[]
+  deals      CrmDeal[]
+  activities CrmActivity[]
 
   @@index([userId])
   @@index([status])
 }
 
 model CrmContact {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  email       String?
-  phone       String?
-  company     String?
-  title       String?
-  notes       String?
-  tags        String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  phone     String?
+  company   String?
+  title     String?
+  notes     String?
+  tags      String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
 
 model CrmCompany {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  website     String?
-  industry    String?
-  size        String?
-  address     String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  website   String?
+  industry  String?
+  size      String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
 
 model CrmDeal {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  leadId      String?
-  lead        CrmLead?  @relation(fields: [leadId], references: [id])
-  title       String
-  value       Float
-  currency    String   @default("USD")
-  stage       String   @default("prospecting") // prospecting, qualification, proposal, negotiation, closed_won, closed_lost
-  probability Int      @default(0)
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leadId            String?
+  lead              CrmLead?  @relation(fields: [leadId], references: [id])
+  title             String
+  value             Float
+  currency          String    @default("USD")
+  stage             String    @default("prospecting") // prospecting, qualification, proposal, negotiation, closed_won, closed_lost
+  probability       Int       @default(0)
   expectedCloseDate DateTime?
-  actualCloseDate    DateTime?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  actualCloseDate   DateTime?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([userId])
   @@index([stage])
 }
 
 model CrmTask {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   title       String
   description String?
   dueDate     DateTime?
-  priority    String   @default("medium") // low, medium, high
-  status      String   @default("todo") // todo, in_progress, done, cancelled
-  relatedTo   String?  // lead, deal, contact
+  priority    String    @default("medium") // low, medium, high
+  status      String    @default("todo") // todo, in_progress, done, cancelled
+  relatedTo   String? // lead, deal, contact
   relatedId   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -423,8 +474,8 @@ model CrmActivity {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   leadId      String?
-  lead        CrmLead?  @relation(fields: [leadId], references: [id])
-  type        String   // call, email, meeting, note, whatsapp_message
+  lead        CrmLead? @relation(fields: [leadId], references: [id])
+  type        String // call, email, meeting, note, whatsapp_message
   subject     String?
   description String
   createdAt   DateTime @default(now())
@@ -445,103 +496,103 @@ model WebhookLog {
 }
 
 model AlertRule {
-  id            String         @id @default(uuid())
-  name          String
-  description   String?
-  type          AlertType
-  enabled       Boolean        @default(true)
-  severity      AlertSeverity  @default(WARNING)
-  
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  type        AlertType
+  enabled     Boolean       @default(true)
+  severity    AlertSeverity @default(WARNING)
+
   // Rule conditions
-  namespace     String?        // Optional: filter by namespace
-  labelSelector String?        // Optional: filter by labels
-  threshold     Float?         // For CPU/Memory alerts
-  duration      Int?           // Duration in seconds before triggering
-  
+  namespace     String? // Optional: filter by namespace
+  labelSelector String? // Optional: filter by labels
+  threshold     Float? // For CPU/Memory alerts
+  duration      Int? // Duration in seconds before triggering
+
   // Notification settings
-  notifyEmail   Boolean        @default(false)
-  notifySlack   Boolean        @default(false)
-  webhookUrl    String?        // For custom webhook notifications
-  
+  notifyEmail Boolean @default(false)
+  notifySlack Boolean @default(false)
+  webhookUrl  String? // For custom webhook notifications
+
   // Relationships
-  alerts        Alert[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  alerts    Alert[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Alert {
-  id            String         @id @default(uuid())
-  ruleId        String
-  rule          AlertRule      @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  
+  id     String    @id @default(uuid())
+  ruleId String
+  rule   AlertRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
   // Alert details
-  type          AlertType
-  severity      AlertSeverity
-  namespace     String
-  resourceName  String         // Pod name, deployment name, etc.
-  resourceType  String         // Pod, Deployment, Service, etc.
-  
+  type         AlertType
+  severity     AlertSeverity
+  namespace    String
+  resourceName String // Pod name, deployment name, etc.
+  resourceType String // Pod, Deployment, Service, etc.
+
   // Status
-  status        String         @default("FIRING")  // FIRING, RESOLVED
-  message       String
-  details       Json?          // Additional details in JSON format
-  
+  status  String @default("FIRING") // FIRING, RESOLVED
+  message String
+  details Json? // Additional details in JSON format
+
   // Timeline
-  firedAt       DateTime       @default(now())
-  resolvedAt    DateTime?
+  firedAt        DateTime  @default(now())
+  resolvedAt     DateTime?
   acknowledgedAt DateTime?
-  
+
   // Tracking
-  notificationSent Boolean      @default(false)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  notificationSent Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model DeploymentHistory {
-  id           String   @id @default(uuid())
-  provider     String
-  owner        String?
-  repo         String
-  workflowId   String?
-  ref          String?
-  status       String   @default("PENDING")
-  initiatedBy  String?
-  startedAt    DateTime?
-  finishedAt   DateTime?
-  logsUrl      String?
-  details      Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String    @id @default(uuid())
+  provider    String
+  owner       String?
+  repo        String
+  workflowId  String?
+  ref         String?
+  status      String    @default("PENDING")
+  initiatedBy String?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  logsUrl     String?
+  details     Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 // Documentation models
 model Document {
-  id          String              @id @default(uuid())
-  title       String
-  content     String              @db.Text
-  categoryId  String?
-  category    DocumentCategory?   @relation(fields: [categoryId], references: [id])
-  authorId    String
-  author      User                @relation(fields: [authorId], references: [id])
-  fileType    String?
-  fileName    String?
-  fileSize    Int?
-  isRunbook   Boolean             @default(false)
-  incidentId  String?
-  tags        DocumentTag[]
+  id            String                 @id @default(uuid())
+  title         String
+  content       String                 @db.Text
+  categoryId    String?
+  category      DocumentCategory?      @relation(fields: [categoryId], references: [id])
+  authorId      String
+  author        User                   @relation(fields: [authorId], references: [id])
+  fileType      String?
+  fileName      String?
+  fileSize      Int?
+  isRunbook     Boolean                @default(false)
+  incidentId    String?
+  tags          DocumentTag[]
   collaborators DocumentCollaborator[]
-  versions    DocumentVersion[]
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  versions      DocumentVersion[]
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
 }
 
 model DocumentCategory {
-  id          String      @id @default(uuid())
-  name        String      @unique
+  id          String     @id @default(uuid())
+  name        String     @unique
   description String?
   documents   Document[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model DocumentTag {
@@ -552,16 +603,16 @@ model DocumentTag {
 }
 
 model DocumentVersion {
-  id                  String   @id @default(uuid())
-  documentId          String
-  document            Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  content             String   @db.Text
-  versionNumber       Int
-  createdBy           String
-  createdByUser       User     @relation("DocumentVersionAuthor", fields: [createdBy], references: [id])
-  isRestore           Boolean  @default(false)
+  id                    String   @id @default(uuid())
+  documentId            String
+  document              Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  content               String   @db.Text
+  versionNumber         Int
+  createdBy             String
+  createdByUser         User     @relation("DocumentVersionAuthor", fields: [createdBy], references: [id])
+  isRestore             Boolean  @default(false)
   restoredFromVersionId String?
-  createdAt           DateTime @default(now())
+  createdAt             DateTime @default(now())
 }
 
 model DocumentCollaborator {
@@ -576,12 +627,12 @@ model DocumentCollaborator {
 
 // Learning & Career models
 model SavedJob {
-  id        String   @id @default(uuid())
-  jobId     String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  savedAt   DateTime @default(now())
-  
+  id      String   @id @default(uuid())
+  jobId   String
+  userId  String
+  user    User     @relation(fields: [userId], references: [id])
+  savedAt DateTime @default(now())
+
   @@unique([jobId, userId])
 }
 
@@ -591,7 +642,7 @@ model LearningPath {
   description String
   category    String
   difficulty  String
-  duration    Int              // in hours
+  duration    Int // in hours
   modules     LearningModule[]
   enrollments PathEnrollment[]
   createdAt   DateTime         @default(now())
@@ -599,97 +650,97 @@ model LearningPath {
 }
 
 model LearningModule {
-  id          String            @id @default(uuid())
+  id          String             @id @default(uuid())
   pathId      String
-  path        LearningPath      @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  path        LearningPath       @relation(fields: [pathId], references: [id], onDelete: Cascade)
   title       String
   description String
   order       Int
   resources   LearningResource[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 }
 
 model LearningResource {
-  id          String         @id @default(uuid())
-  moduleId    String
-  module      LearningModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  title       String
-  type        String         // video, article, exercise, quiz
-  url         String?
-  content     String?
-  duration    Int?
-  createdAt   DateTime       @default(now())
+  id        String         @id @default(uuid())
+  moduleId  String
+  module    LearningModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title     String
+  type      String // video, article, exercise, quiz
+  url       String?
+  content   String?
+  duration  Int?
+  createdAt DateTime       @default(now())
 }
 
 model PathEnrollment {
-  id        String       @id @default(uuid())
-  pathId    String
-  path      LearningPath @relation(fields: [pathId], references: [id])
-  userId    String
-  user      User         @relation(fields: [userId], references: [id])
-  status    String       @default("not_started") // not_started, in_progress, completed
-  enrolledAt DateTime     @default(now())
+  id          String         @id @default(uuid())
+  pathId      String
+  path        LearningPath   @relation(fields: [pathId], references: [id])
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
+  status      String         @default("not_started") // not_started, in_progress, completed
+  enrolledAt  DateTime       @default(now())
   completedAt DateTime?
-  progress  PathProgress[]
-  
+  progress    PathProgress[]
+
   @@unique([userId, pathId])
 }
 
 model PathProgress {
-  id           String        @id @default(uuid())
+  id           String         @id @default(uuid())
   enrollmentId String
   enrollment   PathEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   moduleId     String
-  completed    Boolean       @default(false)
+  completed    Boolean        @default(false)
   completedAt  DateTime?
-  createdAt    DateTime      @default(now())
+  createdAt    DateTime       @default(now())
 }
 
 model Certification {
-  id          String                @id @default(uuid())
+  id          String                 @id @default(uuid())
   title       String
-  provider    String                // AWS, Azure, Google, CNCF, etc.
-  category    String                // cloud, devops, security, etc.
-  level       String                // associate, professional, expert, etc.
+  provider    String // AWS, Azure, Google, CNCF, etc.
+  category    String // cloud, devops, security, etc.
+  level       String // associate, professional, expert, etc.
   description String
-  duration    Int                   // in hours
+  duration    Int // in hours
   cost        Float?
   url         String?
   trackers    CertificationTracker[]
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
 }
 
 model CertificationTracker {
-  id              String         @id @default(uuid())
+  id              String        @id @default(uuid())
   certificationId String
   certification   Certification @relation(fields: [certificationId], references: [id])
   userId          String
-  user            User           @relation(fields: [userId], references: [id])
-  status          String         @default("not_started") // not_started, in_progress, completed, expired
+  user            User          @relation(fields: [userId], references: [id])
+  status          String        @default("not_started") // not_started, in_progress, completed, expired
   targetDate      DateTime?
   completedAt     DateTime?
   notes           String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
   @@unique([userId, certificationId])
 }
 
 model CV {
-  id          String     @id @default(uuid())
-  userId      String
-  user        User       @relation(fields: [userId], references: [id])
-  title       String
-  templateId  String?
-  content     String     @db.Text
-  fileType    String     // latex, markdown
-  fileName    String?
-  atsScore    Int?
-  sections    CVSection[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id         String      @id @default(uuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id])
+  title      String
+  templateId String?
+  content    String      @db.Text
+  fileType   String // latex, markdown
+  fileName   String?
+  atsScore   Int?
+  sections   CVSection[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 model CVSection {
@@ -706,7 +757,7 @@ model CVSection {
 model CVTemplate {
   id          String   @id @default(uuid())
   name        String
-  category    String   // devops, sre, cloud, academic, etc.
+  category    String // devops, sre, cloud, academic, etc.
   description String
   content     String   @db.Text
   preview     String?
@@ -729,18 +780,18 @@ model Conference {
 }
 
 model ConferenceInterest {
-  id            String      @id @default(uuid())
-  conferenceId  String
-  conference    Conference  @relation(fields: [conferenceId], references: [id])
-  userId        String
-  user          User        @relation(fields: [userId], references: [id])
-  registeredAt  DateTime    @default(now())
-  
+  id           String     @id @default(uuid())
+  conferenceId String
+  conference   Conference @relation(fields: [conferenceId], references: [id])
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  registeredAt DateTime   @default(now())
+
   @@unique([userId, conferenceId])
 }
 
 model Book {
-  id          String       @id @default(uuid())
+  id          String        @id @default(uuid())
   title       String
   author      String
   isbn        String?
@@ -749,24 +800,24 @@ model Book {
   coverUrl    String?
   amazonUrl   String?
   trackers    BookTracker[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model BookTracker {
-  id         String   @id @default(uuid())
-  bookId     String
-  book       Book     @relation(fields: [bookId], references: [id])
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  status     String   @default("to_read") // to_read, reading, completed
-  rating     Int?
-  review     String?
-  startedAt  DateTime?
+  id          String    @id @default(uuid())
+  bookId      String
+  book        Book      @relation(fields: [bookId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  status      String    @default("to_read") // to_read, reading, completed
+  rating      Int?
+  review      String?
+  startedAt   DateTime?
   completedAt DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   @@unique([userId, bookId])
 }
 
@@ -774,7 +825,7 @@ model Script {
   id          String   @id @default(uuid())
   name        String
   description String
-  language    String   // python, bash, javascript, etc.
+  language    String // python, bash, javascript, etc.
   content     String   @db.Text
   category    String
   tags        String[]
@@ -789,8 +840,8 @@ model WorkflowTemplate {
   name        String
   description String
   category    String
-  steps       Json     // Array of workflow steps
-  parameters  Json     // Workflow parameters
+  steps       Json // Array of workflow steps
+  parameters  Json // Workflow parameters
   userId      String
   user        User     @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())
@@ -798,27 +849,27 @@ model WorkflowTemplate {
 }
 
 model Channel {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
   description String?
-  isPrivate   Boolean  @default(false)
+  isPrivate   Boolean   @default(false)
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
   messages    Message[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model KnowledgeArticle {
-  id          String   @id @default(uuid())
-  title       String
-  content     String   @db.Text
-  category    String
-  tags        String[]
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  title     String
+  content   String   @db.Text
+  category  String
+  tags      String[]
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CodeReview {
@@ -862,16 +913,16 @@ model Webhook {
 }
 
 model BlogPost {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
-  content     String   @db.Text
+  content     String    @db.Text
   category    String
   authorId    String
-  author      User     @relation(fields: [authorId], references: [id])
-  published   Boolean  @default(false)
+  author      User      @relation(fields: [authorId], references: [id])
+  published   Boolean   @default(false)
   publishedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Project {
@@ -893,6 +944,9 @@ model ApiKey {
   keyPrefix  String
   userId     String
   user       User      @relation(fields: [userId], references: [id])
+  tenantId   String?
+  tenant     Tenant?   @relation(fields: [tenantId], references: [id])
+  scopes     Json?     @default("[]")
   lastUsedAt DateTime?
   expiresAt  DateTime?
   createdAt  DateTime  @default(now())
@@ -1008,110 +1062,250 @@ enum CloudPaymentMethodType {
   INSTAPAY
   VODAFONE_CASH
   CASH
+  STRIPE_CARD
+  PAYPAL
+}
+
+enum BillingMode {
+  PAY_AS_YOU_GO
+  SUBSCRIPTION
+}
+
+enum CreditTransactionType {
+  TOPUP
+  CONSUMPTION
+  REFUND
+  ADJUSTMENT
 }
 
 model CloudPlan {
-  id                 String   @id @default(uuid())
-  name               String   @unique
-  slug               String   @unique
-  description        String?
-  priceUSD           Float    @default(0)
-  priceEGP           Float    @default(0)
-  interval           String   @default("monthly")
-  cpuLimit           Float    @default(0.25)
-  memoryLimit        Int      @default(512)
-  storageLimit       Int      @default(1024)
-  deploymentLimit    Int      @default(1)
-  vpsLimit           Int      @default(1)
-  customDomainLimit  Int      @default(0)
-  apiRequestLimit    Int      @default(10000)
-  teamMemberLimit    Int      @default(1)
-  databaseSizeLimit  Int      @default(0)
-  redisLimit         Int?
-  trialDays          Int      @default(0)
-  features           Json
-  isActive           Boolean  @default(true)
-  isPopular          Boolean  @default(false)
-  sortOrder          Int      @default(0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                String   @id @default(uuid())
+  name              String   @unique
+  slug              String   @unique
+  description       String?
+  priceUSD          Float    @default(0)
+  priceEGP          Float    @default(0)
+  interval          String   @default("monthly")
+  cpuLimit          Float    @default(0.25)
+  memoryLimit       Int      @default(512)
+  storageLimit      Int      @default(1024)
+  deploymentLimit   Int      @default(1)
+  vpsLimit          Int      @default(1)
+  customDomainLimit Int      @default(0)
+  apiRequestLimit   Int      @default(10000)
+  teamMemberLimit   Int      @default(1)
+  databaseSizeLimit Int      @default(0)
+  redisLimit        Int?
+  trialDays         Int      @default(0)
+  features          Json
+  isActive          Boolean  @default(true)
+  isPopular         Boolean  @default(false)
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   users User[]
 }
 
 model CloudDeployment {
-  id            String   @id @default(uuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name          String
-  status        CloudDeploymentStatus @default(PENDING)
-  statusMessage String?
-  type          CloudDeploymentType   @default(DOCKER_IMAGE)
-  source        String
-  namespace     String   @unique
-  subdomain     String?  @unique
-  cpu           Float    @default(0.25)
-  memory        Int      @default(512)
-  storage       Int      @default(1024)
-  replicas      Int      @default(1)
-  customDomains String[]
-  envVars       Json?
-  healthCheck   String?
-  webhookUrl    String?
+  id                 String                @id @default(uuid())
+  userId             String
+  user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name               String
+  status             CloudDeploymentStatus @default(PENDING)
+  statusMessage      String?
+  type               CloudDeploymentType   @default(DOCKER_IMAGE)
+  source             String
+  namespace          String                @unique
+  subdomain          String?               @unique
+  cpu                Float                 @default(0.25)
+  memory             Int                   @default(512)
+  storage            Int                   @default(1024)
+  replicas           Int                   @default(1)
+  customDomains      String[]
+  envVars            Json?
+  healthCheck        String?
+  webhookUrl         String?
   // VPS-specific fields (stubbed Proxmox provisioning)
-  hostname         String?
-  ipv4Address      String?
-  rootPasswordHash String?
-  proxmoxVMID      Int?
-  proxmoxNode      String?
-  proxmoxClusterId String?
-  proxmoxCluster   ProxmoxCluster? @relation(fields: [proxmoxClusterId], references: [id], onDelete: SetNull)
-  provisionedAt    DateTime?
-  suspendedAt      DateTime?
-  terminatedAt     DateTime?
-  lastDeployedAt DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  hostname           String?
+  ipv4Address        String?
+  rootPasswordHash   String?
+  proxmoxVMID        Int?
+  proxmoxNode        String?
+  proxmoxClusterId   String?
+  proxmoxCluster     ProxmoxCluster?       @relation(fields: [proxmoxClusterId], references: [id], onDelete: SetNull)
+  provisionedAt      DateTime?
+  suspendedAt        DateTime?
+  // Abuse / AUP (Prompt 0.17): networking-only suspension pending investigation
+  networkSuspendedAt DateTime?
+  abuseStatus        String? // CLEAN | FLAGGED | SUSPENDED | UNDER_REVIEW
+  abuseFlags         Json?
+  // Prompt 2.2a: Billing mode selection per-VPS
+  billingMode        BillingMode           @default(SUBSCRIPTION)
+  terminatedAt       DateTime?
+  lastDeployedAt     DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  tenantId           String?
 
-  backups       CloudBackup[]
-  backupSchedule BackupSchedule?
-  security      VpsSecuritySettings?
-  vpsAlertRules         VpsAlertRule[]
-  vpsAlertNotifications VpsAlertNotification[]
-  sshKeys       SSHKey[] @relation("VPSKeys")
-  firewallRules FirewallRule[]
-  snapshots     CustomImage[]
-  vpsSnapshots  VPSSnapshot[]
-  domains       Domain[]
-  usageMetrics  UsageMetric[]
-  migrations    VPSMigration[]
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  apps          String[]      @default([])
-  installedApps Json?
-  controlPanel              String?
-  controlPanelStatus        String?
-  controlPanelUrl           String?
-  controlPanelUser          String?
-  controlPanelPassword      String?
-  controlPanelInstalledAt   DateTime?
+  backups                 CloudBackup[]
+  backupSchedule          BackupSchedule?
+  security                VpsSecuritySettings?
+  vpsAlertRules           VpsAlertRule[]
+  vpsAlertNotifications   VpsAlertNotification[]
+  sshKeys                 SSHKey[]               @relation("VPSKeys")
+  firewallRules           FirewallRule[]
+  snapshots               CustomImage[]
+  vpsSnapshots            VPSSnapshot[]
+  domains                 Domain[]
+  usageMetrics            UsageMetric[]
+  recommendations         VpsRecommendation[]
+  apiUsageLogs            ApiUsageLog[]
+  abuseReports            AbuseReport[]
+  ptrRecordRequests       PtrRecordRequest[]
+  provisionJobs           VpsProvisionJob[]
+  creditTransactions      CreditTransaction[]
+  migrations              VPSMigration[]
+  organizationId          String?
+  organization            Organization?              @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  apps                    String[]               @default([])
+  installedApps           Json?
+  controlPanel            String?
+  controlPanelStatus      String?
+  controlPanelUrl         String?
+  controlPanelUser        String?
+  controlPanelPassword    String?
+  controlPanelInstalledAt DateTime?
+  vpsHealthLogs           VpsHealthLog[]
 
   @@index([userId, status])
+  @@index([tenantId, status])
+}
+
+// ============================================================
+// Abuse handling / AUP (Prompt 0.17)
+// ============================================================
+
+enum AbuseCategory {
+  SPAM
+  MALWARE
+  PHISHING
+  DDOS
+  CRYPTO_MINING
+  COPYRIGHT
+  OTHER
+}
+
+enum AbuseReportStatus {
+  RECEIVED
+  INVESTIGATING
+  ACTION_TAKEN
+  RESOLVED
+  DISMISSED
+}
+
+enum PtrRequestStatus {
+  REQUESTED
+  FULFILLED
+  REJECTED
+}
+
+model AbuseReport {
+  id                String            @id @default(uuid())
+  // Reporter identity (optional — third parties report anonymously)
+  reporterName      String?
+  reporterEmail     String?
+  reporterIp        String?
+  // Target of the report
+  targetIp          String?
+  targetDomain      String?
+  targetVpsId       String?
+  vps               CloudDeployment?  @relation(fields: [targetVpsId], references: [id], onDelete: SetNull)
+  category          AbuseCategory     @default(OTHER)
+  reason            String
+  evidence          String?
+  status            AbuseReportStatus @default(RECEIVED)
+  // Filled when an automated detection (not a human report) generates the row
+  source            String            @default("external") // external | automated
+  detectedSignature String? // e.g. "mass_outbound_smtp", "sustained_cpu_mining"
+  details           Json?
+  resolvedAt        DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([status])
+  @@index([targetVpsId])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model PtrRecordRequest {
+  id          String           @id @default(uuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vpsId       String
+  vps         CloudDeployment  @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  ipAddress   String?
+  hostname    String // requested PTR / reverse DNS hostname
+  status      PtrRequestStatus @default(REQUESTED)
+  adminNote   String?
+  fulfilledAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([vpsId])
+}
+
+// ============================================================
+// Async VPS provisioning (Prompt 2.1) — job queue bookkeeping
+// ============================================================
+
+enum VpsProvisionJobStatus {
+  QUEUED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+model VpsProvisionJob {
+  id             String                @id @default(uuid())
+  // Client-generated idempotency key (UUID). Re-submits with the same key
+  // return the existing job instead of double-provisioning.
+  idempotencyKey String                @unique
+  userId         String
+  status         VpsProvisionJobStatus @default(QUEUED)
+  // Serialized CreateVpsDto the worker replays when it picks up the job.
+  payload        Json
+  // Provisioning result (CloudDeployment id/ip/vmid) or error detail.
+  result         Json?
+  errorMessage   String?
+  // CloudDeployment row created on success (null until then).
+  vpsId          String?
+  vps            CloudDeployment?      @relation(fields: [vpsId], references: [id], onDelete: SetNull)
+  attempts       Int                   @default(0)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([idempotencyKey])
 }
 
 model VPSSnapshot {
-  id                  String    @id @default(uuid())
+  id                  String          @id @default(uuid())
   vpsId               String
   vps                 CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
   userId              String
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   name                String
   description         String?
-  sizeBytes           BigInt    @default(0)
-  status              String    @default("CREATING")
+  sizeBytes           BigInt          @default(0)
+  status              String          @default("CREATING")
   proxmoxSnapshotName String?
   errorMessage        String?
-  createdAt           DateTime  @default(now())
+  createdAt           DateTime        @default(now())
   completedAt         DateTime?
 
   @@index([vpsId])
@@ -1133,22 +1327,22 @@ enum VpsAlertOperator {
 }
 
 model VpsAlertRule {
-  id              String   @id @default(uuid())
+  id              String                 @id @default(uuid())
   userId          String
-  user            User     @relation("UserVpsAlertRules", fields: [userId], references: [id], onDelete: Cascade)
+  user            User                   @relation("UserVpsAlertRules", fields: [userId], references: [id], onDelete: Cascade)
   vpsId           String?
-  vps             CloudDeployment? @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  vps             CloudDeployment?       @relation(fields: [vpsId], references: [id], onDelete: Cascade)
   name            String
   type            VpsAlertType
   operator        VpsAlertOperator
   threshold       Float
   duration        Int?
-  cooldown        Int      @default(30)
-  enabled         Boolean  @default(true)
+  cooldown        Int                    @default(30)
+  enabled         Boolean                @default(true)
   lastTriggeredAt DateTime?
   notifications   VpsAlertNotification[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
 
   @@index([userId])
   @@index([vpsId])
@@ -1156,15 +1350,15 @@ model VpsAlertRule {
 }
 
 model VpsAlertNotification {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
   alertRuleId String
-  alertRule   VpsAlertRule @relation(fields: [alertRuleId], references: [id], onDelete: Cascade)
+  alertRule   VpsAlertRule    @relation(fields: [alertRuleId], references: [id], onDelete: Cascade)
   vpsId       String
   vps         CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
-  status      String   @default("TRIGGERED")
+  status      String          @default("TRIGGERED")
   message     String
   value       Float
-  triggeredAt DateTime @default(now())
+  triggeredAt DateTime        @default(now())
   resolvedAt  DateTime?
 
   @@index([alertRuleId])
@@ -1172,24 +1366,23 @@ model VpsAlertNotification {
   @@index([triggeredAt])
 }
 
-
 enum BackupType {
   MANUAL
   SCHEDULED
 }
 
 model CloudBackup {
-  id           String   @id @default(uuid())
+  id           String          @id @default(uuid())
   deploymentId String
   deployment   CloudDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
   userId       String?
   name         String?
-  type         BackupType @default(MANUAL)
-  sizeMB       Int       @default(0)
+  type         BackupType      @default(MANUAL)
+  sizeMB       Int             @default(0)
   storagePath  String
   sizeBytes    BigInt?
-  status       String   @default("pending")
-  createdAt    DateTime @default(now())
+  status       String          @default("pending")
+  createdAt    DateTime        @default(now())
   completedAt  DateTime?
 
   @@index([deploymentId])
@@ -1197,35 +1390,35 @@ model CloudBackup {
 }
 
 model BackupSchedule {
-  id          String   @id @default(cuid())
-  vpsId       String   @unique
-  vps         CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
-  enabled     Boolean  @default(true)
-  frequency   String   @default("DAILY")
-  retention   Int      @default(7)
-  hour        Int?
-  dayOfWeek   Int?
-  dayOfMonth  Int?
+  id               String          @id @default(cuid())
+  vpsId            String          @unique
+  vps              CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  enabled          Boolean         @default(true)
+  frequency        String          @default("DAILY")
+  retention        Int             @default(7)
+  hour             Int?
+  dayOfWeek        Int?
+  dayOfMonth       Int?
   offsiteProvider  String?
   offsiteBucket    String?
   offsiteAccessKey String?
   offsiteSecretKey String?
-  lastRunAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  lastRunAt        DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 }
 
 model VpsSecuritySettings {
-  id             String   @id @default(cuid())
-  vpsId          String   @unique
+  id             String          @id @default(cuid())
+  vpsId          String          @unique
   vps            CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
-  wafEnabled     Boolean  @default(false)
-  wafPreset      String   @default("OWASP")
+  wafEnabled     Boolean         @default(false)
+  wafPreset      String          @default("OWASP")
   wafCustomRules Json?
-  ddosTier       String   @default("BASIC")
-  fimEnabled     Boolean  @default(false)
-  fimPaths       String[] @default(["/etc","/var/www","/usr/bin"])
-  updatedAt      DateTime @updatedAt @default(now())
+  ddosTier       String          @default("BASIC")
+  fimEnabled     Boolean         @default(false)
+  fimPaths       String[]        @default(["/etc", "/var/www", "/usr/bin"])
+  updatedAt      DateTime        @default(now()) @updatedAt
 }
 
 model CloudAuditLog {
@@ -1243,13 +1436,13 @@ model CloudAuditLog {
 }
 
 model CloudInvoice {
-  id          String   @id @default(uuid())
+  id          String             @id @default(uuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  number      String   @unique
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  number      String             @unique
   amountUSD   Float?
   amountEGP   Float?
-  currency    String   @default("USD")
+  currency    String             @default("USD")
   status      CloudInvoiceStatus @default(PENDING)
   description String
   provider    String?
@@ -1258,23 +1451,72 @@ model CloudInvoice {
   paidAt      DateTime?
   refundedAt  DateTime?
   metadata    Json?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime           @default(now())
+
+  paymentAlerts BillingPaymentAlert[]
 
   @@index([userId, status])
 }
 
+model BillingPaymentAlert {
+  id         String        @id @default(uuid())
+  invoiceId  String?
+  invoice    CloudInvoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  provider   String
+  gatewayRef String        @unique
+  status     String
+  currency   String?
+  amount     Float?
+  reason     String?
+  metadata   Json?
+  createdAt  DateTime      @default(now())
+
+  @@index([invoiceId])
+  @@index([provider])
+  @@index([status])
+  @@index([createdAt])
+}
+
 model CloudPaymentMethod {
-  id         String   @id @default(uuid())
+  id         String                 @id @default(uuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   type       CloudPaymentMethodType
   providerId String
   label      String?
   last4      String?
-  isDefault  Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  isDefault  Boolean                @default(false)
+  createdAt  DateTime               @default(now())
 
   @@index([userId])
+}
+
+// ============================================================
+// Prompt 2.2a: Two-track billing (PAYG credits vs Subscription)
+// Currency/FX policy: Points-per-dollar rate is locked at purchase time.
+// When a tenant buys credits in any currency, the points granted are
+// calculated once at purchase and never relitigated later regardless of FX movement.
+// Example: "$25 → 300 points" or "1250 EGP → 300 points" at time of purchase,
+// both locked permanently into this transaction's `amount` field.
+// ============================================================
+
+model CreditTransaction {
+  id           String                @id @default(uuid())
+  userId       String
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         CreditTransactionType
+  amount       Float // Points added (TOPUP/REFUND) or deducted (CONSUMPTION/ADJUSTMENT)
+  balanceAfter Float // Snapshot of user's creditBalance immediately after this txn
+  relatedVpsId String?
+  relatedVps   CloudDeployment?      @relation(fields: [relatedVpsId], references: [id], onDelete: SetNull)
+  reason       String? // Required for ADJUSTMENT; optional for others (e.g. "Support goodwill")
+  metadata     Json? // Invoice ID, payment gateway ref, consumption period, etc.
+  createdAt    DateTime              @default(now())
+
+  @@index([userId, createdAt])
+  @@index([type])
+  @@index([relatedVpsId])
+  @@map("credit_transactions")
 }
 
 model CloudAnnouncement {
@@ -1287,21 +1529,21 @@ model CloudAnnouncement {
 }
 
 model FirewallRule {
-  id          String   @id @default(cuid())
+  id          String          @id @default(cuid())
   vpsId       String
   vps         CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String
-  priority    Int      @default(100)
+  priority    Int             @default(100)
   action      String
   protocol    String
   port        String?
   sourceIP    String?
   description String?
-  enabled     Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  enabled     Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   @@index([vpsId])
   @@index([priority])
@@ -1359,20 +1601,21 @@ model OrganizationInvitation {
 }
 
 model Domain {
-  id           String    @id @default(cuid())
+  id           String          @id @default(cuid())
   vpsId        String
   vps          CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
   userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  domain       String    @unique
-  autoSSL      Boolean   @default(false)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain       String          @unique
+  status       String          @default("PENDING_VERIFICATION")
+  autoSSL      Boolean         @default(false)
   sslIssuedAt  DateTime?
   sslExpiresAt DateTime?
   verifiedAt   DateTime?
   verifyToken  String
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime        @default(now())
 
-  dnsRecords   DNSRecord[]
+  dnsRecords DNSRecord[]
 
   @@index([vpsId])
   @@index([domain])
@@ -1393,18 +1636,56 @@ model DNSRecord {
 }
 
 model UsageMetric {
-  id         String   @id @default(cuid())
+  id         String          @id @default(cuid())
   userId     String
   vpsId      String
   vps        CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
   metricType String
   value      Float
   unit       String
-  recordedAt DateTime @default(now())
+  recordedAt DateTime        @default(now())
 
   @@index([userId])
   @@index([vpsId])
   @@index([recordedAt])
+}
+
+// Prompt 5.1: Predictive scaling recommendations
+model VpsRecommendation {
+  id           String   @id @default(uuid())
+  vpsId        String
+  vps         CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  type         String
+  message      String
+  severity     String   @default("info")
+  currentValue Float?
+  suggestedValue Float?
+  unit         String?
+  acknowledged Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([vpsId])
+  @@index([acknowledged])
+}
+
+// Prompt 5.4: API usage analytics
+model ApiUsageLog {
+  id          String          @id @default(uuid())
+  userId      String
+  tenantId    String?
+  vpsId       String?
+  vps         CloudDeployment? @relation(fields: [vpsId], references: [id], onDelete: SetNull)
+  endpoint   String
+  method      String
+  statusCode  Int
+  responseMs  Int
+  userAgent   String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([endpoint])
 }
 
 model APIRateLimit {
@@ -1461,24 +1742,24 @@ model WebhookDelivery {
 }
 
 model VPSMigration {
-  id              String   @id @default(cuid())
-  vpsId           String
-  vps             CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
-  userId          String
-  sourceNode      String
-  targetNode      String
-  sourceStorage   String?
-  targetStorage   String?
-  status          String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, CANCELLED, SCHEDULED
-  progress        Int      @default(0)
-  estimatedDowntimeSec Int @default(0)
-  scheduledFor    DateTime?
-  startedAt       DateTime?
-  completedAt     DateTime?
-  proxmoxTaskId   String?
-  errorMessage    String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                   String          @id @default(cuid())
+  vpsId                String
+  vps                  CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  userId               String
+  sourceNode           String
+  targetNode           String
+  sourceStorage        String?
+  targetStorage        String?
+  status               String          @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, CANCELLED, SCHEDULED
+  progress             Int             @default(0)
+  estimatedDowntimeSec Int             @default(0)
+  scheduledFor         DateTime?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  proxmoxTaskId        String?
+  errorMessage         String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
   @@index([vpsId])
   @@index([userId])
@@ -1486,17 +1767,17 @@ model VPSMigration {
 }
 
 model Referral {
-  id           String            @id @default(cuid())
-  referrerId   String
-  referrer     User              @relation("Referrals", fields: [referrerId], references: [id], onDelete: Cascade)
-  referredId   String            @unique
-  referred     User              @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
-  code         String
-  status       String            @default("PENDING")
-  convertedAt  DateTime?
-  paidAt       DateTime?
-  createdAt    DateTime          @default(now())
-  earnings     ReferralEarning[]
+  id          String            @id @default(cuid())
+  referrerId  String
+  referrer    User              @relation("Referrals", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredId  String            @unique
+  referred    User              @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+  code        String
+  status      String            @default("PENDING")
+  convertedAt DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime          @default(now())
+  earnings    ReferralEarning[]
 
   @@index([referrerId])
   @@index([code])
@@ -1543,41 +1824,41 @@ model SSHKey {
   createdAt   DateTime  @default(now())
   lastUsedAt  DateTime?
 
-  vpses       CloudDeployment[] @relation("VPSKeys")
+  vpses CloudDeployment[] @relation("VPSKeys")
 
   @@index([userId])
 }
 
 model CustomImage {
-  id          String      @id @default(cuid())
+  id          String           @id @default(cuid())
   userId      String
-  user        User        @relation(fields: [userId], references: [id])
+  user        User             @relation(fields: [userId], references: [id])
   name        String
   description String?
-  type        String      // SNAPSHOT, CUSTOM, MARKETPLACE
+  type        String // SNAPSHOT, CUSTOM, MARKETPLACE
   sourceVpsId String?
   sourceVps   CloudDeployment? @relation(fields: [sourceVpsId], references: [id])
   sizeMB      Int
-  isPublic    Boolean     @default(false)
+  isPublic    Boolean          @default(false)
   storageUrl  String
-  createdAt   DateTime    @default(now())
+  createdAt   DateTime         @default(now())
 
-  shares      CustomImageShare[]
+  shares CustomImageShare[]
 
   @@index([userId])
   @@index([isPublic])
 }
 
 model CustomImageShare {
-  id          String      @id @default(cuid())
-  imageId     String
-  image       CustomImage @relation(fields: [imageId], references: [id])
+  id              String      @id @default(cuid())
+  imageId         String
+  image           CustomImage @relation(fields: [imageId], references: [id])
   sharedWithEmail String
-  sharedBy    String
-  sharedAt    DateTime    @default(now())
+  sharedBy        String
+  sharedAt        DateTime    @default(now())
 
   // Opposite relation to User model
-  user        User        @relation(fields: [sharedBy], references: [id])
+  user User @relation(fields: [sharedBy], references: [id])
 
   @@unique([imageId, sharedWithEmail])
 }
@@ -1589,7 +1870,7 @@ model Maintenance {
   affectedServices String[] // VPS, API, Dashboard, Billing
   startAt          DateTime
   endAt            DateTime
-  status           String   // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  status           String // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
   createdBy        String
   createdAt        DateTime @default(now())
 
@@ -1607,29 +1888,29 @@ model Maintenance {
 /// before writing to this field, and decrypt after reading. Never store plaintext.
 /// When tokenSecret is present, store the format: "<iv_hex>:<authTag_hex>:<ciphertext_hex>".
 model ProxmoxCluster {
-  id          String   @id @default(uuid())
-  name        String
-  host        String
-  port        Int      @default(8006)
-  username    String   @default("root@pam")
-  tokenId     String?
+  id               String   @id @default(uuid())
+  name             String
+  host             String
+  port             Int      @default(8006)
+  username         String   @default("root@pam")
+  tokenId          String?
   /// Encrypted at application layer — AES-256-GCM. See schema doc above.
-  tokenSecret String?
-  status      String   @default("ACTIVE") // ACTIVE | DISABLED | UNREACHABLE | MISCONFIGURED
+  tokenSecret      String?
+  status           String   @default("ACTIVE") // ACTIVE | DISABLED | UNREACHABLE | MISCONFIGURED
   /// Classification of last connection failure (null when healthy).
   /// AUTH | TIMEOUT | NETWORK | MALFORMED | UNKNOWN
   lastErrorType    String?
   lastErrorMessage String?
-  cpuTotal    Int      @default(0)
-  ramTotal    BigInt   @default(0)
-  diskTotal   BigInt   @default(0)
-  cpuUsed     Int      @default(0)
-  ramUsed     BigInt   @default(0)
-  diskUsed    BigInt   @default(0)
-  vmCount     Int      @default(0)
-  nodeCount   Int      @default(1)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  cpuTotal         Int      @default(0)
+  ramTotal         BigInt   @default(0)
+  diskTotal        BigInt   @default(0)
+  cpuUsed          Int      @default(0)
+  ramUsed          BigInt   @default(0)
+  diskUsed         BigInt   @default(0)
+  vmCount          Int      @default(0)
+  nodeCount        Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   pendingAllocations PendingAllocation[]
   deployments        CloudDeployment[]
@@ -1645,27 +1926,26 @@ model ProxmoxCluster {
 /// COMMITTED (and free capacity is instead accounted for by the real VM row).
 /// On failure or TTL expiry the row is RELEASED and its capacity returns to the pool.
 model PendingAllocation {
-  id        String   @id @default(uuid())
+  id        String         @id @default(uuid())
   clusterId String
   cluster   ProxmoxCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
-  requestId String   @unique
+  requestId String         @unique
   cpu       Int
   ramMB     Int
   diskGB    Int
-  status    String   @default("PENDING") // PENDING | COMMITTED | RELEASED
-  createdAt DateTime @default(now())
+  status    String         @default("PENDING") // PENDING | COMMITTED | RELEASED
+  createdAt DateTime       @default(now())
   expiresAt DateTime
 
   @@index([clusterId, status, expiresAt])
   @@map("pending_allocations")
 }
 
-
 /// Timestamped health check snapshots for each microservice
 model ServiceHealthLog {
   id               String   @id @default(uuid())
   serviceName      String
-  status           String   // UP | DEGRADED | DOWN
+  status           String // UP | DEGRADED | DOWN
   responseTimeMs   Int?
   errorMessage     String?
   /// Failure classification when status != UP.
@@ -1683,19 +1963,68 @@ model ServiceHealthLog {
 /// Rolled-up hourly aggregates of ServiceHealthLog. The retention job collapses
 /// raw per-check rows older than 48h into one row per (service, hour).
 model ServiceHealthHourlyRollup {
-  id             String   @id @default(uuid())
-  serviceName    String
-  hourStart      DateTime
-  sampleCount    Int
-  upCount        Int
-  degradedCount  Int
-  downCount      Int
-  avgResponseMs  Int?
-  uptimePercent  Float
+  id            String   @id @default(uuid())
+  serviceName   String
+  hourStart     DateTime
+  sampleCount   Int
+  upCount       Int
+  degradedCount Int
+  downCount     Int
+  avgResponseMs Int?
+  uptimePercent Float
 
   @@unique([serviceName, hourStart])
   @@index([hourStart])
   @@map("service_health_hourly_rollups")
+}
+
+/// Per-VPS reachability log for Prompt 6.3a tenant VPS-down alerting.
+model VpsHealthLog {
+  id            String    @id @default(uuid())
+  vpsId         String
+  cloudDeployment CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  status        String    // REACHABLE | UNREACHABLE
+  failureType   String?   // TIMEOUT | NETWORK | PROXMOX_STOPPED | UNKNOWN
+  responseTimeMs Int?
+  errorMessage  String?
+  checkedAt     DateTime  @default(now())
+
+  @@index([vpsId])
+  @@index([checkedAt])
+  @@map("vps_health_logs")
+}
+
+/// WhatsApp broadcast message templates
+model WhatsappTemplate {
+  id        String   @id @default(uuid())
+  name      String
+  body      String   @db.Text
+  createdBy String
+  tenantId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdBy])
+  @@index([tenantId])
+  @@map("whatsapp_templates")
+}
+
+/// WhatsApp broadcast per-recipient delivery tracking
+model WhatsappBroadcastRecipient {
+  id          String            @id @default(uuid())
+  broadcastId String
+  broadcast   WhatsappBroadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+  phone       String
+  name        String?
+  status      String            @default("PENDING") // PENDING | SENT | DELIVERED | FAILED
+  error       String?
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@index([broadcastId])
+  @@index([status])
+  @@map("whatsapp_broadcast_recipients")
 }
 
 /// WhatsApp broadcast campaign records
@@ -1716,6 +2045,8 @@ model WhatsappBroadcast {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  recipients WhatsappBroadcastRecipient[]
+
   @@index([createdBy])
   @@index([status])
   @@index([createdAt])
@@ -1729,9 +2060,23 @@ model PlatformSetting {
   valueType   String   @default("string") // string | boolean | number | json
   description String?
   updatedBy   String?
-  updatedAt   DateTime @updatedAt @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
   @@map("platform_settings")
+}
+
+/// Encrypted runtime secrets for platform services (SMTP, 3rd-party API keys, etc.)
+model PlatformSecret {
+  id              String    @id @default(uuid())
+  key             String    @unique
+  encryptedValue  String
+  description     String?
+  lastRotatedAt   DateTime?
+  updatedBy       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("platform_secrets")
 }
 
 /// IP-based block list for rate-limit abuse prevention
@@ -1754,14 +2099,31 @@ model Incident {
   id          String           @id @default(cuid())
   title       String
   description String
-  severity    String           // DEGRADED, PARTIAL_OUTAGE, MAJOR_OUTAGE
-  status      String           // INVESTIGATING, IDENTIFIED, MONITORING, RESOLVED
+  severity    String // DEGRADED, PARTIAL_OUTAGE, MAJOR_OUTAGE
+  status      String // INVESTIGATING, IDENTIFIED, MONITORING, RESOLVED
   updates     IncidentUpdate[]
   createdAt   DateTime         @default(now())
   resolvedAt  DateTime?
 
   @@index([status])
   @@index([createdAt])
+}
+
+model TenantQuota {
+  id              String   @id @default(uuid())
+  tenantId        String   @unique
+  maxCpu          Float    @default(4)
+  maxRamMb        Int      @default(8192)
+  maxDiskGb       Int      @default(80)
+  maxVpsCount     Int      @default(5)
+  currentCpu      Float    @default(0)
+  currentRamMb    Int      @default(0)
+  currentDiskGb   Int      @default(0)
+  currentVpsCount Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("tenant_quotas")
 }
 
 model IncidentUpdate {

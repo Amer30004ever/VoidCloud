@@ -2,15 +2,17 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { cloudApi, CloudPlan } from "@/lib/cloud";
+import { cloudApi, CloudPlan } from "@/features/vps/cloud";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
-type Provider = "stripe" | "fawry" | "instapay" | "cash";
+type Provider = "STRIPE_CARD" | "PAYPAL" | "FAWRY" | "INSTAPAY" | "CASH";
 
 export default function BillingPage() {
+  useTrackPageView();
   const [current, setCurrent] = useState<any>(null);
   const [plans, setPlans] = useState<CloudPlan[]>([]);
   const [selPlan, setSelPlan] = useState<string | null>(null);
-  const [provider, setProvider] = useState<Provider>("stripe");
+  const [provider, setProvider] = useState<Provider>("STRIPE_CARD");
   const [customerPhone, setCustomerPhone] = useState("");
   const [payerInstapayId, setPayerInstapayId] = useState("");
   const [result, setResult] = useState<any>(null);
@@ -29,13 +31,12 @@ export default function BillingPage() {
       const res = await cloudApi.billing.subscribe({
         planId: selPlan,
         provider,
-        ...(provider === "fawry" ? { customerPhone } : {}),
-        ...(provider === "instapay" ? { payerInstapayId } : {}),
+        ...(provider === "FAWRY" ? { customerPhone } : {}),
+        ...(provider === "INSTAPAY" ? { payerInstapayId } : {}),
       });
       setResult(res);
-      // For Stripe, auto-redirect to hosted checkout.
-      if (provider === "stripe" && res?.checkout?.sessionUrl) {
-        window.location.href = res.checkout.sessionUrl;
+      if (res.redirect && !res.pending) {
+        window.location.href = res.redirect.url;
       }
     } catch (e: any) {
       setError(e?.response?.data?.message ?? e?.message ?? "Subscription failed");
@@ -49,8 +50,8 @@ export default function BillingPage() {
   const instapayValid = /^[\w.+-]{2,}@[\w.+-]{2,}$/.test(payerInstapayId);
   const canSubmit =
     !busy && selPlan &&
-    (provider !== "fawry" || phoneValid) &&
-    (provider !== "instapay" || instapayValid);
+    (provider !== "FAWRY" || phoneValid) &&
+    (provider !== "INSTAPAY" || instapayValid);
 
   return (
     <div className="space-y-6">
@@ -61,9 +62,9 @@ export default function BillingPage() {
         <div className="mt-1 text-2xl font-bold">{current?.plan?.name ?? "Free Trial"}</div>
         <div className="mt-1 text-sm text-white/60">
           Status: <StatusPill status={current?.status ?? "TRIALING"} />
-          {current?.trialEndsAt && <> Â· Trial ends {new Date(current.trialEndsAt).toLocaleDateString()}</>}
+          {current?.trialEndsAt && <> · Trial ends {new Date(current.trialEndsAt).toLocaleDateString()}</>}
         </div>
-        <Link href="/voidcloud/dashboard/billing/invoices" className="mt-3 inline-block text-sm text-cyan-300 hover:underline">View invoices â†’</Link>
+        <Link href="/voidcloud/dashboard/billing/invoices" className="mt-3 inline-block text-sm text-cyan-300 hover:underline">View invoices →</Link>
       </div>
 
       {!result && (
@@ -77,7 +78,7 @@ export default function BillingPage() {
                   <div className="font-bold">{p.name}</div>
                   <div className="text-2xl font-bold">${p.priceUSD}<span className="text-sm text-white/50">/mo</span></div>
                   <div className="text-xs text-white/40">{p.priceEGP} EGP</div>
-                  <div className="mt-2 text-xs text-white/60">{p.cpuLimit} CPU Â· {p.memoryLimit}MB Â· {(p as any).vpsLimit ?? p.deploymentLimit} VPS</div>
+                  <div className="mt-2 text-xs text-white/60">{p.cpuLimit} CPU · {p.memoryLimit}MB · {(p as any).vpsLimit ?? p.deploymentLimit} VPS</div>
                 </button>
               ))}
             </div>
@@ -86,15 +87,15 @@ export default function BillingPage() {
           {selPlan && (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
               <h3 className="mb-3 font-semibold">Choose payment method</h3>
-              <div className="mb-4 grid gap-2 md:grid-cols-4">
-                {(["stripe", "fawry", "instapay", "cash"] as Provider[]).map((p) => (
+              <div className="mb-4 grid gap-2 md:grid-cols-5">
+                {(["STRIPE_CARD", "PAYPAL", "FAWRY", "INSTAPAY", "CASH"] as Provider[]).map((p) => (
                   <button key={p} onClick={() => setProvider(p)} className={`rounded-lg border p-3 text-sm ${provider === p ? "border-cyan-400 bg-cyan-500/10" : "border-white/10 bg-white/5"}`}>
-                    {p === "stripe" ? "ðŸ’³ Credit card" : p === "fawry" ? "ðŸª Fawry / Vodafone Cash" : p === "instapay" ? "ðŸ¦ InstaPay" : "ðŸ’µ Cash on delivery"}
+                    {p === "STRIPE_CARD" ? "💳 Credit card" : p === "PAYPAL" ? "🅿️ PayPal" : p === "FAWRY" ? "🏪 Fawry / Vodafone Cash" : p === "INSTAPAY" ? "🏦 InstaPay" : "💵 Cash on delivery"}
                   </button>
                 ))}
               </div>
 
-              {provider === "fawry" && (
+              {provider === "FAWRY" && (
                 <div className="mb-4">
                   <label className="mb-1 block text-xs uppercase text-white/60">Phone number (010/011/012/015)</label>
                   <input
@@ -110,7 +111,7 @@ export default function BillingPage() {
                 </div>
               )}
 
-              {provider === "instapay" && (
+              {provider === "INSTAPAY" && (
                 <div className="mb-4">
                   <label className="mb-1 block text-xs uppercase text-white/60">Your InstaPay ID</label>
                   <input
@@ -124,7 +125,7 @@ export default function BillingPage() {
                 </div>
               )}
 
-              {provider === "cash" && (
+              {provider === "CASH" && (
                 <p className="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs text-yellow-200">
                   Your VPS will not be provisioned until an admin manually approves your cash payment (within 24h).
                 </p>
@@ -137,7 +138,7 @@ export default function BillingPage() {
                 disabled={!canSubmit}
                 className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-3 font-semibold text-slate-950 disabled:opacity-50"
               >
-                {busy ? "Processingâ€¦" : provider === "stripe" ? "Continue to Stripe â†’" : `Pay ${selectedPlan?.priceEGP ?? 0} EGP`}
+                {busy ? "Processing…" : provider === "STRIPE_CARD" ? "Continue to Stripe →" : provider === "PAYPAL" ? "Continue to PayPal →" : `Pay ${selectedPlan?.priceEGP ?? 0} EGP`}
               </button>
             </div>
           )}
@@ -161,7 +162,6 @@ function StatusPill({ status }: { status: string }) {
 }
 
 function ResultPanel({ result, onReset }: { result: any; onReset: () => void }) {
-  const c = result.checkout ?? {};
   const inv = result.invoice ?? {};
   return (
     <div className="space-y-4 rounded-2xl border border-green-500/30 bg-green-500/5 p-6">
@@ -169,81 +169,72 @@ function ResultPanel({ result, onReset }: { result: any; onReset: () => void }) 
         <div>
           <h3 className="font-bold">Invoice {inv.number}</h3>
           <p className="text-xs text-white/60">
-            {c.amount} {c.currency} Â· {c.provider?.toUpperCase()}
+            {result.amount} {result.currency} · {result.provider?.toUpperCase()}
           </p>
         </div>
-        <button onClick={onReset} className="text-xs text-white/60 hover:underline">â† Choose different plan</button>
+        <button onClick={onReset} className="text-xs text-white/60 hover:underline">← Choose different plan</button>
       </div>
 
-      {c.provider === "fawry" && <FawryPanel c={c} />}
-      {c.provider === "instapay" && <InstaPayPanel c={c} />}
-      {c.provider === "cash" && <CashPanel c={c} />}
-      {c.provider === "stripe" && !c.sessionUrl && (
-        <p className="text-sm text-white/70">Redirecting to Stripeâ€¦</p>
+      {result.pending && result.referenceCode && (
+        <PendingPaymentPanel c={result} invoiceId={inv.id} />
       )}
-      {c.provider === "stripe" && c.sessionUrl && (
-        <a href={c.sessionUrl} className="inline-block rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950">
-          Pay with Stripe â†’
+      {result.redirect && !result.pending && (
+        <a href={result.redirect.url} className="inline-block rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950">
+          Pay now →
         </a>
       )}
 
       <Link href="/voidcloud/dashboard/billing/invoices" className="block text-xs text-cyan-300 hover:underline">
-        View this invoice â†’
+        View this invoice →
       </Link>
     </div>
   );
 }
 
-function FawryPanel({ c }: { c: any }) {
+function PendingPaymentPanel({ c, invoiceId }: { c: any; invoiceId: string }) {
+  const [status, setStatus] = useState<any>(null);
+  const [checking, setChecking] = useState(false);
+
+  async function checkStatus() {
+    setChecking(true);
+    try {
+      const s = await cloudApi.billing.paymentStatus(invoiceId);
+      setStatus(s);
+    } catch (e: any) {
+      setStatus({ error: e?.response?.data?.message ?? e?.message });
+    } finally {
+      setChecking(false);
+    }
+  }
+
   return (
     <div className="space-y-3">
-      {c.sandbox && <p className="rounded bg-orange-500/10 px-2 py-1 text-xs text-orange-300">Sandbox mode â€” no real charge</p>}
-      <div className="grid gap-4 md:grid-cols-[auto,1fr]">
-        {c.qrCode && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={c.qrCode} alt="Fawry QR" className="h-44 w-44 rounded-lg bg-white p-2" />
-        )}
-        <div className="space-y-2 text-sm">
-          <div><span className="text-white/50">Reference:</span> <code className="rounded bg-slate-950 px-2 py-0.5">{c.reference}</code></div>
-          <div><span className="text-white/50">Amount:</span> {c.amount} EGP</div>
-          <div><span className="text-white/50">Pay to (Vodafone Cash):</span> <code className="rounded bg-slate-950 px-2 py-0.5">{c.merchantPhone}</code></div>
-          <p className="mt-2 text-xs text-white/60">
-            Scan at any Fawry kiosk, or send via Vodafone Cash to the number above and include the reference.
-          </p>
+      <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
+        <p className="text-sm font-semibold text-yellow-200">⏳ Payment pending</p>
+        <p className="mt-2 text-xs text-white/70">{c.instructions}</p>
+        <div className="mt-2 text-xs text-white/50">
+          Reference: <code className="rounded bg-slate-950 px-2 py-0.5">{c.referenceCode}</code>
         </div>
       </div>
-      {c.paymentUrl && (
-        <a href={c.paymentUrl} target="_blank" rel="noreferrer" className="inline-block rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950">
-          Open Fawry payment page â†’
-        </a>
+      <button
+        onClick={checkStatus}
+        disabled={checking}
+        className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:border-white/20 disabled:opacity-50"
+      >
+        {checking ? 'Checking…' : 'Check payment status'}
+      </button>
+      {status && (
+        <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs">
+          {status.error ? (
+            <p className="text-red-300">Error: {status.error}</p>
+          ) : (
+            <>
+              <p>Status: <span className={`font-semibold ${status.status === 'PAID' ? 'text-green-300' : 'text-yellow-300'}`}>{status.status}</span></p>
+              {status.referenceCode && <p>Reference: {status.referenceCode}</p>}
+            </>
+          )}
+        </div>
       )}
-    </div>
-  );
-}
-
-function InstaPayPanel({ c }: { c: any }) {
-  return (
-    <div className="space-y-3 text-sm">
-      {c.sandbox && <p className="rounded bg-orange-500/10 px-2 py-1 text-xs text-orange-300">Sandbox mode â€” no real transfer</p>}
-      <div><span className="text-white/50">Send to (InstaPay ID):</span> <code className="rounded bg-slate-950 px-2 py-0.5">{c.merchantInstapayId}</code></div>
-      <div><span className="text-white/50">Amount:</span> {c.amount} EGP</div>
-      <div><span className="text-white/50">Reference (include in note):</span> <code className="rounded bg-slate-950 px-2 py-0.5">{c.reference}</code></div>
-      {c.instructions && <p className="text-xs text-white/60">{c.instructions}</p>}
-      {c.paymentUrl && (
-        <a href={c.paymentUrl} target="_blank" rel="noreferrer" className="inline-block rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950">
-          Open InstaPay â†’
-        </a>
-      )}
-    </div>
-  );
-}
-
-function CashPanel({ c }: { c: any }) {
-  return (
-    <div className="space-y-2 text-sm">
-      <p className="rounded bg-yellow-500/10 px-3 py-2 text-yellow-200">â³ Awaiting admin approval</p>
-      <p className="text-white/70">{c.instructions}</p>
-      <p className="text-xs text-white/50">You will be notified by email once approved, and your VPS will be provisioned automatically.</p>
     </div>
   );
 }

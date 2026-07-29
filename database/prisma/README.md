@@ -53,8 +53,8 @@ docker compose down -v
 docker compose up -d --build backend
 
 # Local Postgres
-createdb amer_portal
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/amer_portal"
+createdb voidcloud
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/voidcloud"
 npm run db:setup
 ```
 

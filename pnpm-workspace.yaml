@@ -31,25 +31,30 @@ minimumReleaseAgeExclude:
   # Exclude @replit scoped packages from the minimum release age check.
   # These are published by Replit and trusted — the supply-chain attack vector
   # this setting guards against does not apply to our own packages.
-  - '@replit/*'
+  - "@replit/*"
   - stripe-replit-sync
 
 packages:
+  - "frontend"
+  - "services/*"
+  - "shared"
+  - "services/shared"
   - artifacts/*
   - lib/*
   - lib/integrations/*
   - scripts
+  - tests
 
 catalog:
-  '@replit/vite-plugin-cartographer': ^0.5.21
-  '@replit/vite-plugin-dev-banner': ^0.1.1
-  '@replit/vite-plugin-runtime-error-modal': ^0.0.6
-  '@tailwindcss/vite': ^4.1.14
-  '@tanstack/react-query': ^5.90.21
-  '@types/node': ^25.3.3
-  '@types/react': ^19.2.0
-  '@types/react-dom': ^19.2.0
-  '@vitejs/plugin-react': ^5.0.4
+  "@replit/vite-plugin-cartographer": ^0.5.21
+  "@replit/vite-plugin-dev-banner": ^0.1.1
+  "@replit/vite-plugin-runtime-error-modal": ^0.0.6
+  "@tailwindcss/vite": ^4.1.14
+  "@tanstack/react-query": ^5.90.21
+  "@types/node": ^25.3.3
+  "@types/react": ^19.2.0
+  "@types/react-dom": ^19.2.0
+  "@vitejs/plugin-react": ^5.0.4
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
   drizzle-orm: ^0.45.2
@@ -69,7 +74,7 @@ catalog:
 autoInstallPeers: false
 
 onlyBuiltDependencies:
-  - '@swc/core'
+  - "@swc/core"
   - esbuild
   - msw
   - unrs-resolver
@@ -96,11 +101,11 @@ overrides:
   "esbuild>@esbuild/win32-arm64": "-"
   "esbuild>@esbuild/win32-ia32": "-"
   "esbuild>@esbuild/win32-x64": "-"
-  "esbuild>@esbuild/aix-ppc64": '-'
-  "esbuild>@esbuild/android-arm": '-'
-  "esbuild>@esbuild/android-arm64": '-'
-  "esbuild>@esbuild/android-x64": '-'
-  "esbuild>@esbuild/openharmony-arm64": '-'
+  "esbuild>@esbuild/aix-ppc64": "-"
+  "esbuild>@esbuild/android-arm": "-"
+  "esbuild>@esbuild/android-arm64": "-"
+  "esbuild>@esbuild/android-x64": "-"
+  "esbuild>@esbuild/openharmony-arm64": "-"
   "lightningcss>lightningcss-android-arm64": "-"
   "lightningcss>lightningcss-darwin-arm64": "-"
   "lightningcss>lightningcss-darwin-x64": "-"
@@ -111,16 +116,37 @@ overrides:
   "lightningcss>lightningcss-linux-x64-musl": "-"
   "lightningcss>lightningcss-win32-arm64-msvc": "-"
   "lightningcss>lightningcss-win32-x64-msvc": "-"
-  "@tailwindcss/oxide>@tailwindcss/oxide-android-arm64": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-win32-arm64-msvc": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-win32-ia32-msvc": "-"
   "@tailwindcss/oxide>@tailwindcss/oxide-darwin-arm64": "-"
   "@tailwindcss/oxide>@tailwindcss/oxide-darwin-x64": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-freebsd-arm64": "-"
   "@tailwindcss/oxide>@tailwindcss/oxide-freebsd-x64": "-"
   "@tailwindcss/oxide>@tailwindcss/oxide-linux-arm-gnueabihf": "-"
   "@tailwindcss/oxide>@tailwindcss/oxide-linux-arm64-gnu": "-"
   "@tailwindcss/oxide>@tailwindcss/oxide-linux-arm64-musl": "-"
-  "@tailwindcss/oxide>@tailwindcss/oxide-win32-arm64-msvc": "-"
-  "@tailwindcss/oxide>@tailwindcss/oxide-win32-x64-msvc": "-"
   "@tailwindcss/oxide>@tailwindcss/oxide-linux-x64-musl": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-openbsd-arm64": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-openbsd-x64": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-sunos-x64": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-linux-arm": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-linux-ia32": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-linux-riscv64": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-linux-s390x": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-linux-ppc64": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-linux-ppc64le": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-android-arm": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-android-arm64": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-android-x64": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-openharmony-arm64": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-musl": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-unknown-linux-gnu": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-unknown-linux-musl": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-unknown-freebsd": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-wasm32": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-wasm32-wasi": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-windows-gnu": "-"
+  "@tailwindcss/oxide>@tailwindcss/oxide-windows-msvc": "-"
   "rollup>@rollup/rollup-android-arm-eabi": "-"
   "rollup>@rollup/rollup-android-arm64": "-"
   "rollup>@rollup/rollup-darwin-arm64": "-"
@@ -132,11 +158,10 @@ overrides:
   "rollup>@rollup/rollup-linux-arm64-gnu": "-"
   "rollup>@rollup/rollup-linux-arm64-musl": "-"
   "rollup>@rollup/rollup-linux-loong64-gnu": "-"
-  "rollup>@rollup/rollup-linux-loong64-musl": "-"
+  "rollup>@rollup/rollup-linux-musl": "-"
   "rollup>@rollup/rollup-linux-ppc64-gnu": "-"
-  "rollup>@rollup/rollup-linux-ppc64-musl": "-"
+  "rollup>@rollup/rollup-linux-musleabihf": "-"
   "rollup>@rollup/rollup-linux-riscv64-gnu": "-"
-  "rollup>@rollup/rollup-linux-riscv64-musl": "-"
   "rollup>@rollup/rollup-linux-s390x-gnu": "-"
   "rollup>@rollup/rollup-linux-x64-musl": "-"
   "rollup>@rollup/rollup-openbsd-x64": "-"
@@ -160,4 +185,13 @@ overrides:
   esbuild: "0.27.3"
 
 allowBuilds:
-  esbuild: set this to true or false
+  '@nestjs/core': set this to true or false
+  "@prisma/client": true
+  "@prisma/engines": true
+  '@sentry/cli': set this to true or false
+  bcrypt: true
+  esbuild: true
+  prisma: true
+  protobufjs: set this to true or false
+  sharp: set this to true or false
+  unrs-resolver: set this to true or false

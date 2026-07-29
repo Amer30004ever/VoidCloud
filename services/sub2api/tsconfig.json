@@ -11,7 +11,7 @@
         "target": "ES2021",
         "sourceMap": true,
         "outDir": "./dist",
-        "rootDir": "./src",
+        "rootDir": "../..",
         "baseUrl": "./",
         "incremental": true,
         "skipLibCheck": true,
@@ -32,3 +32,5 @@
         "dist"
     ]
 }
+
+

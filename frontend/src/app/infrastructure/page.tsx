@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHeader } from "@workspace/ui-kit/page-header";
 import { Loader2, Plus, Server, Layers, FileText, Lock, Scale, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { infrastructureApi, Deployment } from "@/lib/infrastructure";
+import { infrastructureApi, Deployment } from "@/features/vps/infrastructure";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 type ResourceType = "deployments" | "services" | "configmaps" | "secrets";

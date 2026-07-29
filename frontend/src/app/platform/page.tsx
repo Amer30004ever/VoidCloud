@@ -3,10 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, GitBranch, Network, Gauge, Layers, Radio } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
-import { AddItemButton } from "@/components/ui/create-item-dialog";
-import { platformApi } from "@/lib/platform";
-import { useAuth } from "@/contexts/AuthContext";
+import { PageHeader } from "@workspace/ui-kit/page-header";
+import { AddItemButton } from "@workspace/ui-kit/create-item-dialog";
+import { platformApi } from "@/features/billing/platform";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export default function PlatformPage() {
   const { user } = useAuth();

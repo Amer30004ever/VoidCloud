@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: umami
+  namespace: voidcloud
+  labels:
+    app.kubernetes.io/name: umami
+    app.kubernetes.io/managed-by: voidcloud-marketplace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: umami
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: umami
+    spec:
+      containers:
+        - name: umami
+          image: umami/umami:latest
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://user:pass@localhost:5432/umami"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

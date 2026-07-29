@@ -1,7 +1,11 @@
 {
-    "extends": "./tsconfig.json",
-    "exclude": [
-        "node_modules",
-        "dist"
-    ]
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/webhooks/webhook-delivery.consumer.ts",
+    "src/ai/ai-assistant.service.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts"
+  ]
 }

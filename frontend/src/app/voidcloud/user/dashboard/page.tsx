@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
-import { cloudApi, CloudDeployment, CloudUsage } from "@/lib/cloud";
+import { cloudApi, CloudDeployment, CloudUsage } from "@/features/vps/cloud";
 
 export default function UserDashboard() {
   const [usage, setUsage] = useState<CloudUsage | null>(null);

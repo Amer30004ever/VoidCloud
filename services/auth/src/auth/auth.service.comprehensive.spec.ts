@@ -27,14 +27,20 @@ function makeService(prisma: any) {
     revokeAllForUser: jest.fn().mockResolvedValue(undefined),
     isTokenRevoked: jest.fn().mockResolvedValue(false),
   };
+  const creditService = { grantTrialCredits: jest.fn().mockResolvedValue(undefined) };
+  const tenantIsolation = {};
+  const tosService = { accept: jest.fn().mockResolvedValue({ ok: true }) };
   const service = new AuthService(
     prisma as any,
     jwtService as any,
     mailer as any,
     rbacService as any,
     revocation as any,
+    creditService as any,
+    tenantIsolation as any,
+    tosService as any,
   );
-  return { service, jwtService, mailer, rbacService, revocation };
+  return { service, jwtService, mailer, rbacService, revocation, creditService };
 }
 
 beforeEach(() => {
@@ -58,6 +64,7 @@ describe('AuthService.register', () => {
       email: 'NEW@Example.com',
       password: 'strongpass123',
       name: 'New User',
+      tosAccepted: true,
     } as any);
     expect(res.user.email).toBe('new@example.com');
     expect(res.requiresVerification).toBe(true);
@@ -81,7 +88,7 @@ describe('AuthService.register', () => {
     };
     const { service } = makeService(prisma);
     await expect(
-      service.register({ email: 'dup@x.com', password: 'strongpass', name: 'x' } as any),
+      service.register({ email: 'dup@x.com', password: 'strongpass', name: 'x', tosAccepted: true } as any),
     ).rejects.toThrow(ConflictException);
   });
 });

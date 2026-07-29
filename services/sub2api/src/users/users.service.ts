@@ -3,12 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { Project, ProjectStatus } from '../projects/entities/project.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Project)
+    private readonly projectRepository: Repository<Project>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -32,6 +35,19 @@ export class UsersService {
     return this.userRepository.findOne({ where: { email } });
   }
 
+  async getProfile(id: string) {
+    const user = await this.findOne(id);
+    const projectsCount = await this.projectRepository.count({
+      where: { userId: id, status: ProjectStatus.READY as any },
+    });
+    const { password, ...rest } = user as any;
+    return {
+      ...rest,
+      plan: (user as any).plan || 'free',
+      projectsCount,
+    };
+  }
+
   async update(id: string, updateData: Partial<User>): Promise<User> {
     await this.userRepository.update(id, updateData);
     return this.findOne(id);
@@ -39,5 +55,10 @@ export class UsersService {
 
   async remove(id: string): Promise<void> {
     await this.userRepository.delete(id);
+  }
+
+  async updateSupabaseToken(id: string, token: string): Promise<User> {
+    await this.userRepository.update(id, { supabaseToken: token } as any);
+    return this.findOne(id);
   }
 }

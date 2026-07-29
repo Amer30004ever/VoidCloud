@@ -28,6 +28,12 @@ export class User {
   @Column({ nullable: true })
   lastLoginAt: Date;
 
+  @Column({ nullable: true })
+  supabaseToken: string;
+
+  @Column({ default: 'free' })
+  plan: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -37,3 +43,4 @@ export class User {
   @OneToMany(() => ApiKey, (apiKey) => apiKey.user)
   apiKeys: ApiKey[];
 }
+

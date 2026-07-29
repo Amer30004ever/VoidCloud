@@ -1,14 +1,14 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PageHeader } from "@/components/ui/page-header";
-import { LoadingState } from "@/components/ui/loading-state";
-import { ErrorState } from "@/components/ui/error-state";
-import { EmptyState } from "@/components/ui/empty-state";
-import { AddItemButton } from "@/components/ui/create-item-dialog";
+import { PageHeader } from "@workspace/ui-kit/page-header";
+import { LoadingState } from "@workspace/ui-kit/loading-state";
+import { ErrorState } from "@workspace/ui-kit/error-state";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
+import { AddItemButton } from "@workspace/ui-kit/create-item-dialog";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { documentationApi } from "@/lib/documentation";
-import { useAuth } from "@/contexts/AuthContext";
+import { documentationApi } from "@/features/marketplace/documentation";
+import { useAuth } from "@/features/auth/AuthContext";
 import { BookOpen, Trash2, Download, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 

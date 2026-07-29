@@ -1,0 +1,46 @@
+{
+  "name": "voidcloud-semantic-search",
+  "displayName": "VoidCloud Semantic Code Search",
+  "description": "Semantic code search using local Ollama embedding model",
+  "version": "1.0.0",
+  "publisher": "voidcloud",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "voidcloud.semanticSearch",
+        "title": "Semantic Code Search"
+      }
+    ],
+    "configuration": {
+      "title": "VoidCloud Semantic Search",
+      "properties": {
+        "voidcloudSemanticSearch.ollamaUrl": {
+          "type": "string",
+          "default": "http://ollama-service.voidcloud.svc.cluster.local:11434",
+          "description": "Ollama API endpoint"
+        },
+        "voidcloudSemanticSearch.embeddingModel": {
+          "type": "string",
+          "default": "nomic-embed-text",
+          "description": "Embedding model name"
+        },
+        "voidcloudSemanticSearch.indexingDebounceMs": {
+          "type": "number",
+          "default": 3000,
+          "description": "Debounce delay for workspace indexing"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "lint": "echo 'no lint'",
+    "package": "vsce package"
+  },
+  "dependencies": {}
+}

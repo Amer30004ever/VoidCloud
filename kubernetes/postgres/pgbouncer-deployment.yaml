@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbouncer
+  namespace: voidcloud
+  labels:
+    app: pgbouncer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgbouncer
+  template:
+    metadata:
+      labels:
+        app: pgbouncer
+    spec:
+      containers:
+      - name: pgbouncer
+        image: pgbouncer/pgbouncer:latest
+        ports:
+        - containerPort: 6432
+        volumeMounts:
+        - name: pgbouncer-config
+          mountPath: /etc/pgbouncer
+          readOnly: true
+        - name: pgbouncer-userlist
+          mountPath: /etc/pgbouncer
+          readOnly: true
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          tcpSocket:
+            port: 6432
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 6432
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: pgbouncer-config
+        configMap:
+          name: pgbouncer-config
+      - name: pgbouncer-userlist
+        secret:
+          secretName: pgbouncer-userlist

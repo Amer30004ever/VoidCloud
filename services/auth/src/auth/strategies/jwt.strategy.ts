@@ -35,8 +35,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     const { password: _, ...result } = user;
-    // Preserve jti/exp so downstream (e.g. logout handler) can revoke this exact token.
-    return { ...result, jti: payload.jti, exp: payload.exp };
+    return { ...result, jti: payload.jti, exp: payload.exp, impersonatedBy: payload.impersonatedBy };
   }
 }
 

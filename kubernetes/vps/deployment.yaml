@@ -34,6 +34,11 @@ spec:
             secretKeyRef:
               name: voidcloud-secrets
               key: DATABASE_URL
+        - name: DATABASE_URL_POOLED
+          valueFrom:
+            secretKeyRef:
+              name: voidcloud-secrets
+              key: DATABASE_URL_POOLED
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
@@ -79,6 +84,16 @@ spec:
             secretKeyRef:
               name: voidcloud-secrets
               key: PROXMOX_GATEWAY
+        - name: PROXMOX_K8S_INTERNAL_CIDRS
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: PROXMOX_K8S_INTERNAL_CIDRS
+        - name: PROXMOX_VLAN_PER_TENANT
+          valueFrom:
+            configMapKeyRef:
+              name: voidcloud-config
+              key: PROXMOX_VLAN_PER_TENANT
         - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
@@ -112,3 +127,5 @@ spec:
             port: 3004
           initialDelaySeconds: 30
           periodSeconds: 10
+
+

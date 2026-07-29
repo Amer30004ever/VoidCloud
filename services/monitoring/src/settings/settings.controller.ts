@@ -6,9 +6,14 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../decorators/roles.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
+import { Public } from '../decorators/public.decorator';
 
 const MAINT_ENABLED = 'maintenance.enabled';
 const MAINT_MESSAGE = 'maintenance.message';
@@ -18,9 +23,13 @@ const MAINT_MESSAGE = 'maintenance.message';
  * Public GET so the app shell can render the banner without auth.
  */
 @Controller('platform/maintenance')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.SUPER_ADMIN)
+@ApiTags('Settings')
 export class SettingsController {
   constructor(private readonly prisma: PrismaService) {}
 
+  @Public()
   @Get()
   async get() {
     const [enabled, message] = await Promise.all([
@@ -35,7 +44,6 @@ export class SettingsController {
   }
 
   @Put()
-  @UseGuards(JwtAuthGuard)
   async set(
     @Body() body: { enabled: boolean; message?: string },
     @CurrentUser() user: { id: string; role: string },

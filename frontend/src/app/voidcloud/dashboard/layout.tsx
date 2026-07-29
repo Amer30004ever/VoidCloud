@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/api";
+import { API_BASE_URL } from "@/lib/constants";
 import en from "@/locales/en.json";
 import ar from "@/locales/ar.json";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import AiAssistant from "@/components/ai/AiAssistant";
 
 
 type Lang = "en" | "ar";
@@ -24,17 +26,25 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     return (localStorage.getItem("amer_lang") as Lang) || "en";
   });
   const [role, setRole] = useState<string | null>(null);
+  const [impersonatedBy, setImpersonatedBy] = useState<string | null>(null);
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
   const isAdminArea = pathname.startsWith("/voidcloud/admin");
   const dict = lang === "ar" ? ar : en;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const tok = localStorage.getItem("amer_portal_token") || sessionStorage.getItem("amer_portal_token");
+    const tok = localStorage.getItem("voidcloud_token") || sessionStorage.getItem("voidcloud_token");
     if (!tok) {
-      router.replace("/voidcloud/login");
+      if (!pathname.startsWith("/voidcloud/login")) {
+        router.replace("/voidcloud/login");
+      }
       return;
     }
-    api.get("/auth/me").then((r) => setRole(r.data?.role ?? null)).catch(() => setRole(null));
+    api.get("/auth/me").then((r) => {
+      setRole(r.data?.role ?? null);
+      setImpersonatedBy(r.data?.impersonatedBy ?? null);
+      setOnboardingCompleted(r.data?.onboardingCompleted ?? false);
+    }).catch(() => setRole(null));
   }, [router]);
 
   useEffect(() => {
@@ -42,6 +52,12 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     document.documentElement.lang = lang;
     if (typeof window !== "undefined") localStorage.setItem("amer_lang", lang);
   }, [lang]);
+
+  useEffect(() => {
+    if (role === "ADMIN" && !onboardingCompleted && (pathname.startsWith("/voidcloud/admin") || pathname.startsWith("/voidcloud/dashboard"))) {
+      router.replace("/voidcloud/onboarding");
+    }
+  }, [role, onboardingCompleted, pathname, router]);
 
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
 
@@ -54,6 +70,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     { href: "/voidcloud/dashboard/webhooks", label: "Webhooks", icon: "ðŸª" },
     { href: "/voidcloud/dashboard/referral", label: "Referral", icon: "ðŸŽ" },
     { href: "/voidcloud/dashboard/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "ðŸ’³" },
+    { href: "/voidcloud/dashboard/wallet", label: "Wallet", icon: "ðŸ‘›" },
     { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "âš™ï¸" },
   ], [dict]);
 
@@ -64,7 +81,11 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     { href: "/voidcloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "ðŸ–¥ï¸" },
     { href: "/voidcloud/admin/clusters", label: "Proxmox Clusters", icon: "🗄️" },
     { href: "/voidcloud/admin/monitoring", label: "Monitoring", icon: "❤️" },
+    { href: "/voidcloud/admin/pods", label: "Pod Manager", icon: "📦" },
+    { href: "/voidcloud/admin/security", label: "Security", icon: "🔒" },
+    { href: "/voidcloud/admin/abuse", label: "Abuse & AUP", icon: "🛡️" },
     { href: "/voidcloud/admin/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "ðŸ’°" },
+    { href: "/voidcloud/admin/whatsapp", label: "WhatsApp Broadcast", icon: "💬" },
     { href: "/voidcloud/admin/transactions", label: t(dict, "admin.transactions", "Transactions"), icon: "ðŸ§¾" },
     { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "âš™ï¸" },
   ], [dict]);
@@ -73,14 +94,41 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     ? (isAdmin ? "/voidcloud/admin/dashboard" : "/voidcloud/user/dashboard")
     : "/voidcloud";
 
+  function stopImpersonating() {
+    try {
+      const token = localStorage.getItem("voidcloud_token") || sessionStorage.getItem("voidcloud_token");
+      if (token) {
+        fetch(`${API_BASE_URL}/auth/impersonate/exit`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        }).catch(() => {});
+      }
+    } catch {
+      // best-effort audit log; always clear locally
+    }
+    localStorage.removeItem("voidcloud_token");
+    sessionStorage.removeItem("voidcloud_token");
+    router.push("/voidcloud/login");
+  }
+
   function logout() {
-    localStorage.removeItem("amer_portal_token");
-    sessionStorage.removeItem("amer_portal_token");
+    localStorage.removeItem("voidcloud_token");
+    sessionStorage.removeItem("voidcloud_token");
     router.push("/voidcloud/login");
   }
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-white">
+      {impersonatedBy && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-fuchsia-600 to-purple-700 text-white px-4 py-2 flex items-center justify-between">
+          <span className="text-sm font-medium">
+            🔍 Viewing as impersonated user — actions are logged under the impersonated account with admin traceability
+          </span>
+          <button onClick={stopImpersonating} className="rounded-lg bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30">
+            Stop impersonating
+          </button>
+        </div>
+      )}
       <aside
         className={`flex flex-col border-white/5 bg-slate-900/60 backdrop-blur-xl transition-all ${
           lang === "ar" ? "border-l" : "border-r"
@@ -139,7 +187,10 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <AiAssistant />
       </div>
     </div>
   );
 }
+
+
