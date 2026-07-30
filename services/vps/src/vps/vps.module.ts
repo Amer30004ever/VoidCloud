@@ -10,12 +10,11 @@ import { ProxmoxService } from '../proxmox/proxmox.service';
 import { ClustersModule } from '../clusters/clusters.module';
 import { BackupModule } from '../backup/backup.module';
 import { ApiUsageModule } from '../../../shared/api-usage/api-usage.module';
-import { BillingModule } from '../../../billing/src/billing/billing.module';
 import { K8sAppService } from '../k8s/k8s-app.service';
 
 @Module({
-  imports: [ClustersModule, ScheduleModule.forRoot(), BackupModule, ApiUsageModule, BillingModule],
+  imports: [ClustersModule, ScheduleModule.forRoot(), BackupModule, ApiUsageModule],
   controllers: [VpsController],
   providers: [VpsService, VpsProvisionService, QuotaReconciliationService, DomainVerificationScheduler, ProxmoxService, K8sAppService],
 })
-export class VpsModule {}
+export class VpsModule { }
