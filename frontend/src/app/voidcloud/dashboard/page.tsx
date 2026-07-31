@@ -30,7 +30,7 @@ export default function CloudDashboardHome() {
       )}
 
       <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 p-8 backdrop-blur-xl">
-        <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} ðŸ‘‹</h1>
+        <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
         <p className="mt-2 text-white/60">Here&apos;s what&apos;s happening with your cloud today.</p>
       </div>
 
@@ -66,9 +66,9 @@ export default function CloudDashboardHome() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <QuickAction href="/voidcloud/dashboard/vps/new" icon="ðŸ–¥ï¸" title="New VPS" desc="Provision a Proxmox container" />
-        <QuickAction href="/voidcloud/dashboard/billing/invoices" icon="ðŸ§¾" title="View invoices" desc="Download past invoices" />
-        <QuickAction href="/voidcloud/dashboard/billing" icon="â¬†ï¸" title="Upgrade plan" desc="Need more resources?" />
+        <QuickAction href="/voidcloud/dashboard/vps/new" icon="🖥ï¸" title="New VPS" desc="Provision a Proxmox container" />
+        <QuickAction href="/voidcloud/dashboard/billing/invoices" icon="🧾" title="View invoices" desc="Download past invoices" />
+        <QuickAction href="/voidcloud/dashboard/billing" icon="⬆ï¸" title="Upgrade plan" desc="Need more resources?" />
       </div>
     </div>
   );
@@ -79,8 +79,8 @@ function PlanCard({ usage }: { usage: CloudUsage | null }) {
     <div className="rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10 p-5">
       <div className="text-xs uppercase text-cyan-300">Current plan</div>
       <div className="mt-1 text-2xl font-bold">{usage?.plan?.name ?? "Free Trial"}</div>
-      <div className="mt-1 text-xs text-white/60">${usage?.plan?.priceUSD ?? 0}/mo Â· {usage?.plan?.priceEGP ?? 0} EGP</div>
-      <Link href="/voidcloud/dashboard/billing" className="mt-3 inline-block text-xs text-cyan-300 hover:underline">Manage â†’</Link>
+      <div className="mt-1 text-xs text-white/60">${usage?.plan?.priceUSD ?? 0}/mo · {usage?.plan?.priceEGP ?? 0} EGP</div>
+      <Link href="/voidcloud/dashboard/billing" className="mt-3 inline-block text-xs text-cyan-300 hover:underline">Manage →</Link>
     </div>
   );
 }

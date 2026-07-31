@@ -67,15 +67,15 @@ export default function Sub2ApiSettingsPage() {
           <div className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Name</span>
-              <span>{p?.name || "Ã¯Â¿Â½"}</span>
+              <span>{p?.name || "ï¿½"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Email</span>
-              <span>{p?.email || "Ã¯Â¿Â½"}</span>
+              <span>{p?.email || "ï¿½"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Role</span>
-              <span className="capitalize">{p?.role || "Ã¯Â¿Â½"}</span>
+              <span className="capitalize">{p?.role || "ï¿½"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Plan</span>

@@ -70,10 +70,10 @@ export default function AnalyticsPage() {
       {err && <div className="rounded border border-red-500/30 bg-red-500/10 p-2 text-sm text-red-200">{err}</div>}
 
       <div className="grid gap-4 md:grid-cols-4">
-        <Card label="Total spend (3mo)" value={costs ? `$${costs.total.toFixed(2)}` : "â€”"} />
-        <Card label="Forecast (next mo)" value={costs ? `$${costs.forecast.toFixed(2)}` : "â€”"} />
-        <Card label="Active VPS" value={trends ? String(trends.vpsCount) : "â€”"} />
-        <Card label="Avg CPU alloc" value={trends ? `${trends.cpu} vCPU` : "â€”"} />
+        <Card label="Total spend (3mo)" value={costs ? `$${costs.total.toFixed(2)}` : "—"} />
+        <Card label="Forecast (next mo)" value={costs ? `$${costs.forecast.toFixed(2)}` : "—"} />
+        <Card label="Active VPS" value={trends ? String(trends.vpsCount) : "—"} />
+        <Card label="Avg CPU alloc" value={trends ? `${trends.cpu} vCPU` : "—"} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

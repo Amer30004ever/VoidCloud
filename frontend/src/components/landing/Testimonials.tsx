@@ -31,7 +31,7 @@ export function Testimonials() {
             key={t.author}
             className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
           >
-            <div className="mb-3 text-amber-400">â˜…â˜…â˜…â˜…â˜…</div>
+            <div className="mb-3 text-amber-400">★★★★★</div>
             <p className="text-white/80">&ldquo;{t.quote}&rdquo;</p>
             <div className="mt-6 border-t border-white/10 pt-4">
               <div className="font-semibold">{t.author}</div>

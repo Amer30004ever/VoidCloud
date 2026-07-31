@@ -75,7 +75,7 @@ function RegisterInner() {
 
   if (done) {
     return (
-      <AuthShell title="Check your inbox ðŸ“¬" subtitle="We sent a verification link to your email">
+      <AuthShell title="Check your inbox 📬" subtitle="We sent a verification link to your email">
         <div className="space-y-4 text-sm text-white/80">
           <p>Verify <strong>{email}</strong> to activate your account. The link is valid for 24 hours.</p>
           <button
@@ -85,7 +85,7 @@ function RegisterInner() {
           <Link
             href="/voidcloud/login"
             className="block w-full rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 py-3 text-center font-semibold text-slate-950"
-          >Go to sign in â†’</Link>
+          >Go to sign in →</Link>
         </div>
       </AuthShell>
     );

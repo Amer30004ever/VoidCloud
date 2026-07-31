@@ -15,7 +15,7 @@ export function Hero() {
           All systems operational
         </span>
         <span className="inline-block rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-300">
-          ðŸš€ Now Live â€” Phase 2 Launch
+          🚀 Now Live — Phase 2 Launch
         </span>
       </div>
 
@@ -35,18 +35,18 @@ export function Hero() {
           href="/voidcloud/register"
           className="rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-3 font-semibold text-slate-950 shadow-2xl shadow-cyan-500/20 transition hover:opacity-90"
         >
-          Start Free Trial â†’
+          Start Free Trial →
         </Link>
         <Link
           href="mailto:nova-cloud-2026@outlook.com?subject=Enterprise%20Demo%20Request"
           className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 hover:bg-white/10"
         >
-          ðŸ“ž Request Enterprise Demo
+          📞 Request Enterprise Demo
         </Link>
       </div>
 
       <p className="mt-4 text-xs text-white/40">
-        7-day free trial Â· After trial, deployments pause until you upgrade Â· No auto-charge
+        7-day free trial · After trial, deployments pause until you upgrade · No auto-charge
       </p>
     </header>
   );

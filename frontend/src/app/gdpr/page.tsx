@@ -1,6 +1,6 @@
 import { LegalPage } from "@/components/landing/LegalPage";
 
-export const metadata = { title: "GDPR â€” VoidCloud" };
+export const metadata = { title: "GDPR — VoidCloud" };
 
 export default function GdprPage() {
   return (
@@ -31,8 +31,8 @@ export default function GdprPage() {
       </p>
       <h2>Sub-processors</h2>
       <ul>
-        <li>Stripe (payments â€” global)</li>
-        <li>Fawry &amp; InstaPay (payments â€” Egypt)</li>
+        <li>Stripe (payments — global)</li>
+        <li>Fawry &amp; InstaPay (payments — Egypt)</li>
         <li>Microsoft 365 (transactional email)</li>
         <li>Cloudflare (DNS &amp; DDoS protection)</li>
       </ul>

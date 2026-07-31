@@ -23,14 +23,14 @@ function VerifyInner() {
   }, [token]);
 
   return (
-    <AuthShell title={state === "ok" ? "Email verified âœ“" : state === "error" ? "Verification failed" : "Verifyingâ€¦"}>
+    <AuthShell title={state === "ok" ? "Email verified ✓" : state === "error" ? "Verification failed" : "Verifying…"}>
       <div className="space-y-4 text-sm text-white/80">
-        {state === "loading" && <p>Hang tight while we confirm your emailâ€¦</p>}
+        {state === "loading" && <p>Hang tight while we confirm your email…</p>}
         {state === "ok" && (
           <>
             <p>Your email is now verified. You can sign in to your VoidCloud account.</p>
             <Link href="/voidcloud/login" className="block w-full rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 py-3 text-center font-semibold text-slate-950">
-              Go to sign in â†’
+              Go to sign in →
             </Link>
           </>
         )}

@@ -97,7 +97,7 @@ export default function NewVpsPage() {
             <Field label="Plan">
               <select className={input} value={planId} onChange={(e) => setPlanId(e.target.value)}>
                 {plans.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name} â€” {p.cpuLimit} CPU Â· {p.memoryLimit}MB RAM Â· {Math.ceil(p.storageLimit/1024)}GB Â· ${p.priceUSD}/mo</option>
+                  <option key={p.id} value={p.id}>{p.name} — {p.cpuLimit} CPU · {p.memoryLimit}MB RAM · {Math.ceil(p.storageLimit/1024)}GB · ${p.priceUSD}/mo</option>
                 ))}
               </select>
             </Field>
@@ -133,11 +133,11 @@ export default function NewVpsPage() {
         {step === 2 && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Resources</h2>
-            <p className="text-xs text-white/60">Auto-filled from your selected plan ({plan?.name ?? "â€”"}).</p>
-            <Row k="CPU cores" v={`${plan?.cpuLimit ?? "â€”"}`} />
-            <Row k="RAM" v={`${plan?.memoryLimit ?? "â€”"} MB`} />
-            <Row k="Storage" v={`${plan?.storageLimit ? Math.ceil(plan.storageLimit/1024) : "â€”"} GB`} />
-            <Row k="OS Template" v={tpl?.label ?? "â€”"} />
+            <p className="text-xs text-white/60">Auto-filled from your selected plan ({plan?.name ?? "—"}).</p>
+            <Row k="CPU cores" v={`${plan?.cpuLimit ?? "—"}`} />
+            <Row k="RAM" v={`${plan?.memoryLimit ?? "—"} MB`} />
+            <Row k="Storage" v={`${plan?.storageLimit ? Math.ceil(plan.storageLimit/1024) : "—"} GB`} />
+            <Row k="OS Template" v={tpl?.label ?? "—"} />
           </div>
         )}
 
@@ -159,15 +159,15 @@ export default function NewVpsPage() {
             <h2 className="text-xl font-semibold">Review</h2>
             <div className="rounded-lg border border-white/10 bg-slate-950/50 p-4 text-sm space-y-1">
               <Row k="Name" v={name} />
-              <Row k="Plan" v={plan?.name ?? "â€”"} />
-              <Row k="OS Template" v={tpl?.label ?? "â€”"} />
-              <Row k="Resources" v={`${plan?.cpuLimit} CPU Â· ${plan?.memoryLimit}MB Â· ${plan?.storageLimit ? Math.ceil(plan.storageLimit/1024) : 0}GB`} />
-              <Row k="Custom domains" v={domainsText || "â€”"} />
+              <Row k="Plan" v={plan?.name ?? "—"} />
+              <Row k="OS Template" v={tpl?.label ?? "—"} />
+              <Row k="Resources" v={`${plan?.cpuLimit} CPU · ${plan?.memoryLimit}MB · ${plan?.storageLimit ? Math.ceil(plan.storageLimit/1024) : 0}GB`} />
+              <Row k="Custom domains" v={domainsText || "—"} />
               <Row k="Env vars" v={`${envRows.filter((r) => r.key).length} defined`} />
-              <Row k="SSH keys" v={sshKeys ? `${sshKeys.split(/\n/).filter(Boolean).length} key(s)` : "â€”"} />
-              <Row k="Hostname" v={hostname || name || "â€”"} />
+              <Row k="SSH keys" v={sshKeys ? `${sshKeys.split(/\n/).filter(Boolean).length} key(s)` : "—"} />
+              <Row k="Hostname" v={hostname || name || "—"} />
               <Row k="Static IP" v={staticIp || "auto-assigned"} />
-              <Row k="Post-provision script" v={postScript ? "yes" : "â€”"} />
+              <Row k="Post-provision script" v={postScript ? "yes" : "—"} />
             </div>
             <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-4 text-sm">
               <div className="text-xs uppercase text-cyan-300">Estimated cost</div>
@@ -183,7 +183,7 @@ export default function NewVpsPage() {
         <div className="mt-6 flex justify-between">
           <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className="rounded-lg border border-white/10 px-4 py-2 text-sm disabled:opacity-30">â† Back</button>
           {step < 4 ? (
-            <button onClick={() => setStep(step + 1)} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950">Next â†’</button>
+            <button onClick={() => setStep(step + 1)} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950">Next →</button>
           ) : (
             <button onClick={submit} disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950 disabled:opacity-50">{busy ? "Provisioning…" : "🚀 Create VPS"}</button>
           )}
@@ -216,7 +216,7 @@ function Collapsibles(props: {
             <div key={i} className="flex gap-2">
               <input className={`${input} flex-1`} placeholder="KEY" value={r.key} onChange={(e) => { const n = [...envRows]; n[i] = { ...n[i], key: e.target.value }; setEnvRows(n); }} />
               <input className={`${input} flex-1`} placeholder="value" value={r.value} onChange={(e) => { const n = [...envRows]; n[i] = { ...n[i], value: e.target.value }; setEnvRows(n); }} />
-              <button onClick={() => setEnvRows(envRows.filter((_, j) => j !== i))} className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 text-sm text-red-300">Ã—</button>
+              <button onClick={() => setEnvRows(envRows.filter((_, j) => j !== i))} className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 text-sm text-red-300">×</button>
             </div>
           ))}
           <button onClick={() => setEnvRows([...envRows, { key: "", value: "" }])} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs">+ Add variable</button>

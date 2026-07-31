@@ -91,7 +91,7 @@ export default function ApiKeysPage() {
       <h1 className="mb-2 text-3xl font-bold">API Keys</h1>
       <p className="mb-6 text-sm text-white/60">
         Authenticate scripts, CI pipelines and integrations against the VoidCloud REST API.
-        Treat keys like passwords â€” store them in your secret manager, never commit them to git.
+        Treat keys like passwords — store them in your secret manager, never commit them to git.
       </p>
 
       {/* Generate */}
@@ -117,7 +117,7 @@ export default function ApiKeysPage() {
         {created && (
           <div className="mt-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
             <p className="text-sm font-semibold text-yellow-300">
-              Copy this key â€” it won&apos;t be shown again:
+              Copy this key — it won&apos;t be shown again:
             </p>
             <code className="mt-2 block break-all rounded bg-slate-950 p-3 font-mono text-xs">{created}</code>
             <button
@@ -139,7 +139,7 @@ export default function ApiKeysPage() {
             <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
               <tr>
                 <th className="p-4">Name</th>
-                <th title="The first characters of the key â€” useful for matching it against secret managers without exposing the full value.">
+                <th title="The first characters of the key — useful for matching it against secret managers without exposing the full value.">
                   Prefix
                 </th>
                 <th>Created</th>

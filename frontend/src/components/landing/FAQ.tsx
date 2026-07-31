@@ -9,7 +9,7 @@ const faqs = [
   },
   {
     q: "Do I need to know Kubernetes?",
-    a: "No! Our dashboard abstracts all Kubernetes complexity. Click to deploy from GitHub or Docker Hub. We handle the scaling, networking, and security. If you're an advanced user, you can also use kubectl directly â€” we give you full access.",
+    a: "No! Our dashboard abstracts all Kubernetes complexity. Click to deploy from GitHub or Docker Hub. We handle the scaling, networking, and security. If you're an advanced user, you can also use kubectl directly — we give you full access.",
   },
   {
     q: "How does billing work in Egypt?",
@@ -79,17 +79,17 @@ export function FAQ() {
 
       <details className="group mt-8 overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl">
         <summary className="cursor-pointer list-none px-5 py-4 font-medium text-white/90 marker:hidden">
-          ðŸ”§ Technical specifications for engineers
+          🔧 Technical specifications for engineers
           <span className="float-right text-cyan-400 transition-transform group-open:rotate-45">+</span>
         </summary>
         <div className="grid gap-2 px-5 pb-5 text-sm text-white/70">
-          <p>âœ“ Kubernetes 1.29+ with containerd runtime</p>
-          <p>âœ“ PostgreSQL 15 with automated backups</p>
-          <p>âœ“ Redis 7 caching layer</p>
-          <p>âœ“ Prometheus + Grafana monitoring</p>
-          <p>âœ“ 99.9% uptime SLA</p>
-          <p>âœ“ DDoS protection via Cloudflare</p>
-          <p>âœ“ GDPR compliant data handling</p>
+          <p>✓ Kubernetes 1.29+ with containerd runtime</p>
+          <p>✓ PostgreSQL 15 with automated backups</p>
+          <p>✓ Redis 7 caching layer</p>
+          <p>✓ Prometheus + Grafana monitoring</p>
+          <p>✓ 99.9% uptime SLA</p>
+          <p>✓ DDoS protection via Cloudflare</p>
+          <p>✓ GDPR compliant data handling</p>
         </div>
       </details>
     </section>

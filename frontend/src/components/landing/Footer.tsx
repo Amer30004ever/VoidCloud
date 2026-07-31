@@ -62,7 +62,7 @@ export function Footer() {
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-2 text-lg font-bold">
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">
-                â˜
+                ☁
               </span>
               VoidCloud
             </Link>
@@ -105,8 +105,8 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-white/5 pt-6 text-center text-sm text-white/40">
-          Â© {new Date().getFullYear()} VoidCloud. Built by Amer Magdi. Hosted on our own
-          Kubernetes cluster in Egypt ðŸ‡ªðŸ‡¬
+          © {new Date().getFullYear()} VoidCloud. Built by Amer Magdi. Hosted on our own
+          Kubernetes cluster in Egypt 🇪🇬
         </div>
       </div>
     </footer>
