@@ -1,11 +1,11 @@
 const rows: Array<{ feature: string; amer: string; aws: string; vercel: string }> = [
-  { feature: "Egyptian EGP Pricing", amer: "âœ“", aws: "âœ—", vercel: "âœ—" },
-  { feature: "Fawry / InstaPay", amer: "âœ“", aws: "âœ—", vercel: "âœ—" },
-  { feature: "Managed Kubernetes", amer: "âœ“", aws: "Complex (EKS)", vercel: "âœ—" },
-  { feature: "Egypt Latency (<50ms)", amer: "âœ“", aws: "~150ms", vercel: "~200ms" },
+  { feature: "Egyptian EGP Pricing", amer: "✓", aws: "✗", vercel: "✗" },
+  { feature: "Fawry / InstaPay", amer: "✓", aws: "✗", vercel: "✗" },
+  { feature: "Managed Kubernetes", amer: "✓", aws: "Complex (EKS)", vercel: "✗" },
+  { feature: "Egypt Latency (<50ms)", amer: "✓", aws: "~150ms", vercel: "~200ms" },
   { feature: "Free Tier", amer: "7-day trial", aws: "12 months (limited)", vercel: "Hobby only" },
   { feature: "Starting Price", amer: "$9 / 270 EGP", aws: "~$73 (EKS)", vercel: "$20" },
-  { feature: "Full Container Control", amer: "âœ“", aws: "âœ“", vercel: "âœ— (serverless)" },
+  { feature: "Full Container Control", amer: "✓", aws: "✓", vercel: "✗ (serverless)" },
 ];
 
 export function ComparisonTable() {

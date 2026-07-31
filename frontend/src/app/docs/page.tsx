@@ -1,6 +1,6 @@
 import { LegalPage } from "@/components/landing/LegalPage";
 
-export const metadata = { title: "Documentation â€” VoidCloud" };
+export const metadata = { title: "Documentation — VoidCloud" };
 
 export default function DocsPage() {
   return (

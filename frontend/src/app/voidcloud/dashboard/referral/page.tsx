@@ -48,11 +48,11 @@ export default function ReferralPage() {
     catch (e) { setErr((e as Error).message); }
   }
 
-  if (!stats) return <div className="p-6 text-white/70">Loadingâ€¦</div>;
+  if (!stats) return <div className="p-6 text-white/70">Loading…</div>;
 
-  const tweet = `https://twitter.com/intent/tweet?text=${encodeURIComponent("Try VoidCloud â€” managed Kubernetes for Egyptian devs. ")}&url=${encodeURIComponent(link)}`;
+  const tweet = `https://twitter.com/intent/tweet?text=${encodeURIComponent("Try VoidCloud — managed Kubernetes for Egyptian devs. ")}&url=${encodeURIComponent(link)}`;
   const wa = `https://wa.me/?text=${encodeURIComponent("Try VoidCloud: " + link)}`;
-  const mailto = `mailto:?subject=${encodeURIComponent("Try VoidCloud")}&body=${encodeURIComponent("I&apos;m using VoidCloud â€” sign up here: " + link)}`;
+  const mailto = `mailto:?subject=${encodeURIComponent("Try VoidCloud")}&body=${encodeURIComponent("I&apos;m using VoidCloud — sign up here: " + link)}`;
 
   return (
     <div className="space-y-6 p-6 text-white">
@@ -77,7 +77,7 @@ export default function ReferralPage() {
           <a href={wa} target="_blank" rel="noreferrer" className="rounded-md border border-white/10 px-3 py-2 text-sm hover:bg-white/5">WhatsApp</a>
           <a href={mailto} className="rounded-md border border-white/10 px-3 py-2 text-sm hover:bg-white/5">Email</a>
         </div>
-        <div className="mt-3 text-xs text-white/50">Code: <span className="font-mono">{stats.code}</span> Â· Cookie window: {stats.config.cookieDays} days</div>
+        <div className="mt-3 text-xs text-white/50">Code: <span className="font-mono">{stats.code}</span> · Cookie window: {stats.config.cookieDays} days</div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -134,7 +134,7 @@ export default function ReferralPage() {
       <div className="rounded-xl border border-white/10 bg-slate-900/60 p-5">
         <h2 className="font-semibold mb-3">Activity</h2>
         {stats.history.length === 0 ? (
-          <p className="text-sm text-white/50">No activity yet â€” share your link to start earning.</p>
+          <p className="text-sm text-white/50">No activity yet — share your link to start earning.</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="text-left text-white/50 text-xs uppercase">
@@ -145,7 +145,7 @@ export default function ReferralPage() {
                 <tr key={i} className="border-t border-white/5">
                   <td className="py-2 whitespace-nowrap">{new Date(h.date).toLocaleString()}</td>
                   <td>{h.event}</td>
-                  <td className="text-right">{h.amount ? `$${h.amount.toFixed(2)}` : "â€”"}</td>
+                  <td className="text-right">{h.amount ? `$${h.amount.toFixed(2)}` : "—"}</td>
                  </tr>
               ))}
             </tbody>

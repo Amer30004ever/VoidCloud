@@ -42,10 +42,10 @@ function ResetPasswordInner() {
       {ok ? (
         <div className="space-y-4">
           <p className="rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm text-emerald-200">
-            Password updated. Redirecting to sign inâ€¦
+            Password updated. Redirecting to sign in…
           </p>
           <Link href="/voidcloud/login" className="block text-center text-sm text-cyan-300 hover:underline">
-            Go to sign in â†’
+            Go to sign in →
           </Link>
         </div>
       ) : (
@@ -61,7 +61,7 @@ function ResetPasswordInner() {
             disabled={busy || !token}
             className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 py-3 font-semibold text-slate-950 disabled:opacity-60"
           >
-            {busy ? "Updatingâ€¦" : "Update password"}
+            {busy ? "Updating…" : "Update password"}
           </button>
           <p className="text-center text-sm text-white/60">
             <Link href="/voidcloud/forgot-password" className="text-cyan-300 hover:underline">

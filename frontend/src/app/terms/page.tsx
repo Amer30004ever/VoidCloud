@@ -1,6 +1,6 @@
 import { LegalPage } from "@/components/landing/LegalPage";
 
-export const metadata = { title: "Terms of Service â€” VoidCloud" };
+export const metadata = { title: "Terms of Service — VoidCloud" };
 
 export default function TermsPage() {
   return (
@@ -23,7 +23,7 @@ export default function TermsPage() {
       </p>
       <h2>3. Billing</h2>
       <p>
-        Paid plans renew monthly. The 7-day free trial does not auto-charge â€” at the end
+        Paid plans renew monthly. The 7-day free trial does not auto-charge — at the end
         of the trial your deployments pause until you upgrade. Refunds are available
         within 30 days of any paid charge.
       </p>
