@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import api from "@/lib/api";
-import { AuthShell, Input } from "../login/page";
+import { AuthShell, Input } from "@/components/auth/AuthShell";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");

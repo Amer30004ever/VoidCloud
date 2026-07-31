@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
-import { AuthShell, Input } from "../login/page";
+import { AuthShell, Input } from "@/components/auth/AuthShell";
 
 type Plan = { id: string; slug: string; name: string; priceUSD: number; priceEGP: number; trialDays: number };
 

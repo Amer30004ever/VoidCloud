@@ -46,7 +46,7 @@ services:
     environment:
       PORT: 3001
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
-      JWT_SECRET: dev_secret_key_for_local_development_only_32_chars
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       SMTP_HOST: smtp.gmail.com
@@ -74,6 +74,7 @@ services:
     environment:
       PORT: 3002
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
@@ -97,6 +98,7 @@ services:
     environment:
       PORT: 3003
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
@@ -120,6 +122,7 @@ services:
     environment:
       PORT: 3004
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       PROXMOX_HOST: ${PROXMOX_HOST:-10.51.100.10}
@@ -149,6 +152,7 @@ services:
     environment:
       PORT: 3005
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
@@ -172,6 +176,7 @@ services:
     environment:
       PORT: 3006
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
@@ -195,6 +200,7 @@ services:
     environment:
       PORT: 3007
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
@@ -218,6 +224,7 @@ services:
     environment:
       PORT: 3008
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       SMTP_HOST: smtp.gmail.com
@@ -245,6 +252,7 @@ services:
     environment:
       PORT: 3009
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
@@ -270,6 +278,7 @@ services:
     environment:
       PORT: 3010
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
@@ -293,6 +302,7 @@ services:
     environment:
       PORT: 3011
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
@@ -316,6 +326,7 @@ services:
     environment:
       PORT: 3012
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
@@ -338,7 +349,12 @@ services:
       dockerfile: services/sub2api/Dockerfile
     environment:
       PORT: 3013
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: void_portal
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
@@ -362,7 +378,7 @@ services:
     environment:
       PORT: 3014
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/void_portal
-      JWT_SECRET: dev_secret_key_for_local_development_only_32_chars
+      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
@@ -381,7 +397,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
     environment:

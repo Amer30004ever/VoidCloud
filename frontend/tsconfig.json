@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@base-ui/react/*": ["./node_modules/@base-ui/react/*"]
     }
   },
   "include": [

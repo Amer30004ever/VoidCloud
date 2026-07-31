@@ -33,7 +33,7 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>(rabbitConfig(VPS_PROVISION_QUEUE));
 
   const port = process.env.PORT ?? 3004;
-  setupSwagger(app, { title: 'VPS Service', description: 'VPS provisioning and management API', version: '1.0' });
+  setupSwagger(app as any, { title: 'VPS Service', description: 'VPS provisioning and management API', version: '1.0' });
   await app.listen(port);
   await app.startAllMicroservices();
   structuredLogger.log(`vps Service running on port ${port} (RMQ consumer on "${VPS_PROVISION_QUEUE}")`);

@@ -1,0 +1,514 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - generic [ref=e4]:
+      - 'link "â˜ VoidCloud" [ref=e5] [cursor=pointer]':
+        - /url: /
+        - generic [ref=e6]: "â˜\x81"
+        - text: VoidCloud
+      - generic [ref=e7]:
+        - link "Features" [ref=e8] [cursor=pointer]:
+          - /url: "#features"
+        - link "Pricing" [ref=e9] [cursor=pointer]:
+          - /url: "#pricing"
+        - link "Deployments" [ref=e10] [cursor=pointer]:
+          - /url: /voidcloud/dashboard/deployments
+        - link "Docs" [ref=e11] [cursor=pointer]:
+          - /url: /docs
+        - link "Support" [ref=e12] [cursor=pointer]:
+          - /url: mailto:nova-cloud-2026@outlook.com
+      - generic [ref=e13]:
+        - link "Sign In" [ref=e14] [cursor=pointer]:
+          - /url: /voidcloud/login
+        - link "Start Free" [ref=e15] [cursor=pointer]:
+          - /url: /voidcloud/register
+  - main [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e20]:
+        - generic [ref=e21]: All systems operational
+        - generic [ref=e25]: ðŸš€ Now Live â€” Phase 2 Launch
+      - heading "Deploy Your Apps in Seconds. Pay Only What You Use." [level=1] [ref=e26]
+      - paragraph [ref=e27]: Kubernetes-powered hosting with Egyptian local payments (Fawry / InstaPay) + global Stripe support. Free trial, no credit card required.
+      - generic [ref=e28]:
+        - link "Start Free Trial â†’" [ref=e29] [cursor=pointer]:
+          - /url: /voidcloud/register
+        - link "ðŸ“ž Request Enterprise Demo" [ref=e30] [cursor=pointer]:
+          - /url: mailto:nova-cloud-2026@outlook.com?subject=Enterprise%20Demo%20Request
+      - paragraph [ref=e31]: 7-day free trial Â· After trial, deployments pause until you upgrade Â· No auto-charge
+    - generic [ref=e32]:
+      - paragraph [ref=e33]: Integrated with
+      - generic [ref=e34]:
+        - generic [ref=e35]: Stripe
+        - generic [ref=e36]: Fawry
+        - generic [ref=e37]: InstaPay
+        - generic [ref=e38]: Vodafone Cash
+        - generic [ref=e39]: GitHub
+        - generic [ref=e40]: Docker
+        - generic [ref=e41]: Kubernetes
+        - generic [ref=e42]: Cloudflare
+      - generic [ref=e43]:
+        - generic [ref=e44]: Built with NestJS + Next.js
+        - generic [ref=e45]: Runs on Kubernetes
+        - generic [ref=e46]: Secured by Cloudflare
+        - generic [ref=e47]: Payments by Stripe + Fawry
+    - generic [ref=e48]:
+      - heading "Stop Fighting Infrastructure. Start Shipping Code." [level=2] [ref=e50]
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53]: "ðŸ\x90¢"
+          - heading "Traditional Hosting Sucks" [level=3] [ref=e54]
+          - list [ref=e55]:
+            - listitem [ref=e56]:
+              - generic [ref=e57]: âœ—
+              - generic [ref=e58]: Months to set up Kubernetes
+            - listitem [ref=e59]:
+              - generic [ref=e60]: âœ—
+              - generic [ref=e61]: Expensive cloud bills
+            - listitem [ref=e62]:
+              - generic [ref=e63]: âœ—
+              - generic [ref=e64]: No Egyptian payment support
+            - listitem [ref=e65]:
+              - generic [ref=e66]: âœ—
+              - generic [ref=e67]: Complex YAML configurations
+        - generic [ref=e68]:
+          - generic [ref=e69]: âš¡
+          - heading "VoidCloud Makes It Easy" [level=3] [ref=e70]
+          - list [ref=e71]:
+            - listitem [ref=e72]:
+              - generic [ref=e73]: âœ“
+              - generic [ref=e74]: Deploy in 60 seconds
+            - listitem [ref=e75]:
+              - generic [ref=e76]: âœ“
+              - generic [ref=e77]: Pay 60% less than AWS
+            - listitem [ref=e78]:
+              - generic [ref=e79]: âœ“
+              - generic [ref=e80]: Fawry + InstaPay + Stripe
+            - listitem [ref=e81]:
+              - generic [ref=e82]: âœ“
+              - generic [ref=e83]: Simple dashboard, no YAML
+    - generic [ref=e84]:
+      - generic [ref=e85]:
+        - heading "Everything You Need to Ship" [level=2] [ref=e86]
+        - paragraph [ref=e87]: A complete platform — no glue code required.
+      - generic [ref=e88]:
+        - generic [ref=e89]:
+          - generic [ref=e90]: 🚀
+          - heading "One-Click Deploy" [level=3] [ref=e91]
+          - paragraph [ref=e92]: Deploy from GitHub, Docker Hub, or any container registry. Auto SSL, custom domains, and rollbacks included.
+        - generic [ref=e93]:
+          - generic [ref=e94]: 💳
+          - heading "Egyptian Payments" [level=3] [ref=e95]
+          - paragraph [ref=e96]: Local payment methods built in — no international card needed.
+          - generic [ref=e97]:
+            - generic [ref=e98]: Fawry
+            - generic [ref=e99]: InstaPay
+            - generic [ref=e100]: Vodafone Cash
+            - generic [ref=e101]: Stripe
+        - generic [ref=e102]:
+          - generic [ref=e103]: 📊
+          - heading "Real-Time Monitoring" [level=3] [ref=e104]
+          - paragraph [ref=e105]: Live CPU, RAM, and storage graphs. Prometheus metrics and Grafana dashboards built-in.
+        - generic [ref=e106]:
+          - generic [ref=e107]: 🔒
+          - heading "Enterprise Security" [level=3] [ref=e108]
+          - paragraph [ref=e109]: 2FA, OAuth (GitHub/Google), audit logs, and automatic daily backups. Your data stays yours.
+        - generic [ref=e110]:
+          - generic [ref=e111]: 🌍
+          - heading "Global + Local" [level=3] [ref=e112]
+          - paragraph [ref=e113]: Deploy to our Egypt-based cluster (low latency) or international regions. CDN included.
+        - generic [ref=e114]:
+          - generic [ref=e115]: 🤖
+          - heading "CI/CD Pipeline" [level=3] [ref=e116]
+          - paragraph [ref=e117]: GitHub Actions integration. Auto-deploy on git push. Preview deployments for pull requests.
+    - generic [ref=e118]:
+      - generic [ref=e119]:
+        - heading "How It Works" [level=2] [ref=e120]
+        - paragraph [ref=e121]: Four steps from idea to production.
+      - generic [ref=e122]:
+        - generic [ref=e123]:
+          - generic [ref=e124]: "1"
+          - generic [ref=e125]: 📝
+          - heading "Sign Up" [level=3] [ref=e126]
+          - paragraph [ref=e127]: Create your free account. No credit card needed.
+        - generic [ref=e128]:
+          - generic [ref=e129]: "2"
+          - generic [ref=e130]: 🐳
+          - heading "Push Your Code" [level=3] [ref=e131]
+          - paragraph [ref=e132]: Connect GitHub or push a Docker image.
+        - generic [ref=e133]:
+          - generic [ref=e134]: "3"
+          - generic [ref=e135]: ⚡
+          - heading "Deploy" [level=3] [ref=e136]
+          - paragraph [ref=e137]: One click. Auto SSL, custom domain, ready in 60 seconds.
+        - generic [ref=e138]:
+          - generic [ref=e139]: "4"
+          - generic [ref=e140]: 📈
+          - heading "Scale" [level=3] [ref=e141]
+          - paragraph [ref=e142]: Upgrade anytime. We handle Kubernetes for you.
+    - generic [ref=e143]:
+      - generic [ref=e144]:
+        - heading "Perfect For" [level=2] [ref=e145]
+        - paragraph [ref=e146]: From solo devs to growing teams.
+      - generic [ref=e147]:
+        - generic [ref=e148]:
+          - generic [ref=e149]: 🚀
+          - heading "Startups & MVPs" [level=3] [ref=e150]
+          - paragraph [ref=e151]: Launch fast without DevOps overhead. Scale when you grow — pay only for what you use.
+        - generic [ref=e152]:
+          - generic [ref=e153]: 🏢
+          - heading "Egyptian SMEs" [level=3] [ref=e154]
+          - paragraph [ref=e155]: Local payments (Fawry/InstaPay), local support in Arabic, low latency for Egyptian customers.
+        - generic [ref=e156]:
+          - generic [ref=e157]: 💻
+          - heading "Freelance Developers" [level=3] [ref=e158]
+          - paragraph [ref=e159]: Deploy client projects without managing servers. White-label hosting you can bill for.
+    - generic [ref=e160]:
+      - generic [ref=e161]:
+        - generic [ref=e162]: ðŸ”¥ Limited beta pricing â€” lock in discount
+        - heading "Simple, Transparent Pricing" [level=2] [ref=e163]
+        - paragraph [ref=e164]: USD or EGP. Cancel anytime.
+        - generic [ref=e165]:
+          - button "Monthly" [ref=e166]
+          - button "Yearly -20%" [ref=e167]
+        - paragraph [ref=e168]: ðŸ”’ 14-day money-back guarantee on annual plans
+      - generic [ref=e169]:
+        - generic [ref=e170]:
+          - heading "Free Trial" [level=3] [ref=e171]
+          - paragraph [ref=e172]: Test the platform
+          - generic [ref=e173]:
+            - generic [ref=e174]: $0
+            - text: /mo
+            - generic [ref=e175]: 7-day trial
+          - list [ref=e176]:
+            - listitem [ref=e177]:
+              - generic [ref=e178]: âœ“
+              - generic [ref=e179]: 0.25 CPU, 512MB RAM
+            - listitem [ref=e180]:
+              - generic [ref=e181]: âœ“
+              - generic [ref=e182]: 1 deployment
+            - listitem [ref=e183]:
+              - generic [ref=e184]: âœ“
+              - generic [ref=e185]: 1GB storage
+            - listitem [ref=e186]:
+              - generic [ref=e187]: âœ“
+              - generic [ref=e188]: Community support
+            - listitem [ref=e189]:
+              - generic [ref=e190]: âœ“
+              - generic [ref=e191]: No credit card required
+          - link "Start Trial â†’" [ref=e192] [cursor=pointer]:
+            - /url: /voidcloud/register
+          - paragraph [ref=e193]: After 7 days, deployments pause until upgrade. No auto-charge.
+        - generic [ref=e194]:
+          - generic [ref=e195]: MOST POPULAR
+          - heading "Starter" [level=3] [ref=e196]
+          - paragraph [ref=e197]: Individual developers
+          - generic [ref=e198]:
+            - generic [ref=e199]: $9
+            - text: /mo
+            - generic [ref=e200]: or 270 EGP
+          - list [ref=e201]:
+            - listitem [ref=e202]:
+              - generic [ref=e203]: âœ“
+              - generic [ref=e204]: 0.5 CPU, 1GB RAM
+            - listitem [ref=e205]:
+              - generic [ref=e206]: âœ“
+              - generic [ref=e207]: 3 deployments
+            - listitem [ref=e208]:
+              - generic [ref=e209]: âœ“
+              - generic [ref=e210]: 10GB storage
+            - listitem [ref=e211]:
+              - generic [ref=e212]: âœ“
+              - generic [ref=e213]: 1 custom domain
+            - listitem [ref=e214]:
+              - generic [ref=e215]: âœ“
+              - generic [ref=e216]: Basic support (24h)
+            - listitem [ref=e217]:
+              - generic [ref=e218]: âœ“
+              - generic [ref=e219]: 50k API requests
+          - link "Choose Starter â†’" [ref=e220] [cursor=pointer]:
+            - /url: /voidcloud/register?plan=starter
+        - generic [ref=e221]:
+          - heading "Pro" [level=3] [ref=e222]
+          - paragraph [ref=e223]: Professional teams
+          - generic [ref=e224]:
+            - generic [ref=e225]: $29
+            - text: /mo
+            - generic [ref=e226]: or 870 EGP
+          - list [ref=e227]:
+            - listitem [ref=e228]:
+              - generic [ref=e229]: âœ“
+              - generic [ref=e230]: 2 CPU, 4GB RAM
+            - listitem [ref=e231]:
+              - generic [ref=e232]: âœ“
+              - generic [ref=e233]: 10 deployments
+            - listitem [ref=e234]:
+              - generic [ref=e235]: âœ“
+              - generic [ref=e236]: 50GB storage
+            - listitem [ref=e237]:
+              - generic [ref=e238]: âœ“
+              - generic [ref=e239]: 3 custom domains
+            - listitem [ref=e240]:
+              - generic [ref=e241]: âœ“
+              - generic [ref=e242]: Priority support (4h)
+            - listitem [ref=e243]:
+              - generic [ref=e244]: âœ“
+              - generic [ref=e245]: 200k API requests
+            - listitem [ref=e246]:
+              - generic [ref=e247]: âœ“
+              - generic [ref=e248]: Redis cache + Staging
+          - link "Choose Pro â†’" [ref=e249] [cursor=pointer]:
+            - /url: /voidcloud/register?plan=pro
+        - generic [ref=e250]:
+          - heading "Business" [level=3] [ref=e251]
+          - paragraph [ref=e252]: Growing companies
+          - generic [ref=e253]:
+            - generic [ref=e254]: $79
+            - text: /mo
+            - generic [ref=e255]: or 2,370 EGP
+          - list [ref=e256]:
+            - listitem [ref=e257]:
+              - generic [ref=e258]: âœ“
+              - generic [ref=e259]: 4 CPU, 8GB RAM
+            - listitem [ref=e260]:
+              - generic [ref=e261]: âœ“
+              - generic [ref=e262]: 25 deployments
+            - listitem [ref=e263]:
+              - generic [ref=e264]: âœ“
+              - generic [ref=e265]: 100GB storage
+            - listitem [ref=e266]:
+              - generic [ref=e267]: âœ“
+              - generic [ref=e268]: 10 custom domains
+            - listitem [ref=e269]:
+              - generic [ref=e270]: âœ“
+              - generic [ref=e271]: Dedicated support (1h)
+            - listitem [ref=e272]:
+              - generic [ref=e273]: âœ“
+              - generic [ref=e274]: 500k API requests
+            - listitem [ref=e275]:
+              - generic [ref=e276]: âœ“
+              - generic [ref=e277]: Team members (5)
+          - link "Contact Sales â†’" [ref=e278] [cursor=pointer]:
+            - /url: mailto:nova-cloud-2026@outlook.com?subject=Business%20Plan%20Inquiry
+      - generic [ref=e279]:
+        - generic [ref=e280]: âœ“ No setup fees
+        - generic [ref=e281]: âœ“ No bandwidth overage
+        - generic [ref=e282]: âœ“ No hidden costs
+    - generic [ref=e284]:
+      - generic [ref=e285]:
+        - generic [ref=e286]: 0+
+        - generic [ref=e287]: Deployments in beta
+      - generic [ref=e288]:
+        - generic [ref=e289]: 0.0%
+        - generic [ref=e290]: Uptime SLA
+      - generic [ref=e291]:
+        - generic [ref=e292]: <0ms
+        - generic [ref=e293]: Avg Response (Egypt)
+      - generic [ref=e294]:
+        - generic [ref=e295]: 0/7
+        - generic [ref=e296]: Support
+    - generic [ref=e297]:
+      - heading "Loved by Developers" [level=2] [ref=e299]
+      - generic [ref=e300]:
+        - generic [ref=e301]:
+          - generic [ref=e302]: â˜…â˜…â˜…â˜…â˜…
+          - paragraph [ref=e303]: “VoidCloud saved us months of Kubernetes setup. Deployed our MVP in hours, not weeks.”
+          - generic [ref=e304]:
+            - generic [ref=e305]: Ahmed K.
+            - generic [ref=e306]: CTO at Cairo Fintech
+        - generic [ref=e307]:
+          - generic [ref=e308]: â˜…â˜…â˜…â˜…â˜…
+          - paragraph [ref=e309]: “Finally, a hosting platform that supports Fawry! No more international cards for my Egyptian clients.”
+          - generic [ref=e310]:
+            - generic [ref=e311]: Sara M.
+            - generic [ref=e312]: Full-stack Developer
+        - generic [ref=e313]:
+          - generic [ref=e314]: â˜…â˜…â˜…â˜…â˜…
+          - paragraph [ref=e315]: “The free tier is generous, and the Pro plan is cheaper than DigitalOcean but includes managed K8s.”
+          - generic [ref=e316]:
+            - generic [ref=e317]: Omar E.
+            - generic [ref=e318]: SaaS Founder
+    - generic [ref=e319]:
+      - generic [ref=e320]:
+        - heading "How We Compare" [level=2] [ref=e321]
+        - paragraph [ref=e322]: VoidCloud vs the big players.
+      - table [ref=e324]:
+        - rowgroup [ref=e325]:
+          - row [ref=e326]:
+            - columnheader "Feature" [ref=e327]
+            - columnheader "VoidCloud" [ref=e328]
+            - columnheader "AWS (EKS)" [ref=e329]
+            - columnheader "Vercel" [ref=e330]
+        - rowgroup [ref=e331]:
+          - row [ref=e332]:
+            - cell "Egyptian EGP Pricing" [ref=e333]
+            - cell "âœ“" [ref=e334]
+            - cell "âœ—" [ref=e335]
+            - cell "âœ—" [ref=e336]
+          - row [ref=e337]:
+            - cell "Fawry / InstaPay" [ref=e338]
+            - cell "âœ“" [ref=e339]
+            - cell "âœ—" [ref=e340]
+            - cell "âœ—" [ref=e341]
+          - row [ref=e342]:
+            - cell "Managed Kubernetes" [ref=e343]
+            - cell "âœ“" [ref=e344]
+            - cell "Complex (EKS)" [ref=e345]
+            - cell "âœ—" [ref=e346]
+          - row [ref=e347]:
+            - cell "Egypt Latency (<50ms)" [ref=e348]
+            - cell "âœ“" [ref=e349]
+            - cell "~150ms" [ref=e350]
+            - cell "~200ms" [ref=e351]
+          - row [ref=e352]:
+            - cell "Free Tier" [ref=e353]
+            - cell "7-day trial" [ref=e354]
+            - cell "12 months (limited)" [ref=e355]
+            - cell "Hobby only" [ref=e356]
+          - row [ref=e357]:
+            - cell "Starting Price" [ref=e358]
+            - cell "$9 / 270 EGP" [ref=e359]
+            - cell "~$73 (EKS)" [ref=e360]
+            - cell "$20" [ref=e361]
+          - row [ref=e362]:
+            - cell "Full Container Control" [ref=e363]
+            - cell "âœ“" [ref=e364]
+            - cell "âœ“" [ref=e365]
+            - cell "âœ— (serverless)" [ref=e366]
+    - generic [ref=e367]:
+      - heading "Frequently Asked Questions" [level=2] [ref=e369]
+      - generic [ref=e370]:
+        - generic [ref=e371]:
+          - button "What's the difference between VoidCloud and AWS/Vercel? +" [ref=e372]:
+            - generic [ref=e373]: What's the difference between VoidCloud and AWS/Vercel?
+            - generic [ref=e374]: +
+          - paragraph [ref=e377]: VoidCloud offers managed Kubernetes with Egyptian payment support (Fawry/InstaPay), local pricing in EGP, and lower latency for Middle East traffic. We're 60% cheaper than AWS for equivalent resources. Unlike Vercel, we give you full container control without the complexity of managing your own K8s cluster.
+        - generic [ref=e378]:
+          - button "Do I need to know Kubernetes? +" [ref=e379]:
+            - generic [ref=e380]: Do I need to know Kubernetes?
+            - generic [ref=e381]: +
+          - paragraph [ref=e382]: No! Our dashboard abstracts all Kubernetes complexity. Click to deploy from GitHub or Docker Hub. We handle the scaling, networking, and security. If you're an advanced user, you can also use kubectl directly â€” we give you full access.
+        - generic [ref=e383]:
+          - button "How does billing work in Egypt? +" [ref=e384]:
+            - generic [ref=e385]: How does billing work in Egypt?
+            - generic [ref=e386]: +
+          - paragraph [ref=e387]: Pay monthly via Fawry (cards + 3,000+ locations across Egypt), InstaPay (instant bank transfer from any Egyptian bank), or Stripe for international cards. All prices shown in EGP with no hidden fees. VAT is included in the displayed price. You can switch payment methods anytime.
+        - generic [ref=e388]:
+          - button "Can I use my own domain? +" [ref=e389]:
+            - generic [ref=e390]: Can I use my own domain?
+            - generic [ref=e391]: +
+          - paragraph [ref=e392]: Yes, all paid plans include custom domains. We provision SSL certificates automatically via Let's Encrypt. Simply add your domain in the dashboard, update your DNS records (we provide instructions), and we handle the rest. Usually takes 5 minutes.
+        - generic [ref=e393]:
+          - button "Is my data backed up? +" [ref=e394]:
+            - generic [ref=e395]: Is my data backed up?
+            - generic [ref=e396]: +
+          - paragraph [ref=e397]: Yes, daily automated backups with one-click restore. Business plans include point-in-time recovery (every 6 hours). Backups are stored redundantly in a separate location. You can also trigger manual backups anytime from the dashboard.
+        - generic [ref=e398]:
+          - button "Can I migrate away if needed? +" [ref=e399]:
+            - generic [ref=e400]: Can I migrate away if needed?
+            - generic [ref=e401]: +
+          - paragraph [ref=e402]: Absolutely. You own your code and data 100%. Export via GitHub (your code is already there) or use kubectl to pull your manifests anytime. We provide migration guides to other providers. No vendor lock-in, no hidden exit fees.
+        - generic [ref=e403]:
+          - button "What happens after the 7-day free trial? +" [ref=e404]:
+            - generic [ref=e405]: What happens after the 7-day free trial?
+            - generic [ref=e406]: +
+          - paragraph [ref=e407]: After 7 days, your deployments will be paused until you upgrade to a paid plan. We never charge you automatically. You'll receive email reminders at day 5 and day 7. You can extend your trial once by contacting support.
+        - generic [ref=e408]:
+          - button "Is there a team/organization plan? +" [ref=e409]:
+            - generic [ref=e410]: Is there a team/organization plan?
+            - generic [ref=e411]: +
+          - paragraph [ref=e412]: Yes! Business plans include team management with up to 5 members. You can invite teammates, set role-based permissions (Admin/Member/Viewer), and share deployments across your team. Contact sales for enterprise plans with more than 5 members.
+      - group [ref=e413]:
+        - generic "ðŸ”§ Technical specifications for engineers +" [ref=e414] [cursor=pointer]:
+          - text: ðŸ”§ Technical specifications for engineers
+          - generic [ref=e415]: +
+    - generic [ref=e417]:
+      - heading "Ready to Deploy Your Next App?" [level=2] [ref=e418]
+      - paragraph [ref=e419]: Join hundreds of developers shipping faster on VoidCloud.
+      - link "Start Your Free Trial â†’" [ref=e420] [cursor=pointer]:
+        - /url: /voidcloud/register
+      - paragraph [ref=e421]: No credit card required. Cancel anytime.
+  - contentinfo [ref=e422]:
+    - generic [ref=e423]:
+      - generic [ref=e424]:
+        - generic [ref=e425]:
+          - 'link "â˜ VoidCloud" [ref=e426] [cursor=pointer]':
+            - /url: /
+            - generic [ref=e427]: "â˜\x81"
+            - text: VoidCloud
+          - paragraph [ref=e428]: Kubernetes hosting built for Egypt and the world.
+          - paragraph [ref=e429]:
+            - text: "Support:"
+            - link "nova-cloud-2026@outlook.com" [ref=e430] [cursor=pointer]:
+              - /url: mailto:nova-cloud-2026@outlook.com
+          - generic [ref=e431]:
+            - link "GitHub" [ref=e432] [cursor=pointer]:
+              - /url: https://github.com/Amer30004ever
+            - link "Twitter" [ref=e435] [cursor=pointer]:
+              - /url: https://twitter.com
+            - link "LinkedIn" [ref=e438] [cursor=pointer]:
+              - /url: https://linkedin.com
+            - link "Discord" [ref=e441] [cursor=pointer]:
+              - /url: https://discord.com
+        - generic [ref=e444]:
+          - heading "Product" [level=4] [ref=e445]
+          - list [ref=e446]:
+            - listitem [ref=e447]:
+              - link "Features" [ref=e448] [cursor=pointer]:
+                - /url: "#features"
+            - listitem [ref=e449]:
+              - link "Pricing" [ref=e450] [cursor=pointer]:
+                - /url: "#pricing"
+            - listitem [ref=e451]:
+              - link "Changelog" [ref=e452] [cursor=pointer]:
+                - /url: /changelog
+            - listitem [ref=e453]:
+              - link "Roadmap" [ref=e454] [cursor=pointer]:
+                - /url: /docs
+        - generic [ref=e455]:
+          - heading "Resources" [level=4] [ref=e456]
+          - list [ref=e457]:
+            - listitem [ref=e458]:
+              - link "Documentation" [ref=e459] [cursor=pointer]:
+                - /url: /docs
+            - listitem [ref=e460]:
+              - link "API Reference" [ref=e461] [cursor=pointer]:
+                - /url: /docs
+            - listitem [ref=e462]:
+              - link "Status Page" [ref=e463] [cursor=pointer]:
+                - /url: /status
+            - listitem [ref=e464]:
+              - link "Support" [ref=e465] [cursor=pointer]:
+                - /url: mailto:nova-cloud-2026@outlook.com
+        - generic [ref=e466]:
+          - heading "Company" [level=4] [ref=e467]
+          - list [ref=e468]:
+            - listitem [ref=e469]:
+              - link "About" [ref=e470] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e471]:
+              - link "Blog" [ref=e472] [cursor=pointer]:
+                - /url: /blog
+            - listitem [ref=e473]:
+              - link "Careers" [ref=e474] [cursor=pointer]:
+                - /url: /careers
+            - listitem [ref=e475]:
+              - link "Contact" [ref=e476] [cursor=pointer]:
+                - /url: mailto:nova-cloud-2026@outlook.com
+        - generic [ref=e477]:
+          - heading "Legal" [level=4] [ref=e478]
+          - list [ref=e479]:
+            - listitem [ref=e480]:
+              - link "Privacy" [ref=e481] [cursor=pointer]:
+                - /url: /privacy
+            - listitem [ref=e482]:
+              - link "Terms" [ref=e483] [cursor=pointer]:
+                - /url: /terms
+            - listitem [ref=e484]:
+              - link "Security" [ref=e485] [cursor=pointer]:
+                - /url: /security
+            - listitem [ref=e486]:
+              - link "GDPR" [ref=e487] [cursor=pointer]:
+                - /url: /gdpr
+            - listitem [ref=e488]:
+              - link "Acceptable Use" [ref=e489] [cursor=pointer]:
+                - /url: /aup
+      - generic [ref=e490]: Â© 2026 VoidCloud. Built by Amer Magdi. Hosted on our own Kubernetes cluster in Egypt ðŸ‡ªðŸ‡¬

@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const stored = localStorage.getItem("voidcloud_token");
+      const stored = localStorage.getItem("voidcloud_token") || sessionStorage.getItem("voidcloud_token");
       if (stored) {
         setToken(stored);
         try {
@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {
           // Token is invalid or expired
           localStorage.removeItem("voidcloud_token");
+          sessionStorage.removeItem("voidcloud_token");
           setToken(null);
         } finally {
           setIsLoading(false);
@@ -68,9 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("voidcloud_token");
+    sessionStorage.removeItem("voidcloud_token");
     setToken(null);
     setUser(null);
-    window.location.href = "/voidcloud/login";
+    if (typeof window !== "undefined") {
+      window.location.href = "/voidcloud/login";
+    }
   };
 
   return (

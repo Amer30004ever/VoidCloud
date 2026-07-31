@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
-import { AuthShell } from "../login/page";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 function VerifyInner() {
   const params = useSearchParams();

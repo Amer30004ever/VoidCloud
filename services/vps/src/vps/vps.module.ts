@@ -12,9 +12,11 @@ import { BackupModule } from '../backup/backup.module';
 import { ApiUsageModule } from '../../../shared/api-usage/api-usage.module';
 import { K8sAppService } from '../k8s/k8s-app.service';
 
+import { CreditService } from '../../../billing/src/billing/credit.service';
+
 @Module({
   imports: [ClustersModule, ScheduleModule.forRoot(), BackupModule, ApiUsageModule],
   controllers: [VpsController],
-  providers: [VpsService, VpsProvisionService, QuotaReconciliationService, DomainVerificationScheduler, ProxmoxService, K8sAppService],
+  providers: [VpsService, VpsProvisionService, QuotaReconciliationService, DomainVerificationScheduler, ProxmoxService, K8sAppService, CreditService],
 })
 export class VpsModule { }

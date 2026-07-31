@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Button } from "@workspace/ui-kit/button";
 
 const navLinks = [
   { href: "#features", label: "Features" },

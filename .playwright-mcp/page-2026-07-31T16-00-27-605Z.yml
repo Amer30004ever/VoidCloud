@@ -1,0 +1,66 @@
+- generic [active] [ref=f3e1]:
+  - alert [ref=f3e2]
+  - generic [ref=f3e4]:
+    - link "☁VoidCloud" [ref=f3e5] [cursor=pointer]:
+      - /url: /voidcloud
+    - heading "Create your account" [level=1] [ref=f3e6]
+    - paragraph [ref=f3e7]: Start deploying on VoidCloud in minutes
+    - generic [ref=f3e8]:
+      - generic [ref=f3e9]:
+        - text: Full name
+        - textbox "Full name" [ref=f3e11]
+      - generic [ref=f3e12]:
+        - text: Email
+        - textbox "Email" [ref=f3e14]
+      - generic [ref=f3e15]:
+        - text: Phone (Egyptian)
+        - textbox "Phone (Egyptian)" [ref=f3e17]:
+          - /placeholder: "+201012345678"
+      - generic [ref=f3e18]:
+        - text: Password
+        - generic [ref=f3e19]:
+          - textbox "Password Show password" [ref=f3e20]
+          - button "Show password" [ref=f3e21]
+      - generic [ref=f3e25]:
+        - text: Confirm password
+        - generic [ref=f3e26]:
+          - textbox "Confirm password Show password" [ref=f3e27]
+          - button "Show password" [ref=f3e28]
+      - generic [ref=f3e32]:
+        - text: Select plan
+        - generic [ref=f3e33]:
+          - generic [ref=f3e34]:
+            - generic [ref=f3e35]:
+              - radio "Free Trial7-day trialFree" [checked] [ref=f3e36]
+              - text: Free Trial
+              - generic [ref=f3e37]: 7-day trial
+            - text: Free
+          - generic [ref=f3e38]:
+            - generic [ref=f3e39]:
+              - radio "Starter$9/mo" [ref=f3e40]
+              - text: Starter
+            - text: $9/mo
+          - generic [ref=f3e41]:
+            - generic [ref=f3e42]:
+              - radio "Pro$29/mo" [ref=f3e43]
+              - text: Pro
+            - text: $29/mo
+      - generic [ref=f3e44]:
+        - checkbox "I agree to the Terms of Service and Privacy Policy." [ref=f3e45]
+        - generic [ref=f3e46]:
+          - text: I agree to the
+          - link "Terms of Service" [ref=f3e47] [cursor=pointer]:
+            - /url: /tos
+          - text: and
+          - link "Privacy Policy" [ref=f3e48] [cursor=pointer]:
+            - /url: /privacy
+          - text: .
+      - button "Create account →" [disabled] [ref=f3e49]
+      - generic [ref=f3e50]: Or continue with
+      - generic [ref=f3e52]:
+        - button "Google" [ref=f3e53]
+        - button "GitHub" [ref=f3e54]
+      - paragraph [ref=f3e55]:
+        - text: Already have an account?
+        - link "Sign in" [ref=f3e56] [cursor=pointer]:
+          - /url: /voidcloud/login

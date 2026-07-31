@@ -1,0 +1,54 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - navigation [ref=f1e3]:
+      - generic [ref=f1e4]:
+        - link "☁️ VoidCloud" [ref=f1e5] [cursor=pointer]:
+          - /url: /voidcloud
+          - generic [ref=f1e6]: ☁️
+          - text: VoidCloud
+        - generic [ref=f1e7]:
+          - link "Sign in" [ref=f1e8] [cursor=pointer]:
+            - /url: /voidcloud/login
+          - link "Start free trial" [ref=f1e9] [cursor=pointer]:
+            - /url: /voidcloud/register
+    - banner [ref=f1e10]:
+      - paragraph [ref=f1e12]: 🚀 7-day free trial · no credit card required
+      - heading "Ship apps to production in seconds." [level=1] [ref=f1e13]
+      - paragraph [ref=f1e14]: Multi-tenant hosting on Kubernetes. Auto SSL, daily backups, custom domains, Egyptian payments (Fawry, InstaPay), and a beautiful dashboard.
+      - generic [ref=f1e15]:
+        - link "Start free trial →" [ref=f1e16] [cursor=pointer]:
+          - /url: /voidcloud/register
+        - link "View pricing" [ref=f1e17] [cursor=pointer]:
+          - /url: "#pricing"
+    - generic [ref=f1e19]:
+      - generic [ref=f1e20]:
+        - generic [ref=f1e21]: "ðŸŒ\x90"
+        - heading "Auto custom domains" [level=3] [ref=f1e22]
+        - paragraph [ref=f1e23]: Bring your domain. We provision Let's Encrypt SSL automatically via cert-manager.
+      - generic [ref=f1e24]:
+        - generic [ref=f1e25]: ðŸ’³
+        - heading "Pay your way" [level=3] [ref=f1e26]
+        - paragraph [ref=f1e27]: Stripe for cards. Fawry for cash & QR. InstaPay for instant Egyptian bank transfers.
+      - generic [ref=f1e28]:
+        - generic [ref=f1e29]: ðŸ“Š
+        - heading "Real-time monitoring" [level=3] [ref=f1e30]
+        - paragraph [ref=f1e31]: CPU, RAM, requests, logs â€” everything streamed live from Prometheus & Loki.
+      - generic [ref=f1e32]:
+        - generic [ref=f1e33]: "ðŸ”\x90"
+        - heading "Built-in security" [level=3] [ref=f1e34]
+        - paragraph [ref=f1e35]: DDoS protection, encrypted env vars, 2FA, audit logs, SOC2 reporting on Enterprise.
+      - generic [ref=f1e36]:
+        - generic [ref=f1e37]: ðŸ’¾
+        - heading "Daily backups" [level=3] [ref=f1e38]
+        - paragraph [ref=f1e39]: Automated database backups, one-click restore, point-in-time recovery.
+      - generic [ref=f1e40]:
+        - generic [ref=f1e41]: "ðŸŒ\x8d"
+        - heading "EN / AR with RTL" [level=3] [ref=f1e42]
+        - paragraph [ref=f1e43]: First-class Arabic support, full RTL layout, dual currency invoices (USD / EGP).
+    - generic [ref=f1e44]:
+      - generic [ref=f1e45]:
+        - heading "Simple, transparent pricing" [level=2] [ref=f1e46]
+        - paragraph [ref=f1e47]: Cancel any time. Both USD and EGP supported.
+      - paragraph [ref=f1e48]: Loading plansâ€¦
+    - contentinfo [ref=f1e49]: © 2026VoidCloud · Built on Kubernetes & Proxmox
+  - button "Open Next.js Dev Tools" [ref=f1e55] [cursor=pointer]

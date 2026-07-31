@@ -9,6 +9,10 @@ export default function VoidCloudLanding() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const tok = localStorage.getItem("voidcloud_token") || sessionStorage.getItem("voidcloud_token");
+      if (!tok) { setLoading(false); return; }
+    }
     cloudApi.plans.list().then(setPlans).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -19,7 +23,7 @@ export default function VoidCloudLanding() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/voidcloud" className="flex items-center gap-2 text-xl font-bold">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">
-              â˜
+              ☁️
             </span>
             VoidCloud
           </Link>
@@ -41,7 +45,7 @@ export default function VoidCloudLanding() {
       <header className="relative overflow-hidden px-6 py-24 text-center">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(34,211,238,0.18),transparent_60%)]" />
         <p className="mb-4 inline-block rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-300">
-          ðŸš€ 7-day free trial Â· no credit card required
+          🚀 7-day free trial · no credit card required
         </p>
         <h1 className="mx-auto max-w-4xl text-5xl font-bold leading-tight tracking-tight md:text-6xl">
           Ship apps to <span className="bg-gradient-to-r from-cyan-400 to-fuchsia-500 bg-clip-text text-transparent">production</span> in seconds.
@@ -54,7 +58,7 @@ export default function VoidCloudLanding() {
             href="/voidcloud/register"
             className="rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-3 font-semibold text-slate-950 shadow-2xl shadow-cyan-500/20 hover:opacity-90"
           >
-            Start free trial â†’
+            Start free trial →
           </Link>
           <a href="#pricing" className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 hover:bg-white/10">
             View pricing
@@ -110,14 +114,14 @@ export default function VoidCloudLanding() {
               href="mailto:sales@voidcloud.dev"
               className="mt-4 inline-block rounded-xl border border-white/20 bg-white/10 px-6 py-3 font-semibold hover:bg-white/20 md:mt-0"
             >
-              Contact sales â†’
+              Contact sales →
             </a>
           </div>
         )}
       </section>
 
       <footer className="border-t border-white/5 px-6 py-10 text-center text-sm text-white/40">
-        Â© {new Date().getFullYear()} VoidCloud Â· Built on Kubernetes &amp; Proxmox
+        © {new Date().getFullYear()} VoidCloud · Built on Kubernetes &amp; Proxmox
       </footer>
     </div>
   );
@@ -145,12 +149,12 @@ function PlanCard({ plan }: { plan: CloudPlan }) {
         <div className="text-xs text-white/40">or {plan.priceEGP} EGP</div>
       </div>
       <ul className="mt-6 space-y-2 text-sm">
-        <li>âœ… {plan.cpuLimit} CPU Â· {plan.memoryLimit}MB RAM</li>
-        <li>âœ… {(plan.storageLimit / 1024).toFixed(0)}GB storage</li>
-        <li>âœ… {plan.deploymentLimit} deployments</li>
-        <li>âœ… {plan.customDomainLimit} custom domains</li>
+        <li>✅ {plan.cpuLimit} CPU · {plan.memoryLimit}MB RAM</li>
+        <li>✅ {(plan.storageLimit / 1024).toFixed(0)}GB storage</li>
+        <li>✅ {plan.deploymentLimit} deployments</li>
+        <li>✅ {plan.customDomainLimit} custom domains</li>
         {(plan.features || []).map((f) => (
-          <li key={f}>âœ… {f}</li>
+          <li key={f}>✅ {f}</li>
         ))}
       </ul>
       <Link

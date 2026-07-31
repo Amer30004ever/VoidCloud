@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/api";
 import { API_BASE_URL } from "@/lib/constants";
+import { LoadingState } from "@workspace/ui-kit/loading-state";
 import en from "@/locales/en.json";
 import ar from "@/locales/ar.json";
 import { NotificationBell } from "@/components/ui/NotificationBell";
@@ -28,6 +29,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
   const [role, setRole] = useState<string | null>(null);
   const [impersonatedBy, setImpersonatedBy] = useState<string | null>(null);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
   const isAdminArea = pathname.startsWith("/voidcloud/admin");
   const dict = lang === "ar" ? ar : en;
 
@@ -35,6 +37,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     if (typeof window === "undefined") return;
     const tok = localStorage.getItem("voidcloud_token") || sessionStorage.getItem("voidcloud_token");
     if (!tok) {
+      setAuthChecking(false);
       if (!pathname.startsWith("/voidcloud/login")) {
         router.replace("/voidcloud/login");
       }
@@ -44,7 +47,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
       setRole(r.data?.role ?? null);
       setImpersonatedBy(r.data?.impersonatedBy ?? null);
       setOnboardingCompleted(r.data?.onboardingCompleted ?? false);
-    }).catch(() => setRole(null));
+    }).catch(() => setRole(null)).finally(() => setAuthChecking(false));
   }, [router]);
 
   useEffect(() => {
@@ -115,6 +118,10 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     localStorage.removeItem("voidcloud_token");
     sessionStorage.removeItem("voidcloud_token");
     router.push("/voidcloud/login");
+  }
+
+  if (authChecking) {
+    return <LoadingState message="Loading dashboard..." />;
   }
 
   return (

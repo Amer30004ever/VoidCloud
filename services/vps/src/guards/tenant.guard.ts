@@ -4,11 +4,11 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { RbacService } from '../../rbac/rbac.service';
+import { RbacService } from '../../../auth/src/rbac/rbac.service';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
-  constructor(private rbacService: RbacService) {}
+  constructor(private rbacService: RbacService) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const { user, params } = context.switchToHttp().getRequest();

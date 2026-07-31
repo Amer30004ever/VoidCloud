@@ -21,6 +21,9 @@
     "skipLibCheck": true,
     "target": "es2022",
     "types": [],
+    "paths": {
+      "@base-ui/react/*": ["./node_modules/@base-ui/react/*"]
+    },
     "customConditions": ["workspace"]
   }
 }

@@ -14,7 +14,7 @@ const sub2api = axios.create({
 function attachAuth(instance: typeof api) {
   instance.interceptors.request.use((config) => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("voidcloud_token");
+      const token = localStorage.getItem("voidcloud_token") || sessionStorage.getItem("voidcloud_token");
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -26,8 +26,14 @@ function attachAuth(instance: typeof api) {
     (res) => res,
     (error) => {
       if (error.response?.status === 401 && typeof window !== "undefined") {
-        localStorage.removeItem("voidcloud_token");
-        if (window.location.pathname !== "/voidcloud/login") {
+        const isTokenCheck = error.config?.url === "/auth/me";
+        if (!isTokenCheck) {
+          localStorage.removeItem("voidcloud_token");
+          sessionStorage.removeItem("voidcloud_token");
+        }
+        const isOnLoginPage =
+          window.location.pathname === "/voidcloud/login" || window.location.pathname === "/login";
+        if (!isOnLoginPage && !isTokenCheck) {
           window.location.href = "/voidcloud/login";
         }
       }

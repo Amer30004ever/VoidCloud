@@ -1,0 +1,36 @@
+- generic [active] [ref=f404e1]:
+  - alert [ref=f404e2]
+  - generic [ref=f404e4]:
+    - 'link "â˜ VoidCloud" [ref=f404e5] [cursor=pointer]':
+      - /url: /voidcloud
+      - generic [ref=f404e6]: "â˜\x81"
+      - text: VoidCloud
+    - heading "Welcome back" [level=1] [ref=f404e7]
+    - paragraph [ref=f404e8]: Sign in to your VoidCloud account
+    - generic [ref=f404e9]:
+      - generic [ref=f404e10]:
+        - generic [ref=f404e11]: Email
+        - textbox "Email" [ref=f404e13]
+      - generic [ref=f404e14]:
+        - generic [ref=f404e15]: Password
+        - generic [ref=f404e16]:
+          - textbox "Password Show password" [ref=f404e17]
+          - button "Show password" [ref=f404e18]
+      - generic [ref=f404e22]:
+        - generic [ref=f404e23]:
+          - checkbox "Remember me Forgot password?" [checked] [ref=f404e24]
+          - text: Remember me
+        - link "Forgot password?" [ref=f404e25] [cursor=pointer]:
+          - /url: /voidcloud/forgot-password
+      - button "Sign in" [ref=f404e26]
+      - generic [ref=f404e27]: Or continue with
+      - generic [ref=f404e32]:
+        - button "Google" [ref=f404e33]
+        - button "GitHub" [ref=f404e34]
+      - paragraph [ref=f404e35]:
+        - text: New to VoidCloud?
+        - link "Create account" [ref=f404e36] [cursor=pointer]:
+          - /url: /voidcloud/register
+      - paragraph [ref=f404e37]:
+        - text: Didn't get the verification email?
+        - button "Resend" [ref=f404e38]

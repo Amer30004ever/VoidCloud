@@ -8,11 +8,11 @@ import { ALL_ROUTES } from "@/lib/routes";
 
 const KEY = "amer.favorites";
 
-export function getFavorites(): string[] {
+function getFavorites(): string[] {
   if (typeof window === "undefined") return [];
   try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; }
 }
-export function toggleFavorite(href: string) {
+function toggleFavorite(href: string) {
   const f = getFavorites();
   const next = f.includes(href) ? f.filter((x) => x !== href) : [...f, href];
   localStorage.setItem(KEY, JSON.stringify(next));

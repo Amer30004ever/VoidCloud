@@ -138,16 +138,48 @@ Open two separate browser contexts:
 
 ## STATUS TRACKER (update after every batch — same discipline as the main backlog)
 
-**Not yet run:** all batches (0–6).
+**Last updated:** 2026-07-31 — All 3 bugs browser-verified in BOTH dev server and Docker Compose (WSL2) environments.
+
+**Bugs fixed (2026-07-31) — all verified in browser:**
+1. **Root domain redirect to /voidcloud/login** — FIXED. Root cause: `ThemeProvider.loadStoredTheme()` and `AuthProvider.initializeAuth()` both called `api.get("/auth/me")` without first checking for a token. With a stale token, the 401 triggered the axios interceptor redirect. Additionally, `voidcloud/page.tsx` called `cloudApi.plans.list()` unconditionally. Fixes applied:
+   - `frontend/src/contexts/ThemeContext.tsx:24-28` — token check in `loadStoredTheme()`, returns `null` if no token
+   - `frontend/src/lib/api.ts:25-40` — axios 401 interceptor now exempts `GET /auth/me` from redirect (token validation calls only clear state, don't redirect)
+   - `frontend/src/app/voidcloud/page.tsx:11-17` — token check guards `cloudApi.plans.list()` call
+   - Browser verification (Docker): `/voidcloud` loads and stays (no redirect), `token: "NONE"`, page renders correctly
+2. **White background on landing/login pages** — FIXED. `globals.css` had light theme as `:root` default (white body background). Swapped so `:root` = dark theme (VoidCloud default), `.dark` = dark (backward compat), `.light` = light. Updated `ThemeProvider` to toggle `light` class, default to `"dark"`, and persist to `localStorage`. Updated inline script in `layout.tsx`.
+   - Browser verification (Docker): `/voidcloud` has `min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950` (dark). `/voidcloud/login` has `grid min-h-screen place-items-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950` (dark). No white background.
+3. **Login "Portal API is unreachable" error** — FIXED. `catch` block in `login/page.tsx` was showing the generic message for ALL non-401 HTTP errors. Now shows `err.response.data.message`/`err.response.data.error` for any HTTP error, with generic fallback only when no message is present.
+   - Browser verification (Docker): Wrong login credentials (`wrong@example.com`/`wrongpassword`) returned 401 from auth service, login page displayed "Invalid credentials" (the real API error message), NOT "Portal API is unreachable" or "Login request timed out".
+
+**Local dev testing infrastructure:**
+- `frontend/.env.local` — `NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1` + `API_PROXY_TARGET=https://api.voidcloud.cc.cd/api/v1`
+- `frontend/next.config.ts` — proxy rewrites forwarding `/api/v1/*` to production API (no CORS)
+- `frontend/src/lib/constants.ts` — added `localhost:3000` detection for runtime API URL resolution
+- `frontend/public/sw.js` — bypassed cache-first strategy on `localhost` to prevent stale JS serving (CACHE_NAME bumped v2→v3)
+- **Docker Compose (WSL2):** Fixed `docker-compose.yaml` frontend build context (`context: ./frontend` → `context: .` + `dockerfile: frontend/Dockerfile`). Fixed WSL2 DNS (`/etc/resolv.conf` → 8.8.8.8, 1.1.1.1). Created `.env` with `SMTP_PASS` for auth service startup. Ran `prisma db push` for schema sync. Services: frontend (localhost:3000), auth (localhost:3001), postgres, redis, rabbitmq.
 
 | Batch | Status | Findings |
 |---|---|---|
-| 0 — Priority/confirmed-fake items | Not run | — |
-| 1 — SUPER_ADMIN | Not run | — |
-| 2 — ADMIN | Not run | — |
-| 3 — AGENT | Not run | — |
-| 4 — USER | Not run | — |
-| 5 — Public pages | Not run | — |
+| 0 — Priority/confirmed-fake items | VERIFIED (Docker) | Bugs 1-3 browser-verified fixed in Docker Compose env. `/voidcloud` stays loaded (no redirect, no token). Dark bg confirmed on `/voidcloud` and `/voidcloud/login`. Login error shows real 401 "Invalid credentials" from auth service, NOT "Portal API is unreachable". SW bypass on localhost confirmed (CACHE_NAME "voidcloud-shell-v3"). CORS configured (`origin: ['https://voidcloud.cc.cd', 'http://localhost:3000']`). |
+| 1 — SUPER_ADMIN | Not run | No test users in DB. Login API now returns 401 "Invalid credentials" (not 500). Can create test user via seed or DB insert if needed. |
+| 2 — ADMIN | Not run | Blocked by no test users. |
+| 3 — AGENT | Not run | Blocked by no test users. |
+| 4 — USER | Not run | Blocked by no test users. |
+| 5 — Public pages | Not run | `/voidcloud/login`, `/voidcloud/register` accessible without auth — can test Google/GitHub OAuth buttons. |
 | 6 — Cross-tenant isolation | Not run | — |
 
-**Recommended order:** Batch 0 first, always — it targets already-confirmed problems and will tell you fastest whether anything's changed. Then 1 → 2 → 3 → 4 → 5 in role order, with Batch 6 last since it needs the two-session setup and is most useful once individual pages are already confirmed working correctly on their own.
+**Additional fixes (2026-07-31) for Docker Compose support:**
+1. `docker-compose.yaml:382-386` — Fixed frontend build context: `context: ./frontend` → `context: .` + `dockerfile: frontend/Dockerfile` (Dockerfile uses `COPY frontend/src` paths expecting repo-root context)
+2. `frontend/src/app/globals.css:164-171` — Replaced `@apply bg-background text-foreground` with explicit `background-color: var(--background); color: var(--foreground);` (Tailwind 4 `@apply` not expanded in webpack build — `bg-background` utility not generated because `--background` is in `:root` not `@theme`)
+3. WSL2 DNS fix — `/etc/resolv.conf` in WSL2 replaced unreachable IPv6 nameservers with `8.8.8.8` and `1.1.1.1`
+4. Created `.env` with `SMTP_PASS=test-smtp-pass-for-local-dev` (auth service `main.ts:17-31` requires SMTP_PASS at startup)
+5. Added `.env` to `.gitignore`
+
+**Docker Compose verification results (all 3 bugs FIXED):**
+- Bug 1: `/voidcloud` stays on URL, `token: "NONE"`, no redirect to `/voidcloud/login` ✓
+- Bug 2: Both `/voidcloud` and `/voidcloud/login` have dark background (`oklch(0.08 0.01 250)` / `bg-gradient-to-br from-slate-950 via-slate-900`) ✓
+- Bug 3: Wrong login → 401 → "Invalid credentials" (real API error, not masked) ✓
+- Service worker: `CACHE_NAME = "voidcloud-shell-v3"`, localhost bypass active ✓
+- CORS: `origin: ['https://voidcloud.cc.cd', 'http://localhost:3000']` configured ✓
+
+**Code fixes applied:** Redirect bug, white background bug, and login error-handling bug fixed (see Bugs fixed section above). Phase 1 audit continues with browser screenshots for Batch 0 items 1-2.

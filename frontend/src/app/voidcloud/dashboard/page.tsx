@@ -125,7 +125,7 @@ function StepCard({ href, step, title, desc }: { href: string; step: string; tit
   );
 }
 
-export function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     RUNNING: "bg-green-500/20 text-green-300 border-green-500/30",
     DEPLOYING: "bg-blue-500/20 text-blue-300 border-blue-500/30",

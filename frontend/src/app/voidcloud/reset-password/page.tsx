@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
-import { AuthShell, Input } from "../login/page";
+import { AuthShell, Input } from "@/components/auth/AuthShell";
 
 function ResetPasswordInner() {
   const router = useRouter();

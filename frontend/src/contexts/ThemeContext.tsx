@@ -14,27 +14,33 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
-  root.classList.toggle("dark", theme === "dark");
+  root.classList.toggle("light", theme === "light");
 }
 
 function getSystemTheme(): Theme {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "dark";
 }
 
 async function loadStoredTheme(): Promise<{ mode: string } | null> {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("voidcloud_token") || sessionStorage.getItem("voidcloud_token");
+    if (!token) return null;
+  }
   try {
     const { data } = await api.get("/auth/me");
     const pref = data?.themePreference;
     if (pref === "light" || pref === "dark" || pref === "system") return { mode: pref };
   } catch {
-    localStorage.removeItem("voidcloud_token");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("voidcloud_token");
+      sessionStorage.removeItem("voidcloud_token");
+    }
   }
   return null;
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(getSystemTheme);
+  const [theme, setTheme] = useState<Theme>("dark");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -59,9 +65,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!ready) return;
     const handler = () => {
       const root = document.documentElement;
-      const isDark = root.classList.contains("dark");
-      if (isDark && theme !== "dark") setTheme("dark");
-      if (!isDark && theme !== "light") setTheme("light");
+      const isLight = root.classList.contains("light");
+      if (isLight && theme !== "light") setTheme("light");
+      if (!isLight && theme !== "dark") setTheme("dark");
     };
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", handler);
     return () => window.matchMedia("(prefers-color-scheme: dark)").removeEventListener("change", handler);
@@ -70,6 +76,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = async () => {
     setTheme((prev) => {
       const next = prev === "light" ? "dark" : "light";
+      if (typeof window !== "undefined") {
+        localStorage.setItem("theme", next);
+      }
       api.patch("/auth/me/theme", { themePreference: next }).catch(() => {});
       return next;
     });

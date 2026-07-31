@@ -35,4 +35,4 @@ COPY services/whatsapp/dist ./services/whatsapp/dist
 
 COPY --from=builder /app/dist ./dist
 EXPOSE 3004
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/services/vps/src/main.js"]

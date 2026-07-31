@@ -27,7 +27,8 @@ node_modules
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# misc
+# local environment
+.env
 /.sass-cache
 /connect.lock
 /coverage
