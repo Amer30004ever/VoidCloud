@@ -65,13 +65,13 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
 
   const NAV = useMemo(() => [
-    { href: "/voidcloud/user/dashboard", label: t(dict, "dashboard.welcome", "Dashboard").replace(", {{name}}", "").replace("Welcome", "Dashboard"), icon: "ðŸ " },
+    { href: "/voidcloud/user/dashboard", label: t(dict, "dashboard.welcome", "Dashboard").replace(", {{name}}", "").replace("Welcome", "Dashboard"), icon: "🏠" },
     { href: "/voidcloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥ï¸" },
     { href: "/voidcloud/dashboard/images", label: "Images", icon: "💿" },
     { href: "/voidcloud/dashboard/analytics", label: "Analytics", icon: "📈" },
     { href: "/voidcloud/dashboard/backups", label: "Backups", icon: "💾" },
-    { href: "/voidcloud/dashboard/webhooks", label: "Webhooks", icon: "ðŸª" },
-    { href: "/voidcloud/dashboard/referral", label: "Referral", icon: "ðŸŽ" },
+    { href: "/voidcloud/dashboard/webhooks", label: "Webhooks", icon: "🪝" },
+    { href: "/voidcloud/dashboard/referral", label: "Referral", icon: "🎁" },
     { href: "/voidcloud/dashboard/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💳" },
     { href: "/voidcloud/dashboard/wallet", label: "Wallet", icon: "👛" },
     { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙ï¸" },
@@ -143,7 +143,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
       >
         <div className="flex items-center justify-between p-4">
           <Link href={logoHref} className={`flex items-center gap-2 font-bold ${open ? "" : "hidden"}`}>
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">â˜</span>
+            <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">☁</span>
             VoidCloud
           </Link>
           <button onClick={() => setOpen(!open)} className="rounded-md p-1 text-white/60 hover:bg-white/10">

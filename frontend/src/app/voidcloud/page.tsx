@@ -70,12 +70,12 @@ export default function VoidCloudLanding() {
       <section className="mx-auto max-w-7xl px-6 py-16">
         <div className="grid gap-6 md:grid-cols-3">
           {[
-            ["ðŸŒ", "Auto custom domains", "Bring your domain. We provision Let's Encrypt SSL automatically via cert-manager."],
+            ["🌐", "Auto custom domains", "Bring your domain. We provision Let's Encrypt SSL automatically via cert-manager."],
             ["💳", "Pay your way", "Stripe for cards. Fawry for cash & QR. InstaPay for instant Egyptian bank transfers."],
             ["📊", "Real-time monitoring", "CPU, RAM, requests, logs — everything streamed live from Prometheus & Loki."],
-            ["ðŸ”", "Built-in security", "DDoS protection, encrypted env vars, 2FA, audit logs, SOC2 reporting on Enterprise."],
+            ["🔒", "Built-in security", "DDoS protection, encrypted env vars, 2FA, audit logs, SOC2 reporting on Enterprise."],
             ["💾", "Daily backups", "Automated database backups, one-click restore, point-in-time recovery."],
-            ["ðŸŒ", "EN / AR with RTL", "First-class Arabic support, full RTL layout, dual currency invoices (USD / EGP)."],
+            ["🌍", "EN / AR with RTL", "First-class Arabic support, full RTL layout, dual currency invoices (USD / EGP)."],
           ].map(([icon, title, desc]) => (
             <div
               key={title}

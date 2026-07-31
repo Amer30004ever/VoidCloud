@@ -9,7 +9,7 @@ export function ProblemSolution() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-8 backdrop-blur-xl">
-          <div className="mb-4 text-4xl">ðŸ¢</div>
+          <div className="mb-4 text-4xl">🏢</div>
           <h3 className="mb-4 text-xl font-bold">Traditional Hosting Sucks</h3>
           <ul className="space-y-3 text-white/70">
             {[
