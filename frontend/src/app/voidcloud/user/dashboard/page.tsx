@@ -43,7 +43,7 @@ export default function UserDashboard() {
             <div className="text-sm">
               {trialExpired
                 ? "âŒ Your trial has expired. Your VPS has been suspended. Upgrade now to resume service."
-                : `âš ï¸ Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"}. Upgrade to keep your VPS running.`}
+                : `⚠ï¸ Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"}. Upgrade to keep your VPS running.`}
             </div>
             <Link
               href="/voidcloud/dashboard/billing"
@@ -56,7 +56,7 @@ export default function UserDashboard() {
       )}
 
       <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 p-8 backdrop-blur-xl">
-        <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} ðŸ‘‹</h1>
+        <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
         <p className="mt-2 text-white/60">Manage your VPS instances, plan, and usage from one place.</p>
       </div>
 
@@ -68,15 +68,15 @@ export default function UserDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <QuickAction href="/voidcloud/dashboard/vps/new" icon="ðŸ–¥ï¸" title="New VPS" desc="Provision a Proxmox container" />
-        <QuickAction href="/voidcloud/dashboard/billing/invoices" icon="ðŸ§¾" title="View Invoices" desc="Download past invoices" />
-        <QuickAction href="/voidcloud/dashboard/billing" icon="â¬†ï¸" title="Upgrade Plan" desc="Need more resources?" />
+        <QuickAction href="/voidcloud/dashboard/vps/new" icon="🖥ï¸" title="New VPS" desc="Provision a Proxmox container" />
+        <QuickAction href="/voidcloud/dashboard/billing/invoices" icon="🧾" title="View Invoices" desc="Download past invoices" />
+        <QuickAction href="/voidcloud/dashboard/billing" icon="⬆ï¸" title="Upgrade Plan" desc="Need more resources?" />
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Your VPS instances</h2>
-          <Link href="/voidcloud/dashboard/vps" className="text-xs text-cyan-300 hover:underline">View all â†’</Link>
+          <Link href="/voidcloud/dashboard/vps" className="text-xs text-cyan-300 hover:underline">View all →</Link>
         </div>
         {deployments.length === 0 ? (
           <p className="py-12 text-center text-white/50">No VPS instances yet. Provision your first to get started.</p>
@@ -97,8 +97,8 @@ function PlanCard({ usage }: { usage: CloudUsage | null }) {
     <div className="rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10 p-5">
       <div className="text-xs uppercase text-cyan-300">Current plan</div>
       <div className="mt-1 text-2xl font-bold">{usage?.plan?.name ?? "Free Trial"}</div>
-      <div className="mt-1 text-xs text-white/60">${usage?.plan?.priceUSD ?? 0}/mo Â· {usage?.plan?.priceEGP ?? 0} EGP</div>
-      <Link href="/voidcloud/dashboard/billing" className="mt-3 inline-block text-xs text-cyan-300 hover:underline">Manage â†’</Link>
+      <div className="mt-1 text-xs text-white/60">${usage?.plan?.priceUSD ?? 0}/mo · {usage?.plan?.priceEGP ?? 0} EGP</div>
+      <Link href="/voidcloud/dashboard/billing" className="mt-3 inline-block text-xs text-cyan-300 hover:underline">Manage →</Link>
     </div>
   );
 }

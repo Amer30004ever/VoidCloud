@@ -66,31 +66,31 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
 
   const NAV = useMemo(() => [
     { href: "/voidcloud/user/dashboard", label: t(dict, "dashboard.welcome", "Dashboard").replace(", {{name}}", "").replace("Welcome", "Dashboard"), icon: "ðŸ " },
-    { href: "/voidcloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "ðŸ–¥ï¸" },
-    { href: "/voidcloud/dashboard/images", label: "Images", icon: "ðŸ’¿" },
-    { href: "/voidcloud/dashboard/analytics", label: "Analytics", icon: "ðŸ“ˆ" },
-    { href: "/voidcloud/dashboard/backups", label: "Backups", icon: "ðŸ’¾" },
+    { href: "/voidcloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥ï¸" },
+    { href: "/voidcloud/dashboard/images", label: "Images", icon: "💿" },
+    { href: "/voidcloud/dashboard/analytics", label: "Analytics", icon: "📈" },
+    { href: "/voidcloud/dashboard/backups", label: "Backups", icon: "💾" },
     { href: "/voidcloud/dashboard/webhooks", label: "Webhooks", icon: "ðŸª" },
     { href: "/voidcloud/dashboard/referral", label: "Referral", icon: "ðŸŽ" },
-    { href: "/voidcloud/dashboard/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "ðŸ’³" },
-    { href: "/voidcloud/dashboard/wallet", label: "Wallet", icon: "ðŸ‘›" },
-    { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "âš™ï¸" },
+    { href: "/voidcloud/dashboard/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💳" },
+    { href: "/voidcloud/dashboard/wallet", label: "Wallet", icon: "👛" },
+    { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙ï¸" },
   ], [dict]);
 
   const ADMIN_NAV = useMemo(() => [
-    { href: "/voidcloud/admin/dashboard", label: t(dict, "admin.dashboard", "Dashboard"), icon: "ðŸ“Š" },
-    { href: "/voidcloud/admin/users", label: t(dict, "admin.users", "Users"), icon: "ðŸ‘¤" },
-    { href: "/voidcloud/admin/plans", label: t(dict, "admin.plans", "Plans"), icon: "ðŸ’Ž" },
-    { href: "/voidcloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "ðŸ–¥ï¸" },
+    { href: "/voidcloud/admin/dashboard", label: t(dict, "admin.dashboard", "Dashboard"), icon: "📊" },
+    { href: "/voidcloud/admin/users", label: t(dict, "admin.users", "Users"), icon: "👤" },
+    { href: "/voidcloud/admin/plans", label: t(dict, "admin.plans", "Plans"), icon: "💎" },
+    { href: "/voidcloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥ï¸" },
     { href: "/voidcloud/admin/clusters", label: "Proxmox Clusters", icon: "🗄️" },
     { href: "/voidcloud/admin/monitoring", label: "Monitoring", icon: "❤️" },
     { href: "/voidcloud/admin/pods", label: "Pod Manager", icon: "📦" },
     { href: "/voidcloud/admin/security", label: "Security", icon: "🔒" },
     { href: "/voidcloud/admin/abuse", label: "Abuse & AUP", icon: "🛡️" },
-    { href: "/voidcloud/admin/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "ðŸ’°" },
+    { href: "/voidcloud/admin/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💰" },
     { href: "/voidcloud/admin/whatsapp", label: "WhatsApp Broadcast", icon: "💬" },
-    { href: "/voidcloud/admin/transactions", label: t(dict, "admin.transactions", "Transactions"), icon: "ðŸ§¾" },
-    { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "âš™ï¸" },
+    { href: "/voidcloud/admin/transactions", label: t(dict, "admin.transactions", "Transactions"), icon: "🧾" },
+    { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙ï¸" },
   ], [dict]);
 
   const logoHref = role
@@ -147,7 +147,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
             VoidCloud
           </Link>
           <button onClick={() => setOpen(!open)} className="rounded-md p-1 text-white/60 hover:bg-white/10">
-            {open ? (lang === "ar" ? "â–¶" : "â—€") : (lang === "ar" ? "â—€" : "â–¶")}
+            {open ? (lang === "ar" ? "▶" : "◀") : (lang === "ar" ? "◀" : "▶")}
           </button>
         </div>
         <nav className="flex-1 space-y-1 px-2">
@@ -170,7 +170,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
                 href={isAdminArea ? "/voidcloud/user/dashboard" : "/voidcloud/admin/dashboard"}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-white"
               >
-                <span>{isAdminArea ? "â†" : "ðŸ›¡ï¸"}</span>
+                <span>{isAdminArea ? "â†" : "🛡ï¸"}</span>
                 {open && <span>{isAdminArea ? "Back to user" : "Admin Panel"}</span>}
               </Link>
             </>
@@ -178,7 +178,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
         </nav>
         <div className="border-t border-white/5 p-3">
           <button onClick={logout} className="w-full rounded-lg px-3 py-2 text-start text-sm text-white/60 hover:bg-white/5 hover:text-white">
-            ðŸšª {open && (t(dict, "dashboard.logout", "Sign out"))}
+            🚪 {open && (t(dict, "dashboard.logout", "Sign out"))}
           </button>
         </div>
       </aside>
@@ -188,7 +188,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
           <div className="text-sm text-white/50">{pathname}</div>
           <div className="flex items-center gap-3">
             <button onClick={() => setLang(lang === "en" ? "ar" : "en")} className="rounded-md border border-white/10 px-3 py-1 text-xs">
-              {lang === "en" ? "ðŸ‡ªðŸ‡¬ Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©" : "ðŸ‡¬ðŸ‡§ EN"}
+              {lang === "en" ? "🇪🇬 العربية" : "🇬🇧 EN"}
             </button>
             <NotificationBell />
           </div>

@@ -105,8 +105,8 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-white/5 pt-6 text-center text-sm text-white/40">
-          Â© {new Date().getFullYear()} VoidCloud. Built by Amer Magdi. Hosted on our own
-          Kubernetes cluster in Egypt ðŸ‡ªðŸ‡¬
+          © {new Date().getFullYear()} VoidCloud. Built by Amer Magdi. Hosted on our own
+          Kubernetes cluster in Egypt 🇪🇬
         </div>
       </div>
     </footer>

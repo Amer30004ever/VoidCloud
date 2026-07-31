@@ -71,10 +71,10 @@ export default function VoidCloudLanding() {
         <div className="grid gap-6 md:grid-cols-3">
           {[
             ["ðŸŒ", "Auto custom domains", "Bring your domain. We provision Let's Encrypt SSL automatically via cert-manager."],
-            ["ðŸ’³", "Pay your way", "Stripe for cards. Fawry for cash & QR. InstaPay for instant Egyptian bank transfers."],
-            ["ðŸ“Š", "Real-time monitoring", "CPU, RAM, requests, logs â€” everything streamed live from Prometheus & Loki."],
+            ["💳", "Pay your way", "Stripe for cards. Fawry for cash & QR. InstaPay for instant Egyptian bank transfers."],
+            ["📊", "Real-time monitoring", "CPU, RAM, requests, logs — everything streamed live from Prometheus & Loki."],
             ["ðŸ”", "Built-in security", "DDoS protection, encrypted env vars, 2FA, audit logs, SOC2 reporting on Enterprise."],
-            ["ðŸ’¾", "Daily backups", "Automated database backups, one-click restore, point-in-time recovery."],
+            ["💾", "Daily backups", "Automated database backups, one-click restore, point-in-time recovery."],
             ["ðŸŒ", "EN / AR with RTL", "First-class Arabic support, full RTL layout, dual currency invoices (USD / EGP)."],
           ].map(([icon, title, desc]) => (
             <div
@@ -96,7 +96,7 @@ export default function VoidCloudLanding() {
           <p className="mt-3 text-white/60">Cancel any time. Both USD and EGP supported.</p>
         </div>
         {loading ? (
-          <p className="text-center text-white/60">Loading plansâ€¦</p>
+          <p className="text-center text-white/60">Loading plans…</p>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {plans.filter((p) => p.slug !== "enterprise").map((plan) => (

@@ -41,7 +41,7 @@ export function OrganizationSwitcher() {
           {orgs.map((o) => (
             <Link key={o.id} href={`/voidcloud/dashboard/orgs/${o.id}`} onClick={() => pick(o.id)}
               className={`block rounded px-3 py-2 text-sm hover:bg-white/10 ${active === o.id ? "bg-white/5" : ""}`}>
-              {o.name} <span className="text-xs text-white/40">Â· {o._count?.members ?? 0}m</span>
+              {o.name} <span className="text-xs text-white/40">· {o._count?.members ?? 0}m</span>
             </Link>
           ))}
           <button disabled={busy} onClick={createNew} className="mt-1 w-full rounded border-t border-white/10 px-3 py-2 text-left text-sm text-cyan-300 hover:bg-white/5">+ Create organization</button>

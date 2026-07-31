@@ -120,7 +120,7 @@ function ProfileTab() {
           <input className={input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="01XXXXXXXXX" maxLength={11} />
         </Field>
         <Field label="Current email">
-          <div className="text-sm text-white/70">{profile?.email ?? "â€”"} {profile?.emailVerified ? <span className="text-emerald-400 ml-2">âœ“ verified</span> : <span className="text-amber-300 ml-2">unverified</span>}</div>
+          <div className="text-sm text-white/70">{profile?.email ?? "—"} {profile?.emailVerified ? <span className="text-emerald-400 ml-2">✓ verified</span> : <span className="text-amber-300 ml-2">unverified</span>}</div>
         </Field>
         <button disabled={busy} onClick={saveProfile} className={btnPrimary}>Save profile</button>
       </Section>
@@ -188,7 +188,7 @@ function SecurityTab() {
       <Section title="Two-factor authentication">
         {recoveryCodes && (
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
-            <p className="mb-2 font-semibold text-amber-200">Save these recovery codes now â€” they will not be shown again.</p>
+            <p className="mb-2 font-semibold text-amber-200">Save these recovery codes now — they will not be shown again.</p>
             <div className="grid grid-cols-2 gap-2 font-mono text-amber-100">
               {recoveryCodes.map((c) => <div key={c}>{c}</div>)}
             </div>
@@ -228,7 +228,7 @@ function SecurityTab() {
 
         {status?.enabled && !setup && (
           <div className="space-y-3">
-            <p className="text-sm text-emerald-300">âœ“ 2FA is enabled Â· {status.recoveryCodesRemaining} recovery codes remaining</p>
+            <p className="text-sm text-emerald-300">✓ 2FA is enabled · {status.recoveryCodesRemaining} recovery codes remaining</p>
             <button
               disabled={busy}
               onClick={async () => { try { const r = await cloudTwoFactor.regenerate(); setRecoveryCodes(r.recoveryCodes); await refresh(); } catch {} }}
@@ -292,7 +292,7 @@ function NotificationsTab() {
     <div className="space-y-4">
       {msg && <Banner kind={msg.kind}>{msg.text}</Banner>}
       <Section title="Notification preferences">
-        {!prefs && <p className="text-sm text-white/60">Loadingâ€¦</p>}
+        {!prefs && <p className="text-sm text-white/60">Loading…</p>}
         {prefs && (
           <div className="space-y-3">
             {NOTIF_FIELDS.map((f) => (
@@ -326,7 +326,7 @@ function ApiKeysTab() {
         href="/voidcloud/dashboard/settings/api-keys"
         className="inline-block rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950"
       >
-        Open API Keys â†’
+        Open API Keys →
       </Link>
     </Section>
   );
