@@ -20,7 +20,7 @@ export function UseCases() {
   return (
     <section className="mx-auto max-w-7xl px-6 py-20">
       <div className="mb-12 text-center">
-        <h2 className="text-3xl font-bold md:text-4xl">Perfect For</h2>
+        <h2 className="section-title">Perfect For</h2>
         <p className="mt-3 text-white/60">From solo devs to growing teams.</p>
       </div>
       <div className="grid gap-6 md:grid-cols-3">

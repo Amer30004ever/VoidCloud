@@ -42,7 +42,7 @@ export function FAQ() {
   return (
     <section className="mx-auto max-w-3xl px-6 py-20">
       <div className="mb-12 text-center">
-        <h2 className="text-3xl font-bold md:text-4xl">Frequently Asked Questions</h2>
+        <h2 className="section-title">Frequently Asked Questions</h2>
       </div>
       <div className="space-y-3">
         {faqs.map((f, i) => {

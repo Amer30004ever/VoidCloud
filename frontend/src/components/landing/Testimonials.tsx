@@ -23,7 +23,7 @@ export function Testimonials() {
   return (
     <section className="mx-auto max-w-7xl px-6 py-20">
       <div className="mb-12 text-center">
-        <h2 className="text-3xl font-bold md:text-4xl">Loved by Developers</h2>
+        <h2 className="section-title">Loved by Developers</h2>
       </div>
       <div className="grid gap-6 md:grid-cols-3">
         {items.map((t) => (

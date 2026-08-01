@@ -12,7 +12,7 @@ export function LegalPage({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen vc-page text-white">
       <Navbar />
       <main className="mx-auto max-w-3xl px-6 py-20">
         <Link href="/" className="text-sm text-white/50 hover:text-white">
