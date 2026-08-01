@@ -20,7 +20,7 @@ export default function AdminOverview() {
   ];
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold">🛡ï¸ Admin Overview</h1>
+      <h1 className="mb-6 text-3xl font-bold">🛡️ Admin Overview</h1>
       <div className="grid gap-4 md:grid-cols-3">
         {cards.map((c) => (
           <div key={c.label} className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">

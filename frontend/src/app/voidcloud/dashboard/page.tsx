@@ -66,9 +66,9 @@ export default function CloudDashboardHome() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <QuickAction href="/voidcloud/dashboard/vps/new" icon="🖥ï¸" title="New VPS" desc="Provision a Proxmox container" />
+        <QuickAction href="/voidcloud/dashboard/vps/new" icon="🖥️" title="New VPS" desc="Provision a Proxmox container" />
         <QuickAction href="/voidcloud/dashboard/billing/invoices" icon="🧾" title="View invoices" desc="Download past invoices" />
-        <QuickAction href="/voidcloud/dashboard/billing" icon="⬆ï¸" title="Upgrade plan" desc="Need more resources?" />
+        <QuickAction href="/voidcloud/dashboard/billing" icon="⬆️" title="Upgrade plan" desc="Need more resources?" />
       </div>
     </div>
   );

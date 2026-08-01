@@ -1,0 +1,20 @@
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Copy standalone package.json and install runtime deps (flat structure, no pnpm)
+COPY frontend/.next/standalone/frontend/package.json ./
+COPY lib/ui-kit/package.json ./lib/ui-kit/
+COPY lib/ui-kit/src ./lib/ui-kit/src
+RUN npm install --production --no-audit --no-fund 2>&1
+
+# Copy standalone server + output
+COPY frontend/.next/standalone/frontend/server.js ./server.js
+COPY frontend/.next/standalone/frontend/.next ./.next
+COPY frontend/.next/static ./.next/static
+COPY frontend/public ./public
+
+EXPOSE 3000
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+CMD ["node", "server.js"]

@@ -15,6 +15,12 @@ services/*/*/node_modules
 /build
 /.next
 /vendored
+frontend/.next/cache
+frontend/.next/dev
+frontend/.next/diagnostics
+frontend/.next/types
+backend/.next/cache
+backend/.next/dev
 
 # Exclude git
 .git

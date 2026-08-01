@@ -29,7 +29,7 @@ const plans: Plan[] = [
       "Community support",
       "No credit card required",
     ],
-    cta: "Start Trial â†’",
+    cta: "Start Trial →",
     href: "/voidcloud/register",
     outline: true,
     trialNote: "After 7 days, deployments pause until upgrade. No auto-charge.",
@@ -47,7 +47,7 @@ const plans: Plan[] = [
       "Basic support (24h)",
       "50k API requests",
     ],
-    cta: "Choose Starter â†’",
+    cta: "Choose Starter →",
     href: "/voidcloud/register?plan=starter",
     popular: true,
   },
@@ -65,7 +65,7 @@ const plans: Plan[] = [
       "200k API requests",
       "Redis cache + Staging",
     ],
-    cta: "Choose Pro â†’",
+    cta: "Choose Pro →",
     href: "/voidcloud/register?plan=pro",
   },
   {
@@ -82,7 +82,7 @@ const plans: Plan[] = [
       "500k API requests",
       "Team members (5)",
     ],
-    cta: "Contact Sales â†’",
+    cta: "Contact Sales →",
     href: "mailto:nova-cloud-2026@outlook.com?subject=Business%20Plan%20Inquiry",
   },
 ];
@@ -94,7 +94,7 @@ export function Pricing() {
     <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
       <div className="mb-10 text-center">
         <span className="mb-4 inline-block rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300">
-          ðŸ”¥ Limited beta pricing â€” lock in discount
+          🔥 Limited beta pricing — lock in discount
         </span>
         <h2 className="text-3xl font-bold md:text-4xl">Simple, Transparent Pricing</h2>
         <p className="mt-3 text-white/60">USD or EGP. Cancel anytime.</p>
@@ -118,7 +118,7 @@ export function Pricing() {
           </button>
         </div>
         <p className="mt-3 text-xs text-white/50">
-          ðŸ”’ 14-day money-back guarantee on annual plans
+          🔗 14-day money-back guarantee on annual plans
         </p>
       </div>
 
@@ -154,7 +154,7 @@ export function Pricing() {
               <ul className="mt-6 space-y-2 text-sm">
                 {p.features.map((f) => (
                   <li key={f} className="flex gap-2">
-                    <span className="text-cyan-400">âœ“</span>
+                    <span className="text-cyan-400">✓</span>
                     <span className="text-white/80">{f}</span>
                   </li>
                 ))}
@@ -180,9 +180,9 @@ export function Pricing() {
       </div>
 
       <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-white/60">
-        <span>âœ“ No setup fees</span>
-        <span>âœ“ No bandwidth overage</span>
-        <span>âœ“ No hidden costs</span>
+        <span>✓ No setup fees</span>
+        <span>✓ No bandwidth overage</span>
+        <span>✓ No hidden costs</span>
       </div>
     </section>
   );

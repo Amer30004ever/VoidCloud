@@ -42,8 +42,8 @@ export default function UserDashboard() {
           <div className="flex items-center justify-between gap-4">
             <div className="text-sm">
               {trialExpired
-                ? "âŒ Your trial has expired. Your VPS has been suspended. Upgrade now to resume service."
-                : `⚠ï¸ Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"}. Upgrade to keep your VPS running.`}
+                ? "❌ Your trial has expired. Your VPS has been suspended. Upgrade now to resume service."
+                : `⚠️ Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"}. Upgrade to keep your VPS running.`}
             </div>
             <Link
               href="/voidcloud/dashboard/billing"
@@ -68,9 +68,9 @@ export default function UserDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <QuickAction href="/voidcloud/dashboard/vps/new" icon="🖥ï¸" title="New VPS" desc="Provision a Proxmox container" />
+        <QuickAction href="/voidcloud/dashboard/vps/new" icon="🖥️" title="New VPS" desc="Provision a Proxmox container" />
         <QuickAction href="/voidcloud/dashboard/billing/invoices" icon="🧾" title="View Invoices" desc="Download past invoices" />
-        <QuickAction href="/voidcloud/dashboard/billing" icon="⬆ï¸" title="Upgrade Plan" desc="Need more resources?" />
+        <QuickAction href="/voidcloud/dashboard/billing" icon="⬆️" title="Upgrade Plan" desc="Need more resources?" />
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
@@ -166,7 +166,7 @@ function VpsCard({ d, trialEndsAt, now }: VpsCardProps) {
         <Metric label="Disk" pct={u?.diskPercent ?? 0} />
       </div>
       {trialDays !== null && (
-        <div className="mt-3 text-[11px] text-amber-300">â³ Trial: {trialDays} day{trialDays === 1 ? "" : "s"} left</div>
+        <div className="mt-3 text-[11px] text-amber-300">⏳ Trial: {trialDays} day{trialDays === 1 ? "" : "s"} left</div>
       )}
     </Link>
   );
