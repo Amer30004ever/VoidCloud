@@ -17,7 +17,7 @@ export default function VoidCloudLanding() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+    <div className="min-h-screen vc-page text-white">
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/60 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
@@ -93,7 +93,7 @@ export default function VoidCloudLanding() {
       <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
         <div className="mb-12 text-center">
           <h2 className="text-4xl font-bold">Simple, transparent pricing</h2>
-          <p className="mt-3 text-white/60">Cancel any time. Both USD and EGP supported.</p>
+          <p className="section-subtitle">Cancel any time. Both USD and EGP supported.</p>
         </div>
         {loading ? (
           <p className="text-center text-white/60">Loading plans…</p>

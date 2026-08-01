@@ -19,7 +19,7 @@ export function LegalPage({
           ← Back home
         </Link>
         <h1 className="mt-4 text-4xl font-bold tracking-tight md:text-5xl">{title}</h1>
-        {subtitle && <p className="mt-3 text-white/60">{subtitle}</p>}
+        {subtitle && <p className="section-subtitle">{subtitle}</p>}
         <div className="prose prose-invert mt-10 max-w-none prose-headings:text-white prose-p:text-white/70 prose-a:text-cyan-400 prose-strong:text-white prose-li:text-white/70">
           {children}
         </div>

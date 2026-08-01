@@ -10,7 +10,7 @@ export function HowItWorks() {
     <section className="mx-auto max-w-7xl px-6 py-20">
       <div className="mb-12 text-center">
         <h2 className="section-title">How It Works</h2>
-        <p className="mt-3 text-white/60">Four steps from idea to production.</p>
+        <p className="section-subtitle">Four steps from idea to production.</p>
       </div>
       <div className="grid gap-6 md:grid-cols-4">
         {steps.map((s, i) => (

@@ -97,7 +97,7 @@ export function Pricing() {
           🔥 Limited beta pricing — lock in discount
         </span>
         <h2 className="section-title">Simple, Transparent Pricing</h2>
-        <p className="mt-3 text-white/60">USD or EGP. Cancel anytime.</p>
+        <p className="section-subtitle">USD or EGP. Cancel anytime.</p>
 
         <div className="mt-6 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1">
           <button
