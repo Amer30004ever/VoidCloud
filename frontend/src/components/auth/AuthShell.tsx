@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export function AuthShell({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="grid min-h-screen place-items-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white">
+    <div className="grid min-h-screen place-items-center vc-page p-6 text-white">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
         <Link href="/voidcloud" className="mb-6 flex items-center gap-2 text-lg font-bold">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">☁</span>

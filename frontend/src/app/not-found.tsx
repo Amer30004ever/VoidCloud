@@ -16,7 +16,7 @@ const links = [
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen vc-page text-white">
       <Navbar />
       <main className="mx-auto flex max-w-3xl flex-col items-center px-6 py-28 text-center">
         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-widest text-white/50">

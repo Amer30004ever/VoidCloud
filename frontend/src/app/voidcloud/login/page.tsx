@@ -43,8 +43,12 @@ function LoginInner() {
       const redirect = params.get("redirect");
       if (redirect) {
         router.push(redirect);
-      } else if (role === "ADMIN") {
+      } else if (role === "SUPER_ADMIN") {
         router.push("/voidcloud/admin/dashboard");
+      } else if (role === "ADMIN") {
+        router.push("/voidcloud/business/dashboard");
+      } else if (role === "AGENT") {
+        router.push("/voidcloud/agent/dashboard");
       } else {
         router.push("/voidcloud/user/dashboard");
       }

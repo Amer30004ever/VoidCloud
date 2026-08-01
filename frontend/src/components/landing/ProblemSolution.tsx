@@ -2,7 +2,7 @@ export function ProblemSolution() {
   return (
     <section className="mx-auto max-w-7xl px-6 py-20">
       <div className="mb-12 text-center">
-        <h2 className="text-3xl font-bold md:text-4xl">
+        <h2 className="section-title">
           Stop Fighting Infrastructure. Start Shipping Code.
         </h2>
       </div>

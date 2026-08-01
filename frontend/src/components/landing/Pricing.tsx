@@ -94,10 +94,10 @@ export function Pricing() {
     <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
       <div className="mb-10 text-center">
         <span className="mb-4 inline-block rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300">
-          🔥 Limited beta pricing — lock in discount
+          Limited beta pricing — lock in discount
         </span>
-        <h2 className="text-3xl font-bold md:text-4xl">Simple, Transparent Pricing</h2>
-        <p className="mt-3 text-white/60">USD or EGP. Cancel anytime.</p>
+        <h2 className="section-title">Simple, Transparent Pricing</h2>
+        <p className="section-subtitle">USD or EGP. Cancel anytime.</p>
 
         <div className="mt-6 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1">
           <button
@@ -118,11 +118,11 @@ export function Pricing() {
           </button>
         </div>
         <p className="mt-3 text-xs text-white/50">
-          🔗 14-day money-back guarantee on annual plans
+          14-day money-back guarantee on annual plans
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid items-stretch gap-6 md:grid-cols-2 lg:grid-cols-4">
         {plans.map((p) => {
           const price = yearly ? Math.round(p.monthly * 12 * 0.8) : p.monthly;
           const egp = yearly ? Math.round(p.egp * 12 * 0.8) : p.egp;
@@ -130,7 +130,7 @@ export function Pricing() {
           return (
             <div
               key={p.name}
-              className={`relative rounded-2xl border p-6 backdrop-blur-xl transition ${
+              className={`relative flex h-full flex-col rounded-2xl border p-6 backdrop-blur-xl transition ${
                 p.popular
                   ? "border-cyan-400/50 bg-gradient-to-b from-cyan-500/10 to-fuchsia-500/5"
                   : "border-white/10 bg-white/5 hover:border-white/20"
@@ -141,7 +141,7 @@ export function Pricing() {
                   MOST POPULAR
                 </span>
               )}
-              <h3 className="text-xl font-bold">{p.name}</h3>
+              <h3 className="card-title">{p.name}</h3>
               <p className="mt-1 text-xs text-white/50">{p.for}</p>
               <div className="mt-4">
                 <span className="text-4xl font-bold">${price}</span>
@@ -151,7 +151,7 @@ export function Pricing() {
                 )}
                 {p.egp === 0 && <div className="text-xs text-white/40">7-day trial</div>}
               </div>
-              <ul className="mt-6 space-y-2 text-sm">
+              <ul className="mt-6 flex-1 space-y-2 text-sm">
                 {p.features.map((f) => (
                   <li key={f} className="flex gap-2">
                     <span className="text-cyan-400">✓</span>

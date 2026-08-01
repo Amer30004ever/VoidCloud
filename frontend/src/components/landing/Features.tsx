@@ -36,8 +36,8 @@ export function Features() {
   return (
     <section id="features" className="mx-auto max-w-7xl px-6 py-20">
       <div className="mb-12 text-center">
-        <h2 className="text-3xl font-bold md:text-4xl">Everything You Need to Ship</h2>
-        <p className="mt-3 text-white/60">A complete platform — no glue code required.</p>
+        <h2 className="section-title">Everything You Need to Ship</h2>
+        <p className="section-subtitle">A complete platform — no glue code required.</p>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {features.map((f) => (

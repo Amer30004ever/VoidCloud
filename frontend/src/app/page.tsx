@@ -65,7 +65,7 @@ export default function LandingPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="min-h-screen bg-[#0a0a0a] text-white antialiased">
+      <div className="min-h-screen vc-page text-white antialiased">
         <Navbar />
         <main>
           <Hero />

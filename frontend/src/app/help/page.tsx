@@ -150,7 +150,7 @@ export default function HelpPage() {
   }, [query, category]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen vc-page text-white">
       <Navbar />
       <main className="mx-auto max-w-5xl px-6 py-20">
         <header className="text-center">
