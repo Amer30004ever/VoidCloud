@@ -8,8 +8,8 @@
   ],
   "scripts": {
     "dev": "cd frontend && PORT=8080 bun run dev -- -p 8080 -H 0.0.0.0",
-    "build": "cd frontend && bun run build",
-    "build:dev": "cd frontend && bun run build",
+    "build": "cd frontend && bun run build && cd .. && node scripts/assemble-dist.mjs",
+    "build:dev": "cd frontend && bun run build && cd .. && node scripts/assemble-dist.mjs",
     "typecheck:libs": "tsc --build",
     "typecheck": "tsc --build",
     "test": "cd tests && npm test",
