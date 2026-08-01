@@ -41,8 +41,9 @@ async function main() {
     await cp(appDir, dist, { recursive: true });
     // hoisted node_modules from the standalone root
     const hoisted = path.join(nextDir, "standalone", "node_modules");
-    if (existsSync(hoisted)) {
-      await cp(hoisted, path.join(dist, "node_modules"), { recursive: true, force: false, errorOnExist: false });
+    const distModules = path.join(dist, "node_modules");
+    if (existsSync(hoisted) && !existsSync(distModules)) {
+      await cp(hoisted, distModules, { recursive: true });
     }
   } else {
     // Non-standalone build: ship the compiled output as-is.
