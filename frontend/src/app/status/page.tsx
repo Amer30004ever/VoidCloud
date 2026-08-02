@@ -76,8 +76,11 @@ export default function PublicStatusPage() {
             role="alert"
             className="mt-8 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-8 text-center backdrop-blur-xl"
           >
-            <div className="text-3xl" aria-hidden>
-              📡
+            <div
+              className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-yellow-400/40 bg-yellow-400/10 text-xl font-bold text-yellow-300"
+              aria-hidden
+            >
+              !
             </div>
             <h2 className="mt-3 text-lg font-semibold text-white">Status data is unavailable</h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-white/60">{error}</p>
