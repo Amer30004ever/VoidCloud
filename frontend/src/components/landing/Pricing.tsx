@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { pricingAnalytics } from "@/lib/analytics";
 
 type Plan = {
   name: string;
@@ -11,10 +12,12 @@ type Plan = {
   features: string[];
   cta: string;
   href: string;
+  intent: "trial_start" | "checkout" | "contact_sales";
   popular?: boolean;
   outline?: boolean;
   trialNote?: string;
 };
+
 
 const plans: Plan[] = [
   {
@@ -30,6 +33,7 @@ const plans: Plan[] = [
       "No credit card required",
     ],
     cta: "Start Trial →",
+    intent: "trial_start",
     href: "/voidcloud/register",
     outline: true,
     trialNote: "After 7 days, deployments pause until upgrade. No auto-charge.",
@@ -48,6 +52,7 @@ const plans: Plan[] = [
       "50k API requests",
     ],
     cta: "Choose Starter →",
+    intent: "checkout",
     href: "/voidcloud/register?plan=starter",
     popular: true,
   },
@@ -66,6 +71,7 @@ const plans: Plan[] = [
       "Redis cache + Staging",
     ],
     cta: "Choose Pro →",
+    intent: "checkout",
     href: "/voidcloud/register?plan=pro",
   },
   {
@@ -83,12 +89,17 @@ const plans: Plan[] = [
       "Team members (5)",
     ],
     cta: "Contact Sales →",
+    intent: "contact_sales",
     href: "mailto:nova-cloud-2026@outlook.com?subject=Business%20Plan%20Inquiry",
   },
 ];
 
 export function Pricing() {
   const [yearly, setYearly] = useState(false);
+
+  useEffect(() => {
+    pricingAnalytics.viewPricing();
+  }, []);
 
   return (
     <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
@@ -101,7 +112,10 @@ export function Pricing() {
 
         <div className="mt-6 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1">
           <button
-            onClick={() => setYearly(false)}
+            onClick={() => {
+              setYearly(false);
+              pricingAnalytics.toggleBilling("monthly");
+            }}
             className={`rounded-full px-4 py-1.5 text-sm transition ${
               !yearly ? "bg-white text-slate-950" : "text-white/70"
             }`}
@@ -109,7 +123,10 @@ export function Pricing() {
             Monthly
           </button>
           <button
-            onClick={() => setYearly(true)}
+            onClick={() => {
+              setYearly(true);
+              pricingAnalytics.toggleBilling("yearly");
+            }}
             className={`rounded-full px-4 py-1.5 text-sm transition ${
               yearly ? "bg-white text-slate-950" : "text-white/70"
             }`}
@@ -161,6 +178,15 @@ export function Pricing() {
               </ul>
               <Link
                 href={p.href}
+                data-analytics-cta={p.intent}
+                onClick={() =>
+                  pricingAnalytics.ctaClicked({
+                    plan: p.name,
+                    priceUSD: price,
+                    period: yearly ? "yearly" : "monthly",
+                    intent: p.intent,
+                  })
+                }
                 className={`mt-6 block rounded-xl py-3 text-center text-sm font-semibold transition ${
                   p.popular
                     ? "bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-slate-950 hover:opacity-90"
