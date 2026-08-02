@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { pricingAnalytics } from "@/lib/analytics";
 
 type Plan = {
   name: string;
@@ -11,10 +12,12 @@ type Plan = {
   features: string[];
   cta: string;
   href: string;
+  intent: "trial_start" | "checkout" | "contact_sales";
   popular?: boolean;
   outline?: boolean;
   trialNote?: string;
 };
+
 
 const plans: Plan[] = [
   {
