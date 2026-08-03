@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Server } from "lucide-react";
+import { Plus, Server } from "lucide-react";
 import { EmptyState } from "@workspace/ui-kit/empty-state";
 import { TableSkeleton } from "@workspace/ui-kit/skeleton";
 import { cloudApi, type CloudDeployment, type TenantQuota } from "@/features/vps/cloud";

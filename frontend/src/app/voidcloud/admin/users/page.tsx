@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Users } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { cloudApi, CloudPlan, TenantQuota } from "@/features/vps/cloud";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@workspace/ui-kit/empty-state";

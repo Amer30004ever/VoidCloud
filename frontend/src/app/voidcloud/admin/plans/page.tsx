@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
-import { Gem } from "lucide-react";
+import { Gem, Plus } from "lucide-react";
 import { EmptyState } from "@workspace/ui-kit/empty-state";
 import { CardSkeleton } from "@workspace/ui-kit/skeleton";
 import { cloudApi, CloudPlan } from "@/features/vps/cloud";
