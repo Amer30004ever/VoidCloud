@@ -99,19 +99,28 @@ test("pricing section renders plans without mojibake", async ({ page }) => {
 });
 
 test("pricing CTA clicks emit analytics events", async ({ page }) => {
+  // Stub the CTA destination so the click cannot navigate away before we read
+  // the buffered analytics queue.
+  await page.route("**/voidcloud/register**", (route) =>
+    route.fulfill({ status: 200, contentType: "text/html", body: "<html><body>stub</body></html>" }),
+  );
   await page.goto("/#pricing", { waitUntil: "domcontentloaded" });
+
   const cta = page.locator("#pricing [data-analytics-cta='trial_start']").first();
   await cta.scrollIntoViewIfNeeded();
   await cta.click({ force: true, noWaitAfter: true });
-  // The CTA navigates to signup; the buffered events survive in localStorage.
   await page.waitForLoadState("domcontentloaded");
 
-  const names = async () =>
-    (
-      (await page.evaluate(() =>
+  const names = async () => {
+    try {
+      const queued = (await page.evaluate(() =>
         JSON.parse(window.localStorage.getItem("voidcloud_analytics_queue") ?? "[]"),
-      )) as Array<{ name: string }>
-    ).map((e) => e.name);
+      )) as Array<{ name: string }>;
+      return queued.map((e) => e.name);
+    } catch {
+      return [] as string[];
+    }
+  };
 
   await expect.poll(names).toContain("pricing_viewed");
   await expect.poll(names).toContain("pricing_cta_clicked");
