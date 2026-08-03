@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@workspace/ui-kit/page-header";
-import { ListChecks, Plus, Trash2, Globe, Lock, Copy, Search, BarChart3 } from "lucide-react";
+import { ListChecks, Plus, Trash2, Globe, Lock, Copy, Search, BarChart3, History, Undo2, Pencil, Award } from "lucide-react";
 import { useLearningChecklists, CustomChecklist } from "@/features/learning/useLearningChecklists";
 import type { ChecklistTemplate } from "@/features/learning/content";
 
@@ -19,12 +19,15 @@ function blank(): CustomChecklist {
     custom: true,
     published: false,
     updatedAt: new Date().toISOString(),
+    version: 1,
+    history: [],
   };
 }
 
 export default function ChecklistsPage() {
-  const { ready, all, stats, saveCustom, deleteCustom } = useLearningChecklists();
+  const { ready, all, stats, saveCustom, deleteCustom, rollbackCustom } = useLearningChecklists();
   const [draft, setDraft] = useState<CustomChecklist | null>(null);
+  const [historyFor, setHistoryFor] = useState<string | null>(null);
 
   const startFromTemplate = (tpl: ChecklistTemplate) => {
     setDraft({
@@ -72,6 +75,9 @@ export default function ChecklistsPage() {
         </button>
         <Link href="/learning/search" className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
           <Search className="h-4 w-4" /> Search hub
+        </Link>
+        <Link href="/learning/quiz" className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+          <Award className="h-4 w-4" /> Practice exams
         </Link>
         <Link href="/learning/progress" className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
           <BarChart3 className="h-4 w-4" /> My progress
@@ -164,8 +170,13 @@ export default function ChecklistsPage() {
                     <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{c.category}</span>
                   </div>
                   {isCustom && (
+                    <span className="flex items-center gap-2">
+                      <span className="rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-muted-foreground">
+                        v{(c as CustomChecklist).version}
+                      </span>
                     <span className={`rounded-full px-2 py-0.5 text-[11px] ${(c as CustomChecklist).published ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
                       {(c as CustomChecklist).published ? "Published" : "Draft"}
+                    </span>
                     </span>
                   )}
                 </div>
@@ -190,11 +201,60 @@ export default function ChecklistsPage() {
                     <Copy className="h-3.5 w-3.5" /> Customize
                   </button>
                   {isCustom && (
+                    <button
+                      onClick={() => setDraft({ ...(c as CustomChecklist) })}
+                      className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </button>
+                  )}
+                  {isCustom && (
+                    <button
+                      onClick={() => setHistoryFor(historyFor === c.id ? null : c.id)}
+                      className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                      aria-expanded={historyFor === c.id}
+                    >
+                      <History className="h-3.5 w-3.5" /> History ({(c as CustomChecklist).history.length})
+                    </button>
+                  )}
+                  {isCustom && (
                     <button onClick={() => deleteCustom(c.id)} className="ml-auto rounded-lg border border-border p-1.5 text-muted-foreground hover:text-red-400" aria-label="Delete checklist">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
+
+                {isCustom && historyFor === c.id && (
+                  <div className="mt-4 rounded-lg border border-border/70 bg-background/40 p-3">
+                    <p className="mb-2 text-[11px] uppercase tracking-wide text-muted-foreground">Edit history</p>
+                    {(c as CustomChecklist).history.length === 0 ? (
+                      <p className="text-[11px] text-muted-foreground">
+                        No prior versions yet — this is the original v{(c as CustomChecklist).version}.
+                      </p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {[...(c as CustomChecklist).history].reverse().map((h) => (
+                          <li key={h.version} className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-[11px] text-foreground">
+                                v{h.version} — {h.note}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {new Date(h.savedAt).toLocaleString()} · {h.steps.length} steps
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => rollbackCustom(c.id, h.version)}
+                              className="flex shrink-0 items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:text-primary"
+                            >
+                              <Undo2 className="h-3 w-3" /> Roll back
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

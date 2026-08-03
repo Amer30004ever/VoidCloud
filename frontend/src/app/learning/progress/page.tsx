@@ -3,11 +3,15 @@
 import Link from "next/link";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@workspace/ui-kit/page-header";
-import { CheckCircle2, ListChecks, Target, ArrowRight } from "lucide-react";
+import { CheckCircle2, ListChecks, Target, ArrowRight, Award, Clock } from "lucide-react";
 import { useLearningChecklists } from "@/features/learning/useLearningChecklists";
+import { useQuizAttempts } from "@/features/learning/useQuizAttempts";
+import { getLearningAuditTrail } from "@/features/learning/audit";
 
 export default function LearningProgressPage() {
   const { ready, stats, recommended } = useLearningChecklists();
+  const { stats: quizStats, attempts } = useQuizAttempts();
+  const activity = ready ? getLearningAuditTrail().slice(0, 10) : [];
 
   const kpis = [
     { label: "Steps completed", value: `${stats.totalDone}/${stats.totalSteps}`, icon: CheckCircle2 },
@@ -37,6 +41,41 @@ export default function LearningProgressPage() {
               </div>
             ))}
           </div>
+
+          <section className="mb-8">
+            <h2 className="mb-3 text-sm font-semibold text-foreground">Certification prep</h2>
+            <div className="space-y-2">
+              {quizStats.perQuiz.map(({ quiz, attempts: count, best, passed }) => (
+                <Link
+                  key={quiz.id}
+                  href={`/learning/quiz/${quiz.id}`}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/50"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Award className="h-4 w-4 shrink-0 text-primary" />
+                    <div className="min-w-0">
+                      <p className="text-sm text-foreground">{quiz.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {count ? `${count} attempt${count === 1 ? "" : "s"} · best ${best}%` : "No attempts yet"}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] ${
+                      passed ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-muted-foreground"
+                    }`}
+                  >
+                    {passed ? "Passed" : `Pass ${quiz.passMark}%`}
+                  </span>
+                </Link>
+              ))}
+            </div>
+            {attempts.length > 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Average score across {attempts.length} attempt{attempts.length === 1 ? "" : "s"}: {quizStats.averageScore}%
+              </p>
+            )}
+          </section>
 
           <section className="mb-8">
             <h2 className="mb-3 text-sm font-semibold text-foreground">Next recommended tasks</h2>
@@ -84,6 +123,33 @@ export default function LearningProgressPage() {
                 </Link>
               ))}
             </div>
+          </section>
+          <section className="mt-8">
+            <h2 className="mb-3 text-sm font-semibold text-foreground">Recent activity</h2>
+            {activity.length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
+                No learning activity recorded yet.
+              </div>
+            ) : (
+              <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+                {activity.map((a) => (
+                  <li key={a.id} className="flex items-start gap-3 p-4">
+                    <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-foreground">
+                        {a.action.replace("learning.", "").replace(/[._]/g, " ")}
+                        {typeof a.details.title === "string" ? ` — ${a.details.title}` : ""}
+                        {typeof a.details.stepTitle === "string" ? `: ${a.details.stepTitle}` : ""}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {new Date(a.createdAt).toLocaleString()} · {a.userEmail ?? a.userId ?? "you"} ·{" "}
+                        {a.synced ? "synced to audit log" : "queued"}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </>
       )}

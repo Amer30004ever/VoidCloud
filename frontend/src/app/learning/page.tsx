@@ -45,6 +45,9 @@ function LearningPageContent() {
         <a href="/learning/checklists" className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
           <ListChecks className="h-4 w-4" /> Task checklists
         </a>
+        <a href="/learning/quiz" className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+          <Award className="h-4 w-4" /> Practice exams
+        </a>
         <a href="/learning/progress" className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
           <BarChart3 className="h-4 w-4" /> My progress
         </a>
