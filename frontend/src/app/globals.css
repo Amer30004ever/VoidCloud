@@ -4,7 +4,8 @@
 
 /* Shared workspace UI kit lives outside the Next.js root, so Tailwind's
    automatic content detection cannot see it. */
-@source "../../../lib/ui-kit/src";
+@source "../../../../lib/ui-kit/src/**/*.tsx";
+@source "../../../lib/ui-kit/src/**/*.tsx";
 
 
 @custom-variant dark (&:is(.dark *));
