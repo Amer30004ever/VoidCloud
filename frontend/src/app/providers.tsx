@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { useState } from "react";
+import { WidgetTelemetry } from "@/lib/widget-telemetry";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -26,6 +27,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <AuthProvider>
           <NotificationProvider>
             <ToastProvider>
+              <WidgetTelemetry />
               {children}
             </ToastProvider>
           </NotificationProvider>
