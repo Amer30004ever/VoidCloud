@@ -63,9 +63,9 @@ export default function UserDashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <WidgetBoundary title="Current plan"><PlanCard usage={usage} /></WidgetBoundary>
-        <WidgetBoundary title="CPU"><Gauge label="CPU" used={usage?.used.cpu ?? 0} total={usage?.limits.cpuLimit ?? 1} unit="cores" /></WidgetBoundary>
-        <WidgetBoundary title="Memory"><Gauge label="Memory" used={usage?.used.memory ?? 0} total={usage?.limits.memoryLimit ?? 1} unit="MB" /></WidgetBoundary>
-        <WidgetBoundary title="Storage"><Gauge label="Storage" used={usage?.used.storage ?? 0} total={usage?.limits.storageLimit ?? 1} unit="MB" /></WidgetBoundary>
+        <WidgetBoundary title="CPU"><Gauge label="CPU" used={usage?.used?.cpu ?? 0} total={usage?.limits?.cpuLimit ?? 1} unit="cores" /></WidgetBoundary>
+        <WidgetBoundary title="Memory"><Gauge label="Memory" used={usage?.used?.memory ?? 0} total={usage?.limits?.memoryLimit ?? 1} unit="MB" /></WidgetBoundary>
+        <WidgetBoundary title="Storage"><Gauge label="Storage" used={usage?.used?.storage ?? 0} total={usage?.limits?.storageLimit ?? 1} unit="MB" /></WidgetBoundary>
       </div>
 
 
