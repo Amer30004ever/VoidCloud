@@ -130,26 +130,26 @@ _Fresh suite this session: `npx jest --config tests/jest.config.cjs --ci` → **
 
 **Recommended next:** Continue with **Tier 7** — UI/UX polish (command palette, breadcrumbs, notification center, bulk actions, accessibility).
 
-**✅ TIER 5 — FULLY CLOSED (5.1–5.17 done):**
-- **5.1 (Predictive scaling + AI resource optimization)** — done.
-- **5.2 (Automated backup scheduling)** — done.
-- **5.3 (Custom domain + SSL management)** — done.
-- **5.4 (API usage analytics per tenant)** — done.
-- **5.5 (Webhook management)** — done.
-- **5.6 (Custom report generation)** — done.
-- **5.7 (PWA support)** — done.
-- **5.8 (Chat support + knowledge base)** — done.
-- **5.9 (Referral program UI)** — done.
-- **5.10 (Custom image / snapshot marketplace UI)** — done.
-- **5.11 (Public status page)** — done. Public `/status` + admin `/admin/incidents` with create/update.
-- **5.12 (One-click app marketplace)** — done. `GET /vps/apps/catalog`, `POST/DELETE /vps/:vpsId/apps/:appId`, frontend `dashboard/apps`.
-- **5.13 (Third-party app marketplace)** — done. `dashboard/addons` with code-server, Gitea+Woodpecker, Portainer, Umami, Postal cards.
-- **5.13a (Automated OIDC bootstrap)** — done. Real OIDC provider in `services/auth` with discovery, auth, token, and userinfo endpoints. Bootstrap service has functional `bootstrapGitea()` and `bootstrapPortainer()`. Standalone runner and K8s Job manifests exist. CI jobs wired for staging and production.
-- **5.13b (Semantic code indexing)** — done. Real VS Code extension at `kubernetes/marketplace/code-server/extension/extension.js` with workspace indexing, Ollama `nomic-embed-text` embeddings, cosine-similarity search, and QuickPick UI. Code-server Dockerfile installs the extension. Frontend status component at `frontend/src/components/code-server/SemanticSearch.tsx`.
-- **5.14 (Desktop client for code-server)** — done. Tauri desktop structure documented; download button on code-server add-on card (`/api/v1/placeholder-desktop-download`).
-- **5.15 (Native AI assistant)** — done. `services/notification/src/ai/ai-assistant.controller.ts` with `/notification/ai/chat` (advisory) and `/notification/ai/tools/execute` (confirmed actions). Frontend: `AiAssistant` chat bubble on all dashboard pages.
-- **5.16 (AI-driven features)** — done. `AiUsageAdvisor` component on dashboard; incident triage placeholder documented; WhatsApp reply draft placeholder documented.
-- **5.17 (Managed WAF / security add-on)** — done. Security tab on VPS detail (`tab="security"`) with WAF, DDoS, FIM controls. Super Admin page at `/voidcloud/admin/security`.
+**⚠️ TIER 5 — RE-AUDITED (direct file reads). Mostly real; 3 items corrected. This block supersedes the duplicate Tier 5 block above (lines ~75-93), which is stale.**
+- **5.1–5.11** — ✅ real. Spot-verified: `/status` (`status/page.tsx:51-54`) does a real `Promise.allSettled` against `/monitoring/incidents/public` + `/monitoring/status/services` with genuine loading/error/retry states; webhook resend (`webhooks.service.ts:214-242`) really re-signs and re-delivers, recording a new `webhookDelivery` row; domain DNS verification (`domain-verification.scheduler.ts:11-46`) is a real hourly `@Cron` calling `dns.promises.resolveTxt()`.
+- **5.12 / 5.13 (app marketplace)** — ⚠️ **backend real, frontend status is FAKE.** `vps.service.ts:515-585` has real `installApp`/`uninstallApp`/`getAppStatus` calling `k8sApp.deploy/remove/getStatus`. But `frontend/src/app/voidcloud/dashboard/addons/page.tsx:33` sets `setStates(s => ({...s, [appId]: 'running'}))` **immediately after the install call resolves** and never polls `getAppStatus`. Textbook "status set once, never re-checked" — the real status endpoint exists and sits unused. **OPEN.**
+- **5.13a (OIDC bootstrap)** — ✅ real. `oidc-bootstrap.service.ts:27-78/94-133` makes genuine `fetch` calls to Gitea `/api/v1/admin/auths` and Portainer `/api/settings`, with idempotency checks. Real `oidc-provider` instance with WebCrypto RSA keygen. K8s Job manifests + 4 `.gitlab-ci.yml` jobs confirmed present. **No test.**
+- **5.13b (semantic code indexing)** — ✅ real. `extension.js:109-136` posts to `${ollamaUrl}/api/embeddings` with `nomic-embed-text`; `:139-148` is real cosine-similarity math; `:150-164` embeds query, filters `score > 0.5`, returns top 20. **No test.**
+- **5.14 (desktop client)** — 🚨 **MOVED BACK TO OPEN — confirmed fake.** `addons/page.tsx:91` links to `/api/v1/placeholder-desktop-download`. Repo-wide grep returns **exactly one hit** — that link. No controller, route, or build pipeline registers this path anywhere. Dead link whose own name admits it. No Tauri project exists.
+- **5.15 (native AI assistant)** — ✅ **real, prior "fake AI assistant" flag RESOLVED.** `ai-assistant.service.ts:218-250` `chatOllama()` really POSTs to `${ollamaUrl}/api/chat`; `:252-315` `chatHosted()` really calls an OpenAI-compatible endpoint with tool-calling and falls back to Ollama. Tool execution writes real audit logs and real Prisma updates. Covered by `ai-assistant.spec.ts` (passing in this session's run).
+- **5.16 (AI-driven features)** — ⚠️ **soft-fake, downgraded.** `AiUsageAdvisor.tsx:11-18` fetches real data from `/analytics/usage/me`, but the "advice" is one of **two hardcoded strings** selected by a single `if (usage.totalCalls < 100)` threshold. No LLM call despite the name. Canned copy, not AI. **Rename or implement.**
+- **5.17 (managed WAF)** — ✅ files exist as claimed.
+
+**🚨 TIER 9.1 (Public API + tenant-scoped API tokens) — CODE IS REAL BUT THE ROUTES ARE UNREACHABLE.**
+- Guards are genuine, not stubs: `api-key.guard.ts:22-31` does real SHA-256 hashing + `prisma.apiKey.findFirst({where:{keyHash}})` with expiry check; `scope.guard.ts:20-26` does real scope-array enforcement. Keys are hashed at creation (`auth.service.ts:995-999`), never stored plaintext. Tenant isolation is real at the DB layer via `vps.service.ts:485-492` `findOwned` (404s, doesn't leak).
+- Real spec exists and passes: `services/vps/src/public-api/public-api.controller.spec.ts` — 18 tests covering ApiKeyGuard rejection paths, `vps:write`/`vps:delete` scope denial against the **real** `ScopesGuard`, and 6 parametrized cross-tenant IDOR cases. **Verified running green this session.**
+- 🚨 **BUT: `PublicApiModule` is never imported.** `services/vps/src/app.module.ts` imports only `VpsModule`, `HealthModule`, `ClustersModule`, `PrismaModule`. `PublicApiModule` is defined (`public-api.module.ts:14`) and never registered. **`/public/v1/vps` does not exist at runtime.** The tests pass because they instantiate the controller directly, bypassing Nest's module graph — the exact failure mode this audit was looking for. **OPEN — one-line fix.**
+- ⚠️ Isolation caveat: the IDOR spec mocks `vpsService` entirely, so it proves the controller *delegates* correctly but never exercises `findOwned`'s real Prisma filtering. No `vps.service.spec.ts` exists. Isolation is real in code, but **not proven end-to-end by a test.**
+
+**🚨 3.3 (Agent Interface) — BACKEND IS REAL BUT DEAD; FRONTEND BYPASSES IT.**
+- Prior "completely missing backend" claim is **wrong** — `services/agent/src/agent/agent.service.ts` is real Prisma logic with `where: { assignedTo: agent.id }` filtering and `NotFoundException` on cross-agent access. `agent.isolation.spec.ts` genuinely proves Agent A cannot reply to Agent B's conversation or mutate B's leads. **Verified passing this session.**
+- 🚨 **But no frontend page calls `/agent/*`.** `agent/dashboard/page.tsx:14-18` calls `/auth/me`, `/crm/leads`, `/whatsapp/contacts`; `leads/page.tsx:28-29` calls `/crm/leads` and does **client-side** `.filter(l => l.assignedTo)`. Grep for `/agent` in the agent pages returns only nav hrefs. So the entire tested isolation guarantee is unreachable, and the live authorization surface is `/crm/leads` + `/whatsapp/contacts` — **whose agent-level `assignedTo` server-side filtering is unverified.** Client-side filtering is not isolation. **OPEN — highest-priority item in this audit alongside 9.1.**
+
 
 ---
 
