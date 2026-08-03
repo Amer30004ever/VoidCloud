@@ -103,6 +103,8 @@ test("pricing CTA clicks emit analytics events", async ({ page }) => {
   const cta = page.locator("#pricing [data-analytics-cta='trial_start']").first();
   await cta.scrollIntoViewIfNeeded();
   await cta.click({ force: true, noWaitAfter: true });
+  // The CTA navigates to signup; the buffered events survive in localStorage.
+  await page.waitForLoadState("domcontentloaded");
 
   const names = async () =>
     (
