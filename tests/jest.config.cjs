@@ -11,7 +11,8 @@ module.exports = {
     '<rootDir>/services/**/*.spec.ts',
     '<rootDir>/tests/**/*.spec.ts',
   ],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  // tests/e2e/** are Playwright specs — they must not be collected by Jest.
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '<rootDir>/tests/e2e/'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'mjs', 'cjs', 'json'],
   modulePaths: [path.resolve(__dirname, 'node_modules')],
   transform: {
