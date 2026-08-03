@@ -190,10 +190,11 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
         <>
           <button
             onClick={() => setLang(lang === "en" ? "ar" : "en")}
-            className="flex items-center gap-1.5 rounded-md border border-white/10 px-2.5 py-1.5 text-xs text-white/70 transition hover:bg-white/5 hover:text-white"
+            aria-label={lang === "en" ? "Switch to Arabic" : "Switch to English"}
+            className="flex items-center gap-1.5 rounded-md border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/5 hover:text-white"
           >
             <Languages className="size-3.5" />
-            {lang === "en" ? "العربية" : "EN"}
+            {lang === "en" ? "AR" : "EN"}
           </button>
           <NotificationBell />
         </>
