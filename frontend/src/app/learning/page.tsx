@@ -2,7 +2,7 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@workspace/ui-kit/page-header";
-import { Briefcase, Newspaper, BookOpen, Award, FileText, Search, Download, Share2, Star, Loader2, Calendar, Book } from "lucide-react";
+import { Briefcase, Newspaper, BookOpen, Award, FileText, Search, Download, Share2, Star, Loader2, Calendar, Book, ListChecks, BarChart3 } from "lucide-react";
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AddItemButton } from "@workspace/ui-kit/create-item-dialog";
