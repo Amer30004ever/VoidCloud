@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
+import { statusAnalytics } from "@/lib/analytics";
 
 type Incident = {
   id: string;
@@ -16,29 +17,78 @@ type Incident = {
 
 type StatusData = { overall: string; incidents: Incident[] };
 
+type Component = {
+  key: string;
+  label: string;
+  status: "UP" | "DEGRADED" | "DOWN";
+  responseTimeMs: number | null;
+  lastChecked: string;
+};
+
+type ServiceStatus = {
+  overall: string;
+  healthPercent: number;
+  components: Component[];
+  checkedAt: string;
+};
+
 export default function PublicStatusPage() {
   const [data, setData] = useState<StatusData | null>(null);
+  const [services, setServices] = useState<ServiceStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const attemptRef = useRef(0);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (trigger: "initial" | "retry") => {
     setLoading(true);
     setError(null);
-    try {
-      const res = await api.get<StatusData>("/monitoring/incidents/public");
-      setData(res.data);
+    attemptRef.current += 1;
+    const attempt = attemptRef.current;
+    const startedAt = Date.now();
+    if (trigger === "retry") statusAnalytics.retryClicked(attempt);
+
+    const [incidentsRes, servicesRes] = await Promise.allSettled([
+      api.get<StatusData>("/monitoring/incidents/public"),
+      api.get<ServiceStatus>("/monitoring/status/services"),
+    ]);
+
+    const incidentsOk = incidentsRes.status === "fulfilled";
+    const servicesOk = servicesRes.status === "fulfilled";
+
+    setData(incidentsOk ? incidentsRes.value.data : null);
+    setServices(servicesOk ? servicesRes.value.data : null);
+
+    if (incidentsOk || servicesOk) {
       setLastUpdated(new Date());
-    } catch {
-      setData(null);
-      setError("We couldn't reach the status service. This usually means a temporary network issue.");
-    } finally {
-      setLoading(false);
+      statusAnalytics.apiOutcome({
+        outcome: "reachable",
+        trigger,
+        attempt,
+        durationMs: Date.now() - startedAt,
+        incidents: incidentsOk,
+        services: servicesOk,
+        overall: servicesOk ? servicesRes.value.data?.overall : undefined,
+      });
+    } else {
+      setError(
+        "We couldn't reach the status service. This usually means a temporary network issue.",
+      );
+      statusAnalytics.apiOutcome({
+        outcome: "unreachable",
+        trigger,
+        attempt,
+        durationMs: Date.now() - startedAt,
+        incidents: false,
+        services: false,
+      });
     }
+
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    void load();
+    void load("initial");
   }, [load]);
 
   const statusColor: Record<string, string> = {
@@ -53,6 +103,14 @@ export default function PublicStatusPage() {
     PARTIAL_OUTAGE: "bg-orange-500/20 text-orange-300 border-orange-500/30",
     MAJOR_OUTAGE: "bg-red-500/20 text-red-300 border-red-500/30",
   };
+
+  const componentDot: Record<Component["status"], string> = {
+    UP: "bg-emerald-400",
+    DEGRADED: "bg-yellow-400",
+    DOWN: "bg-red-400",
+  };
+
+  const overall = services?.overall ?? data?.overall;
 
   return (
     <div className="min-h-screen vc-page text-white">
@@ -89,7 +147,8 @@ export default function PublicStatusPage() {
             </p>
             <button
               type="button"
-              onClick={() => void load()}
+              data-testid="status-retry"
+              onClick={() => void load("retry")}
               className="mt-5 rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:opacity-90"
             >
               Retry
@@ -103,28 +162,73 @@ export default function PublicStatusPage() {
           </div>
         )}
 
-        {!loading && !error && data && (
+        {!loading && !error && (
           <>
             <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
               <div className="text-center">
-                <div className={`text-2xl font-bold ${statusColor[data.overall] || "text-emerald-300"}`}>
-                  {data.overall}
+                <div className={`text-2xl font-bold ${statusColor[overall ?? ""] || "text-emerald-300"}`}>
+                  {overall ?? "OPERATIONAL"}
                 </div>
                 <p className="mt-2 text-sm text-white/60">
-                  {data.overall === "OPERATIONAL"
+                  {overall === "OPERATIONAL" || !overall
                     ? "All systems operational."
                     : "Some systems are experiencing issues."}
                 </p>
+                {services && (
+                  <p className="mt-1 text-xs text-white/40">
+                    {services.healthPercent}% platform health · checked{" "}
+                    {new Date(services.checkedAt).toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-10" data-testid="status-components">
+              <h2 className="card-title">Components</h2>
+              <div className="mt-4 space-y-2">
+                {!services && (
+                  <p className="text-sm text-white/50">
+                    Per-service readiness is temporarily unavailable.
+                  </p>
+                )}
+                {services?.components.map((c) => (
+                  <div
+                    key={c.key}
+                    data-testid={`status-component-${c.key}`}
+                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`h-2.5 w-2.5 rounded-full ${componentDot[c.status]}`} aria-hidden />
+                      <span className="text-sm text-white/80">{c.label}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      {c.responseTimeMs != null && (
+                        <span className="text-white/40">{c.responseTimeMs} ms</span>
+                      )}
+                      <span
+                        className={
+                          c.status === "UP"
+                            ? "text-emerald-300"
+                            : c.status === "DEGRADED"
+                            ? "text-yellow-300"
+                            : "text-red-300"
+                        }
+                      >
+                        {c.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="mt-12">
               <h2 className="card-title">Incident History</h2>
               <div className="mt-4 space-y-4">
-                {data.incidents.length === 0 && (
+                {(!data || data.incidents.length === 0) && (
                   <p className="text-center text-white/50 py-8">No incidents reported.</p>
                 )}
-                {data.incidents.map((incident) => (
+                {data?.incidents.map((incident) => (
                   <div
                     key={incident.id}
                     className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
