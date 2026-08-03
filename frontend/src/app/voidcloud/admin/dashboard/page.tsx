@@ -85,7 +85,7 @@ export default function AdminDashboard() {
     <ErrorBoundary>
       <div className="space-y-6">
         <div>
-          <h1 className="vc-h1">🛡️ Admin Dashboard</h1>
+          <h1 className="vc-h1">Admin Dashboard</h1>
           <p className="mt-1 text-sm text-white/60">Cluster overview and platform health.</p>
         </div>
 
@@ -93,8 +93,8 @@ export default function AdminDashboard() {
           {cards.map((c) => (
             <div key={c.label} className="vc-card p-5">
               <div className="text-2xl">{c.icon}</div>
-              <div className="mt-2 vc-h1">{c.value}</div>
-              <div className="mt-1 text-xs uppercase text-white/50">{c.label}</div>
+              <div className="mt-2 text-2xl font-semibold tabular-nums">{c.value}</div>
+              <div className="vc-label mt-1">{c.label}</div>
             </div>
           ))}
         </div>

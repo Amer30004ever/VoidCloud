@@ -20,7 +20,7 @@ export default function AdminOverview() {
   ];
   return (
     <div>
-      <h1 className="mb-6 vc-h1">🛡️ Admin Overview</h1>
+      <h1 className="mb-6 vc-h1">Admin Overview</h1>
       <div className="grid gap-4 md:grid-cols-3">
         {cards.map((c) => (
           <div key={c.label} className="vc-card p-6">

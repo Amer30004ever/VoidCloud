@@ -119,7 +119,7 @@ export default function AdminWhatsappPage() {
         <h1 className="vc-h1">WhatsApp Broadcast <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs text-amber-300">BETA</span></h1>
         <div className="flex gap-2">
           {(["composer", "templates", "history"] as Tab[]).map((t) => (
-            <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-4 py-2 text-sm capitalize ${tab === t ? "bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-slate-950" : "border border-white/10 bg-white/5 hover:bg-white/10"}`}>
+            <button key={t} onClick={() => setTab(t)} className={`vc-btn capitalize ${tab === t ? "vc-btn-primary" : "vc-btn-secondary hover:bg-white/10"}`}>
               {t}
             </button>
           ))}
