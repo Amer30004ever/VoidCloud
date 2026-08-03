@@ -2,9 +2,11 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { Users } from "lucide-react";
 import { cloudApi, CloudPlan, TenantQuota } from "@/features/vps/cloud";
 import { useToast } from "@/components/ui/Toast";
-import { Skeleton, TableRowSkeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
+import { TableSkeleton } from "@workspace/ui-kit/skeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function AdminUsersPage() {
