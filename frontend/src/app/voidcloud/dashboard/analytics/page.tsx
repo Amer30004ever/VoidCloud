@@ -63,10 +63,10 @@ export default function AnalyticsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Analytics</h1>
+          <h1 className="vc-h1">Analytics</h1>
           <p className="text-sm text-white/60">Cost breakdown, usage trends, and forecasts across your VPS fleet.</p>
         </div>
-        <button onClick={downloadCsv} className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">Export CSV</button>
+        <button onClick={downloadCsv} className="vc-btn vc-btn-secondary hover:bg-white/10">Export CSV</button>
       </div>
       {err && <div className="rounded border border-red-500/30 bg-red-500/10 p-2 text-sm text-red-200">{err}</div>}
 

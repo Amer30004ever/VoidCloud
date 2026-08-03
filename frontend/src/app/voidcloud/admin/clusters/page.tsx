@@ -100,7 +100,7 @@ export default function AdminClustersPage() {
             <p className="text-sm text-white/60">Register additional Proxmox hosts. New VPS scheduling picks the least-loaded cluster with enough free capacity.</p>
             {lastUpdated && <p className="text-xs text-white/40 mt-1">Last updated: {lastUpdated.toLocaleTimeString()}</p>}
           </div>
-          <button onClick={() => setCreating((v) => !v)} className="rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 font-semibold text-slate-950">
+          <button onClick={() => setCreating((v) => !v)} className="vc-btn vc-btn-primary">
             {creating ? "Cancel" : "+ Add cluster"}
           </button>
         </div>
@@ -108,7 +108,7 @@ export default function AdminClustersPage() {
         {msg && <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-3 text-sm">{msg}</div>}
 
         {creating && (
-          <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur md:grid-cols-2">
+          <div className="grid gap-3 vc-card p-4 md:grid-cols-2">
             <Input label="Name" value={draft.name} onChange={(v) => setDraft({ ...draft, name: v })} placeholder="pve-eg-1" />
             <Input label="Host" value={draft.host} onChange={(v) => setDraft({ ...draft, host: v })} placeholder="10.0.0.10" />
             <Input label="Port" value={String(draft.port ?? 8006)} onChange={(v) => setDraft({ ...draft, port: Number(v) || 8006 })} />
@@ -121,7 +121,7 @@ export default function AdminClustersPage() {
           </div>
         )}
 
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
+        <div className="overflow-hidden vc-card">
           <table className="w-full text-sm">
             <thead className="bg-white/5 text-xs uppercase tracking-wide text-white/60">
               <tr>
@@ -169,7 +169,7 @@ export default function AdminClustersPage() {
           </table>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+        <div className="vc-card p-4">
           <h2 className="mb-3 text-lg font-semibold">Smart scheduler preview</h2>
           <p className="mb-3 text-sm text-white/60">Dry-run: which cluster would be picked for a given VPS size?</p>
           <div className="grid gap-3 md:grid-cols-4">

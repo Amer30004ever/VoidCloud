@@ -38,11 +38,11 @@ export default function DeleteAccountPage() {
   if (step === "finish") {
     return (
       <div className="max-w-2xl space-y-4">
-        <h1 className="text-3xl font-bold">Account deletion requested</h1>
+        <h1 className="vc-h1">Account deletion requested</h1>
         <p className="text-sm text-white/80">Your account has been anonymized and all personal data has been removed where possible. Billing records may be retained for legal compliance.</p>
         <button
           onClick={() => router.replace("/voidcloud/register")}
-          className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10"
+          className="vc-btn vc-btn-secondary hover:bg-white/10"
         >
           Go to registration
         </button>
@@ -52,7 +52,7 @@ export default function DeleteAccountPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-3xl font-bold text-red-200">Delete account</h1>
+      <h1 className="vc-h1 text-red-200">Delete account</h1>
 
       <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 space-y-3">
         <p className="font-semibold text-red-200">This action is irreversible.</p>
@@ -67,7 +67,7 @@ export default function DeleteAccountPage() {
       {err && <p className="text-sm text-red-300">{err}</p>}
 
       {step === "confirm" && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
+        <div className="vc-card p-6 space-y-4">
           <label className="block text-sm text-white/70">
             Type <code className="rounded bg-slate-900 px-2 py-1 text-red-300">DELETE</code> to confirm
           </label>
@@ -79,7 +79,7 @@ export default function DeleteAccountPage() {
           <div className="flex gap-2">
             <button
               onClick={() => router.back()}
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm"
+              className="vc-btn vc-btn-secondary"
             >
               Cancel
             </button>
@@ -95,7 +95,7 @@ export default function DeleteAccountPage() {
       )}
 
       {step === "verify" && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
+        <div className="vc-card p-6 space-y-4">
           <p className="text-sm text-white/60">Re-authenticate to finalize deletion.</p>
           <label className="block text-sm text-white/70">Password</label>
           <input
@@ -107,7 +107,7 @@ export default function DeleteAccountPage() {
           <div className="flex gap-2">
             <button
               onClick={() => { setStep("confirm"); setPw(""); }}
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm"
+              className="vc-btn vc-btn-secondary"
             >
               Back
             </button>

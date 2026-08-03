@@ -55,7 +55,7 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Billing</h1>
+      <h1 className="vc-h1">Billing</h1>
 
       <div className="rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10 p-6 backdrop-blur-xl">
         <div className="text-xs uppercase text-cyan-300">Current subscription</div>
@@ -85,7 +85,7 @@ export default function BillingPage() {
           </div>
 
           {selPlan && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <div className="vc-card p-6">
               <h3 className="mb-3 font-semibold">Choose payment method</h3>
               <div className="mb-4 grid gap-2 md:grid-cols-5">
                 {(["STRIPE_CARD", "PAYPAL", "FAWRY", "INSTAPAY", "CASH"] as Provider[]).map((p) => (
@@ -219,7 +219,7 @@ function PendingPaymentPanel({ c, invoiceId }: { c: any; invoiceId: string }) {
       <button
         onClick={checkStatus}
         disabled={checking}
-        className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:border-white/20 disabled:opacity-50"
+        className="vc-btn vc-btn-secondary hover:border-white/20 disabled:opacity-50"
       >
         {checking ? 'Checking…' : 'Check payment status'}
       </button>

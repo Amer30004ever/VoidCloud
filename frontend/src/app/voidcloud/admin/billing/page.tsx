@@ -84,10 +84,10 @@ export default function AdminBillingPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Billing dashboard</h1>
+          <h1 className="vc-h1">Billing dashboard</h1>
           <p className="text-sm text-white/60">Revenue, churn, failed payments, and top-paying tenants.</p>
         </div>
-        <button onClick={() => { loadStats(); loadTransactions(); }} className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">Refresh</button>
+        <button onClick={() => { loadStats(); loadTransactions(); }} className="vc-btn vc-btn-secondary hover:bg-white/10">Refresh</button>
       </div>
 
       {error && <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">{error}</div>}
@@ -241,7 +241,7 @@ export default function AdminBillingPage() {
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">All transactions</h2>
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+        <div className="overflow-hidden vc-card">
           <table className="w-full text-sm">
             <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
               <tr><th className="p-4">Invoice</th><th>User</th><th>Amount</th><th>Provider</th><th>Status</th><th>Date</th><th></th></tr>

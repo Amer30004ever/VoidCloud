@@ -40,7 +40,7 @@ export default function AgentConversations() {
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold">Conversations</h1>
+      <h1 className="mb-6 vc-h1">Conversations</h1>
       <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
           {contacts.map((c: any) => (
@@ -51,7 +51,7 @@ export default function AgentConversations() {
           ))}
           {contacts.length === 0 && <p className="text-center text-white/50 py-8">No conversations.</p>}
         </div>
-        <div className="md:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="md:col-span-2 vc-card p-4">
           {selectedPhone ? (
             <>
               <div className="mb-4 h-64 overflow-y-auto space-y-2">
@@ -64,7 +64,7 @@ export default function AgentConversations() {
               </div>
               <form onSubmit={send} className="flex gap-2">
                 <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a reply..." className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm" />
-                <button disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">Send</button>
+                <button disabled={busy} className="vc-btn vc-btn-primary disabled:opacity-50">Send</button>
               </form>
             </>
           ) : (

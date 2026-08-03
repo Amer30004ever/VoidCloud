@@ -45,10 +45,10 @@ export default function AdminAbusePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Abuse &amp; AUP</h1>
+        <h1 className="vc-h1">Abuse &amp; AUP</h1>
         <div className="flex gap-2">
           <button onClick={runDetect} disabled={busy === "detect"}
-            className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:border-white/20 disabled:opacity-50">
+            className="vc-btn vc-btn-secondary hover:border-white/20 disabled:opacity-50">
             {busy === "detect" ? "Scanning…" : "Run outbound scan"}
           </button>
           <a href="/aup" className="rounded-lg border border-cyan-400/30 px-4 py-2 text-sm text-cyan-300 hover:underline">View AUP</a>
@@ -70,7 +70,7 @@ export default function AdminAbusePage() {
         <div className="space-y-3">
           {reports.length === 0 && <p className="text-white/50">No abuse reports yet.</p>}
           {reports.map((r) => (
-            <div key={r.id} className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+            <div key={r.id} className="vc-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <span className="font-semibold">{r.category}</span>
@@ -92,9 +92,9 @@ export default function AdminAbusePage() {
                   </button>
                 )}
                 <button onClick={() => resolve(r.id, "INVESTIGATING")} disabled={busy === r.id}
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs hover:border-white/20 disabled:opacity-50">Investigating</button>
+                  className="vc-btn vc-btn-sm vc-btn-secondary hover:border-white/20 disabled:opacity-50">Investigating</button>
                 <button onClick={() => resolve(r.id, "ACTION_TAKEN")} disabled={busy === r.id}
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs hover:border-white/20 disabled:opacity-50">Action taken</button>
+                  className="vc-btn vc-btn-sm vc-btn-secondary hover:border-white/20 disabled:opacity-50">Action taken</button>
                 <button onClick={() => resolve(r.id, "RESOLVED")} disabled={busy === r.id}
                   className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs text-green-200 disabled:opacity-50">Resolve</button>
               </div>
@@ -107,7 +107,7 @@ export default function AdminAbusePage() {
         <div className="space-y-3">
           {ptrs.length === 0 && <p className="text-white/50">No PTR requests yet.</p>}
           {ptrs.map((p) => (
-            <div key={p.id} className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+            <div key={p.id} className="vc-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <span className="font-semibold">{p.hostname}</span>

@@ -116,7 +116,7 @@ export default function AdminWhatsappPage() {
       </div>
 
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">WhatsApp Broadcast <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs text-amber-300">BETA</span></h1>
+        <h1 className="vc-h1">WhatsApp Broadcast <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs text-amber-300">BETA</span></h1>
         <div className="flex gap-2">
           {(["composer", "templates", "history"] as Tab[]).map((t) => (
             <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-4 py-2 text-sm capitalize ${tab === t ? "bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-slate-950" : "border border-white/10 bg-white/5 hover:bg-white/10"}`}>
@@ -130,7 +130,7 @@ export default function AdminWhatsappPage() {
 
       {tab === "composer" && (
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="vc-card p-6">
             <h2 className="mb-4 text-xl font-semibold">Compose Broadcast</h2>
             <div className="space-y-4">
               <div>
@@ -183,13 +183,13 @@ export default function AdminWhatsappPage() {
                   <textarea value={phones} onChange={(e) => setPhones(e.target.value)} rows={6} placeholder="+201234567890, +201098765432" className="w-full rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 font-mono text-sm" />
                 </div>
               )}
-              <button onClick={sendBroadcast} disabled={sending} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950 disabled:opacity-50">
+              <button onClick={sendBroadcast} disabled={sending} className="vc-btn vc-btn-primary disabled:opacity-50">
                 {sending ? "Queuing…" : "Queue Broadcast"}
               </button>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="vc-card p-6">
             <h2 className="mb-4 text-xl font-semibold">Preview</h2>
             {selectedTemplateId ? (
               <div className="rounded-lg border border-white/10 bg-slate-950/40 p-4">
@@ -203,10 +203,10 @@ export default function AdminWhatsappPage() {
       )}
 
       {tab === "templates" && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+        <div className="vc-card">
           <div className="flex items-center justify-between border-b border-white/5 p-4">
             <h2 className="text-xl font-semibold">Templates</h2>
-            <button onClick={() => { setShowTemplateForm(true); setEditingTemplate(null); setTemplateForm({ name: "", body: "" }); }} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">+ New Template</button>
+            <button onClick={() => { setShowTemplateForm(true); setEditingTemplate(null); setTemplateForm({ name: "", body: "" }); }} className="vc-btn vc-btn-primary">+ New Template</button>
           </div>
           {showTemplateForm && (
             <div className="border-b border-white/5 p-4">
@@ -216,7 +216,7 @@ export default function AdminWhatsappPage() {
               </div>
               <div className="mt-3 flex gap-2">
                 <button onClick={saveTemplate} disabled={loading} className="rounded-lg bg-white/10 px-4 py-2 text-sm hover:bg-white/20 disabled:opacity-50">Save</button>
-                <button onClick={() => { setShowTemplateForm(false); setEditingTemplate(null); }} className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5">Cancel</button>
+                <button onClick={() => { setShowTemplateForm(false); setEditingTemplate(null); }} className="vc-btn vc-btn-secondary hover:bg-white/5">Cancel</button>
               </div>
             </div>
           )}
@@ -245,7 +245,7 @@ export default function AdminWhatsappPage() {
       {tab === "history" && (
         <div className="space-y-4">
           {selectedBroadcast && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <div className="vc-card p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold">Broadcast Details</h2>
                 <button onClick={() => { setSelectedBroadcast(null); setRecipients([]); }} className="rounded border border-white/10 px-3 py-1 text-xs hover:bg-white/10">Close</button>
@@ -277,7 +277,7 @@ export default function AdminWhatsappPage() {
             </div>
           )}
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+          <div className="vc-card">
             <div className="border-b border-white/5 p-4"><h2 className="text-xl font-semibold">Broadcast History</h2></div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

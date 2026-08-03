@@ -145,14 +145,14 @@ export default function AdminUsersPage() {
       <div>
         <div className="mb-6 flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Users</h1>
+            <h1 className="vc-h1">Users</h1>
             {lastUpdated && (
               <p className="text-xs text-white/50 mt-1">Last updated: {lastUpdated.toLocaleTimeString()}</p>
             )}
           </div>
           <div className="flex gap-2">
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or email…" className="w-80 rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2" aria-label="Search users" />
-            <button onClick={() => setCreating(true)} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 font-semibold text-slate-950">+ New user</button>
+            <button onClick={() => setCreating(true)} className="vc-btn vc-btn-primary">+ New user</button>
           </div>
         </div>
 
@@ -194,7 +194,7 @@ export default function AdminUsersPage() {
           </div>
         )}
 
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+        <div className="overflow-x-auto vc-card">
           <table className="w-full text-sm" role="grid" aria-label="Users table">
             <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
               <tr>
@@ -284,8 +284,8 @@ export default function AdminUsersPage() {
                 </select>
               </div>
               <div className="mt-4 flex justify-end gap-2">
-                <button onClick={() => setCreating(false)} className="rounded-lg border border-white/10 px-4 py-2">Cancel</button>
-                <button onClick={create} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950">Create</button>
+                <button onClick={() => setCreating(false)} className="vc-btn vc-btn-secondary">Cancel</button>
+                <button onClick={create} className="vc-btn vc-btn-primary">Create</button>
               </div>
             </div>
           </div>

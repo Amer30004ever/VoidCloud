@@ -30,14 +30,14 @@ export default function AdminUserDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">User Activity</h1>
+          <h1 className="vc-h1">User Activity</h1>
           <p className="mt-1 text-sm text-white/50">User ID: {id}</p>
         </div>
       </div>
 
       {error && <p className="text-sm text-red-300">{error}</p>}
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <section className="vc-card p-6">
         <h2 className="mb-4 text-lg font-semibold">Activity Timeline</h2>
         <ActivityTimeline
           logs={logs}

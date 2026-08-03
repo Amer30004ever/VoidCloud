@@ -14,24 +14,24 @@ export default function AdminSecurityPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Security Overview</h1>
+      <h1 className="vc-h1">Security Overview</h1>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <div className="vc-card p-6">
           <div className="text-sm text-white/60">WAF Enabled</div>
           <div className="mt-1 text-2xl font-bold">{adoption.filter((a) => a.wafEnabled).length}</div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <div className="vc-card p-6">
           <div className="text-sm text-white/60">DDoS Advanced</div>
           <div className="mt-1 text-2xl font-bold">{adoption.filter((a) => a.ddosTier === 'advanced').length}</div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <div className="vc-card p-6">
           <div className="text-sm text-white/60">FIM Enabled</div>
           <div className="mt-1 text-2xl font-bold">{adoption.filter((a) => a.fimEnabled).length}</div>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+      <div className="vc-card p-6">
         <h2 className="text-lg font-semibold">FIM Alerts</h2>
         <div className="mt-4 space-y-2">
           {alerts.map((a) => (

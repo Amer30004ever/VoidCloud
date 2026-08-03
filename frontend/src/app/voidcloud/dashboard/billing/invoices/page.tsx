@@ -9,8 +9,8 @@ export default function InvoicesPage() {
   useEffect(() => { cloudApi.billing.invoices().then(setItems); }, []);
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold">Invoices</h1>
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+      <h1 className="mb-6 vc-h1">Invoices</h1>
+      <div className="vc-card">
         {items.length === 0 ? <p className="p-12 text-center text-white/50">No invoices yet.</p> : (
           <table className="w-full text-sm">
             <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">

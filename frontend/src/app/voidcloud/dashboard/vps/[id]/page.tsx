@@ -93,7 +93,7 @@ export default function VpsDetailPage() {
     <div>
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold">{d.name}</h1>
+          <h1 className="vc-h1">{d.name}</h1>
           <p className="mt-1 text-sm font-mono text-cyan-300">{d.ipv4Address ?? "no IP yet"}</p>
           <div className="mt-2 flex gap-2 items-center"><VpsStatusBadge status={d.status} /><button onClick={() => setShowResize(true)} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200 hover:bg-cyan-400/20">⇅ Change Plan</button></div>
         </div>
@@ -106,7 +106,7 @@ export default function VpsDetailPage() {
             className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10">🔑 Reset root password</button>
           <button onClick={async () => { const name = prompt("Snapshot name"); if (name) { try { await cloudApi.deployments.snapshot(d.id, name); setMsg("Snapshot created"); } catch { setMsg("Snapshot failed"); } } }} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-200 hover:bg-cyan-400/20">📸 Snapshot</button>
           <button onClick={async () => { if (confirm("Delete this VPS? This is irreversible.")) { await cloudApi.deployments.remove(d.id); router.push("/voidcloud/dashboard/vps"); } }}
-            className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300 hover:bg-red-500/20">Delete</button>
+            className="vc-btn vc-btn-sm vc-btn-danger hover:bg-red-500/20">Delete</button>
         </div>
       </div>
 
@@ -118,7 +118,7 @@ export default function VpsDetailPage() {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <div className="vc-card p-6">
         {tab === "overview" && (
           <div className="space-y-2 text-sm">
             <Kv k="Status" v={<VpsStatusBadge status={d.status} />} />
@@ -281,11 +281,11 @@ function DomainsTab({ vpsId }: { vpsId: string }) {
     <div className="space-y-4">
       <form onSubmit={add} className="flex gap-2">
         <input value={newDomain} onChange={(e) => setNewDomain(e.target.value)} placeholder="example.com" className={input + " flex-1"} />
-        <button disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">Add</button>
+        <button disabled={busy} className="vc-btn vc-btn-primary disabled:opacity-50">Add</button>
       </form>
       <div className="space-y-2">
         {domains.map((d) => (
-          <div key={d.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+          <div key={d.id} className="flex items-center justify-between vc-card p-4 text-sm">
             <div>
               <div className="font-medium">{d.domain}</div>
               <div className="text-xs text-white/60">{d.status} {d.verifyToken && `· verify: ${d.verifyToken}`}</div>
@@ -327,7 +327,7 @@ function BackupsTab({ vpsId }: { vpsId: string }) {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={saveSchedule} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+      <form onSubmit={saveSchedule} className="vc-card p-4 space-y-3">
         <h3 className="text-sm font-semibold">Backup Schedule</h3>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
@@ -344,14 +344,14 @@ function BackupsTab({ vpsId }: { vpsId: string }) {
             <input type="number" value={form.retention} onChange={(e) => setForm({ ...form, retention: Number(e.target.value) })} className={input} />
           </div>
         </div>
-        <button className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">Save Schedule</button>
+        <button className="vc-btn vc-btn-primary">Save Schedule</button>
       </form>
 
       <div>
         <h3 className="mb-3 text-sm font-semibold">Backup History</h3>
         <div className="space-y-2">
           {backups.map((b) => (
-            <div key={b.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+            <div key={b.id} className="flex items-center justify-between vc-card p-4 text-sm">
               <div>
                 <div className="font-medium">{b.name || b.type}</div>
                 <div className="text-xs text-white/60">{new Date(b.createdAt).toLocaleString()} · {b.status}</div>
@@ -387,13 +387,13 @@ function RecommendationsTab({ vpsId }: { vpsId: string }) {
     <div className="space-y-3">
       {recs.length === 0 && <p className="text-center text-white/50 py-8">No recommendations. They are generated daily based on 7-day averages.</p>}
       {recs.map((r) => (
-        <div key={r.id} className="flex items-start justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+        <div key={r.id} className="flex items-start justify-between vc-card p-4 text-sm">
           <div>
             <div className="font-medium">{r.message}</div>
             <div className="text-xs text-white/60">{r.type} · {r.currentValue}{r.unit} → {r.suggestedValue}{r.unit} · {new Date(r.createdAt).toLocaleDateString()}</div>
           </div>
           {!r.acknowledged && (
-            <button onClick={() => ack(r.id)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10">Ack</button>
+            <button onClick={() => ack(r.id)} className="vc-btn vc-btn-sm vc-btn-secondary hover:bg-white/10">Ack</button>
           )}
         </div>
       ))}
@@ -421,7 +421,7 @@ function SecurityTab({ vpsId }: { vpsId: string }) {
       {msg && <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-200">{msg}</div>}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+        <div className="vc-card p-4 space-y-3">
           <div className="text-sm font-medium">WAF</div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={settings.wafEnabled} onChange={(e) => setSettings({ ...settings, wafEnabled: e.target.checked })} />
@@ -433,7 +433,7 @@ function SecurityTab({ vpsId }: { vpsId: string }) {
           </select>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+        <div className="vc-card p-4 space-y-3">
           <div className="text-sm font-medium">DDoS Protection</div>
           <select value={settings.ddosTier} onChange={(e) => setSettings({ ...settings, ddosTier: e.target.value })} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
             <option value="basic">Basic</option>
@@ -441,7 +441,7 @@ function SecurityTab({ vpsId }: { vpsId: string }) {
           </select>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+        <div className="vc-card p-4 space-y-3">
           <div className="text-sm font-medium">File Integrity Monitoring</div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={settings.fimEnabled} onChange={(e) => setSettings({ ...settings, fimEnabled: e.target.checked })} />
@@ -452,7 +452,7 @@ function SecurityTab({ vpsId }: { vpsId: string }) {
         </div>
       </div>
 
-      <button onClick={save} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">Save Security Settings</button>
+      <button onClick={save} className="vc-btn vc-btn-primary">Save Security Settings</button>
     </div>
   );
 }

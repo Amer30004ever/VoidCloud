@@ -38,7 +38,7 @@ export default function OrgPage() {
     <div className="max-w-4xl space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{org.name}</h1>
+          <h1 className="vc-h1">{org.name}</h1>
           <p className="text-sm text-white/50">/{org.slug} · {org._count?.vps ?? 0} VPS · {members.length} members</p>
         </div>
         <button
@@ -48,18 +48,18 @@ export default function OrgPage() {
 
       {msg && <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-2 text-xs">{msg}</div>}
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <section className="vc-card p-5">
         <h2 className="mb-3 font-semibold">Invite member</h2>
         <div className="flex gap-2 flex-wrap">
           <input className="flex-1 min-w-[200px] rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-sm" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           <select className="rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-sm" value={role} onChange={(e) => setRole(e.target.value as OrgRole)}>
             {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
-          <button onClick={() => run(() => cloudOrgs.invite(id, email, role).then(() => setEmail("")), "Invitation sent")} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">Invite</button>
+          <button onClick={() => run(() => cloudOrgs.invite(id, email, role).then(() => setEmail("")), "Invitation sent")} className="vc-btn vc-btn-primary">Invite</button>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <section className="vc-card p-5">
         <h2 className="mb-3 font-semibold">Members ({members.length})</h2>
         <div className="space-y-2">
           {members.map((m) => (
@@ -88,7 +88,7 @@ export default function OrgPage() {
       </section>
 
       {org.invitations?.length > 0 && (
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <section className="vc-card p-5">
           <h2 className="mb-3 font-semibold">Pending invitations</h2>
           <div className="space-y-2">
             {org.invitations.map((inv: any) => (
@@ -105,7 +105,7 @@ export default function OrgPage() {
         <h2 className="mb-2 font-semibold text-red-300">Danger zone</h2>
         <button
           onClick={() => { if (confirm(`Delete ${org.name}? This cannot be undone.`)) cloudOrgs.remove(id).then(() => router.push("/voidcloud/dashboard")); }}
-          className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">Delete organization</button>
+          className="vc-btn vc-btn-sm vc-btn-danger">Delete organization</button>
       </section>
     </div>
   );

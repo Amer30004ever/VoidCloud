@@ -39,7 +39,7 @@ export default function BusinessSettingsPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold">Business Settings</h1>
+      <h1 className="mb-6 vc-h1">Business Settings</h1>
       {msg && <div className={`mb-4 rounded-lg p-3 text-sm ${msg.kind === "ok" ? "bg-emerald-500/10 text-emerald-300" : "bg-red-500/10 text-red-300"}`}>{msg.text}</div>}
       <form onSubmit={save} className="max-w-xl space-y-4">
         <div>
@@ -54,7 +54,7 @@ export default function BusinessSettingsPage() {
           <label className="mb-1 block text-sm text-white/60">Address</label>
           <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm" />
         </div>
-        <button disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">Save Changes</button>
+        <button disabled={busy} className="vc-btn vc-btn-primary disabled:opacity-50">Save Changes</button>
       </form>
     </div>
   );
