@@ -22,7 +22,7 @@ type BusinessKpi = {
 
 function KpiSkeleton() {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-6" data-testid="kpi-skeleton">
+    <div className="vc-card p-6" data-testid="kpi-skeleton">
       <div className="h-3 w-24 animate-pulse rounded bg-white/10" />
       <div className="mt-3 h-7 w-16 animate-pulse rounded bg-white/10" />
       <div className="mt-3 h-3 w-32 animate-pulse rounded bg-white/10" />
@@ -276,7 +276,7 @@ export default function BusinessDashboardPage() {
 
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             <div
-              className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
+              className="vc-card p-6"
               data-testid="panel-invoices"
               data-state={
                 invoiceState === "loading"
@@ -339,7 +339,7 @@ export default function BusinessDashboardPage() {
             </div>
 
             <div
-              className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
+              className="vc-card p-6"
               data-testid="panel-vps-breakdown"
               data-state={
                 vpsState === "loading"

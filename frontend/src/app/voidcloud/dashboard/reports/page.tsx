@@ -91,28 +91,28 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Reports</h1>
+          <h1 className="vc-h1">Reports</h1>
           <p className="text-sm text-white/60">Generate and export billing and VPS usage reports.</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => downloadCsv(rows)}
-            className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10"
+            className="vc-btn vc-btn-secondary hover:bg-white/10"
           >
             Export CSV
           </button>
           <button
             onClick={() => openPdf(rows)}
-            className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950"
+            className="vc-btn vc-btn-primary"
           >
             Export PDF
           </button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+      <div className="vc-card">
         <table className="w-full text-sm">
-          <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+          <thead className="vc-label border-b border-white/10 text-left">
             <tr>
               <th className="p-4">ID</th>
               <th>Date</th>

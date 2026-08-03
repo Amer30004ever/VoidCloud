@@ -27,15 +27,15 @@ export default function AdminAuditLogPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Audit Log</h1>
-        <button onClick={load} className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">
+        <h1 className="vc-h1">Audit Log</h1>
+        <button onClick={load} className="vc-btn vc-btn-secondary hover:bg-white/10">
           Refresh
         </button>
       </div>
 
       {error && <p className="text-sm text-red-300">{error}</p>}
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <section className="vc-card p-6">
         <ActivityTimeline logs={logs} loading={loading} error={error} emptyMessage="No audit events yet." />
       </section>
     </div>

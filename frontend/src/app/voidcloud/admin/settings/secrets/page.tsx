@@ -110,13 +110,13 @@ export default function AdminSecretsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Platform Secrets</h1>
+          <h1 className="vc-h1">Platform Secrets</h1>
           <p className="mt-1 text-sm text-white/60">Runtime secrets (SMTP passwords, API keys, etc.) encrypted at rest.</p>
         </div>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10"
+            className="vc-btn vc-btn-secondary hover:bg-white/10"
           >
             <span className="flex items-center gap-2"><Plus className="h-4 w-4" /> New Secret</span>
           </button>
@@ -124,7 +124,7 @@ export default function AdminSecretsPage() {
       </div>
 
       {showForm && (
-        <form onSubmit={submit} className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6">
+        <form onSubmit={submit} className="space-y-4 vc-card p-6">
           <h2 className="text-lg font-semibold">{editId ? "Edit Secret" : "New Secret"}</h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
@@ -168,7 +168,7 @@ export default function AdminSecretsPage() {
             <button
               type="button"
               onClick={cancelEdit}
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10"
+              className="vc-btn vc-btn-secondary hover:bg-white/10"
             >
               Cancel
             </button>
@@ -178,7 +178,7 @@ export default function AdminSecretsPage() {
 
       {error && <p className="text-sm text-red-300">{error}</p>}
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <section className="vc-card p-6">
         {loading ? (
           <p className="py-6 text-center text-sm text-white/50">Loading secrets…</p>
         ) : secrets.length === 0 ? (

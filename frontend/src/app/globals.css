@@ -254,3 +254,101 @@
   font-weight: 600;
   letter-spacing: -0.01em;
 }
+
+/* ── App (in-product) type scale — one hierarchy for every dashboard page ── */
+@utility vc-h1 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: rgb(255 255 255 / 0.95);
+}
+
+@utility vc-h2 {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgb(255 255 255 / 0.92);
+}
+
+@utility vc-h3 {
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.9);
+}
+
+/* Uppercase micro-label used for KPI captions and table headers */
+@utility vc-label {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.72);
+}
+
+/* Secondary metadata: timestamps, hints, counts */
+@utility vc-meta {
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+  color: rgb(255 255 255 / 0.55);
+}
+
+/* ── Surfaces — one radius per role ── */
+@utility vc-card {
+  border-radius: 1rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background-color: rgb(255 255 255 / 0.05);
+  backdrop-filter: blur(16px);
+}
+
+@utility vc-card-pad {
+  padding: 1.25rem;
+}
+
+/* ── Buttons — 3 variants, one height, one radius ── */
+@utility vc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.25rem;
+  padding-inline: 0.875rem;
+  border-radius: 0.625rem;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 150ms ease;
+}
+@utility vc-btn-sm {
+  height: 1.875rem;
+  padding-inline: 0.625rem;
+  font-size: 0.75rem;
+  border-radius: 0.5rem;
+}
+@utility vc-btn-primary {
+  background-image: linear-gradient(90deg, #22d3ee, #d946ef);
+  color: #020617;
+}
+@utility vc-btn-secondary {
+  border-color: rgb(255 255 255 / 0.12);
+  background-color: rgb(255 255 255 / 0.05);
+  color: rgb(255 255 255 / 0.9);
+}
+@utility vc-btn-danger {
+  border-color: rgb(239 68 68 / 0.3);
+  background-color: rgb(239 68 68 / 0.1);
+  color: rgb(252 165 165);
+}
+@utility vc-input {
+  width: 100%;
+  border-radius: 0.625rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background-color: rgb(2 6 23 / 0.6);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 0.92);
+}

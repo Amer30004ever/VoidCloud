@@ -43,7 +43,7 @@ export default function GlobalBackupsPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold">Backups</h1>
+      <h1 className="mb-6 vc-h1">Backups</h1>
       {msg && <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-xs text-emerald-200">{msg}</div>}
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -54,10 +54,10 @@ export default function GlobalBackupsPage() {
         <input className={input} type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         <input className={input} type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         <button className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10" onClick={refresh}>Refresh</button>
-        <button disabled={!selected.size} onClick={batchDelete} className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300 hover:bg-red-500/20 disabled:opacity-40">Delete selected ({selected.size})</button>
+        <button disabled={!selected.size} onClick={batchDelete} className="vc-btn vc-btn-sm vc-btn-danger hover:bg-red-500/20 disabled:opacity-40">Delete selected ({selected.size})</button>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+      <div className="overflow-x-auto vc-card">
         <table className="w-full text-sm">
           <thead className="text-left text-xs uppercase text-white/50">
             <tr><th className="p-3"></th><th>Name</th><th>VPS</th><th>Type</th><th>Size</th><th>Status</th><th>Created</th><th className="text-right pr-3">Actions</th></tr>

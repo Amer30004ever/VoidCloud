@@ -79,13 +79,13 @@ export default function NewVpsPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-2 text-3xl font-bold">New VPS</h1>
+      <h1 className="mb-2 vc-h1">New VPS</h1>
       <p className="mb-6 text-white/60">Step {step} of 4</p>
       <div className="mb-6 h-2 overflow-hidden rounded-full bg-white/10">
         <div className="h-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 transition-all" style={{ width: `${(step / 4) * 100}%` }} />
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <div className="vc-card p-6">
         {err && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{err}</div>}
 
         {step === 1 && (
@@ -181,11 +181,11 @@ export default function NewVpsPage() {
         )}
 
         <div className="mt-6 flex justify-between">
-          <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className="rounded-lg border border-white/10 px-4 py-2 text-sm disabled:opacity-30">← Back</button>
+          <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className="vc-btn vc-btn-secondary disabled:opacity-30">← Back</button>
           {step < 4 ? (
-            <button onClick={() => setStep(step + 1)} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950">Next →</button>
+            <button onClick={() => setStep(step + 1)} className="vc-btn vc-btn-primary">Next →</button>
           ) : (
-            <button onClick={submit} disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950 disabled:opacity-50">{busy ? "Provisioning…" : "🚀 Create VPS"}</button>
+            <button onClick={submit} disabled={busy} className="vc-btn vc-btn-primary disabled:opacity-50">{busy ? "Provisioning…" : "🚀 Create VPS"}</button>
           )}
         </div>
       </div>

@@ -23,12 +23,12 @@ export default function AdminPlansPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Plans</h1>
-        <button onClick={() => setEdit({ name: "", priceUSD: 0, priceEGP: 0, features: [] })} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 font-semibold text-slate-950">+ New plan</button>
+        <h1 className="vc-h1">Plans</h1>
+        <button onClick={() => setEdit({ name: "", priceUSD: 0, priceEGP: 0, features: [] })} className="vc-btn vc-btn-primary">+ New plan</button>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {plans.map((p) => (
-          <div key={p.id} className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+          <div key={p.id} className="vc-card p-5">
             <div className="flex items-start justify-between">
               <div><div className="text-xl font-bold">{p.name}</div><div className="text-xs text-white/50">{p.slug} {p.isActive ? "· active" : "· inactive"}</div></div>
               <div className="text-right"><div className="text-2xl font-bold">${p.priceUSD}</div><div className="text-xs text-white/50">{p.priceEGP} EGP</div></div>
@@ -37,7 +37,7 @@ export default function AdminPlansPage() {
             <div className="mt-4 flex gap-2">
               <button onClick={() => setEdit(p)} className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-sm">Edit</button>
               <button onClick={async () => { await cloudApi.admin.updatePlan(p.id, { isActive: !p.isActive }); load(); }} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">{p.isActive ? "Disable" : "Enable"}</button>
-              <button onClick={() => del(p.id)} className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">Delete</button>
+              <button onClick={() => del(p.id)} className="vc-btn vc-btn-sm vc-btn-danger">Delete</button>
             </div>
           </div>
         ))}
@@ -67,8 +67,8 @@ export default function AdminPlansPage() {
               <textarea className={inp} rows={4} value={(edit.features ?? []).join("\n")} onChange={(e) => setEdit({ ...edit, features: e.target.value.split("\n").filter(Boolean) })} />
             </F>
             <div className="mt-4 flex justify-end gap-2">
-              <button onClick={() => setEdit(null)} className="rounded-lg border border-white/10 px-4 py-2">Cancel</button>
-              <button onClick={save} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-6 py-2 font-semibold text-slate-950">Save</button>
+              <button onClick={() => setEdit(null)} className="vc-btn vc-btn-secondary">Cancel</button>
+              <button onClick={save} className="vc-btn vc-btn-primary">Save</button>
             </div>
           </div>
         </div>

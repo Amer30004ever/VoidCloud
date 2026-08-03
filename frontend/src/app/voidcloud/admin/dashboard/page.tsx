@@ -85,22 +85,22 @@ export default function AdminDashboard() {
     <ErrorBoundary>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">🛡️ Admin Dashboard</h1>
+          <h1 className="vc-h1">Admin Dashboard</h1>
           <p className="mt-1 text-sm text-white/60">Cluster overview and platform health.</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {cards.map((c) => (
-            <div key={c.label} className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+            <div key={c.label} className="vc-card p-5">
               <div className="text-2xl">{c.icon}</div>
-              <div className="mt-2 text-3xl font-bold">{c.value}</div>
-              <div className="mt-1 text-xs uppercase text-white/50">{c.label}</div>
+              <div className="mt-2 text-2xl font-semibold tabular-nums">{c.value}</div>
+              <div className="vc-label mt-1">{c.label}</div>
             </div>
           ))}
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <section className="vc-card p-6">
             <h2 className="mb-4 text-lg font-semibold">Cluster nodes</h2>
             {nodes.length === 0 ? (
               <p className="py-6 text-center text-sm text-white/50">No node data available.</p>
@@ -132,7 +132,7 @@ export default function AdminDashboard() {
             )}
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <section className="vc-card p-6">
             <h2 className="mb-4 text-lg font-semibold">Running namespaces ({namespaces.length})</h2>
             {namespaces.length === 0 ? (
               <p className="py-6 text-center text-sm text-white/50">No namespaces.</p>
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
                   ))}
                 </div>
                 {namespaces.length > 12 && (
-                  <button onClick={() => setShowAllNs((v) => !v)} className="mt-3 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10">
+                  <button onClick={() => setShowAllNs((v) => !v)} className="mt-3 w-full vc-btn vc-btn-sm vc-btn-secondary text-white/70 hover:bg-white/10">
                     {showAllNs ? "Show less" : `Show all ${namespaces.length}`}
                   </button>
                 )}
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <section className="vc-card p-6">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-semibold">SMTP status</h2>
               <button onClick={testSmtp} disabled={smtpTesting} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs hover:bg-white/10 disabled:opacity-50">
@@ -184,7 +184,7 @@ export default function AdminDashboard() {
             {smtpTestMsg && <p className="mt-2 text-xs text-white/60">{smtpTestMsg}</p>}
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <section className="vc-card p-6">
             <h2 className="mb-3 text-lg font-semibold">Recent deployments</h2>
             {deployments.length === 0 ? (
               <p className="text-sm text-white/50">No recent deployments.</p>

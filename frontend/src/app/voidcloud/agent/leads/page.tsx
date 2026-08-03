@@ -37,10 +37,10 @@ export default function AgentLeads() {
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold">My Leads</h1>
+      <h1 className="mb-6 vc-h1">My Leads</h1>
       <div className="space-y-3">
         {leads.map((l) => (
-          <div key={l.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div key={l.id} className="vc-card p-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">{l.title}</div>

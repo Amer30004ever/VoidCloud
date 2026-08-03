@@ -61,7 +61,7 @@ export default function AddonsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Add-ons Marketplace</h1>
+      <h1 className="vc-h1">Add-ons Marketplace</h1>
       {msg && <div className={`rounded-lg p-3 text-sm ${msg.kind === "ok" ? "bg-emerald-500/10 text-emerald-300" : "bg-red-500/10 text-red-300"}`}>{msg.text}</div>}
 
       <div>
@@ -77,7 +77,7 @@ export default function AddonsPage() {
           const current = states[tool.id] || 'not_installed';
           const isCodeServer = tool.id === 'code-server';
           return (
-            <div key={tool.id} className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <div key={tool.id} className="vc-card p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-lg font-bold text-slate-950">{tool.icon}</div>
                 <div>
@@ -99,7 +99,7 @@ export default function AddonsPage() {
                 {current === 'running' ? (
                   <button onClick={() => uninstall(tool.id)} className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm text-red-300 hover:bg-red-500/20">Uninstall</button>
                 ) : (
-                  <button onClick={() => install(tool.id)} disabled={!selectedVps || current === 'installing'} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">Install</button>
+                  <button onClick={() => install(tool.id)} disabled={!selectedVps || current === 'installing'} className="vc-btn vc-btn-primary disabled:opacity-50">Install</button>
                 )}
               </div>
             </div>

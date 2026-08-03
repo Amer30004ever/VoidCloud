@@ -116,7 +116,7 @@ export default function AdminPodsPage() {
     <div className="space-y-6 p-6 text-white">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Kubernetes Pod Manager</h1>
+          <h1 className="vc-h1">Kubernetes Pod Manager</h1>
           <p className="text-sm text-white/60">Namespace: {namespace}. Restart and tail logs. All actions are audited and require re-auth.</p>
         </div>
         <div className="flex items-center gap-2">
@@ -129,7 +129,7 @@ export default function AdminPodsPage() {
               <option key={ns} value={ns}>{ns}</option>
             ))}
           </select>
-          <button onClick={loadPods} disabled={loading} className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10 disabled:opacity-50">
+          <button onClick={loadPods} disabled={loading} className="vc-btn vc-btn-secondary hover:bg-white/10 disabled:opacity-50">
             Refresh
           </button>
         </div>
@@ -138,26 +138,26 @@ export default function AdminPodsPage() {
       {error && <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">{error}</div>}
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div className="vc-card p-5">
           <div className="text-xs text-white/50">Pods</div>
           <div className="mt-3 text-2xl font-semibold">{pods.length}</div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div className="vc-card p-5">
           <div className="text-xs text-white/50">Running</div>
           <div className="mt-3 text-2xl font-semibold text-emerald-300">{pods.filter((p) => p.status === 'Running').length}</div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div className="vc-card p-5">
           <div className="text-xs text-white/50">Restarts</div>
           <div className="mt-3 text-2xl font-semibold">{pods.reduce((sum, p) => sum + p.restarts, 0)}</div>
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/5">
+        <div className="vc-card">
           <div className="border-b border-white/5 p-4 text-sm font-semibold">Pods</div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-white/10 text-left text-xs uppercase text-white/50">
+              <thead className="vc-label border-b border-white/10 text-left">
                 <tr>
                   <th className="p-3">Name</th>
                   <th className="p-3">Status</th>
@@ -200,7 +200,7 @@ export default function AdminPodsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 flex flex-col">
+        <div className="vc-card flex flex-col">
           <div className="border-b border-white/5 p-4 text-sm font-semibold">
             {selectedPod ? `Logs: ${selectedPod}` : 'Select a pod to tail logs'}
           </div>
@@ -241,7 +241,7 @@ export default function AdminPodsPage() {
               />
             </div>
             <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setAuthModal({ open: false, pod: '' })} className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/10">Cancel</button>
+              <button onClick={() => setAuthModal({ open: false, pod: '' })} className="vc-btn vc-btn-secondary hover:bg-white/10">Cancel</button>
               <button onClick={confirmReauth} disabled={busy === authModal.pod} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">
                 {busy === authModal.pod ? 'Verifying…' : 'Confirm restart'}
               </button>

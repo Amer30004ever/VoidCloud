@@ -31,7 +31,7 @@ export default function CloudDashboardHome() {
       )}
 
       <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 p-8 backdrop-blur-xl">
-        <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
+        <h1 className="vc-h1">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
         <p className="mt-2 text-white/60">Here&apos;s what&apos;s happening with your cloud today.</p>
       </div>
 
@@ -43,10 +43,10 @@ export default function CloudDashboardHome() {
       </div>
 
       <WidgetBoundary title="Recent VPS instances">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="vc-card p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Recent VPS instances</h2>
-            <Link href="/voidcloud/dashboard/vps/new" className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">
+            <Link href="/voidcloud/dashboard/vps/new" className="vc-btn vc-btn-primary">
               + New VPS
             </Link>
           </div>
@@ -93,7 +93,7 @@ function Gauge({ label, used, total, unit }: { label: string; used: number; tota
   const pct = Math.min(100, total ? (used / total) * 100 : 0);
   const color = pct > 90 ? "from-red-500 to-orange-500" : pct > 70 ? "from-yellow-400 to-orange-500" : "from-cyan-400 to-fuchsia-500";
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+    <div className="vc-card p-5">
       <div className="flex items-baseline justify-between">
         <div className="text-xs uppercase text-white/60">{label}</div>
         <div className="text-xs text-white/50">{pct.toFixed(0)}%</div>
@@ -109,7 +109,7 @@ function Gauge({ label, used, total, unit }: { label: string; used: number; tota
 
 function QuickAction({ href, icon, title, desc }: any) {
   return (
-    <Link href={href} className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl transition hover:border-cyan-400/30 hover:bg-white/10">
+    <Link href={href} className="vc-card p-5 transition hover:border-cyan-400/30 hover:bg-white/10">
       <div className="text-2xl">{icon}</div>
       <div className="mt-2 font-semibold">{title}</div>
       <div className="text-xs text-white/50">{desc}</div>
@@ -119,7 +119,7 @@ function QuickAction({ href, icon, title, desc }: any) {
 
 function StepCard({ href, step, title, desc }: { href: string; step: string; title: string; desc: string }) {
   return (
-    <Link href={href} className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm hover:border-cyan-400/30 hover:bg-white/10">
+    <Link href={href} className="vc-card p-4 text-sm hover:border-cyan-400/30 hover:bg-white/10">
       <div className="flex items-center gap-2">
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-400/20 text-xs font-bold text-cyan-300">{step}</span>
         <span className="font-medium text-white/90">{title}</span>

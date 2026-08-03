@@ -26,18 +26,18 @@ export default function AgentDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Agent Dashboard</h1>
+      <h1 className="vc-h1">Agent Dashboard</h1>
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-          <div className="text-3xl font-bold">{contacts.length}</div>
+        <div className="vc-card p-6">
+          <div className="vc-h1">{contacts.length}</div>
           <div className="text-sm text-white/60">Conversations</div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-          <div className="text-3xl font-bold">{myLeads.length}</div>
+        <div className="vc-card p-6">
+          <div className="vc-h1">{myLeads.length}</div>
           <div className="text-sm text-white/60">Assigned Leads</div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-          <div className="text-3xl font-bold">{openConversations}</div>
+        <div className="vc-card p-6">
+          <div className="vc-h1">{openConversations}</div>
           <div className="text-sm text-white/60">Open</div>
         </div>
       </div>

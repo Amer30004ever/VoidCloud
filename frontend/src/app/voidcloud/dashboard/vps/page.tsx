@@ -85,12 +85,12 @@ export default function VpsListPage() {
   return (
     <ErrorBoundary>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">VPS Instances</h1>
-        <Link href="/voidcloud/dashboard/vps/new" className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 font-semibold text-slate-950">+ New VPS</Link>
+        <h1 className="vc-h1">VPS Instances</h1>
+        <Link href="/voidcloud/dashboard/vps/new" className="vc-btn vc-btn-primary">+ New VPS</Link>
       </div>
 
       {quota && (
-        <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="mb-6 vc-card p-6">
           <h2 className="mb-4 text-sm uppercase text-white/50">Resource quota</h2>
           <div className="grid gap-4 md:grid-cols-4">
             <Gauge label="VPS count" used={quota.currentVpsCount} limit={quota.maxVpsCount} unit="" />
@@ -102,7 +102,7 @@ export default function VpsListPage() {
       )}
 
       {selected.size > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3">
+        <div className="mb-4 flex flex-wrap items-center gap-2 vc-card p-3">
           <span className="text-xs text-white/60">{selected.size} selected</span>
           <button disabled={bulkAction === "stop"} onClick={() => runBulk("stop")} className="rounded-lg border border-yellow-500/40 px-3 py-1.5 text-xs text-yellow-300 hover:bg-yellow-500/10 disabled:opacity-50">{bulkAction === "stop" ? "Working…" : "Stop"}</button>
           <button disabled={bulkAction === "start"} onClick={() => runBulk("start")} className="rounded-lg border border-green-500/40 px-3 py-1.5 text-xs text-green-300 hover:bg-green-500/10 disabled:opacity-50">{bulkAction === "start" ? "Working…" : "Start"}</button>
@@ -112,12 +112,12 @@ export default function VpsListPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+      <div className="vc-card">
         {loading ? <p className="p-6 text-white/50">Loading…</p>
           : items.length === 0 ? <p className="p-12 text-center text-white/50">No VPS instances yet.</p>
           : (
             <table className="w-full text-sm">
-              <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+              <thead className="vc-label border-b border-white/10 text-left">
                 <tr>
                   <th className="w-10 px-3"><input type="checkbox" checked={selected.size === items.length && items.length > 0} onChange={toggleAll} className="rounded border-border" aria-label="Select all" /></th>
                   <th className="p-4">Name</th><th>IP Address</th><th>Resources</th><th>Status</th><th></th>

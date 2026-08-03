@@ -52,7 +52,7 @@ export default function AppsMarketplacePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">App Marketplace</h1>
+      <h1 className="vc-h1">App Marketplace</h1>
       {msg && <div className={`rounded-lg p-3 text-sm ${msg.kind === "ok" ? "bg-emerald-500/10 text-emerald-300" : "bg-red-500/10 text-red-300"}`}>{msg.text}</div>}
 
       <div className="flex gap-4">
@@ -75,7 +75,7 @@ export default function AppsMarketplacePage() {
           {catalog.map((app) => {
             const isInstalled = installed.some((a) => a.id === app.id);
             return (
-              <div key={app.id} className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <div key={app.id} className="vc-card p-6">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-lg font-bold text-slate-950">{app.icon}</div>
                   <div>
@@ -87,7 +87,7 @@ export default function AppsMarketplacePage() {
                 {isInstalled ? (
                   <button onClick={() => uninstall(app.id)} disabled={busy} className="mt-4 w-full rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300 hover:bg-red-500/20 disabled:opacity-50">Uninstall</button>
                 ) : (
-                  <button onClick={() => install(app.id)} disabled={busy || !selectedVps} className="mt-4 w-full rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">Install</button>
+                  <button onClick={() => install(app.id)} disabled={busy || !selectedVps} className="mt-4 w-full vc-btn vc-btn-primary disabled:opacity-50">Install</button>
                 )}
               </div>
             );
@@ -99,7 +99,7 @@ export default function AppsMarketplacePage() {
         <div className="space-y-3">
           {installed.length === 0 && <p className="text-center text-white/50 py-8">No apps installed on selected VPS.</p>}
           {installed.map((app) => (
-            <div key={app.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div key={app.id} className="flex items-center justify-between vc-card p-4">
               <div>
                 <div className="font-medium">{app.name}</div>
                 <div className="text-xs text-white/60">{app.status} · {new Date(app.installedAt).toLocaleDateString()}</div>

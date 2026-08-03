@@ -60,10 +60,10 @@ export default function AdminIncidentsPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <h1 className="text-3xl font-bold">Incident Management</h1>
+      <h1 className="vc-h1">Incident Management</h1>
       {msg && <div className={`rounded-lg p-3 text-sm ${msg.kind === "ok" ? "bg-emerald-500/10 text-emerald-300" : "bg-red-500/10 text-red-300"}`}>{msg.text}</div>}
 
-      <form onSubmit={create} className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
+      <form onSubmit={create} className="vc-card p-6 space-y-4">
         <h3 className="text-sm font-semibold">Create Incident</h3>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
@@ -83,12 +83,12 @@ export default function AdminIncidentsPage() {
           <label className="mb-1 block text-xs text-white/60">Description</label>
           <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm" />
         </div>
-        <button disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">Create Incident</button>
+        <button disabled={busy} className="vc-btn vc-btn-primary disabled:opacity-50">Create Incident</button>
       </form>
 
       <div className="space-y-3">
         {incidents.map((inc) => (
-          <div key={inc.id} className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <div key={inc.id} className="vc-card p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="font-semibold">{inc.title}</h3>
@@ -123,7 +123,7 @@ export default function AdminIncidentsPage() {
                   <option value="MONITORING">Monitoring</option>
                   <option value="RESOLVED">Resolved</option>
                 </select>
-                <button onClick={postUpdate} disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">Post</button>
+                <button onClick={postUpdate} disabled={busy} className="vc-btn vc-btn-primary disabled:opacity-50">Post</button>
               </div>
             )}
           </div>

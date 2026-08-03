@@ -61,7 +61,7 @@ export default function AdminMonitoringPage() {
         <WidgetBoundary title="Service health" className="space-y-6">
 
         <>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+          <div className="vc-card p-6">
             <div className="flex items-baseline justify-between">
               <div>
                 <div className="text-xs uppercase tracking-wide text-white/60">Platform health</div>
@@ -79,7 +79,7 @@ export default function AdminMonitoringPage() {
 
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {snap.services.map((s) => (
-              <div key={s.name} className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+              <div key={s.name} className="vc-card p-4">
                 <div className="flex items-center justify-between">
                   <div className="font-semibold capitalize">{s.name}</div>
                   <span className={`rounded-full px-2 py-0.5 text-xs ${
@@ -103,7 +103,7 @@ export default function AdminMonitoringPage() {
       )}
 
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+      <div className="vc-card p-4">
         <h2 className="mb-3 text-lg font-semibold">Maintenance mode</h2>
         <p className="mb-3 text-sm text-white/60">Toggle a platform-wide banner. When enabled, all users see the message.</p>
         <textarea value={maintMsg} onChange={(e) => setMaintMsg(e.target.value)}

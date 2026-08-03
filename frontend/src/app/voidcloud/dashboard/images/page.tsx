@@ -46,12 +46,12 @@ export default function ImagesPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Images</h1>
+          <h1 className="vc-h1">Images</h1>
           <p className="text-sm text-white/60">Snapshots, custom images, and public marketplace.</p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+      <div className="vc-card p-5">
         <h2 className="font-semibold mb-3">Save as Custom Image</h2>
         <div className="flex flex-wrap gap-2">
           <select value={snapVpsId} onChange={(e) => setSnapVpsId(e.target.value)} className="rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm">
@@ -59,14 +59,14 @@ export default function ImagesPage() {
           </select>
           <button
             onClick={saveSnapshot}
-            className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950"
+            className="vc-btn vc-btn-primary"
           >
             Save as Custom Image
           </button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+      <div className="vc-card p-5">
         <h2 className="font-semibold mb-3">My Images</h2>
         {mine.length === 0 ? (
           <p className="text-sm text-white/50">No custom images yet.</p>
@@ -90,7 +90,7 @@ export default function ImagesPage() {
       </div>
 
       {shared.length > 0 && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+        <div className="vc-card p-5">
           <h2 className="font-semibold mb-3">Shared With Me</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {shared.map((img) => (
@@ -104,7 +104,7 @@ export default function ImagesPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+      <div className="vc-card p-5">
         <h2 className="font-semibold mb-3">Marketplace</h2>
         {market.length === 0 ? (
           <p className="text-sm text-white/50">No public images yet.</p>

@@ -47,15 +47,15 @@ export default function WalletPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="text-3xl font-bold">Wallet</h1>
+      <h1 className="vc-h1">Wallet</h1>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <div className="vc-card p-6">
         <div className="text-xs uppercase text-white/50">Credit balance</div>
         <div className="mt-2 text-4xl font-bold">{balance !== null ? `${balance} pts` : "—"}</div>
         <p className="mt-1 text-xs text-white/50">Points are deducted per minute of PAY_AS_YOU_GO VPS runtime.</p>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <div className="vc-card p-6">
         <h2 className="text-xl font-semibold mb-4">Top up credits</h2>
         <div className="grid gap-3 md:grid-cols-3 mb-4">
           {PACKS.map((p) => (
@@ -79,7 +79,7 @@ export default function WalletPage() {
       </div>
 
       <WidgetBoundary title="Transaction history">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="vc-card p-6">
           <h2 className="text-xl font-semibold mb-4">Transaction history</h2>
           {txs.length === 0 ? (
             <p className="text-sm text-white/50">No transactions yet.</p>

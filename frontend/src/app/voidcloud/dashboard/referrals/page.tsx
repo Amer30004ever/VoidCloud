@@ -91,7 +91,7 @@ export default function ReferralsPage() {
       {err && <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300">{err}</div>}
       {msg && <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-300">{msg}</div>}
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+      <div className="vc-card p-5">
         <div className="text-xs uppercase tracking-wide text-white/50">Your referral link</div>
         <div className="mt-2 flex gap-2 flex-wrap">
           <input readOnly value={link} className="flex-1 min-w-[260px] rounded-md bg-slate-950 border border-white/10 px-3 py-2 text-sm" />
@@ -111,7 +111,7 @@ export default function ReferralsPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+        <div className="vc-card p-5">
           <h2 className="font-semibold mb-3">Payout Method</h2>
           <label className="block text-xs text-white/60 mb-1">Type</label>
           <select
@@ -134,7 +134,7 @@ export default function ReferralsPage() {
           </button>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+        <div className="vc-card p-5">
           <h2 className="font-semibold mb-3">Request Payout</h2>
           <label className="block text-xs text-white/60 mb-1">Amount (USD)</label>
           <input
@@ -154,7 +154,7 @@ export default function ReferralsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+      <div className="vc-card p-5">
         <h2 className="font-semibold mb-3">Referral History</h2>
         {stats.history.length === 0 ? (
           <p className="text-sm text-white/50">No referrals yet.</p>
@@ -183,7 +183,7 @@ export default function ReferralsPage() {
       </div>
 
       {payouts.length > 0 && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+        <div className="vc-card p-5">
           <h2 className="font-semibold mb-3">Payout History</h2>
           <table className="w-full text-sm">
             <thead className="text-left text-xs uppercase text-white/40">
@@ -213,7 +213,7 @@ export default function ReferralsPage() {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <div className="vc-card p-4">
       <div className="text-xs uppercase tracking-wide text-white/50">{label}</div>
       <div className="mt-1 text-2xl font-bold">{value}</div>
     </div>

@@ -57,7 +57,7 @@ export default function UserDashboard() {
       )}
 
       <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 p-8 backdrop-blur-xl">
-        <h1 className="text-3xl font-bold">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
+        <h1 className="vc-h1">Welcome back{me?.name ? `, ${me.name.split(" ")[0]}` : ""} 👋</h1>
         <p className="mt-2 text-white/60">Manage your VPS instances, plan, and usage from one place.</p>
       </div>
 
@@ -75,7 +75,7 @@ export default function UserDashboard() {
         <QuickAction href="/voidcloud/dashboard/billing" icon="⬆️" title="Upgrade Plan" desc="Need more resources?" />
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <div className="vc-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Your VPS instances</h2>
           <Link href="/voidcloud/dashboard/vps" className="text-xs text-cyan-300 hover:underline">View all →</Link>
@@ -109,7 +109,7 @@ function Gauge({ label, used, total, unit }: { label: string; used: number; tota
   const pct = Math.min(100, total ? (used / total) * 100 : 0);
   const color = pct > 90 ? "from-red-500 to-orange-500" : pct > 70 ? "from-yellow-400 to-orange-500" : "from-cyan-400 to-fuchsia-500";
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+    <div className="vc-card p-5">
       <div className="flex items-baseline justify-between">
         <div className="text-xs uppercase text-white/60">{label}</div>
         <div className="text-xs text-white/50">{pct.toFixed(0)}%</div>
@@ -125,7 +125,7 @@ function Gauge({ label, used, total, unit }: { label: string; used: number; tota
 
 function QuickAction({ href, icon, title, desc }: { href: string; icon: string; title: string; desc: string }) {
   return (
-    <Link href={href} className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl transition hover:border-cyan-400/30 hover:bg-white/10">
+    <Link href={href} className="vc-card p-5 transition hover:border-cyan-400/30 hover:bg-white/10">
       <div className="text-2xl">{icon}</div>
       <div className="mt-2 font-semibold">{title}</div>
       <div className="text-xs text-white/50">{desc}</div>
@@ -154,7 +154,7 @@ function VpsCard({ d, trialEndsAt, now }: VpsCardProps) {
   useEffect(() => { cloudApi.deployments.usageOne(d.id).then(setU).catch(() => {}); }, [d.id]);
   const trialDays = trialEndsAt ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - now) / (1000 * 60 * 60 * 24))) : null;
   return (
-    <Link href={`/voidcloud/dashboard/vps/${d.id}`} className="block rounded-xl border border-white/10 bg-white/5 p-4 hover:border-cyan-400/30 hover:bg-white/10">
+    <Link href={`/voidcloud/dashboard/vps/${d.id}`} className="block vc-card p-4 hover:border-cyan-400/30 hover:bg-white/10">
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="font-semibold">{d.name}</div>

@@ -43,7 +43,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <h1 className="text-3xl font-bold">Settings</h1>
+      <h1 className="vc-h1">Settings</h1>
       <div className="flex flex-wrap gap-2 border-b border-white/10">
         {allTabs.map((t) => (
           <button
@@ -232,7 +232,7 @@ function SecurityTab() {
             <button
               disabled={busy}
               onClick={async () => { try { const r = await cloudTwoFactor.regenerate(); setRecoveryCodes(r.recoveryCodes); await refresh(); } catch {} }}
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm"
+              className="vc-btn vc-btn-secondary"
             >Regenerate recovery codes</button>
             <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-2">
               <p className="text-sm font-semibold">Disable 2FA</p>
@@ -324,7 +324,7 @@ function ApiKeysTab() {
       <p className="text-sm text-white/60">Manage personal access tokens used to call the VoidCloud API.</p>
       <Link
         href="/voidcloud/dashboard/settings/api-keys"
-        className="inline-block rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950"
+        className="inline-block vc-btn vc-btn-primary"
       >
         Open API Keys →
       </Link>
@@ -360,7 +360,7 @@ function DangerTab() {
 
 /* ---------- shared ---------- */
 const input = "w-full rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 outline-none focus:border-cyan-400/50";
-const btnPrimary = "rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60";
+const btnPrimary = "vc-btn vc-btn-primary disabled:opacity-60";
 
 function Section({ title, children, tone }: { title: string; children: React.ReactNode; tone?: "danger" }) {
   return (
@@ -433,7 +433,7 @@ function AccountsTab() {
         {['google', 'github'].map((provider) => {
           const linked = providers.includes(provider);
           return (
-            <div key={provider} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4">
+            <div key={provider} className="flex items-center justify-between vc-card p-4">
               <div>
                 <p className="text-sm font-medium text-foreground capitalize">{provider}</p>
                 <p className="text-xs text-white/60">{linked ? 'Linked' : 'Not linked'}</p>

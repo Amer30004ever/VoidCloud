@@ -88,14 +88,14 @@ export default function ApiKeysPage() {
 
   return (
     <div>
-      <h1 className="mb-2 text-3xl font-bold">API Keys</h1>
+      <h1 className="mb-2 vc-h1">API Keys</h1>
       <p className="mb-6 text-sm text-white/60">
         Authenticate scripts, CI pipelines and integrations against the VoidCloud REST API.
         Treat keys like passwords — store them in your secret manager, never commit them to git.
       </p>
 
       {/* Generate */}
-      <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <div className="mb-6 vc-card p-6">
         <h2 className="mb-3 font-semibold">Generate new key</h2>
         <div className="flex gap-2">
           <input
@@ -108,7 +108,7 @@ export default function ApiKeysPage() {
           <button
             onClick={create}
             disabled={!name}
-            className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 font-semibold text-slate-950 disabled:opacity-50"
+            className="vc-btn vc-btn-primary disabled:opacity-50"
             title="Generates a new key. The plaintext value is shown only once."
           >
             Generate
@@ -131,12 +131,12 @@ export default function ApiKeysPage() {
       </div>
 
       {/* Existing keys */}
-      <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+      <div className="mb-6 vc-card">
         {keys.length === 0 ? (
           <p className="p-8 text-center text-white/50">No keys yet.</p>
         ) : (
           <table className="w-full text-sm">
-            <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+            <thead className="vc-label border-b border-white/10 text-left">
               <tr>
                 <th className="p-4">Name</th>
                 <th title="The first characters of the key — useful for matching it against secret managers without exposing the full value.">
@@ -169,7 +169,7 @@ export default function ApiKeysPage() {
       </div>
 
       {/* curl examples */}
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <div className="vc-card p-6">
         <h2 className="mb-1 font-semibold">Usage examples</h2>
         <p className="mb-4 text-xs text-white/50">
           Replace <code className="rounded bg-slate-950/60 px-1 font-mono">{tokenForExamples}</code>{" "}

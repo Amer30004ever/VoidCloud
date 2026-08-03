@@ -58,7 +58,7 @@ export default function TeamPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold">Team</h1>
+      <h1 className="mb-6 vc-h1">Team</h1>
       {msg && <div className={`mb-4 rounded-lg p-3 text-sm ${msg.kind === "ok" ? "bg-emerald-500/10 text-emerald-300" : "bg-red-500/10 text-red-300"}`}>{msg.text}</div>}
       <form onSubmit={invite} className="mb-6 flex gap-2">
         <input
@@ -69,13 +69,13 @@ export default function TeamPage() {
           placeholder="teammate@example.com"
           className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
         />
-        <button disabled={busy} className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">
+        <button disabled={busy} className="vc-btn vc-btn-primary disabled:opacity-50">
           Send Invite
         </button>
       </form>
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+      <div className="vc-card">
         <table className="w-full text-sm">
-          <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+          <thead className="vc-label border-b border-white/10 text-left">
             <tr>
               <th className="p-4">Name</th>
               <th>Email</th>
