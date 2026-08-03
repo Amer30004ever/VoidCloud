@@ -39,7 +39,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     try {
       const res = await api.get<Notification[]>("/notifications");
-      setNotifications(res.data);
+      setNotifications(Array.isArray(res.data) ? res.data : []);
       setIsConnected(true);
     } catch {
       setIsConnected(false);

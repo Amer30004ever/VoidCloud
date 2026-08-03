@@ -4,6 +4,7 @@ export { PageHeader } from "./page-header";
 export { EmptyState } from "./empty-state";
 export { LoadingState } from "./loading-state";
 export { ErrorState } from "./error-state";
+export { WidgetBoundary, type WidgetBoundaryProps } from "./widget-boundary";
 export { StatusBadge } from "./status-badge";
 export {
   CreateItemDialog,

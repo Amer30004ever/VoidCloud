@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cloudApi, CloudUsage, CloudDeployment } from "@/features/vps/cloud";
+import { WidgetBoundary } from "@workspace/ui-kit/widget-boundary";
 
 export default function CloudDashboardHome() {
   const [usage, setUsage] = useState<CloudUsage | null>(null);
@@ -11,7 +12,7 @@ export default function CloudDashboardHome() {
   const [me, setMe] = useState<any>(null);
   useEffect(() => {
     cloudApi.deployments.usage().then(setUsage).catch(() => { });
-    cloudApi.deployments.list().then(setDeployments).catch(() => { });
+    cloudApi.deployments.list().then((d) => setDeployments(Array.isArray(d) ? d : [])).catch(() => { });
     import("@/lib/api").then(({ default: api }) => api.get("/auth/me").then((r) => setMe(r.data)).catch(() => { }));
   }, []);
 
@@ -35,35 +36,38 @@ export default function CloudDashboardHome() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <PlanCard usage={usage} />
-        <Gauge label="CPU" used={usage?.used.cpu ?? 0} total={usage?.limits.cpuLimit ?? 1} unit="cores" />
-        <Gauge label="Memory" used={usage?.used.memory ?? 0} total={usage?.limits.memoryLimit ?? 1} unit="MB" />
-        <Gauge label="Storage" used={usage?.used.storage ?? 0} total={usage?.limits.storageLimit ?? 1} unit="MB" />
+        <WidgetBoundary title="Current plan"><PlanCard usage={usage} /></WidgetBoundary>
+        <WidgetBoundary title="CPU"><Gauge label="CPU" used={usage?.used?.cpu ?? 0} total={usage?.limits?.cpuLimit ?? 1} unit="cores" /></WidgetBoundary>
+        <WidgetBoundary title="Memory"><Gauge label="Memory" used={usage?.used?.memory ?? 0} total={usage?.limits?.memoryLimit ?? 1} unit="MB" /></WidgetBoundary>
+        <WidgetBoundary title="Storage"><Gauge label="Storage" used={usage?.used?.storage ?? 0} total={usage?.limits?.storageLimit ?? 1} unit="MB" /></WidgetBoundary>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Recent VPS instances</h2>
-          <Link href="/voidcloud/dashboard/vps/new" className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">
-            + New VPS
-          </Link>
-        </div>
-        {deployments.length === 0 ? (
-          <p className="py-12 text-center text-white/50">No VPS instances yet. Create your first to get started.</p>
-        ) : (
-          <div className="divide-y divide-white/5">
-            {deployments.slice(0, 5).map((d) => (
-              <Link key={d.id} href={`/voidcloud/dashboard/vps/${d.id}`} className="flex items-center justify-between py-3 hover:bg-white/5">
-                <div>
-                  <div className="font-medium">{d.name}</div>
-                  <div className="text-xs text-white/50">{d.subdomain}.voidcloud.cc.cd</div>
-                </div>
-                <StatusBadge status={d.status} />
-              </Link>
-            ))}
+      <WidgetBoundary title="Recent VPS instances">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Recent VPS instances</h2>
+            <Link href="/voidcloud/dashboard/vps/new" className="rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-slate-950">
+              + New VPS
+            </Link>
           </div>
-        )}
-      </div>
+          {deployments.length === 0 ? (
+            <p className="py-12 text-center text-white/50">No VPS instances yet. Create your first to get started.</p>
+          ) : (
+            <div className="divide-y divide-white/5">
+              {deployments.slice(0, 5).map((d) => (
+                <Link key={d.id} href={`/voidcloud/dashboard/vps/${d.id}`} className="flex items-center justify-between py-3 hover:bg-white/5">
+                  <div>
+                    <div className="font-medium">{d.name}</div>
+                    <div className="text-xs text-white/50">{d.subdomain}.voidcloud.cc.cd</div>
+                  </div>
+                  <StatusBadge status={d.status} />
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </WidgetBoundary>
+
 
       <div className="grid gap-4 md:grid-cols-3">
         <QuickAction href="/voidcloud/dashboard/vps/new" icon="🖥️" title="New VPS" desc="Provision a Proxmox container" />

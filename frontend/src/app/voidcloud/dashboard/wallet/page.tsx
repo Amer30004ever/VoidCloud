@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { cloudApi } from "@/features/vps/cloud";
+import { WidgetBoundary } from "@workspace/ui-kit/widget-boundary";
 
 type Tx = {
   id: string;
@@ -77,28 +78,31 @@ export default function WalletPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <h2 className="text-xl font-semibold mb-4">Transaction history</h2>
-        {txs.length === 0 ? (
-          <p className="text-sm text-white/50">No transactions yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {txs.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between border-b border-white/5 py-2 text-sm">
-                <div>
-                  <span className={`inline-block rounded px-2 py-0.5 text-xs mr-2 ${tx.type === "TOPUP" ? "bg-emerald-500/20 text-emerald-200" : tx.type === "CONSUMPTION" ? "bg-red-500/20 text-red-200" : "bg-white/10 text-white/70"}`}>{tx.type}</span>
-                  {tx.relatedVps && <span className="text-white/60 ml-2">{tx.relatedVps.name}</span>}
-                  {tx.reason && <span className="text-white/40 ml-2 text-xs">({tx.reason})</span>}
+      <WidgetBoundary title="Transaction history">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <h2 className="text-xl font-semibold mb-4">Transaction history</h2>
+          {txs.length === 0 ? (
+            <p className="text-sm text-white/50">No transactions yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {txs.map((tx) => (
+                <div key={tx.id} className="flex items-center justify-between border-b border-white/5 py-2 text-sm">
+                  <div>
+                    <span className={`inline-block rounded px-2 py-0.5 text-xs mr-2 ${tx.type === "TOPUP" ? "bg-emerald-500/20 text-emerald-200" : tx.type === "CONSUMPTION" ? "bg-red-500/20 text-red-200" : "bg-white/10 text-white/70"}`}>{tx.type}</span>
+                    {tx.relatedVps && <span className="text-white/60 ml-2">{tx.relatedVps.name}</span>}
+                    {tx.reason && <span className="text-white/40 ml-2 text-xs">({tx.reason})</span>}
+                  </div>
+                  <div className="text-right">
+                    <div className={tx.amount >= 0 ? "text-emerald-300" : "text-red-300"}>{tx.amount >= 0 ? "+" : ""}{tx.amount} pts</div>
+                    <div className="text-xs text-white/40">{new Date(tx.createdAt).toLocaleString()}</div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className={tx.amount >= 0 ? "text-emerald-300" : "text-red-300"}>{tx.amount >= 0 ? "+" : ""}{tx.amount} pts</div>
-                  <div className="text-xs text-white/40">{new Date(tx.createdAt).toLocaleString()}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </WidgetBoundary>
+
 
       {msg && <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-3 text-sm text-cyan-200">{msg}</div>}
     </div>

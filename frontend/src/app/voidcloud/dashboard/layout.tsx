@@ -69,6 +69,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
   const [role, setRole] = useState<string | null>(null);
   const [impersonatedBy, setImpersonatedBy] = useState<string | null>(null);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
   const isAdminArea = pathname.startsWith("/voidcloud/admin");
   const dict = lang === "ar" ? ar : en;
@@ -96,11 +97,11 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     if (typeof window !== "undefined") localStorage.setItem("amer_lang", lang);
   }, [lang]);
 
-  useEffect(() => {
-    if (role === "ADMIN" && !onboardingCompleted && (pathname.startsWith("/voidcloud/admin") || pathname.startsWith("/voidcloud/dashboard"))) {
-      router.replace("/voidcloud/onboarding");
-    }
-  }, [role, onboardingCompleted, pathname, router]);
+  // C4: onboarding is a prompt, not a gate. It must never hijack a requested
+  // tenant/admin route — we surface a dismissible banner instead of redirecting.
+  const showOnboardingBanner =
+    role === "ADMIN" && onboardingCompleted === false && !onboardingDismissed;
+
 
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
 
@@ -210,8 +211,23 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
               Stop impersonating
             </button>
           </div>
+        ) : showOnboardingBanner ? (
+          <div className="flex items-center justify-between gap-3 border-b border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-cyan-100">
+            <span className="min-w-0 truncate text-xs font-medium sm:text-sm">
+              Finish setting up your workspace to unlock WhatsApp, billing and CRM.
+            </span>
+            <span className="flex shrink-0 items-center gap-2">
+              <Link href="/voidcloud/onboarding" className="rounded-lg bg-cyan-400/20 px-3 py-1 text-xs font-semibold hover:bg-cyan-400/30">
+                Continue setup
+              </Link>
+              <button onClick={() => setOnboardingDismissed(true)} className="rounded-lg px-2 py-1 text-xs text-cyan-100/70 hover:text-cyan-100">
+                Dismiss
+              </button>
+            </span>
+          </div>
         ) : null
       }
+
     >
       {children}
       <AiAssistant />

@@ -11,13 +11,16 @@ export function NotificationBell() {
   const qc = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
 
-  const { data: notifications = [] } = useQuery({
+  const { data } = useQuery({
     queryKey: ["notifications"],
     queryFn: notificationsApi.list,
     enabled: !!user,
     refetchInterval: 30000,
   });
 
+  // The endpoint can return a non-array payload (error envelope, {} on outage);
+  // never let the topbar bell take the whole shell down.
+  const notifications: NotificationDto[] = Array.isArray(data) ? data : [];
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const markRead = useMutation({
