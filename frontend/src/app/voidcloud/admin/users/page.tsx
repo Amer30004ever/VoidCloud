@@ -2,9 +2,11 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { Users } from "lucide-react";
 import { cloudApi, CloudPlan, TenantQuota } from "@/features/vps/cloud";
 import { useToast } from "@/components/ui/Toast";
-import { Skeleton, TableRowSkeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
+import { TableSkeleton } from "@workspace/ui-kit/skeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function AdminUsersPage() {
@@ -28,6 +30,7 @@ export default function AdminUsersPage() {
     name: true, plan: true, status: true, vps: true, joined: true, actions: true,
   });
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const raw = localStorage.getItem("userTableFilters");
@@ -35,8 +38,13 @@ export default function AdminUsersPage() {
   }, []);
 
   const load = useCallback(async (query?: string) => {
+    setLoading(true);
     setLastUpdated(new Date());
-    setUsers(await cloudApi.admin.users(query ?? q));
+    try {
+      setUsers(await cloudApi.admin.users(query ?? q));
+    } finally {
+      setLoading(false);
+    }
   }, [q]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { cloudApi.admin.plans().then(setPlans).catch(() => {}); }, []);
@@ -208,8 +216,23 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-white/50">No users found.</td></tr>
+              {loading && <TableSkeleton rows={6} cols={7} />}
+              {!loading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-6">
+                    <EmptyState
+                      icon={<Users className="size-6" />}
+                      title={q ? "No users match your search" : "No users yet"}
+                      description={q ? "Try a different name or email, or clear the search filter." : "Create the first account to start onboarding tenants."}
+                      action={
+                        q
+                          ? <button onClick={() => setQ("")} className="vc-btn vc-btn-secondary">Clear search</button>
+                          : <button onClick={() => setCreating(true)} className="vc-btn vc-btn-primary">New user</button>
+                      }
+                      className="py-6"
+                    />
+                  </td>
+                </tr>
               )}
               {filtered.map((u) => (
                 <tr key={u.id} className={`border-b border-white/5 ${selectedIds.has(u.id) ? "bg-primary/5" : ""}`}>

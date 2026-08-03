@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Server } from "lucide-react";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
+import { TableSkeleton } from "@workspace/ui-kit/skeleton";
 import { cloudApi, type CloudDeployment, type TenantQuota } from "@/features/vps/cloud";
 import { VpsStatusBadge } from "@/features/vps/VpsStatusBadge";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
@@ -113,8 +116,17 @@ export default function VpsListPage() {
       )}
 
       <div className="vc-card">
-        {loading ? <p className="p-6 text-white/50">Loading…</p>
-          : items.length === 0 ? <p className="p-12 text-center text-white/50">No VPS instances yet.</p>
+        {loading ? (
+            <table className="w-full text-sm"><tbody><TableSkeleton rows={4} cols={5} /></tbody></table>
+          )
+          : items.length === 0 ? (
+            <EmptyState
+              icon={<Server className="size-6" />}
+              title="No VPS instances yet"
+              description="Provision your first instance to start deploying workloads on VoidCloud."
+              action={<Link href="/voidcloud/dashboard/vps/new" className="vc-btn vc-btn-primary">Create VPS</Link>}
+            />
+          )
           : (
             <table className="w-full text-sm">
               <thead className="vc-label border-b border-white/10 text-left">

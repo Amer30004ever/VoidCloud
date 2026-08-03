@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
+import { ShieldAlert, Globe } from "lucide-react";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
+import { ListSkeleton } from "@workspace/ui-kit/skeleton";
 import { cloudAbuse, AbuseReport, PtrRequest } from "@/features/vps/cloud";
 
 export default function AdminAbusePage() {
@@ -9,6 +12,7 @@ export default function AdminAbusePage() {
   const [tab, setTab] = useState<"reports" | "ptr">("reports");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = async () => {
     try {
@@ -16,6 +20,8 @@ export default function AdminAbusePage() {
       setReports(r); setPtrs(p);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? e?.message);
+    } finally {
+      setLoading(false);
     }
   };
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -68,7 +74,14 @@ export default function AdminAbusePage() {
 
       {tab === "reports" && (
         <div className="space-y-3">
-          {reports.length === 0 && <p className="text-white/50">No abuse reports yet.</p>}
+          {loading && <ListSkeleton rows={3} />}
+          {!loading && reports.length === 0 && (
+            <EmptyState
+              icon={<ShieldAlert className="size-6" />}
+              title="No abuse reports"
+              description="Nothing flagged right now. Run detection to scan current traffic for abuse signatures."
+            />
+          )}
           {reports.map((r) => (
             <div key={r.id} className="vc-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -105,7 +118,14 @@ export default function AdminAbusePage() {
 
       {tab === "ptr" && (
         <div className="space-y-3">
-          {ptrs.length === 0 && <p className="text-white/50">No PTR requests yet.</p>}
+          {loading && <ListSkeleton rows={3} />}
+          {!loading && ptrs.length === 0 && (
+            <EmptyState
+              icon={<Globe className="size-6" />}
+              title="No PTR requests"
+              description="Reverse-DNS requests submitted by tenants will appear here for review."
+            />
+          )}
           {ptrs.map((p) => (
             <div key={p.id} className="vc-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">

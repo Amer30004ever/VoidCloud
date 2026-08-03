@@ -2,8 +2,11 @@
 "use client";
 
 import { useCallback, useEffect, useState, useMemo } from "react";
+import { Database } from "lucide-react";
 import { cloudApi, ProxmoxClusterRow, ClusterInput } from "@/features/vps/cloud";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
+import { TableSkeleton } from "@workspace/ui-kit/skeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CapacityBar } from "@/components/ui/CapacityBar";
 
@@ -22,13 +25,16 @@ export default function AdminClustersPage() {
   const [scheduled, setScheduled] = useState<any>(null);
   const { addToast } = useToast();
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const data = await cloudApi.admin.clusters.list();
       setRows(data);
       setLastUpdated(new Date());
     } catch (e: any) { setMsg(e?.response?.data?.message ?? e.message); }
+    finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -137,8 +143,19 @@ export default function AdminClustersPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-white/50">No clusters registered.</td></tr>
+              {loading && <TableSkeleton rows={4} cols={9} />}
+              {!loading && rows.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="px-4 py-6">
+                    <EmptyState
+                      icon={<Database className="size-6" />}
+                      title="No Proxmox clusters registered"
+                      description="Register a cluster to let the scheduler place VPS instances on real capacity."
+                      action={<button onClick={() => setCreating(true)} className="vc-btn vc-btn-primary">Add cluster</button>}
+                      className="py-6"
+                    />
+                  </td>
+                </tr>
               )}
               {rows.map((r) => (
                 <tr key={r.id} className="border-t border-white/5">

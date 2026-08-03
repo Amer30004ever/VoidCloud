@@ -1,13 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
+import { Gem } from "lucide-react";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
+import { CardSkeleton } from "@workspace/ui-kit/skeleton";
 import { cloudApi, CloudPlan } from "@/features/vps/cloud";
 
 export default function AdminPlansPage() {
   const [plans, setPlans] = useState<CloudPlan[]>([]);
   const [edit, setEdit] = useState<Partial<CloudPlan> | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  async function load() { setPlans(await cloudApi.admin.plans()); }
+  async function load() {
+    setLoading(true);
+    try { setPlans(await cloudApi.admin.plans()); } finally { setLoading(false); }
+  }
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => { load(); }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -26,6 +33,18 @@ export default function AdminPlansPage() {
         <h1 className="vc-h1">Plans</h1>
         <button onClick={() => setEdit({ name: "", priceUSD: 0, priceEGP: 0, features: [] })} className="vc-btn vc-btn-primary">+ New plan</button>
       </div>
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} className="h-40" />)}
+        </div>
+      ) : plans.length === 0 ? (
+        <EmptyState
+          icon={<Gem className="size-6" />}
+          title="No plans defined"
+          description="Create your first plan to define VPS specs and pricing that tenants can subscribe to."
+          action={<button onClick={() => setEdit({ name: "", priceUSD: 0, priceEGP: 0, features: [] })} className="vc-btn vc-btn-primary">New plan</button>}
+        />
+      ) : (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {plans.map((p) => (
           <div key={p.id} className="vc-card p-5">
@@ -42,6 +61,7 @@ export default function AdminPlansPage() {
           </div>
         ))}
       </div>
+      )}
 
       {edit && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" onClick={() => setEdit(null)}>
