@@ -30,6 +30,7 @@ export default function AdminUsersPage() {
     name: true, plan: true, status: true, vps: true, joined: true, actions: true,
   });
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const raw = localStorage.getItem("userTableFilters");
@@ -37,8 +38,13 @@ export default function AdminUsersPage() {
   }, []);
 
   const load = useCallback(async (query?: string) => {
+    setLoading(true);
     setLastUpdated(new Date());
-    setUsers(await cloudApi.admin.users(query ?? q));
+    try {
+      setUsers(await cloudApi.admin.users(query ?? q));
+    } finally {
+      setLoading(false);
+    }
   }, [q]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { cloudApi.admin.plans().then(setPlans).catch(() => {}); }, []);
