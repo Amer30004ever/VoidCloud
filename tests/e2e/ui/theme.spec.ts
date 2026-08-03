@@ -99,31 +99,27 @@ test("pricing section renders plans without mojibake", async ({ page }) => {
 });
 
 test("pricing CTA clicks emit analytics events", async ({ page }) => {
-  // Stub the CTA destination so the click cannot navigate away before we read
-  // the buffered analytics queue.
-  await page.route("**/voidcloud/register**", (route) =>
-    route.fulfill({ status: 200, contentType: "text/html", body: "<html><body>stub</body></html>" }),
-  );
   await page.goto("/#pricing", { waitUntil: "domcontentloaded" });
+  // Wait for the section-view event so the funnel starts from a known state.
+  await expect
+    .poll(async () =>
+      page.evaluate(() => window.localStorage.getItem("voidcloud_analytics_queue") ?? ""),
+    )
+    .toContain("pricing_viewed");
 
   const cta = page.locator("#pricing [data-analytics-cta='trial_start']").first();
   await cta.scrollIntoViewIfNeeded();
   await cta.click({ force: true, noWaitAfter: true });
-  await page.waitForLoadState("domcontentloaded");
+  // The CTA navigates to signup; buffered events persist in localStorage.
+  await page.waitForURL("**/voidcloud/register**");
 
-  const names = async () => {
-    try {
-      const queued = (await page.evaluate(() =>
-        JSON.parse(window.localStorage.getItem("voidcloud_analytics_queue") ?? "[]"),
-      )) as Array<{ name: string }>;
-      return queued.map((e) => e.name);
-    } catch {
-      return [] as string[];
-    }
-  };
-
-  await expect.poll(names).toContain("pricing_viewed");
-  await expect.poll(names).toContain("pricing_cta_clicked");
+  const queued = (await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("voidcloud_analytics_queue") ?? "[]"),
+  )) as Array<{ name: string; props?: Record<string, unknown> }>;
+  const names = queued.map((e) => e.name);
+  expect(names).toContain("pricing_viewed");
+  expect(names).toContain("pricing_cta_clicked");
+  expect(queued.find((e) => e.name === "pricing_cta_clicked")?.props?.intent).toBe("trial_start");
 });
 
 test("status page shows a retry-able fallback when the API is unreachable", async ({ page }) => {
