@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { cloudReferral, type ReferralStats, type ReferralPayout, type ReferralPayoutMethod } from "@/features/vps/cloud";
+import { ErrorState } from "@workspace/ui-kit/error-state";
+import { LoadingState } from "@workspace/ui-kit/loading-state";
+import { Button } from "@workspace/ui-kit/button";
 
 export default function ReferralsPage() {
   const [stats, setStats] = useState<ReferralStats | null>(null);
@@ -55,7 +58,22 @@ export default function ReferralsPage() {
     }
   }
 
-  if (!stats) return <div className="p-6 text-white/70">Loading…</div>;
+  if (!stats) {
+    return err ? (
+      <ErrorState
+        title="Referral data couldn't load"
+        message={err}
+        action={
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        }
+      />
+    ) : (
+      <LoadingState message="Loading referrals…" />
+    );
+  }
+
 
   return (
     <div className="space-y-6 text-white">

@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { cloudApi, ServicesHealthSnapshot, MaintenanceState } from "@/features/vps/cloud";
+import { WidgetBoundary } from "@workspace/ui-kit/widget-boundary";
 
 export default function AdminMonitoringPage() {
   const [snap, setSnap] = useState<ServicesHealthSnapshot | null>(null);
@@ -57,6 +58,8 @@ export default function AdminMonitoringPage() {
       {err && <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">Monitoring service unreachable: {err}</div>}
 
       {snap && (
+        <WidgetBoundary title="Service health" className="space-y-6">
+
         <>
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
             <div className="flex items-baseline justify-between">
@@ -96,7 +99,9 @@ export default function AdminMonitoringPage() {
             ))}
           </div>
         </>
+        </WidgetBoundary>
       )}
+
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
         <h2 className="mb-3 text-lg font-semibold">Maintenance mode</h2>

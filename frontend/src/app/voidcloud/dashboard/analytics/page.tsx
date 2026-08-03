@@ -8,6 +8,7 @@ import {
   LineChart, Line, PieChart, Pie, Cell, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
+import { WidgetBoundary } from "@workspace/ui-kit/widget-boundary";
 
 const COLORS = ["#22d3ee", "#a78bfa", "#f472b6", "#facc15", "#34d399", "#fb923c"];
 
@@ -77,28 +78,33 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Cost by VPS">
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={costs?.byVPS ?? []} dataKey="cost" nameKey="vpsName" outerRadius={90} label>
-                {(costs?.byVPS ?? []).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </Panel>
-        <Panel title="Monthly spend">
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={costs?.monthly ?? []}>
-              <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
-              <YAxis stroke="#94a3b8" fontSize={12} />
-              <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
-              <Bar dataKey="total" fill="#a78bfa" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Panel>
+        <WidgetBoundary title="Cost by VPS">
+          <Panel title="Cost by VPS">
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={costs?.byVPS ?? []} dataKey="cost" nameKey="vpsName" outerRadius={90} label>
+                  {(costs?.byVPS ?? []).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </Panel>
+        </WidgetBoundary>
+        <WidgetBoundary title="Monthly spend">
+          <Panel title="Monthly spend">
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={costs?.monthly ?? []}>
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
+                <YAxis stroke="#94a3b8" fontSize={12} />
+                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+                <Bar dataKey="total" fill="#a78bfa" />
+              </BarChart>
+            </ResponsiveContainer>
+          </Panel>
+        </WidgetBoundary>
       </div>
+
 
       <Panel
         title="Usage over time"

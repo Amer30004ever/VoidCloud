@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { cloudApi, CloudDeployment, CloudUsage } from "@/features/vps/cloud";
+import { WidgetBoundary } from "@workspace/ui-kit/widget-boundary";
 
 export default function UserDashboard() {
   const [usage, setUsage] = useState<CloudUsage | null>(null);
@@ -61,11 +62,12 @@ export default function UserDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <PlanCard usage={usage} />
-        <Gauge label="CPU" used={usage?.used.cpu ?? 0} total={usage?.limits.cpuLimit ?? 1} unit="cores" />
-        <Gauge label="Memory" used={usage?.used.memory ?? 0} total={usage?.limits.memoryLimit ?? 1} unit="MB" />
-        <Gauge label="Storage" used={usage?.used.storage ?? 0} total={usage?.limits.storageLimit ?? 1} unit="MB" />
+        <WidgetBoundary title="Current plan"><PlanCard usage={usage} /></WidgetBoundary>
+        <WidgetBoundary title="CPU"><Gauge label="CPU" used={usage?.used.cpu ?? 0} total={usage?.limits.cpuLimit ?? 1} unit="cores" /></WidgetBoundary>
+        <WidgetBoundary title="Memory"><Gauge label="Memory" used={usage?.used.memory ?? 0} total={usage?.limits.memoryLimit ?? 1} unit="MB" /></WidgetBoundary>
+        <WidgetBoundary title="Storage"><Gauge label="Storage" used={usage?.used.storage ?? 0} total={usage?.limits.storageLimit ?? 1} unit="MB" /></WidgetBoundary>
       </div>
+
 
       <div className="grid gap-4 md:grid-cols-3">
         <QuickAction href="/voidcloud/dashboard/vps/new" icon="🖥️" title="New VPS" desc="Provision a Proxmox container" />
