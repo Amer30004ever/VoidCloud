@@ -208,8 +208,23 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-white/50">No users found.</td></tr>
+              {loading && <TableSkeleton rows={6} cols={7} />}
+              {!loading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-6">
+                    <EmptyState
+                      icon={<Users className="size-6" />}
+                      title={q ? "No users match your search" : "No users yet"}
+                      description={q ? "Try a different name or email, or clear the search filter." : "Create the first account to start onboarding tenants."}
+                      action={
+                        q
+                          ? <button onClick={() => setQ("")} className="vc-btn vc-btn-secondary">Clear search</button>
+                          : <button onClick={() => setCreating(true)} className="vc-btn vc-btn-primary">New user</button>
+                      }
+                      className="py-6"
+                    />
+                  </td>
+                </tr>
               )}
               {filtered.map((u) => (
                 <tr key={u.id} className={`border-b border-white/5 ${selectedIds.has(u.id) ? "bg-primary/5" : ""}`}>
