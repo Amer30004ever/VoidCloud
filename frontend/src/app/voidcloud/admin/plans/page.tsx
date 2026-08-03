@@ -31,7 +31,7 @@ export default function AdminPlansPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="vc-h1">Plans</h1>
-        <button onClick={() => setEdit({ name: "", priceUSD: 0, priceEGP: 0, features: [] })} className="vc-btn vc-btn-primary">+ New plan</button>
+        <button onClick={() => setEdit({ name: "", priceUSD: 0, priceEGP: 0, features: [] })} className="vc-btn vc-btn-primary"><Plus className="size-4" />New plan</button>
       </div>
       {loading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

@@ -47,7 +47,7 @@ export default function CloudDashboardHome() {
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Recent VPS instances</h2>
             <Link href="/voidcloud/dashboard/vps/new" className="vc-btn vc-btn-primary">
-              + New VPS
+              <Plus className="size-4" />New VPS
             </Link>
           </div>
           {deployments.length === 0 ? (

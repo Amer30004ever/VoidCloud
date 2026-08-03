@@ -89,7 +89,7 @@ export default function VpsListPage() {
     <ErrorBoundary>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="vc-h1">VPS Instances</h1>
-        <Link href="/voidcloud/dashboard/vps/new" className="vc-btn vc-btn-primary">+ New VPS</Link>
+        <Link href="/voidcloud/dashboard/vps/new" className="vc-btn vc-btn-primary"><Plus className="size-4" />New VPS</Link>
       </div>
 
       {quota && (

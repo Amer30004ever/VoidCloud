@@ -206,7 +206,7 @@ export default function AdminWhatsappPage() {
         <div className="vc-card">
           <div className="flex items-center justify-between border-b border-white/5 p-4">
             <h2 className="text-xl font-semibold">Templates</h2>
-            <button onClick={() => { setShowTemplateForm(true); setEditingTemplate(null); setTemplateForm({ name: "", body: "" }); }} className="vc-btn vc-btn-primary">+ New Template</button>
+            <button onClick={() => { setShowTemplateForm(true); setEditingTemplate(null); setTemplateForm({ name: "", body: "" }); }} className="vc-btn vc-btn-primary"><Plus className="size-4" />New Template</button>
           </div>
           {showTemplateForm && (
             <div className="border-b border-white/5 p-4">
