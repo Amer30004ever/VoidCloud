@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
+import { ShieldAlert, Globe } from "lucide-react";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
+import { ListSkeleton } from "@workspace/ui-kit/skeleton";
 import { cloudAbuse, AbuseReport, PtrRequest } from "@/features/vps/cloud";
 
 export default function AdminAbusePage() {
@@ -9,6 +12,7 @@ export default function AdminAbusePage() {
   const [tab, setTab] = useState<"reports" | "ptr">("reports");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = async () => {
     try {
@@ -16,6 +20,8 @@ export default function AdminAbusePage() {
       setReports(r); setPtrs(p);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? e?.message);
+    } finally {
+      setLoading(false);
     }
   };
   /* eslint-disable react-hooks/set-state-in-effect */
