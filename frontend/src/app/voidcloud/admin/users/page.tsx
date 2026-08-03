@@ -196,7 +196,7 @@ export default function AdminUsersPage() {
 
         <div className="overflow-x-auto vc-card">
           <table className="w-full text-sm" role="grid" aria-label="Users table">
-            <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+            <thead className="vc-label border-b border-white/10 text-left">
               <tr>
                 <th className="w-10 px-3"><input type="checkbox" checked={selectedIds.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded border-border" aria-label="Select all" /></th>
                 {columnVisibility.name && <th className="p-4">Name / Email</th>}

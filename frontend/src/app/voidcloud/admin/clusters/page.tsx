@@ -123,7 +123,7 @@ export default function AdminClustersPage() {
 
         <div className="overflow-hidden vc-card">
           <table className="w-full text-sm">
-            <thead className="bg-white/5 text-xs uppercase tracking-wide text-white/60">
+            <thead className="vc-label bg-white/5">
               <tr>
                 <th className="px-4 py-3 text-left">Name</th>
                 <th className="px-4 py-3 text-left">Host</th>

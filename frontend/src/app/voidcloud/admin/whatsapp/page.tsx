@@ -222,7 +222,7 @@ export default function AdminWhatsappPage() {
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+              <thead className="vc-label border-b border-white/10 text-left">
                 <tr><th className="p-4">Name</th><th>Body</th><th className="p-4">Actions</th></tr>
               </thead>
               <tbody>
@@ -258,7 +258,7 @@ export default function AdminWhatsappPage() {
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+                  <thead className="vc-label border-b border-white/10 text-left">
                     <tr><th className="p-3">Phone</th><th>Name</th><th>Status</th><th>Error</th><th>Sent At</th></tr>
                   </thead>
                   <tbody>
@@ -281,7 +281,7 @@ export default function AdminWhatsappPage() {
             <div className="border-b border-white/5 p-4"><h2 className="text-xl font-semibold">Broadcast History</h2></div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+                <thead className="vc-label border-b border-white/10 text-left">
                   <tr><th className="p-4">Template</th><th>Segment</th><th>Status</th><th>Sent</th><th>Failed</th><th>Created</th><th className="p-4">Actions</th></tr>
                 </thead>
                 <tbody>

@@ -13,7 +13,7 @@ export default function InvoicesPage() {
       <div className="vc-card">
         {items.length === 0 ? <p className="p-12 text-center text-white/50">No invoices yet.</p> : (
           <table className="w-full text-sm">
-            <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+            <thead className="vc-label border-b border-white/10 text-left">
               <tr><th className="p-4">Number</th><th>Date</th><th>Description</th><th>Amount</th><th>Status</th><th></th></tr>
             </thead>
             <tbody>

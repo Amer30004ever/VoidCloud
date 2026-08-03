@@ -38,7 +38,7 @@ export default function AdminTransactionsPage() {
       </div>
       <div className="overflow-x-auto vc-card">
         <table className="w-full text-sm">
-          <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+          <thead className="vc-label border-b border-white/10 text-left">
             <tr><th className="p-4">Invoice</th><th>User</th><th>Amount</th><th>Provider</th><th>Status</th><th>Date</th><th className="p-4">Actions</th></tr>
           </thead>
           <tbody>

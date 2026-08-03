@@ -145,7 +145,7 @@ export default function AdminBillingPage() {
             ) : (
               <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-white/10 text-left text-xs uppercase text-white/50">
+                  <thead className="vc-label border-b border-white/10 text-left">
                     <tr>
                       <th className="p-3 cursor-pointer" onClick={() => {
                         setTenantSort('email');
@@ -186,7 +186,7 @@ export default function AdminBillingPage() {
       <Panel title="Failed payments alerts">
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50">
           <table className="w-full text-sm">
-            <thead className="border-b border-white/10 text-left text-xs uppercase text-white/50">
+            <thead className="vc-label border-b border-white/10 text-left">
               <tr>
                 <th className="p-3">Invoice</th>
                 <th className="p-3">Tenant</th>
@@ -243,7 +243,7 @@ export default function AdminBillingPage() {
         <h2 className="mb-3 text-lg font-semibold">All transactions</h2>
         <div className="overflow-hidden vc-card">
           <table className="w-full text-sm">
-            <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+            <thead className="vc-label border-b border-white/10 text-left">
               <tr><th className="p-4">Invoice</th><th>User</th><th>Amount</th><th>Provider</th><th>Status</th><th>Date</th><th></th></tr>
             </thead>
             <tbody>

@@ -157,7 +157,7 @@ export default function AdminPodsPage() {
           <div className="border-b border-white/5 p-4 text-sm font-semibold">Pods</div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-white/10 text-left text-xs uppercase text-white/50">
+              <thead className="vc-label border-b border-white/10 text-left">
                 <tr>
                   <th className="p-3">Name</th>
                   <th className="p-3">Status</th>

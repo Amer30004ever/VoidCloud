@@ -112,7 +112,7 @@ export default function ReportsPage() {
 
       <div className="vc-card">
         <table className="w-full text-sm">
-          <thead className="border-b border-white/5 text-left text-xs uppercase text-white/40">
+          <thead className="vc-label border-b border-white/10 text-left">
             <tr>
               <th className="p-4">ID</th>
               <th>Date</th>
