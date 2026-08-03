@@ -77,12 +77,21 @@ export default function AgentConversations() {
           {selectedPhone ? (
             <>
               <div className="mb-4 h-64 overflow-y-auto space-y-2">
-                {messages.map((m: any) => (
-                  <div key={m.id} className={`rounded-lg p-2 text-sm ${m.direction === "outbound" ? "ml-auto bg-cyan-500/20" : "bg-white/10"}`}>
-                    {m.content}
+                {loadingMessages ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-2/3" />
+                    <Skeleton className="ml-auto h-8 w-1/2" />
+                    <Skeleton className="h-8 w-3/5" />
                   </div>
-                ))}
-                {messages.length === 0 && <p className="text-center text-white/50">No messages.</p>}
+                ) : messages.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-white/50">No messages in this thread yet — say hello.</p>
+                ) : (
+                  messages.map((m: any) => (
+                    <div key={m.id} className={`rounded-lg p-2 text-sm ${m.direction === "outbound" ? "ml-auto bg-cyan-500/20" : "bg-white/10"}`}>
+                      {m.content}
+                    </div>
+                  ))
+                )}
               </div>
               <form onSubmit={send} className="flex gap-2">
                 <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a reply..." className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm" />
