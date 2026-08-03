@@ -14,12 +14,27 @@ const PAGES = [
   { name: "404", path: "/this-route-does-not-exist" },
 ];
 
-function parseRgb(value: string): [number, number, number] {
-  const m = value.match(/rgba?\(([^)]+)\)/);
-  if (!m) return [255, 255, 255];
-  const [r, g, b] = m[1].split(",").map((n) => parseFloat(n.trim()));
-  return [r, g, b];
+/**
+ * Average channel brightness of any CSS colour string. Modern Chromium reports
+ * computed colours in modern spaces (e.g. `lab(...)`), so we normalise through a
+ * canvas instead of regex-parsing `rgb()`.
+ */
+async function brightness(page: Page, value: string): Promise<number> {
+  return page.evaluate((color) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 1;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#000000";
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    return (r + g + b) / 3;
+  }, value);
 }
+
+/** Errors caused by the backend not running locally are not UI regressions. */
+const NETWORK_NOISE =
+  /favicon|ERR_CONNECTION_REFUSED|ERR_NETWORK|Failed to load resource|net::ERR_/i;
 
 async function effectiveBackground(page: Page): Promise<string> {
   return page.evaluate(() => {
@@ -38,15 +53,13 @@ for (const p of PAGES) {
 
     test("uses the dark VoidCloud background (never white)", async ({ page }) => {
       const bg = await effectiveBackground(page);
-      const [r, g, b] = parseRgb(bg);
-      const luminance = (r + g + b) / 3;
+      const luminance = await brightness(page, bg);
       expect(luminance, `background ${bg} should be dark`).toBeLessThan(60);
     });
 
     test("body text is light on dark", async ({ page }) => {
       const color = await page.evaluate(() => getComputedStyle(document.body).color);
-      const [r, g, b] = parseRgb(color);
-      expect((r + g + b) / 3, `text color ${color} should be light`).toBeGreaterThan(120);
+      expect(await brightness(page, color), `text color ${color} should be light`).toBeGreaterThan(120);
     });
 
     test("uses the sans-serif font stack, not a serif fallback", async ({ page }) => {
@@ -69,7 +82,7 @@ for (const p of PAGES) {
       });
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForTimeout(1000);
-      expect(errors.filter((e) => !e.includes("favicon"))).toEqual([]);
+      expect(errors.filter((e) => !NETWORK_NOISE.test(e))).toEqual([]);
     });
   });
 }
@@ -87,13 +100,26 @@ test("pricing section renders plans without mojibake", async ({ page }) => {
 
 test("pricing CTA clicks emit analytics events", async ({ page }) => {
   await page.goto("/#pricing", { waitUntil: "domcontentloaded" });
-  await page.locator("#pricing [data-analytics-cta='contact_sales']").click({ force: true });
-  const queued = await page.evaluate(() =>
-    JSON.parse(window.localStorage.getItem("voidcloud_analytics_queue") ?? "[]")
-  );
-  const names = (queued as Array<{ name: string }>).map((e) => e.name);
+  // Wait for the section-view event so the funnel starts from a known state.
+  await expect
+    .poll(async () =>
+      page.evaluate(() => window.localStorage.getItem("voidcloud_analytics_queue") ?? ""),
+    )
+    .toContain("pricing_viewed");
+
+  const cta = page.locator("#pricing [data-analytics-cta='trial_start']").first();
+  await cta.scrollIntoViewIfNeeded();
+  await cta.click({ force: true, noWaitAfter: true });
+  // The CTA navigates to signup; buffered events persist in localStorage.
+  await page.waitForURL("**/voidcloud/register**");
+
+  const queued = (await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("voidcloud_analytics_queue") ?? "[]"),
+  )) as Array<{ name: string; props?: Record<string, unknown> }>;
+  const names = queued.map((e) => e.name);
   expect(names).toContain("pricing_viewed");
   expect(names).toContain("pricing_cta_clicked");
+  expect(queued.find((e) => e.name === "pricing_cta_clicked")?.props?.intent).toBe("trial_start");
 });
 
 test("status page shows a retry-able fallback when the API is unreachable", async ({ page }) => {
