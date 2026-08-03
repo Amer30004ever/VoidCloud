@@ -30,8 +30,18 @@ function KpiSkeleton() {
   );
 }
 
+function slug(label: string) {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
 function KpiCard({ kpi }: { kpi: BusinessKpi }) {
-  if (kpi.state === "loading") return <KpiSkeleton />;
+  const testId = `kpi-${slug(kpi.label)}`;
+  if (kpi.state === "loading")
+    return (
+      <div data-testid={testId} data-state="loading">
+        <KpiSkeleton />
+      </div>
+    );
 
   const body = (
     <div className="flex items-center gap-3">
@@ -57,6 +67,8 @@ function KpiCard({ kpi }: { kpi: BusinessKpi }) {
   return (
     <Link
       href={kpi.href ?? "#"}
+      data-testid={testId}
+      data-state={kpi.state === "error" ? "error" : kpi.empty ? "empty" : "ready"}
       className="group block rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] p-6 backdrop-blur-xl transition hover:border-cyan-400/30"
     >
       {body}
@@ -249,6 +261,7 @@ export default function BusinessDashboardPage() {
           {anyError && (
             <div
               role="alert"
+              data-testid="dashboard-error-banner"
               className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200"
             >
               Some metrics could not be loaded. They will show again once the service responds.
@@ -262,7 +275,19 @@ export default function BusinessDashboardPage() {
           </div>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <div
+              className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
+              data-testid="panel-invoices"
+              data-state={
+                invoiceState === "loading"
+                  ? "loading"
+                  : invoiceState === "error"
+                  ? "error"
+                  : invoices.length === 0
+                  ? "empty"
+                  : "ready"
+              }
+            >
               <h2 className="card-title">Recent invoices</h2>
               <div className="mt-4 space-y-3">
                 {invoiceState === "loading" ? (
@@ -313,7 +338,19 @@ export default function BusinessDashboardPage() {
               </Link>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <div
+              className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
+              data-testid="panel-vps-breakdown"
+              data-state={
+                vpsState === "loading"
+                  ? "loading"
+                  : vpsState === "error"
+                  ? "error"
+                  : Object.keys(vpsByStatus).length === 0
+                  ? "empty"
+                  : "ready"
+              }
+            >
               <h2 className="card-title">VPS status breakdown</h2>
               <div className="mt-4 space-y-3">
                 {vpsState === "loading" ? (
