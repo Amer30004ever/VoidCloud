@@ -43,22 +43,8 @@ function t(dict: unknown, path: string, fallback: string) {
   return path.split(".").reduce<unknown>((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), dict) as string ?? fallback;
 }
 
-const CRUMB_LABELS: Record<string, string> = {
-  voidcloud: "VoidCloud",
-  admin: "Admin",
-  dashboard: "Dashboard",
-  vps: "VPS Instances",
-  whatsapp: "WhatsApp",
-  crm: "CRM",
-};
 
-function crumbs(pathname: string) {
-  return pathname
-    .split("/")
-    .filter(Boolean)
-    .map((seg) => CRUMB_LABELS[seg] ?? seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()))
-    .join(" / ");
-}
+
 
 export default function CloudDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
