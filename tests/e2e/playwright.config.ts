@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const chromiumPath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
+
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:8080";
 
 export default defineConfig({
@@ -18,5 +20,14 @@ export default defineConfig({
     trace: process.env.CI ? "retain-on-failure" : "off",
     video: process.env.CI ? "retain-on-failure" : "off",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        // Allows running against a preinstalled browser in constrained sandboxes.
+        ...(chromiumPath ? { launchOptions: { executablePath: chromiumPath } } : {}),
+      },
+    },
+  ],
 });
