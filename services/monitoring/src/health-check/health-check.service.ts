@@ -168,7 +168,37 @@ export class HealthCheckService {
     return { status: 'DOWN', failureType: 'UNKNOWN', error: `HTTP ${statusCode ?? '?'}` };
   }
 
+  /**
+   * Public, unauthenticated view of service readiness for the /status page.
+   * Deliberately sanitized: no internal hostnames, ports, or raw error strings.
+   */
+  async getPublicStatus(): Promise<PublicStatusSnapshot> {
+    const snap = await this.getLatestCached();
+    const components = snap.services.map((s) => ({
+      key: s.name,
+      label: PUBLIC_LABELS[s.name] ?? s.name,
+      status: s.status,
+      responseTimeMs: s.status === 'DOWN' ? null : s.responseTimeMs,
+      lastChecked: s.lastChecked,
+    }));
+    const overall: PublicStatusSnapshot['overall'] =
+      snap.down === 0 && snap.degraded === 0
+        ? 'OPERATIONAL'
+        : snap.down >= Math.ceil(components.length / 2)
+          ? 'MAJOR_OUTAGE'
+          : snap.down > 0
+            ? 'PARTIAL_OUTAGE'
+            : 'DEGRADED';
+    return {
+      overall,
+      healthPercent: snap.healthPercent,
+      components,
+      checkedAt: snap.checkedAt,
+    };
+  }
+
   async getHistory(hours: number): Promise<{ serviceName: string; checkedAt: string; status: string; responseTimeMs: number | null }[]> {
+
     const since = new Date(Date.now() - hours * 60 * 60 * 1000);
     const rows = await this.prisma.serviceHealthLog.findMany({
       where: { checkedAt: { gte: since }, serviceName: { in: SERVICES.map((s) => s.name) } },
