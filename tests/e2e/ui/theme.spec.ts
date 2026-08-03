@@ -100,13 +100,19 @@ test("pricing section renders plans without mojibake", async ({ page }) => {
 
 test("pricing CTA clicks emit analytics events", async ({ page }) => {
   await page.goto("/#pricing", { waitUntil: "domcontentloaded" });
-  await page.locator("#pricing [data-analytics-cta='contact_sales']").click({ force: true });
-  const queued = await page.evaluate(() =>
-    JSON.parse(window.localStorage.getItem("voidcloud_analytics_queue") ?? "[]")
-  );
-  const names = (queued as Array<{ name: string }>).map((e) => e.name);
-  expect(names).toContain("pricing_viewed");
-  expect(names).toContain("pricing_cta_clicked");
+  const cta = page.locator("#pricing [data-analytics-cta='trial_start']").first();
+  await cta.scrollIntoViewIfNeeded();
+  await cta.click({ force: true, noWaitAfter: true });
+
+  const names = async () =>
+    (
+      (await page.evaluate(() =>
+        JSON.parse(window.localStorage.getItem("voidcloud_analytics_queue") ?? "[]"),
+      )) as Array<{ name: string }>
+    ).map((e) => e.name);
+
+  await expect.poll(names).toContain("pricing_viewed");
+  await expect.poll(names).toContain("pricing_cta_clicked");
 });
 
 test("status page shows a retry-able fallback when the API is unreachable", async ({ page }) => {
