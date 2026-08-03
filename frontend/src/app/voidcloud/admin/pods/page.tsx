@@ -171,8 +171,18 @@ export default function AdminPodsPage() {
                 </tr>
               </thead>
               <tbody>
-                {pods.length === 0 && (
-                  <tr><td colSpan={6} className="p-4 text-center text-white/50">No pods found.</td></tr>
+                {loading && <TableSkeleton rows={5} cols={6} />}
+                {!loading && pods.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-4">
+                      <EmptyState
+                        icon={<Boxes className="size-6" />}
+                        title="No pods in this namespace"
+                        description="Pick a different namespace, or deploy a workload to see it here."
+                        className="py-6"
+                      />
+                    </td>
+                  </tr>
                 )}
                 {pods.map((pod) => (
                   <tr key={pod.name} className={`border-b border-white/5 last:border-0 ${selectedPod === pod.name ? 'bg-white/5' : ''}`}>
