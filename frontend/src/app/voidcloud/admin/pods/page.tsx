@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from 'socket.io-client';
+import { Boxes } from 'lucide-react';
+import { EmptyState } from '@workspace/ui-kit/empty-state';
+import { TableSkeleton } from '@workspace/ui-kit/skeleton';
 import { cloudApi } from '@/features/vps/cloud';
 import { getSocketAuthOptions, getSocketBaseUrl } from '@/features/auth/socket-auth';
 
