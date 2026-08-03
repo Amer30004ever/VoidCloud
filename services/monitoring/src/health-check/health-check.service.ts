@@ -32,6 +32,41 @@ export interface HealthSnapshot {
   source: 'cache' | 'live';
 }
 
+/** Sanitized, unauthenticated shape served to the public /status page. */
+export interface PublicStatusComponent {
+  key: string;
+  label: string;
+  status: 'UP' | 'DEGRADED' | 'DOWN';
+  responseTimeMs: number | null;
+  lastChecked: string;
+}
+
+export interface PublicStatusSnapshot {
+  overall: 'OPERATIONAL' | 'DEGRADED' | 'PARTIAL_OUTAGE' | 'MAJOR_OUTAGE';
+  healthPercent: number;
+  components: PublicStatusComponent[];
+  checkedAt: string;
+}
+
+/** Customer-facing names — never leak internal service/host naming. */
+const PUBLIC_LABELS: Record<string, string> = {
+  auth: 'Authentication',
+  user: 'User accounts',
+  tenant: 'Workspaces',
+  vps: 'VPS provisioning',
+  billing: 'Billing & payments',
+  crm: 'CRM',
+  whatsapp: 'WhatsApp messaging',
+  email: 'Email delivery',
+  notification: 'Notifications',
+  monitoring: 'Monitoring',
+  audit: 'Audit log',
+  analytics: 'Analytics',
+  frontend: 'Web app',
+};
+
+
+
 const SERVICES: { name: string; host: string; port: number; path?: string }[] = [
   { name: 'auth', host: 'auth-service', port: 3001 },
   { name: 'user', host: 'user-service', port: 3002 },
