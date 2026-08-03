@@ -25,13 +25,16 @@ export default function AdminClustersPage() {
   const [scheduled, setScheduled] = useState<any>(null);
   const { addToast } = useToast();
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const data = await cloudApi.admin.clusters.list();
       setRows(data);
       setLastUpdated(new Date());
     } catch (e: any) { setMsg(e?.response?.data?.message ?? e.message); }
+    finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
 
