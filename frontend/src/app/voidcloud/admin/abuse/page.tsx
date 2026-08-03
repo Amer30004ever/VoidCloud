@@ -118,7 +118,14 @@ export default function AdminAbusePage() {
 
       {tab === "ptr" && (
         <div className="space-y-3">
-          {ptrs.length === 0 && <p className="text-white/50">No PTR requests yet.</p>}
+          {loading && <ListSkeleton rows={3} />}
+          {!loading && ptrs.length === 0 && (
+            <EmptyState
+              icon={<Globe className="size-6" />}
+              title="No PTR requests"
+              description="Reverse-DNS requests submitted by tenants will appear here for review."
+            />
+          )}
           {ptrs.map((p) => (
             <div key={p.id} className="vc-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
