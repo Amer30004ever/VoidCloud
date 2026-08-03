@@ -34,6 +34,7 @@ import { LoadingState } from "@workspace/ui-kit/loading-state";
 import en from "@/locales/en.json";
 import ar from "@/locales/ar.json";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import AiAssistant from "@/components/ai/AiAssistant";
 
 type Lang = "en" | "ar";
