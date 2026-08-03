@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Server } from "lucide-react";
+import { Plus, Server } from "lucide-react";
 import { EmptyState } from "@workspace/ui-kit/empty-state";
 import { TableSkeleton } from "@workspace/ui-kit/skeleton";
 import { cloudApi, type CloudDeployment, type TenantQuota } from "@/features/vps/cloud";
@@ -89,7 +89,7 @@ export default function VpsListPage() {
     <ErrorBoundary>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="vc-h1">VPS Instances</h1>
-        <Link href="/voidcloud/dashboard/vps/new" className="vc-btn vc-btn-primary">+ New VPS</Link>
+        <Link href="/voidcloud/dashboard/vps/new" className="vc-btn vc-btn-primary"><Plus className="size-4" />New VPS</Link>
       </div>
 
       {quota && (

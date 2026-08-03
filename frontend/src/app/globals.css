@@ -352,3 +352,34 @@
   font-size: 0.875rem;
   color: rgb(255 255 255 / 0.92);
 }
+
+/* ── Interaction states — one hover/focus language everywhere (P4) ── */
+@layer base {
+  :where(a, button, [role="button"], input, select, textarea, summary):focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(2 6 23), 0 0 0 4px rgb(34 211 238 / 0.65);
+    border-radius: 0.5rem;
+  }
+}
+
+@utility vc-btn {
+  cursor: pointer;
+}
+.vc-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.vc-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.vc-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Table + list row affordance */
+@utility vc-row {
+  transition: background-color 150ms ease;
+}
+.vc-row:hover {
+  background-color: rgb(255 255 255 / 0.04);
+}

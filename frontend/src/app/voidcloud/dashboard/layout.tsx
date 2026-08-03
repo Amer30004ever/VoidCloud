@@ -34,6 +34,7 @@ import { LoadingState } from "@workspace/ui-kit/loading-state";
 import en from "@/locales/en.json";
 import ar from "@/locales/ar.json";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import AiAssistant from "@/components/ai/AiAssistant";
 
 type Lang = "en" | "ar";
@@ -42,22 +43,8 @@ function t(dict: unknown, path: string, fallback: string) {
   return path.split(".").reduce<unknown>((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), dict) as string ?? fallback;
 }
 
-const CRUMB_LABELS: Record<string, string> = {
-  voidcloud: "VoidCloud",
-  admin: "Admin",
-  dashboard: "Dashboard",
-  vps: "VPS Instances",
-  whatsapp: "WhatsApp",
-  crm: "CRM",
-};
 
-function crumbs(pathname: string) {
-  return pathname
-    .split("/")
-    .filter(Boolean)
-    .map((seg) => CRUMB_LABELS[seg] ?? seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()))
-    .join(" / ");
-}
+
 
 export default function CloudDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -185,15 +172,16 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
       footerNav={footerNav}
       onSignOut={logout}
       signOutLabel={t(dict, "dashboard.logout", "Sign out")}
-      topbarLeft={crumbs(pathname)}
+      topbarLeft={<Breadcrumbs />}
       topbarRight={
         <>
           <button
             onClick={() => setLang(lang === "en" ? "ar" : "en")}
-            className="flex items-center gap-1.5 rounded-md border border-white/10 px-2.5 py-1.5 text-xs text-white/70 transition hover:bg-white/5 hover:text-white"
+            aria-label={lang === "en" ? "Switch to Arabic" : "Switch to English"}
+            className="flex items-center gap-1.5 rounded-md border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/5 hover:text-white"
           >
             <Languages className="size-3.5" />
-            {lang === "en" ? "العربية" : "EN"}
+            {lang === "en" ? "AR" : "EN"}
           </button>
           <NotificationBell />
         </>

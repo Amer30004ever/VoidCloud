@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Users } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { cloudApi, CloudPlan, TenantQuota } from "@/features/vps/cloud";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@workspace/ui-kit/empty-state";
@@ -160,7 +160,7 @@ export default function AdminUsersPage() {
           </div>
           <div className="flex gap-2">
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or email…" className="w-80 rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2" aria-label="Search users" />
-            <button onClick={() => setCreating(true)} className="vc-btn vc-btn-primary">+ New user</button>
+            <button onClick={() => setCreating(true)} className="vc-btn vc-btn-primary"><Plus className="size-4" />New user</button>
           </div>
         </div>
 

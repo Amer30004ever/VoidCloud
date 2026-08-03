@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { BarChart3, MessageSquare, Users } from "lucide-react";
 import { AppShell, type AppShellNavItem } from "@workspace/ui-kit/app-shell";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 const NAV: AppShellNavItem[] = [
   { href: "/voidcloud/agent/dashboard", label: "Dashboard", icon: <BarChart3 /> },
@@ -28,7 +29,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
       brand={{ href: "/voidcloud/agent/dashboard", label: "VoidCloud" }}
       items={NAV.map((it) => ({ ...it, active: pathname === it.href }))}
       onSignOut={logout}
-      topbarLeft="Agent Workspace"
+      topbarLeft={<Breadcrumbs />}
       topbarRight={<NotificationBell />}
     >
       {children}

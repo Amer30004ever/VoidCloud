@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { BarChart3, CreditCard, MessageSquare, Server, Settings, Users } from "lucide-react";
 import { AppShell, type AppShellNavItem } from "@workspace/ui-kit/app-shell";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 const NAV: AppShellNavItem[] = [
   { href: "/voidcloud/business/dashboard", label: "Overview", icon: <BarChart3 /> },
@@ -31,7 +32,7 @@ export default function BusinessLayout({ children }: { children: React.ReactNode
       brand={{ href: "/voidcloud/business/dashboard", label: "VoidCloud" }}
       items={NAV.map((it) => ({ ...it, active: pathname === it.href }))}
       onSignOut={logout}
-      topbarLeft="Business Workspace"
+      topbarLeft={<Breadcrumbs />}
       topbarRight={<NotificationBell />}
     >
       {children}
