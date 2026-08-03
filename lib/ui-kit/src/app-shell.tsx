@@ -180,7 +180,9 @@ export function AppShell({
           <div className="min-w-0 flex-1 truncate text-sm text-white/50">{topbarLeft}</div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">{topbarRight}</div>
         </header>
-        <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6">{children}</main>
+        <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6">
+          <div className="mx-auto w-full max-w-[1400px] space-y-6">{children}</div>
+        </main>
       </div>
     </div>
   );
