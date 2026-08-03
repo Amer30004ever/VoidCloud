@@ -74,7 +74,14 @@ export default function AdminAbusePage() {
 
       {tab === "reports" && (
         <div className="space-y-3">
-          {reports.length === 0 && <p className="text-white/50">No abuse reports yet.</p>}
+          {loading && <ListSkeleton rows={3} />}
+          {!loading && reports.length === 0 && (
+            <EmptyState
+              icon={<ShieldAlert className="size-6" />}
+              title="No abuse reports"
+              description="Nothing flagged right now. Run detection to scan current traffic for abuse signatures."
+            />
+          )}
           {reports.map((r) => (
             <div key={r.id} className="vc-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
