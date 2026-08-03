@@ -68,3 +68,18 @@ export const pricingAnalytics = {
     intent: "trial_start" | "checkout" | "contact_sales";
   }) => trackEvent("pricing_cta_clicked", opts),
 };
+
+/** Reliability funnel helpers for the public /status page. */
+export const statusAnalytics = {
+  retryClicked: (attempt: number) => trackEvent("status_retry_clicked", { attempt }),
+  apiOutcome: (opts: {
+    outcome: "reachable" | "unreachable";
+    trigger: "initial" | "retry";
+    attempt: number;
+    durationMs: number;
+    incidents: boolean;
+    services: boolean;
+    overall?: string;
+  }) => trackEvent("status_api_outcome", opts),
+};
+
