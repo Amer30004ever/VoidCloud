@@ -36,29 +36,35 @@ async function main() {
   await rm(dist, { recursive: true, force: true });
   await mkdir(dist, { recursive: true });
 
+  // Symlinks (especially directory symlinks like node_modules) are not
+  // supported in the uploaded build output — always resolve them to real files.
+  const copy = (src, dest) => cp(src, dest, { recursive: true, dereference: true, force: true });
+
   const appDir = await findStandaloneAppDir();
   if (appDir) {
-    await cp(appDir, dist, { recursive: true });
+    await copy(appDir, dist);
     // hoisted node_modules from the standalone root
     const hoisted = path.join(nextDir, "standalone", "node_modules");
     const distModules = path.join(dist, "node_modules");
     if (existsSync(hoisted) && !existsSync(distModules)) {
-      await cp(hoisted, distModules, { recursive: true });
+      await copy(hoisted, distModules);
     }
   } else {
     // Non-standalone build: ship the compiled output as-is.
-    await cp(nextDir, path.join(dist, ".next"), { recursive: true });
+    await copy(nextDir, path.join(dist, ".next"));
   }
 
   const staticDir = path.join(nextDir, "static");
   if (existsSync(staticDir)) {
-    await cp(staticDir, path.join(dist, ".next", "static"), { recursive: true });
+    await copy(staticDir, path.join(dist, ".next", "static"));
   }
 
   const publicDir = path.join(root, "frontend", "public");
   if (existsSync(publicDir)) {
-    await cp(publicDir, path.join(dist, "public"), { recursive: true });
+    await copy(publicDir, path.join(dist, "public"));
   }
+
+  await dereferenceSymlinks(dist);
 
   await access(dist);
   console.log("[assemble-dist] dist/ ready at", dist);
