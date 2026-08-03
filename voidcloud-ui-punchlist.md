@@ -46,4 +46,5 @@ Screenshots: `/tmp/browser/audit/shots/`. Raw metrics: `/tmp/browser/audit/auth_
 - **Batch B (Critical):** C4 onboarding gating, C5 per-widget error isolation via `ui-kit/error-state`.
 - **Batch C (Important):** I1/I2/I3/I4 — add `PageHeader`, `Button`, `Card` tokens to ui-kit and migrate admin pages.
 - **Batch D (Important):** I5/I6 — `ui-kit` skeleton + empty-state rollout across list pages.
-- **Batch E (Important):** I7, I8, I9, I10 — business shell, KPI value normalization, type/contrast scale.
+- **Batch E (Important):** DONE — I7 business shell (AppShell), I8 KPI value normalization (single em-dash empty value, lucide icons, revenue split into value + sub-line), I9/I10 type scale (`vc-h1`/`vc-h2`/`vc-label`/`vc-meta`) applied to admin + business dashboards.
+- Note: C6 "logout chip overlap" is the Next.js dev-mode indicator badge, not app markup — no production impact.

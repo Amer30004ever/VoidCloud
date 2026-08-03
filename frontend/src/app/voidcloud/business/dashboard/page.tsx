@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { cloudApi, type CloudInvoice } from "@/features/vps/cloud";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Server, Wallet, Target, MessageSquare, type LucideIcon } from "lucide-react";
 
 type WidgetState = "loading" | "ready" | "error";
 
@@ -13,7 +14,7 @@ type BusinessKpi = {
   label: string;
   value: string | number;
   change?: string;
-  icon: string;
+  Icon: LucideIcon;
   href?: string;
   state: WidgetState;
   empty?: boolean;
@@ -45,20 +46,18 @@ function KpiCard({ kpi }: { kpi: BusinessKpi }) {
 
   const body = (
     <div className="flex items-center gap-3">
-      <span className="text-2xl" aria-hidden>
-        {kpi.icon}
-      </span>
+      <kpi.Icon className="h-5 w-5 shrink-0 text-cyan-300/80" aria-hidden />
       <div>
-        <p className="text-xs uppercase text-white/50">{kpi.label}</p>
+        <p className="vc-label">{kpi.label}</p>
         {kpi.state === "error" ? (
           <p className="mt-1 text-sm text-yellow-300">Couldn&apos;t load this metric</p>
         ) : kpi.empty ? (
           <p className="mt-1 text-sm text-white/50">{kpi.emptyMessage ?? "No data yet"}</p>
         ) : (
-          <p className="mt-1 text-2xl font-bold text-white">{kpi.value}</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{kpi.value}</p>
         )}
         {kpi.state === "ready" && !kpi.empty && kpi.change && (
-          <p className="mt-1 text-xs text-white/40 group-hover:text-white/60">{kpi.change}</p>
+          <p className="vc-meta mt-1 group-hover:text-white/70">{kpi.change}</p>
         )}
       </div>
     </div>
@@ -200,7 +199,7 @@ export default function BusinessDashboardPage() {
       change: Object.entries(vpsByStatus)
         .map(([s, c]) => `${s}: ${c}`)
         .join(", "),
-      icon: "🖥️",
+      Icon: Server,
       href: "/voidcloud/dashboard/vps",
       state: vpsState,
       empty: vpsTotal === 0,
@@ -208,9 +207,9 @@ export default function BusinessDashboardPage() {
     },
     {
       label: "Monthly Recurring Revenue",
-      value: mrr != null ? `$${mrr}/mo` : "—",
+      value: mrr != null ? `$${mrr}/mo` : "\u2014",
       change: planName ?? "",
-      icon: "💰",
+      Icon: Wallet,
       href: "/voidcloud/dashboard/billing",
       state: billingState,
       empty: !planName,
@@ -220,7 +219,7 @@ export default function BusinessDashboardPage() {
       label: "Open CRM leads",
       value: openLeads,
       change: `${totalLeads} total`,
-      icon: "🎯",
+      Icon: Target,
       href: "/voidcloud/dashboard/crm",
       state: crmState,
       empty: totalLeads === 0,
@@ -230,7 +229,7 @@ export default function BusinessDashboardPage() {
       label: "WhatsApp threads",
       value: whatsappThreads,
       change: `${whatsappSent} sent · ${whatsappDelivered} delivered · ${whatsappFailed} failed`,
-      icon: "💬",
+      Icon: MessageSquare,
       href: "/voidcloud/admin/whatsapp",
       state: waState,
       empty: whatsappThreads === 0,
@@ -242,17 +241,17 @@ export default function BusinessDashboardPage() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen vc-page text-white">
-        <div className="mx-auto max-w-7xl px-6 py-8">
+      <div className="text-white">
+        <div>
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h1 className="section-title text-left">Business Dashboard</h1>
-              <p className="mt-2 text-sm text-white/50">Tenant-level KPIs and operational metrics</p>
+              <h1 className="vc-h1">Business Dashboard</h1>
+              <p className="mt-1 text-sm text-white/60">Tenant-level KPIs and operational metrics</p>
             </div>
             <button
               type="button"
               onClick={load}
-              className="rounded-xl border border-white/15 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10"
+              className="vc-btn vc-btn-secondary"
             >
               Refresh
             </button>
@@ -288,7 +287,7 @@ export default function BusinessDashboardPage() {
                   : "ready"
               }
             >
-              <h2 className="card-title">Recent invoices</h2>
+              <h2 className="vc-h2">Recent invoices</h2>
               <div className="mt-4 space-y-3">
                 {invoiceState === "loading" ? (
                   <PanelSkeleton />
@@ -306,7 +305,7 @@ export default function BusinessDashboardPage() {
                     >
                       <div>
                         <div className="text-sm font-medium">{inv.number}</div>
-                        <div className="text-xs text-white/40">
+                        <div className="vc-meta">
                           {new Date(inv.createdAt).toLocaleDateString()}
                         </div>
                       </div>
@@ -351,7 +350,7 @@ export default function BusinessDashboardPage() {
                   : "ready"
               }
             >
-              <h2 className="card-title">VPS status breakdown</h2>
+              <h2 className="vc-h2">VPS status breakdown</h2>
               <div className="mt-4 space-y-3">
                 {vpsState === "loading" ? (
                   <PanelSkeleton />

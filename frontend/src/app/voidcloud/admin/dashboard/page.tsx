@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { cloudApi, CloudDeployment } from "@/features/vps/cloud";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Users as UsersIcon, Gem, Server, Wallet } from "lucide-react";
 
 type NodeInfo = {
   name: string;
@@ -68,16 +69,23 @@ export default function AdminDashboard() {
     new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + ` ${cur}`;
 
   const runningDeployments = deployments.filter((d) => d.status === "RUNNING").length;
+  const DASH = "\u2014";
+  const num = (v: unknown) =>
+    typeof v === "number" && Number.isFinite(v) ? new Intl.NumberFormat("en-US").format(v) : DASH;
+
   const cards = [
-    { label: "Total Users", value: stats?.users ?? activeUsers ?? "—", icon: "👤" },
-    { label: "Active Plans", value: stats?.activeSubscriptions ?? "—", icon: "💎" },
-    { label: "Running VPS", value: stats?.deployments || runningDeployments || deployments.length || "—", icon: "🖥️" },
+    { label: "Total Users", value: num(stats?.users ?? activeUsers ?? undefined), Icon: UsersIcon },
+    { label: "Active Plans", value: num(stats?.activeSubscriptions), Icon: Gem },
+    {
+      label: "Running VPS",
+      value: num(stats?.deployments ?? (deployments.length ? runningDeployments : undefined)),
+      Icon: Server,
+    },
     {
       label: "Revenue (paid)",
-      value: stats
-        ? `${fmtMoney(stats.revenueUSD ?? 0, "USD")} · ${fmtMoney(stats.revenueEGP ?? 0, "EGP")}`
-        : "—",
-      icon: "💰",
+      value: stats ? fmtMoney(stats.revenueUSD ?? 0, "USD") : DASH,
+      sub: stats ? fmtMoney(stats.revenueEGP ?? 0, "EGP") : undefined,
+      Icon: Wallet,
     },
   ];
 
@@ -92,16 +100,17 @@ export default function AdminDashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {cards.map((c) => (
             <div key={c.label} className="vc-card p-5">
-              <div className="text-2xl">{c.icon}</div>
-              <div className="mt-2 text-2xl font-semibold tabular-nums">{c.value}</div>
-              <div className="vc-label mt-1">{c.label}</div>
+              <c.Icon className="h-5 w-5 text-cyan-300/80" aria-hidden />
+              <div className="mt-3 text-2xl font-semibold tabular-nums text-white">{c.value}</div>
+              {c.sub && <div className="vc-meta mt-0.5 tabular-nums">{c.sub}</div>}
+              <div className="vc-label mt-2">{c.label}</div>
             </div>
           ))}
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
           <section className="vc-card p-6">
-            <h2 className="mb-4 text-lg font-semibold">Cluster nodes</h2>
+            <h2 className="vc-h2 mb-4">Cluster nodes</h2>
             {nodes.length === 0 ? (
               <p className="py-6 text-center text-sm text-white/50">No node data available.</p>
             ) : (
@@ -133,7 +142,7 @@ export default function AdminDashboard() {
           </section>
 
           <section className="vc-card p-6">
-            <h2 className="mb-4 text-lg font-semibold">Running namespaces ({namespaces.length})</h2>
+            <h2 className="vc-h2 mb-4">Running namespaces ({namespaces.length})</h2>
             {namespaces.length === 0 ? (
               <p className="py-6 text-center text-sm text-white/50">No namespaces.</p>
             ) : (
@@ -165,7 +174,7 @@ export default function AdminDashboard() {
         <div className="grid gap-4 lg:grid-cols-2">
           <section className="vc-card p-6">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">SMTP status</h2>
+              <h2 className="vc-h2">SMTP status</h2>
               <button onClick={testSmtp} disabled={smtpTesting} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs hover:bg-white/10 disabled:opacity-50">
                 {smtpTesting ? "Testing…" : "Test connection"}
               </button>
@@ -185,7 +194,7 @@ export default function AdminDashboard() {
           </section>
 
           <section className="vc-card p-6">
-            <h2 className="mb-3 text-lg font-semibold">Recent deployments</h2>
+            <h2 className="vc-h2 mb-3">Recent deployments</h2>
             {deployments.length === 0 ? (
               <p className="text-sm text-white/50">No recent deployments.</p>
             ) : (
