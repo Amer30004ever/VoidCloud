@@ -3,14 +3,38 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import {
+  Activity,
+  ArrowLeft,
+  BarChart3,
+  Boxes,
+  CreditCard,
+  Database,
+  Disc,
+  Gift,
+  HardDriveDownload,
+  Home,
+  Languages,
+  MessageSquare,
+  Receipt,
+  Search,
+  Server,
+  Settings,
+  Shield,
+  ShieldAlert,
+  Users,
+  Wallet,
+  Webhook,
+  Gem,
+} from "lucide-react";
 import api from "@/lib/api";
 import { API_BASE_URL } from "@/lib/constants";
+import { AppShell, type AppShellNavItem } from "@workspace/ui-kit/app-shell";
 import { LoadingState } from "@workspace/ui-kit/loading-state";
 import en from "@/locales/en.json";
 import ar from "@/locales/ar.json";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import AiAssistant from "@/components/ai/AiAssistant";
-
 
 type Lang = "en" | "ar";
 
@@ -18,10 +42,26 @@ function t(dict: unknown, path: string, fallback: string) {
   return path.split(".").reduce<unknown>((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), dict) as string ?? fallback;
 }
 
+const CRUMB_LABELS: Record<string, string> = {
+  voidcloud: "VoidCloud",
+  admin: "Admin",
+  dashboard: "Dashboard",
+  vps: "VPS Instances",
+  whatsapp: "WhatsApp",
+  crm: "CRM",
+};
+
+function crumbs(pathname: string) {
+  return pathname
+    .split("/")
+    .filter(Boolean)
+    .map((seg) => CRUMB_LABELS[seg] ?? seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()))
+    .join(" / ");
+}
+
 export default function CloudDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [open, setOpen] = useState(true);
   const [lang, setLang] = useState<Lang>(() => {
     if (typeof window === "undefined") return "en";
     return (localStorage.getItem("amer_lang") as Lang) || "en";
@@ -64,33 +104,33 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
 
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
 
-  const NAV = useMemo(() => [
-    { href: "/voidcloud/user/dashboard", label: t(dict, "dashboard.welcome", "Dashboard").replace(", {{name}}", "").replace("Welcome", "Dashboard"), icon: "🏠" },
-    { href: "/voidcloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥️" },
-    { href: "/voidcloud/dashboard/images", label: "Images", icon: "💿" },
-    { href: "/voidcloud/dashboard/analytics", label: "Analytics", icon: "📈" },
-    { href: "/voidcloud/dashboard/backups", label: "Backups", icon: "💾" },
-    { href: "/voidcloud/dashboard/webhooks", label: "Webhooks", icon: "🪝" },
-    { href: "/voidcloud/dashboard/referral", label: "Referral", icon: "🎁" },
-    { href: "/voidcloud/dashboard/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💳" },
-    { href: "/voidcloud/dashboard/wallet", label: "Wallet", icon: "👛" },
-    { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙️" },
+  const NAV: AppShellNavItem[] = useMemo(() => [
+    { href: "/voidcloud/user/dashboard", label: t(dict, "dashboard.welcome", "Dashboard").replace(", {{name}}", "").replace("Welcome", "Dashboard"), icon: <Home /> },
+    { href: "/voidcloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: <Server /> },
+    { href: "/voidcloud/dashboard/images", label: "Images", icon: <Disc /> },
+    { href: "/voidcloud/dashboard/analytics", label: "Analytics", icon: <BarChart3 /> },
+    { href: "/voidcloud/dashboard/backups", label: "Backups", icon: <HardDriveDownload /> },
+    { href: "/voidcloud/dashboard/webhooks", label: "Webhooks", icon: <Webhook /> },
+    { href: "/voidcloud/dashboard/referral", label: "Referral", icon: <Gift /> },
+    { href: "/voidcloud/dashboard/billing", label: t(dict, "dashboard.billing", "Billing"), icon: <CreditCard /> },
+    { href: "/voidcloud/dashboard/wallet", label: "Wallet", icon: <Wallet /> },
+    { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: <Settings /> },
   ], [dict]);
 
-  const ADMIN_NAV = useMemo(() => [
-    { href: "/voidcloud/admin/dashboard", label: t(dict, "admin.dashboard", "Dashboard"), icon: "📊" },
-    { href: "/voidcloud/admin/users", label: t(dict, "admin.users", "Users"), icon: "👤" },
-    { href: "/voidcloud/admin/plans", label: t(dict, "admin.plans", "Plans"), icon: "💎" },
-    { href: "/voidcloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: "🖥️" },
-    { href: "/voidcloud/admin/clusters", label: "Proxmox Clusters", icon: "🗄️" },
-    { href: "/voidcloud/admin/monitoring", label: "Monitoring", icon: "❤️" },
-    { href: "/voidcloud/admin/pods", label: "Pod Manager", icon: "📦" },
-    { href: "/voidcloud/admin/security", label: "Security", icon: "🔒" },
-    { href: "/voidcloud/admin/abuse", label: "Abuse & AUP", icon: "🛡️" },
-    { href: "/voidcloud/admin/billing", label: t(dict, "dashboard.billing", "Billing"), icon: "💰" },
-    { href: "/voidcloud/admin/whatsapp", label: "WhatsApp Broadcast", icon: "💬" },
-    { href: "/voidcloud/admin/transactions", label: t(dict, "admin.transactions", "Transactions"), icon: "🧾" },
-    { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: "⚙️" },
+  const ADMIN_NAV: AppShellNavItem[] = useMemo(() => [
+    { href: "/voidcloud/admin/dashboard", label: t(dict, "admin.dashboard", "Dashboard"), icon: <BarChart3 /> },
+    { href: "/voidcloud/admin/users", label: t(dict, "admin.users", "Users"), icon: <Users /> },
+    { href: "/voidcloud/admin/plans", label: t(dict, "admin.plans", "Plans"), icon: <Gem /> },
+    { href: "/voidcloud/dashboard/vps", label: t(dict, "dashboard.deployments", "VPS Instances"), icon: <Server /> },
+    { href: "/voidcloud/admin/clusters", label: "Proxmox Clusters", icon: <Database /> },
+    { href: "/voidcloud/admin/monitoring", label: "Monitoring", icon: <Activity /> },
+    { href: "/voidcloud/admin/pods", label: "Pod Manager", icon: <Boxes /> },
+    { href: "/voidcloud/admin/security", label: "Security", icon: <Shield /> },
+    { href: "/voidcloud/admin/abuse", label: "Abuse & AUP", icon: <ShieldAlert /> },
+    { href: "/voidcloud/admin/billing", label: t(dict, "dashboard.billing", "Billing"), icon: <CreditCard /> },
+    { href: "/voidcloud/admin/whatsapp", label: "WhatsApp Broadcast", icon: <MessageSquare /> },
+    { href: "/voidcloud/admin/transactions", label: t(dict, "admin.transactions", "Transactions"), icon: <Receipt /> },
+    { href: "/voidcloud/dashboard/settings", label: t(dict, "dashboard.settings", "Settings"), icon: <Settings /> },
   ], [dict]);
 
   const logoHref = role
@@ -124,80 +164,57 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
     return <LoadingState message="Loading dashboard..." />;
   }
 
-  return (
-    <div className="flex min-h-screen bg-slate-950 text-white">
-      {impersonatedBy && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-fuchsia-600 to-purple-700 text-white px-4 py-2 flex items-center justify-between">
-          <span className="text-sm font-medium">
-            🔍 Viewing as impersonated user — actions are logged under the impersonated account with admin traceability
-          </span>
-          <button onClick={stopImpersonating} className="rounded-lg bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30">
-            Stop impersonating
-          </button>
-        </div>
-      )}
-      <aside
-        className={`flex flex-col border-white/5 bg-slate-900/60 backdrop-blur-xl transition-all ${
-          lang === "ar" ? "border-l" : "border-r"
-        } ${open ? "w-64" : "w-16"}`}
-      >
-        <div className="flex items-center justify-between p-4">
-          <Link href={logoHref} className={`flex items-center gap-2 font-bold ${open ? "" : "hidden"}`}>
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">☁</span>
-            VoidCloud
-          </Link>
-          <button onClick={() => setOpen(!open)} className="rounded-md p-1 text-white/60 hover:bg-white/10">
-            {open ? (lang === "ar" ? "▶" : "◀") : (lang === "ar" ? "◀" : "▶")}
-          </button>
-        </div>
-        <nav className="flex-1 space-y-1 px-2">
-          {(isAdminArea ? ADMIN_NAV : NAV).map((it) => (
-            <Link
-              key={it.href}
-              href={it.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
-                pathname === it.href ? "bg-gradient-to-r from-cyan-500/20 to-fuchsia-500/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <span>{it.icon}</span>
-              {open && <span>{it.label}</span>}
-            </Link>
-          ))}
-          {isAdmin && (
-            <>
-              <div className="my-3 border-t border-white/5" />
-              <Link
-                href={isAdminArea ? "/voidcloud/user/dashboard" : "/voidcloud/admin/dashboard"}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-white"
-              >
-                <span>{isAdminArea ? "←" : "🛡️"}</span>
-                {open && <span>{isAdminArea ? "Back to user" : "Admin Panel"}</span>}
-              </Link>
-            </>
-          )}
-        </nav>
-        <div className="border-t border-white/5 p-3">
-          <button onClick={logout} className="w-full rounded-lg px-3 py-2 text-start text-sm text-white/60 hover:bg-white/5 hover:text-white">
-            🚪 {open && (t(dict, "dashboard.logout", "Sign out"))}
-          </button>
-        </div>
-      </aside>
+  const items = (isAdminArea ? ADMIN_NAV : NAV).map((it) => ({ ...it, active: pathname === it.href }));
+  const footerNav: AppShellNavItem[] | undefined = isAdmin
+    ? [
+        {
+          href: isAdminArea ? "/voidcloud/user/dashboard" : "/voidcloud/admin/dashboard",
+          label: isAdminArea ? "Back to user" : "Admin Panel",
+          icon: isAdminArea ? <ArrowLeft /> : <Shield />,
+        },
+      ]
+    : undefined;
 
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-white/5 bg-slate-900/40 px-6 py-3 backdrop-blur-xl">
-          <div className="text-sm text-white/50">{pathname}</div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setLang(lang === "en" ? "ar" : "en")} className="rounded-md border border-white/10 px-3 py-1 text-xs">
-              {lang === "en" ? "🇪🇬 العربية" : "🇬🇧 EN"}
+  return (
+    <AppShell
+      linkComponent={Link}
+      rtl={lang === "ar"}
+      brand={{ href: logoHref, label: "VoidCloud" }}
+      items={items}
+      footerNav={footerNav}
+      onSignOut={logout}
+      signOutLabel={t(dict, "dashboard.logout", "Sign out")}
+      topbarLeft={crumbs(pathname)}
+      topbarRight={
+        <>
+          <button
+            onClick={() => setLang(lang === "en" ? "ar" : "en")}
+            className="flex items-center gap-1.5 rounded-md border border-white/10 px-2.5 py-1.5 text-xs text-white/70 transition hover:bg-white/5 hover:text-white"
+          >
+            <Languages className="size-3.5" />
+            {lang === "en" ? "العربية" : "EN"}
+          </button>
+          <NotificationBell />
+        </>
+      }
+      banner={
+        impersonatedBy ? (
+          <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-fuchsia-600 to-purple-700 px-4 py-2 text-white">
+            <span className="flex min-w-0 items-center gap-2 text-xs font-medium sm:text-sm">
+              <Search className="size-4 shrink-0" />
+              <span className="min-w-0 truncate">
+                Viewing as impersonated user — actions are logged with admin traceability
+              </span>
+            </span>
+            <button onClick={stopImpersonating} className="shrink-0 rounded-lg bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30">
+              Stop impersonating
             </button>
-            <NotificationBell />
           </div>
-        </header>
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-        <AiAssistant />
-      </div>
-    </div>
+        ) : null
+      }
+    >
+      {children}
+      <AiAssistant />
+    </AppShell>
   );
 }
-
-

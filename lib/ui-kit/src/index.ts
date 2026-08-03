@@ -1,3 +1,4 @@
+export { AppShell, type AppShellNavItem, type AppShellProps } from "./app-shell";
 export { Button, buttonVariants } from "./button";
 export { PageHeader } from "./page-header";
 export { EmptyState } from "./empty-state";

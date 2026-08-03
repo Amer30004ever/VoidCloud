@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./button": "./src/button.tsx",
+    "./app-shell": "./src/app-shell.tsx",
     "./page-header": "./src/page-header.tsx",
     "./empty-state": "./src/empty-state.tsx",
     "./loading-state": "./src/loading-state.tsx",
