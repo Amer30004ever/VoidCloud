@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "node ../node_modules/next/dist/bin/next dev",
+    "build": "node ../node_modules/next/dist/bin/next build",
+    "start": "node ../node_modules/next/dist/bin/next start",
     "lint": "eslint",
     "test": "jest --passWithNoTests"
   },
@@ -50,5 +50,5 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "//zod-pin": "Pinned to zod@^3 pending upgrade — see docs/zod-v3-pin.md (2026-07-15). @hookform/resolvers@^5.4.0 supports both v3 and v4; upgrade blocked only on regenerating lib/api-zod. Remove this note when the upgrade PR lands."
+  "//zod-pin": "Pinned to zod@^3 pending upgrade \u2014 see docs/zod-v3-pin.md (2026-07-15). @hookform/resolvers@^5.4.0 supports both v3 and v4; upgrade blocked only on regenerating lib/api-zod. Remove this note when the upgrade PR lands."
 }
