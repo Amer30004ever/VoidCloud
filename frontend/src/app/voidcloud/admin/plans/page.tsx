@@ -1,13 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
+import { Gem } from "lucide-react";
+import { EmptyState } from "@workspace/ui-kit/empty-state";
+import { CardSkeleton } from "@workspace/ui-kit/skeleton";
 import { cloudApi, CloudPlan } from "@/features/vps/cloud";
 
 export default function AdminPlansPage() {
   const [plans, setPlans] = useState<CloudPlan[]>([]);
   const [edit, setEdit] = useState<Partial<CloudPlan> | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  async function load() { setPlans(await cloudApi.admin.plans()); }
+  async function load() {
+    setLoading(true);
+    try { setPlans(await cloudApi.admin.plans()); } finally { setLoading(false); }
+  }
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => { load(); }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
