@@ -15,7 +15,7 @@ export default function UserDashboard() {
 
   useEffect(() => {
     cloudApi.deployments.usage().then(setUsage).catch(() => {});
-    cloudApi.deployments.list().then(setDeployments).catch(() => {});
+    cloudApi.deployments.list().then((d) => setDeployments(Array.isArray(d) ? d : [])).catch(() => {});
     api.get("/auth/me").then((r) => setMe(r.data)).catch(() => {});
   }, []);
 

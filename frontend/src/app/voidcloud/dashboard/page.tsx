@@ -12,7 +12,7 @@ export default function CloudDashboardHome() {
   const [me, setMe] = useState<any>(null);
   useEffect(() => {
     cloudApi.deployments.usage().then(setUsage).catch(() => { });
-    cloudApi.deployments.list().then(setDeployments).catch(() => { });
+    cloudApi.deployments.list().then((d) => setDeployments(Array.isArray(d) ? d : [])).catch(() => { });
     import("@/lib/api").then(({ default: api }) => api.get("/auth/me").then((r) => setMe(r.data)).catch(() => { }));
   }, []);
 
