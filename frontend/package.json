@@ -14,7 +14,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@reduxjs/toolkit": "^2.12.0",
     "@tanstack/react-query": "^5.100.10",
-    "@workspace/ui-kit": "workspace:*",
+    "@workspace/ui-kit": "file:../lib/ui-kit",
     "axios": "^1.16.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
