@@ -48,3 +48,4 @@ Screenshots: `/tmp/browser/audit/shots/`. Raw metrics: `/tmp/browser/audit/auth_
 - **Batch D (Important):** I5/I6 — `ui-kit` skeleton + empty-state rollout across list pages.
 - **Batch E (Important):** DONE — I7 business shell (AppShell), I8 KPI value normalization (single em-dash empty value, lucide icons, revenue split into value + sub-line), I9/I10 type scale (`vc-h1`/`vc-h2`/`vc-label`/`vc-meta`) applied to admin + business dashboards.
 - Note: C6 "logout chip overlap" is the Next.js dev-mode indicator badge, not app markup — no production impact.
+- **Batch F (Polish):** DONE — P3 readable breadcrumbs (`components/ui/Breadcrumbs.tsx`) in every role shell topbar, P4 unified hover/`focus-visible` ring + `vc-row` hover token in globals.css, P5 leading `+` labels replaced with a lucide `Plus` icon (users, plans, whatsapp templates, VPS), P6 language toggle now uses an `AR`/`EN` text label with an aria-label instead of an emoji-dependent glyph.
