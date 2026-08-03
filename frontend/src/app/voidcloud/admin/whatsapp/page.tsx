@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 import { cloudApi, WhatsappTemplate, WhatsappBroadcast, WhatsappBroadcastRecipient, CloudPlan } from "@/features/vps/cloud";
 
 type Tab = "composer" | "templates" | "history";

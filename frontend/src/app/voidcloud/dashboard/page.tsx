@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { cloudApi, CloudUsage, CloudDeployment } from "@/features/vps/cloud";
 import { WidgetBoundary } from "@workspace/ui-kit/widget-boundary";
 
