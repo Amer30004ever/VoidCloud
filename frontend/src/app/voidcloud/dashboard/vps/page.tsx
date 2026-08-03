@@ -116,8 +116,17 @@ export default function VpsListPage() {
       )}
 
       <div className="vc-card">
-        {loading ? <p className="p-6 text-white/50">Loading…</p>
-          : items.length === 0 ? <p className="p-12 text-center text-white/50">No VPS instances yet.</p>
+        {loading ? (
+            <table className="w-full text-sm"><tbody><TableSkeleton rows={4} cols={5} /></tbody></table>
+          )
+          : items.length === 0 ? (
+            <EmptyState
+              icon={<Server className="size-6" />}
+              title="No VPS instances yet"
+              description="Provision your first instance to start deploying workloads on VoidCloud."
+              action={<Link href="/voidcloud/dashboard/vps/new" className="vc-btn vc-btn-primary">Create VPS</Link>}
+            />
+          )
           : (
             <table className="w-full text-sm">
               <thead className="vc-label border-b border-white/10 text-left">
