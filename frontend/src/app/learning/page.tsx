@@ -37,6 +37,20 @@ function LearningPageContent() {
         description="DevOps jobs, tech news, learning paths, certifications, and AI-powered CV Studio"
       />
 
+      {/* Hub shortcuts */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        <a href="/learning/search" className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+          <Search className="h-4 w-4" /> Search the hub
+        </a>
+        <a href="/learning/checklists" className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+          <ListChecks className="h-4 w-4" /> Task checklists
+        </a>
+        <a href="/learning/progress" className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+          <BarChart3 className="h-4 w-4" /> My progress
+        </a>
+      </div>
+
+
       {/* Tabs */}
       <div className="mb-6 flex gap-2 border-b border-border">
         {tabs.map((tab) => (
