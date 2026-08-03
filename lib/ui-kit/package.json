@@ -13,6 +13,7 @@
     "./error-state": "./src/error-state.tsx",
     "./widget-boundary": "./src/widget-boundary.tsx",
     "./status-badge": "./src/status-badge.tsx",
+    "./skeleton": "./src/skeleton.tsx",
     "./create-item-dialog": "./src/create-item-dialog.tsx"
   },
   "dependencies": {
