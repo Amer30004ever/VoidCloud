@@ -185,7 +185,7 @@ export default function CloudDashboardLayout({ children }: { children: React.Rea
       footerNav={footerNav}
       onSignOut={logout}
       signOutLabel={t(dict, "dashboard.logout", "Sign out")}
-      topbarLeft={crumbs(pathname)}
+      topbarLeft={<Breadcrumbs />}
       topbarRight={
         <>
           <button
