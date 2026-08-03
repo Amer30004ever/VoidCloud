@@ -198,3 +198,29 @@ export const CHECKLIST_TEMPLATES: ChecklistTemplate[] = [
     ],
   },
 ];
+
+export type ContentLevel = "beginner" | "intermediate" | "advanced";
+
+/** Difficulty level per content id, used by Learning Hub search filters. */
+export const CONTENT_LEVELS: Record<string, ContentLevel> = {
+  "doc-k8s-basics": "beginner",
+  "doc-cicd": "beginner",
+  "doc-observability": "intermediate",
+  "doc-iac": "intermediate",
+  "doc-security": "advanced",
+  "doc-incident": "advanced",
+  "cert-cka": "advanced",
+  "cert-ckad": "intermediate",
+  "cert-terraform": "beginner",
+  "cert-aws-devops": "advanced",
+  "tpl-deploy-service": "intermediate",
+  "tpl-cicd-pipeline": "beginner",
+  "tpl-incident": "advanced",
+  "tpl-security-review": "advanced",
+  "tpl-onboarding": "beginner",
+  "tpl-monitoring": "intermediate",
+};
+
+export function levelOf(id: string): ContentLevel {
+  return CONTENT_LEVELS[id] ?? "intermediate";
+}
