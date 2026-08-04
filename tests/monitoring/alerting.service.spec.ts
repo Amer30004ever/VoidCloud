@@ -41,7 +41,7 @@ describe('AlertingService — Tier 6 probes', () => {
 
     it('rejects on a closed port instead of throwing TypeError', async () => {
       // Regression guard: the old implementation called net.createSocket(), which does not exist.
-      await expect(service.tcpConnect('127.0.0.1', 1, 1000)).rejects.toBeInstanceOf(Error);
+      await expect(service.tcpConnect('127.0.0.1', 1, 1000)).rejects.toThrow();
     });
 
     it('rejects with a timeout on an unroutable address', async () => {
