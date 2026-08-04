@@ -1,6 +1,13 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  computeDeadlines,
+  evaluateSla,
+  escalatedPriority,
+  targetFor,
+  type SlaEvaluation,
+} from './sla';
 
 export interface AuthUser {
   id: string;
@@ -68,12 +75,20 @@ export class SupportService {
     if (subject.length < 3) throw new ForbiddenException('Subject is too short');
     if (body.length < 3) throw new ForbiddenException('Message is too short');
 
+    const priority = VALID_PRIORITY.includes(input.priority ?? '')
+      ? input.priority!
+      : 'NORMAL';
+    const now = new Date();
+    const { firstResponseDueAt, resolutionDueAt } = computeDeadlines(priority, now);
+
     return this.prisma.supportTicket.create({
       data: {
         userId: user.id,
         subject: subject.slice(0, 200),
         category: VALID_CATEGORY.includes(input.category ?? '') ? input.category! : 'GENERAL',
-        priority: VALID_PRIORITY.includes(input.priority ?? '') ? input.priority! : 'NORMAL',
+        priority,
+        firstResponseDueAt,
+        resolutionDueAt,
         resourceId: input.resourceId ?? null,
         messages: {
           create: {
@@ -108,9 +123,16 @@ export class SupportService {
       },
     });
 
+    const staffReply = this.isStaff(user) && !internal;
     await this.prisma.supportTicket.update({
       where: { id },
-      data: { status: this.isStaff(user) ? 'PENDING' : 'OPEN' },
+      data: {
+        status: this.isStaff(user) ? 'PENDING' : 'OPEN',
+        // First public staff reply stops the first-response SLA clock.
+        ...(staffReply && !(ticket as { firstRespondedAt?: Date | null }).firstRespondedAt
+          ? { firstRespondedAt: new Date() }
+          : {}),
+      } as never,
     });
 
     return message;
@@ -163,6 +185,82 @@ export class SupportService {
         where: { ...(where as object), status: 'CLOSED' } as never,
       }),
     ]);
-    return { open, pending, resolved, closed, total: open + pending + resolved + closed };
+    const breached = await this.prisma.supportTicket.count({
+      where: { ...(where as object), slaBreached: true } as never,
+    });
+    return {
+      open,
+      pending,
+      resolved,
+      closed,
+      slaBreached: breached,
+      total: open + pending + resolved + closed,
+    };
+  }
+
+  /** SLA position of a single ticket (visible to the owner and to staff). */
+  async sla(user: AuthUser, id: string): Promise<SlaEvaluation & { target: ReturnType<typeof targetFor> }> {
+    const ticket = await this.prisma.supportTicket.findFirst({
+      where: { id, ...this.scope(user) } as never,
+    });
+    if (!ticket) throw new NotFoundException('Ticket not found');
+    return {
+      ...evaluateSla(ticket as never),
+      target: targetFor((ticket as { priority: string }).priority),
+    };
+  }
+
+  /**
+   * Sweep open tickets, flag SLA breaches and escalate at-risk/breached ones.
+   * Escalation bumps priority, clears a stale assignee so it re-enters the
+   * unassigned queue, and writes an audit entry. Idempotent per level.
+   */
+  async runSlaSweep(now: Date = new Date()) {
+    const tickets = await this.prisma.supportTicket.findMany({
+      where: { status: { in: OPEN_STATUSES } } as never,
+      take: 500,
+    });
+
+    let escalated = 0;
+    let breached = 0;
+
+    for (const ticket of tickets as unknown as Array<Record<string, any>>) {
+      const evaluation = evaluateSla(ticket as never, now);
+      const data: Record<string, unknown> = {};
+
+      if (evaluation.breached && !ticket['slaBreached']) {
+        data['slaBreached'] = true;
+        breached += 1;
+      }
+      if (evaluation.shouldEscalate) {
+        data['escalatedAt'] = now;
+        data['escalationLevel'] = Number(ticket['escalationLevel'] ?? 0) + 1;
+        data['priority'] = escalatedPriority(ticket['priority']);
+        escalated += 1;
+      }
+      if (Object.keys(data).length === 0) continue;
+
+      await this.prisma.supportTicket.update({
+        where: { id: ticket['id'] },
+        data: data as never,
+      });
+
+      await this.prisma.auditLog.create({
+        data: {
+          action: evaluation.shouldEscalate
+            ? 'SUPPORT_TICKET_ESCALATED'
+            : 'SUPPORT_TICKET_SLA_BREACHED',
+          resource: ticket['id'],
+          details: {
+            priority: ticket['priority'],
+            newPriority: data['priority'] ?? ticket['priority'],
+            reason: evaluation.reason ?? 'sla_breach',
+            minutesRemaining: evaluation.minutesRemaining,
+          } as never,
+        } as never,
+      });
+    }
+
+    return { scanned: tickets.length, escalated, breached };
   }
 }

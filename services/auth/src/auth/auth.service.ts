@@ -35,6 +35,9 @@ const MAX_FAILED_ATTEMPTS = 10;
 const LOCK_WINDOW_MS = 15 * 60 * 1000;
 const ATTEMPT_HISTORY_MS = 30 * 60 * 1000;
 
+/** Impersonation JWT lifetime — mirrored into the audit trail. */
+const IMPERSONATION_TTL_MS = 15 * 60 * 1000;
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -736,6 +739,9 @@ export class AuthService {
       }
     }
 
+    const jti = crypto.randomBytes(16).toString('hex');
+    const expiresAt = new Date(Date.now() + IMPERSONATION_TTL_MS);
+
     await this.prisma.auditLog.create({
       data: {
         action: 'USER_IMPERSONATED',
@@ -747,11 +753,13 @@ export class AuthService {
           reason: reason || 'No reason provided',
           targetUserName: targetUser.name,
           targetUserRole: targetUser.role,
+          // Session identity + hard expiry so a session that ends by token
+          // expiry (rather than a manual exit) is still closable in the log.
+          jti,
+          expiresAt: expiresAt.toISOString(),
         } as Prisma.InputJsonValue,
       },
     });
-
-    const jti = crypto.randomBytes(16).toString('hex');
     const tenantId =
       targetUser.role === 'SUPER_ADMIN'
         ? null
@@ -768,7 +776,9 @@ export class AuthService {
       impersonatedBy: adminId,
     };
 
-    const access_token = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const access_token = this.jwtService.sign(payload, {
+      expiresIn: `${IMPERSONATION_TTL_MS / 1000}s`,
+    });
 
     return {
       access_token,
@@ -807,6 +817,65 @@ export class AuthService {
     }
 
     return { ok: true };
+  }
+
+  /**
+   * Close impersonation sessions that ended because the 15-minute token
+   * expired rather than the admin clicking "exit". Without this, those
+   * sessions have a start entry and no end entry in the audit trail.
+   * Idempotent: a session already closed (manually or by a previous sweep)
+   * is skipped.
+   */
+  async reconcileExpiredImpersonations(now: Date = new Date()) {
+    const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const starts = await this.prisma.auditLog.findMany({
+      where: { action: 'USER_IMPERSONATED', createdAt: { gte: since } },
+      orderBy: { createdAt: 'asc' },
+      take: 500,
+    });
+    const ends = await this.prisma.auditLog.findMany({
+      where: {
+        action: 'IMPERSONATION_SESSION_ENDED',
+        createdAt: { gte: since },
+      },
+      take: 1000,
+    });
+
+    const closedJtis = new Set(
+      (ends ?? [])
+        .map((e: any) => (e?.details as any)?.jti)
+        .filter((j: unknown): j is string => typeof j === 'string'),
+    );
+
+    let closed = 0;
+    for (const start of (starts ?? []) as any[]) {
+      const details = (start.details ?? {}) as Record<string, unknown>;
+      const jti = typeof details['jti'] === 'string' ? (details['jti'] as string) : null;
+      const expiresAtRaw = details['expiresAt'];
+      if (!jti || typeof expiresAtRaw !== 'string') continue;
+      if (closedJtis.has(jti)) continue;
+      if (new Date(expiresAtRaw).getTime() > now.getTime()) continue;
+
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'IMPERSONATION_SESSION_ENDED',
+          adminId: start.adminId ?? null,
+          userId: start.userId ?? null,
+          userEmail: start.userEmail ?? '',
+          resource: start.resource ?? null,
+          details: {
+            reason: 'token_expiry',
+            jti,
+            impersonatedBy: start.adminId ?? null,
+            expiresAt: expiresAtRaw,
+          } as Prisma.InputJsonValue,
+        },
+      });
+      closedJtis.add(jti);
+      closed += 1;
+    }
+
+    return { scanned: (starts ?? []).length, closed };
   }
 
   async exitImpersonation(userId: string, impersonatedBy: string | null) {

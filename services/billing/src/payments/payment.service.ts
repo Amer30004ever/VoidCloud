@@ -11,6 +11,14 @@ import {
 import { PaymobGateway, HttpClient } from './paymob.gateway';
 import { StripeGateway, StripeHttpClient } from './stripe.gateway';
 import { PaypalGateway, PaypalHttpClient } from './paypal.gateway';
+import { makeLiveHttp } from './http-client';
+import {
+  resolveSecrets,
+  assessReadiness,
+  PAYMOB_SECRET_KEYS,
+  type SecretStore,
+  type GatewayReadiness,
+} from './payment-secrets';
 
 export interface CheckoutInput {
   userId: string;
@@ -24,6 +32,8 @@ export interface CheckoutInput {
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
   private readonly gateway: PaymentGateway;
+  /** Vault-backed gateway, resolved lazily on first use (Prompt 0.16). */
+  private resolvedGateway: PaymentGateway | null = null;
 
   constructor(private readonly prisma: PrismaService) {
     this.gateway = buildGateway();
@@ -33,8 +43,64 @@ export class PaymentService {
   static forTest(prisma: PrismaService, gateway: PaymentGateway): PaymentService {
     const s = new PaymentService(prisma);
     (s as any).gateway = gateway;
+    (s as any).resolvedGateway = gateway;
     return s;
   }
+
+  /**
+   * Resolve the active gateway, preferring credentials stored in the encrypted
+   * platform secret vault over plaintext env. Falls back to the env-built
+   * gateway when the vault holds nothing.
+   */
+  private async activeGateway(): Promise<PaymentGateway> {
+    if (this.resolvedGateway) return this.resolvedGateway;
+    try {
+      const resolved = await resolveSecrets(
+        this.prisma as unknown as SecretStore,
+        PAYMOB_SECRET_KEYS,
+      );
+      const apiKey = resolved['PAYMOB_API_KEY']?.value;
+      const integrationId = Number(resolved['PAYMOB_INTEGRATION_ID']?.value ?? '0');
+      const hmacSecret = resolved['PAYMOB_HMAC_SECRET']?.value;
+      const usesVault = Object.values(resolved).some((r) => r.source === 'vault');
+      if (usesVault && apiKey && integrationId && hmacSecret) {
+        this.resolvedGateway = new PaymobGateway(
+          {
+            apiKey,
+            integrationId,
+            hmacSecret,
+            iframeId: resolved['PAYMOB_IFRAME_ID']?.value ?? undefined,
+          },
+          makeLiveHttp() as HttpClient,
+        );
+        return this.resolvedGateway;
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Vault gateway resolution failed, using env gateway: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    this.resolvedGateway = this.gateway;
+    return this.resolvedGateway;
+  }
+
+  /**
+   * Readiness report for the Paymob rails: are credentials present, and are
+   * they vault-backed? Used by the sandbox verification script/endpoint so a
+   * real sandbox transaction can be attempted with confidence.
+   */
+  async paymentsReadiness(): Promise<GatewayReadiness> {
+    const resolved = await resolveSecrets(
+      this.prisma as unknown as SecretStore,
+      PAYMOB_SECRET_KEYS,
+    );
+    return assessReadiness('paymob', resolved, [
+      'PAYMOB_API_KEY',
+      'PAYMOB_INTEGRATION_ID',
+      'PAYMOB_HMAC_SECRET',
+    ]);
+  }
+
 
   /** Create a payment for an invoice using the chosen method. */
   async checkout(input: CheckoutInput): Promise<CheckoutResult & { invoiceId: string; provider: string; amount: number; currency: string; invoice: { id: string; number: string; status: string } }> {
@@ -54,12 +120,13 @@ export class PaymentService {
       billingData: { invoice_number: invoice.number },
     };
 
-    const result = await this.gateway.createCheckout(req);
+    const gateway = await this.activeGateway();
+    const result = await gateway.createCheckout(req);
 
     await this.prisma.cloudInvoice.update({
       where: { id: invoice.id },
       data: {
-        provider: this.gateway.name,
+        provider: gateway.name,
         providerRef: result.gatewayRef,
         metadata: {
           ...((invoice.metadata as object) ?? {}),
@@ -81,7 +148,7 @@ export class PaymentService {
     return {
       ...result,
       invoiceId: invoice.id,
-      provider: this.gateway.name,
+      provider: gateway.name,
       amount,
       currency: invoice.currency,
       invoice: {
@@ -94,7 +161,7 @@ export class PaymentService {
 
   /** Verify + apply a gateway webhook. Returns the updated invoice or null if rejected. */
   async handleWebhook(rawBody: string | Buffer, signature: string | undefined) {
-    return this.applyWebhook(this.gateway, rawBody, signature);
+    return this.applyWebhook(await this.activeGateway(), rawBody, signature);
   }
 
   /**

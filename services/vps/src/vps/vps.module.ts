@@ -7,6 +7,8 @@ import { VpsProvisionService } from './vps-provision.service';
 import { QuotaReconciliationService } from './quota-reconciliation.service';
 import { DomainVerificationScheduler } from './domain-verification.scheduler';
 import { ProxmoxService } from '../proxmox/proxmox.service';
+import { IsolationReconcilerService } from '../proxmox/isolation-reconciler.service';
+import { IsolationController } from '../proxmox/isolation.controller';
 import { ClustersModule } from '../clusters/clusters.module';
 import { BackupModule } from '../backup/backup.module';
 import { ApiUsageModule } from '../../../shared/api-usage/api-usage.module';
@@ -16,7 +18,7 @@ import { CreditService } from '../../../billing/src/billing/credit.service';
 
 @Module({
   imports: [ClustersModule, ScheduleModule.forRoot(), BackupModule, ApiUsageModule],
-  controllers: [VpsController],
-  providers: [VpsService, VpsProvisionService, QuotaReconciliationService, DomainVerificationScheduler, ProxmoxService, K8sAppService, CreditService],
+  controllers: [VpsController, IsolationController],
+  providers: [VpsService, VpsProvisionService, QuotaReconciliationService, DomainVerificationScheduler, ProxmoxService, IsolationReconcilerService, K8sAppService, CreditService],
 })
 export class VpsModule { }

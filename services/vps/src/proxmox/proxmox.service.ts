@@ -309,6 +309,74 @@ export class ProxmoxService {
     }).catch(() => undefined);
   }
 
+  // -------- Isolation reconciliation surface (Prompt 0.15) --------
+
+  /** The ruleset every tenant VM is expected to carry, from current config. */
+  expectedFirewallRaw(): string {
+    return buildFirewallRaw(this.isolation);
+  }
+
+  /** True when a live Proxmox host is configured. */
+  isLiveHost(): boolean {
+    return this.isLive();
+  }
+
+  /** Enumerate every LXC container across all configured nodes. */
+  async listAllContainers(): Promise<
+    Array<{ node: string; vmid: number; name?: string; status?: string }>
+  > {
+    if (!this.isLive()) return [];
+    const out: Array<{
+      node: string;
+      vmid: number;
+      name?: string;
+      status?: string;
+    }> = [];
+    for (const node of this.nodes) {
+      const list = await this.pveRequest<any[]>(
+        'GET',
+        `/nodes/${node}/lxc`,
+      ).catch(() => []);
+      for (const c of list ?? []) {
+        out.push({
+          node,
+          vmid: Number(c.vmid),
+          name: c.name,
+          status: c.status,
+        });
+      }
+    }
+    return out;
+  }
+
+  /** Read the current firewall switch + raw ruleset of one container. */
+  async getVmFirewallState(
+    node: string,
+    vmid: number,
+  ): Promise<{ enabled: boolean; raw: string | null }> {
+    const options = await this.pveRequest<any>(
+      'GET',
+      `/nodes/${node}/lxc/${vmid}/firewall/options`,
+    ).catch(() => null);
+    const rules = await this.pveRequest<any>(
+      'GET',
+      `/nodes/${node}/lxc/${vmid}/firewall/rules`,
+    ).catch(() => null);
+
+    const raw = Array.isArray(rules)
+      ? (rules.find((r: any) => r?.type === 'raw')?.raw ?? null)
+      : ((rules?.raw as string | undefined) ?? null);
+
+    return { enabled: Number(options?.enable ?? 0) === 1, raw: raw ?? null };
+  }
+
+  /** Public, idempotent backfill of the isolation ruleset onto an existing VM. */
+  async applyIsolationFirewall(node: string, vmid: number): Promise<void> {
+    await this.applyVmFirewall(node, vmid, this.expectedFirewallRaw());
+  }
+
+
+
   async createContainer(spec: ProvisionSpec): Promise<ProvisionResult> {
     const rootPassword = randomBytes(12).toString('base64url');
     const templateId = spec.templateId ?? getTemplateForPlan(spec.planSlug);
