@@ -7,7 +7,24 @@
  */
 import { NotFoundException } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import { VpsService } from '../../services/vps/src/vps/vps.service';
+
+// ESM-only package pulled in transitively by K8sAppService; the service under
+// test never touches it in these paths.
+jest.mock('@kubernetes/client-node', () => ({
+  KubeConfig: class {
+    loadFromDefault() {}
+    makeApiClient() {
+      return {};
+    }
+  },
+  AppsV1Api: class {},
+  CoreV1Api: class {},
+  NetworkingV1Api: class {},
+}));
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { VpsService } = require('../../services/vps/src/vps/vps.service') as typeof import('../../services/vps/src/vps/vps.service');
+type VpsService = InstanceType<typeof VpsService>;
 
 const OWNER = { id: 'user-A', role: Role.USER };
 const INTRUDER = { id: 'user-B', role: Role.USER };
