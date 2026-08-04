@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
@@ -14,6 +14,12 @@ export class AiAssistantController {
     private readonly assistant: AiAssistantService,
     private readonly tools: AiToolsService,
   ) {}
+
+  @Get('usage-advice')
+  @ApiOperation({ summary: 'LLM-generated cost/usage advice from real tenant context' })
+  async usageAdvice(@CurrentUser() user: { id: string; role: Role; impersonatedBy?: string }) {
+    return this.assistant.usageAdvice(user);
+  }
 
   @Post('chat')
   @ApiOperation({ summary: 'Chat with VoidCloud AI assistant (Tier A advisory / Tier B actions)' })
