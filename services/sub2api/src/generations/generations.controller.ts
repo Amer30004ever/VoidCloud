@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Post, Param, UseGuards, Request } from '@nestjs/common';
+import { Body, Controller, Get, Post, Param, UseGuards, Request, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { GenerationsService } from './generations.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -14,6 +15,16 @@ export class GenerationsController {
   @Roles('user', 'admin', 'agent', 'super_admin')
   findAll(@Param('projectId') projectId: string, @Request() req) {
     return this.generationsService.findAll(projectId, req.user.id, req.user.role);
+  }
+
+  @Get(':id/download')
+  @Roles('user', 'admin', 'agent', 'super_admin')
+  async download(@Param('id') id: string, @Request() req, @Res() res: Response) {
+    const { filename, buffer } = await this.generationsService.archive(id, req.user.id, req.user.role);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length.toString());
+    res.end(buffer);
   }
 
   @Get(':id')
