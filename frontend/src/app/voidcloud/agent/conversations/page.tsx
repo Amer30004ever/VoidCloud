@@ -5,14 +5,23 @@ import { MessageSquare } from "lucide-react";
 import { EmptyState } from "@workspace/ui-kit/empty-state";
 import { ListSkeleton, Skeleton } from "@workspace/ui-kit/skeleton";
 import api from "@/lib/api";
+import { cloudAgent } from "@/features/vps/cloud";
+
+type AgentConversation = {
+  id: string;
+  contactName?: string | null;
+  phone?: string | null;
+  status?: string;
+  messages?: any[];
+};
 
 export default function AgentConversations() {
   const router = useRouter();
   const [role, setRole] = useState<string | null>(null);
-  const [contacts, setContacts] = useState<any[]>([]);
-  const [loadingContacts, setLoadingContacts] = useState(true);
+  const [conversations, setConversations] = useState<AgentConversation[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -21,30 +30,39 @@ export default function AgentConversations() {
     api.get("/auth/me").then((r) => {
       setRole(r.data?.role ?? null);
       if (r.data?.role !== "AGENT") { router.replace("/voidcloud/dashboard"); return; }
-      api.get("/whatsapp/contacts")
-        .then((res) => setContacts(res.data ?? []))
-        .catch(() => setContacts([]))
-        .finally(() => setLoadingContacts(false));
+      loadConversations();
     }).catch(() => router.replace("/voidcloud/dashboard"));
   }, [router]);
 
+  // Server-side scoped: /agent/conversations only returns threads assigned to this agent.
+  async function loadConversations() {
+    setLoadingList(true);
+    try {
+      setConversations((await cloudAgent.conversations()) ?? []);
+    } catch { setConversations([]); } finally { setLoadingList(false); }
+  }
+
   useEffect(() => {
-    if (!selectedPhone) return;
+    if (!selectedId) return;
     setLoadingMessages(true);
-    api.get(`/whatsapp/messages/${encodeURIComponent(selectedPhone)}`)
+    api.get(`/crm/conversations/${selectedId}/messages`)
       .then((r) => setMessages(r.data ?? []))
-      .catch(() => setMessages([]))
+      .catch(() => {
+        const thread = conversations.find((c) => c.id === selectedId);
+        setMessages(thread?.messages ?? []);
+      })
       .finally(() => setLoadingMessages(false));
-  }, [selectedPhone]);
+  }, [selectedId, conversations]);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
-    if (!text || !selectedPhone) return;
+    if (!text || !selectedId) return;
     setBusy(true);
     try {
-      await api.post("/whatsapp/send", { phone: selectedPhone, message: text });
+      const res = await cloudAgent.reply(selectedId, text);
       setText("");
-      api.get(`/whatsapp/messages/${encodeURIComponent(selectedPhone)}`).then((r) => setMessages(r.data ?? []));
+      if (res?.message) setMessages((m) => [...m, res.message]);
+      loadConversations();
     } catch { /* ignore */ } finally { setBusy(false); }
   }
 
@@ -55,9 +73,9 @@ export default function AgentConversations() {
       <h1 className="mb-6 vc-h1">Conversations</h1>
       <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
-          {loadingContacts ? (
+          {loadingList ? (
             <ListSkeleton rows={5} />
-          ) : contacts.length === 0 ? (
+          ) : conversations.length === 0 ? (
             <EmptyState
               icon={<MessageSquare className="size-6" />}
               title="No conversations"
@@ -65,18 +83,18 @@ export default function AgentConversations() {
               className="py-10"
             />
           ) : (
-            contacts.map((c: any) => (
-              <button key={c.phone || c.waId} onClick={() => setSelectedPhone(c.phone || c.waId)} className={`w-full rounded-xl border p-3 text-left text-sm ${selectedPhone === (c.phone || c.waId) ? "border-cyan-400 bg-white/10" : "border-white/10 bg-white/5"}`}>
-                <div className="font-medium">{c.name || c.phone || c.waId}</div>
-                <div className="text-xs text-white/50">{c.phone || c.waId}</div>
+            conversations.map((c) => (
+              <button key={c.id} onClick={() => setSelectedId(c.id)} className={`w-full rounded-xl border p-3 text-left text-sm ${selectedId === c.id ? "border-cyan-400 bg-white/10" : "border-white/10 bg-white/5"}`}>
+                <div className="font-medium">{c.contactName || c.phone || c.id}</div>
+                <div className="text-xs text-white/50">{c.phone || c.status || "—"}</div>
               </button>
             ))
           )}
         </div>
         <div className="md:col-span-2 vc-card p-4">
-          {selectedPhone ? (
+          {selectedId ? (
             <>
-              <div className="mb-4 h-64 overflow-y-auto space-y-2">
+              <div className="mb-4 h-64 space-y-2 overflow-y-auto">
                 {loadingMessages ? (
                   <div className="space-y-2">
                     <Skeleton className="h-8 w-2/3" />
@@ -87,7 +105,7 @@ export default function AgentConversations() {
                   <p className="py-8 text-center text-sm text-white/50">No messages in this thread yet — say hello.</p>
                 ) : (
                   messages.map((m: any) => (
-                    <div key={m.id} className={`rounded-lg p-2 text-sm ${m.direction === "outbound" ? "ml-auto bg-cyan-500/20" : "bg-white/10"}`}>
+                    <div key={m.id} className={`rounded-lg p-2 text-sm ${m.role === "agent" || m.direction === "outbound" ? "ml-auto bg-cyan-500/20" : "bg-white/10"}`}>
                       {m.content}
                     </div>
                   ))
