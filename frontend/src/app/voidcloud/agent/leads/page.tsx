@@ -5,6 +5,7 @@ import { Target } from "lucide-react";
 import { EmptyState } from "@workspace/ui-kit/empty-state";
 import { ListSkeleton } from "@workspace/ui-kit/skeleton";
 import api from "@/lib/api";
+import { cloudAgent } from "@/features/vps/cloud";
 
 type Lead = { id: string; title: string; status: string; value?: number; tasks?: any[] };
 
@@ -22,18 +23,17 @@ export default function AgentLeads() {
     }).catch(() => router.replace("/voidcloud/dashboard"));
   }, [router]);
 
+  // Server-side scoped: /agent/leads only ever returns leads assigned to this agent.
   async function loadLeads() {
     setLoading(true);
     try {
-      const { data } = await api.get("/crm/leads");
-      const mine = (data ?? []).filter((l: any) => l.assignedTo);
-      setLeads(mine);
+      setLeads((await cloudAgent.leads()) ?? []);
     } catch { setLeads([]); } finally { setLoading(false); }
   }
 
   async function updateStatus(id: string, status: string) {
     try {
-      await api.patch(`/crm/leads/${id}`, { status });
+      await cloudAgent.updateLeadStatus(id, status);
       loadLeads();
     } catch { /* ignore */ }
   }

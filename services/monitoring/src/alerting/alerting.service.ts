@@ -134,22 +134,20 @@ export class AlertingService {
   }
 
   private async tcpConnect(host: string, port: number, timeout: number): Promise<void> {
+    const net = await import('net');
     return new Promise((resolve, reject) => {
-      const socket = require('net').createSocket({ timeout });
-      const timer = setTimeout(() => {
+      const socket = new net.Socket();
+      let settled = false;
+      const done = (err?: Error) => {
+        if (settled) return;
+        settled = true;
         socket.destroy();
-        reject(new Error('TCP timeout'));
-      }, timeout);
-      socket.connect(port, host, () => {
-        clearTimeout(timer);
-        socket.end();
-        resolve();
-      });
-      socket.on('error', (err: Error) => {
-        clearTimeout(timer);
-        socket.destroy();
-        reject(err);
-      });
+        err ? reject(err) : resolve();
+      };
+      socket.setTimeout(timeout);
+      socket.once('timeout', () => done(new Error('TCP timeout')));
+      socket.once('error', (err: Error) => done(err));
+      socket.connect(port, host, () => done());
     });
   }
 
@@ -212,15 +210,10 @@ export class AlertingService {
 
   private async probeVps(vps: { id: string; name: string; ipv4Address: string; userId: string }): Promise<VpsProbe> {
     const start = Date.now();
+    let lastError = 'All probe ports failed';
     for (const port of VPS_CHECK_PORTS) {
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
-        await fetch(`http://${vps.ipv4Address}:${port}/`, {
-          signal: controller.signal as any,
-          method: 'HEAD',
-        });
-        clearTimeout(timeout);
+        await this.tcpConnect(vps.ipv4Address, port, 3000);
         return {
           vpsId: vps.id,
           name: vps.name,
@@ -229,8 +222,8 @@ export class AlertingService {
           status: 'REACHABLE',
           responseTimeMs: Date.now() - start,
         };
-      } catch {
-        // try next port
+      } catch (err) {
+        lastError = `port ${port}: ${err instanceof Error ? err.message : String(err)}`;
       }
     }
 
@@ -240,9 +233,9 @@ export class AlertingService {
       ipv4Address: vps.ipv4Address,
       userId: vps.userId,
       status: 'UNREACHABLE',
-      failureType: 'TIMEOUT',
+      failureType: lastError.includes('timeout') ? 'TIMEOUT' : 'NETWORK',
       responseTimeMs: null,
-      errorMessage: 'All probe ports failed',
+      errorMessage: lastError,
     };
   }
 }
