@@ -8,7 +8,9 @@ import { LoadingState } from "@workspace/ui-kit/loading-state";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api, { sub2api } from "@/lib/api";
 import { Button } from "@workspace/ui-kit/button";
-import { BellRing, CheckCircle2, Rocket, Server, Trash2 } from "lucide-react";
+import { BellRing, CheckCircle2, Download, Rocket, Server, Trash2 } from "lucide-react";
+import { GeneratedFileTree } from "@/components/sub2api/GeneratedFileTree";
+
 
 type Project = {
   id: string;
