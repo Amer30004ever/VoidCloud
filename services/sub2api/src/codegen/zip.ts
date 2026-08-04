@@ -78,7 +78,7 @@ export function createZip(files: Record<string, string>, now = new Date()): Buff
     cd.writeUInt16LE(0, 32); // comment
     cd.writeUInt16LE(0, 34); // disk
     cd.writeUInt16LE(0, 36); // internal attrs
-    cd.writeUInt32LE(0o100644 << 16, 38); // external attrs
+    cd.writeUInt32LE((0o100644 << 16) >>> 0, 38); // external attrs
     cd.writeUInt32LE(offset, 42);
 
     central.push(cd, nameBuf);
