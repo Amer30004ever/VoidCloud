@@ -134,22 +134,20 @@ export class AlertingService {
   }
 
   private async tcpConnect(host: string, port: number, timeout: number): Promise<void> {
+    const net = await import('net');
     return new Promise((resolve, reject) => {
-      const socket = require('net').createSocket({ timeout });
-      const timer = setTimeout(() => {
+      const socket = new net.Socket();
+      let settled = false;
+      const done = (err?: Error) => {
+        if (settled) return;
+        settled = true;
         socket.destroy();
-        reject(new Error('TCP timeout'));
-      }, timeout);
-      socket.connect(port, host, () => {
-        clearTimeout(timer);
-        socket.end();
-        resolve();
-      });
-      socket.on('error', (err: Error) => {
-        clearTimeout(timer);
-        socket.destroy();
-        reject(err);
-      });
+        err ? reject(err) : resolve();
+      };
+      socket.setTimeout(timeout);
+      socket.once('timeout', () => done(new Error('TCP timeout')));
+      socket.once('error', (err: Error) => done(err));
+      socket.connect(port, host, () => done());
     });
   }
 
