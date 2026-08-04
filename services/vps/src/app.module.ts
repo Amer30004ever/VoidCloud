@@ -18,6 +18,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     VpsModule,
     HealthModule,
     ClustersModule,
+    PublicApiModule,
   ],
   providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
