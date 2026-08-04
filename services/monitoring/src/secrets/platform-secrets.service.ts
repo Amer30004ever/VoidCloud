@@ -27,7 +27,7 @@ export class PlatformSecretsService {
   constructor(private readonly prisma: PrismaService) {}
 
   list() {
-    const secrets = this.prisma.platformSecret.findMany({
+    const secrets = await this.prisma.platformSecret.findMany({
       orderBy: { key: 'asc' },
       select: {
         id: true,
@@ -39,12 +39,12 @@ export class PlatformSecretsService {
         encryptedValue: true,
       },
     });
-    this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         action: 'PLATFORM_SECRETS_LIST',
         status: 'SUCCESS',
       },
-    }).catch(() => {});
+    });
     return secrets.map((s) => ({
       ...s,
       maskedValue: maskSecret(s.encryptedValue),
@@ -55,14 +55,16 @@ export class PlatformSecretsService {
     const secret = await this.prisma.platformSecret.findUnique({ where: { id } });
     if (!secret) return null;
     const plain = decryptSecret(secret.encryptedValue);
-    this.prisma.auditLog.create({
+    // Audit write must succeed before the plaintext is returned — a reveal that
+    // isn't recorded is a compliance failure, so let the error propagate.
+    await this.prisma.auditLog.create({
       data: {
         action: 'PLATFORM_SECRET_REVEAL',
         resource: `platform_secret:${id}`,
         details: { key: secret.key } as any,
         status: 'SUCCESS',
       },
-    }).catch(() => {});
+    });
     return { id: secret.id, key: secret.key, plainValue: plain };
   }
 
