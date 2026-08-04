@@ -155,32 +155,34 @@ export default function ProjectDetailPage() {
           <div className="rounded-xl border border-border bg-card p-5">
             <h3 className="text-sm font-medium">Generate app</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Describe the app you want. We'll scaffold a React project with Supabase.
+              Describe the app you want. We&apos;ll scaffold a React + Vite project wired to Supabase,
+              with a list, detail and form page per entity.
             </p>
-            <div className="mt-3 flex gap-2">
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              rows={3}
+              placeholder="A todo app with kanban boards and user auth..."
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-sm"
+            />
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
-                placeholder="A todo app with kanban boards, user auth..."
-                className="flex-1 rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-sm"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim()) {
-                    generate.mutate((e.target as HTMLInputElement).value.trim());
-                    logActivity("generated", (e.target as HTMLInputElement).value.trim()).catch(() => {});
-                  }
-                }}
+                value={targetFiles}
+                onChange={(e) => setTargetFiles(e.target.value)}
+                placeholder="Regenerate only these files (optional), e.g. src/pages/*"
+                className="flex-1 rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-xs font-mono"
               />
-              <Button
-                onClick={() => {
-                  const input = document.querySelector('input[placeholder="A todo app..."]') as HTMLInputElement;
-                  if (input?.value.trim()) {
-                    generate.mutate(input.value.trim());
-                    logActivity("generated", input.value.trim()).catch(() => {});
-                  }
-                }}
-                disabled={generate.isPending}
-              >
-                <Rocket className="h-4 w-4" />
+              <Button onClick={runGenerate} disabled={generate.isPending || !prompt.trim()}>
+                <Rocket className="mr-1 h-4 w-4" />
+                {generate.isPending ? "Generating..." : targetFiles.trim() ? "Regenerate files" : "Generate"}
               </Button>
             </div>
+            {targetFiles.trim() ? (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Only matching files are replaced; everything else is carried over from the last
+                successful generation.
+              </p>
+            ) : null}
           </div>
 
           {generations.isLoading ? (
@@ -189,7 +191,7 @@ export default function ProjectDetailPage() {
             <div className="space-y-3">
               {generations.data?.map((g) => (
                 <div key={g.id} className="rounded-xl border border-border bg-card p-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {g.status === "completed" ? (
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     ) : g.status === "failed" ? (
@@ -201,18 +203,29 @@ export default function ProjectDetailPage() {
                     <span className="text-xs text-muted-foreground">
                       {new Date(g.createdAt).toLocaleString()}
                     </span>
+                    {g.status === "completed" && g.generatedFiles ? (
+                      <>
+                        <span className="text-xs text-muted-foreground">
+                          {Object.keys(g.generatedFiles).length} files
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="ml-auto"
+                          onClick={() => void download(g.id)}
+                        >
+                          <Download className="mr-1 h-3 w-3" /> Download project
+                        </Button>
+                      </>
+                    ) : null}
                   </div>
+                  {g.prompt ? (
+                    <p className="mt-2 text-xs text-muted-foreground">{g.prompt}</p>
+                  ) : null}
                   {g.error && <p className="mt-2 text-xs text-red-400">{g.error}</p>}
                   {g.generatedFiles && (
                     <div className="mt-3">
-                      <p className="text-xs font-medium text-muted-foreground">Generated files</p>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {Object.keys(g.generatedFiles).map((file) => (
-                          <span key={file} className="rounded bg-white/5 px-2 py-1 text-[10px] font-mono">
-                            {file}
-                          </span>
-                        ))}
-                      </div>
+                      <GeneratedFileTree files={g.generatedFiles} />
                     </div>
                   )}
                 </div>
@@ -221,6 +234,7 @@ export default function ProjectDetailPage() {
           )}
         </div>
       )}
+
 
       {tab === "backend" && (
         <div className="mt-4">
