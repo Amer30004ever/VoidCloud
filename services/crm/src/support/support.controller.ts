@@ -26,6 +26,19 @@ export class SupportController {
     return this.support.stats(user);
   }
 
+  @Get(':id/sla')
+  @ApiOperation({ summary: 'SLA timers for a ticket' })
+  sla(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.support.sla(user, id);
+  }
+
+  @Post('sla/sweep')
+  @Roles(Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Run the SLA breach/escalation sweep now' })
+  sweep() {
+    return this.support.runSlaSweep();
+  }
+
   @Get(':id')
   get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.support.get(user, id);
