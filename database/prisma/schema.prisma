@@ -2153,9 +2153,19 @@ model SupportTicket {
   updatedAt  DateTime               @updatedAt
   closedAt   DateTime?
 
+  // SLA timers + escalation (Tier 9.9)
+  firstResponseDueAt DateTime?
+  resolutionDueAt    DateTime?
+  firstRespondedAt   DateTime?
+  slaBreached        Boolean   @default(false)
+  escalatedAt        DateTime?
+  escalationLevel    Int       @default(0)
+
   @@index([userId])
   @@index([status])
   @@index([assigneeId])
+  @@index([slaBreached])
+  @@index([resolutionDueAt])
   @@map("support_tickets")
 }
 
