@@ -1,4 +1,4 @@
-import { StructuredLogger } from '../../../shared/logging';
+import { StructuredLogger } from '../../../services/shared/logging';
 
 describe('StructuredLogger (Prompt 6.1)', () => {
   const originalEnv = process.env.LOG_FORMAT;
