@@ -48,6 +48,8 @@ export default function ProjectDetailPage() {
   const projectId = params.id as string;
   const qc = useQueryClient();
   const [tab, setTab] = useState("generation");
+  const [prompt, setPrompt] = useState("");
+  const [targetFiles, setTargetFiles] = useState("");
 
   const project = useQuery({
     queryKey: ["sub2api", "project", projectId],
@@ -58,6 +60,8 @@ export default function ProjectDetailPage() {
     queryKey: ["sub2api", "generations", projectId],
     queryFn: () => sub2api.get<Generation[]>(`/generations/project/${projectId}`).then((r) => r.data),
     enabled: tab === "generation",
+    refetchInterval: (query) =>
+      (query.state.data ?? []).some((g) => g.status === "pending" || g.status === "running") ? 2000 : false,
   });
 
   const activity = useQuery({
@@ -67,8 +71,8 @@ export default function ProjectDetailPage() {
   });
 
   const generate = useMutation({
-    mutationFn: (prompt?: string) =>
-      sub2api.post(`/generations/project/${projectId}`, { prompt }).then((r) => r.data),
+    mutationFn: (payload: { prompt: string; targetFiles?: string[] }) =>
+      sub2api.post(`/generations/project/${projectId}`, payload).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sub2api", "generations", projectId] });
       qc.invalidateQueries({ queryKey: ["sub2api", "project", projectId] });
@@ -92,6 +96,33 @@ export default function ProjectDetailPage() {
     await sub2api.post(`/activity/project/${projectId}`, { action, detail });
     qc.invalidateQueries({ queryKey: ["sub2api", "activity", projectId] });
   };
+
+  const runGenerate = () => {
+    const text = prompt.trim();
+    if (!text) return;
+    const targets = targetFiles
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    generate.mutate({ prompt: text, targetFiles: targets.length ? targets : undefined });
+    logActivity(targets.length ? "regenerated" : "generated", text).catch(() => {});
+  };
+
+  const download = async (generationId: string) => {
+    const res = await sub2api.get(`/generations/${generationId}/download`, { responseType: "blob" });
+    const disposition = String(res.headers["content-disposition"] || "");
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const url = URL.createObjectURL(res.data as Blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = match?.[1] || "generated-app.zip";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    logActivity("downloaded", "Project archive downloaded").catch(() => {});
+  };
+
 
   const p = project.data;
   if (!p) {
