@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "postinstall": "prisma generate --schema=../database/prisma/schema.prisma",
+    "postinstall": "node -e \"require('fs').copyFileSync('../database/prisma/schema.prisma','./schema.prisma')\" && prisma generate --schema=./schema.prisma",
     "test": "npm run test:jest && npm run test:node",
     "test:jest": "jest --config jest.config.cjs --rootDir ..",
     "test:node": "node --test ../scripts/__tests__/*.test.mjs"
