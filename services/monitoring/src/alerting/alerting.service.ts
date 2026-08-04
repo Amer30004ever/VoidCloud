@@ -210,15 +210,10 @@ export class AlertingService {
 
   private async probeVps(vps: { id: string; name: string; ipv4Address: string; userId: string }): Promise<VpsProbe> {
     const start = Date.now();
+    let lastError = 'All probe ports failed';
     for (const port of VPS_CHECK_PORTS) {
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
-        await fetch(`http://${vps.ipv4Address}:${port}/`, {
-          signal: controller.signal as any,
-          method: 'HEAD',
-        });
-        clearTimeout(timeout);
+        await this.tcpConnect(vps.ipv4Address, port, 3000);
         return {
           vpsId: vps.id,
           name: vps.name,
@@ -227,8 +222,8 @@ export class AlertingService {
           status: 'REACHABLE',
           responseTimeMs: Date.now() - start,
         };
-      } catch {
-        // try next port
+      } catch (err) {
+        lastError = `port ${port}: ${err instanceof Error ? err.message : String(err)}`;
       }
     }
 
@@ -238,9 +233,9 @@ export class AlertingService {
       ipv4Address: vps.ipv4Address,
       userId: vps.userId,
       status: 'UNREACHABLE',
-      failureType: 'TIMEOUT',
+      failureType: lastError.includes('timeout') ? 'TIMEOUT' : 'NETWORK',
       responseTimeMs: null,
-      errorMessage: 'All probe ports failed',
+      errorMessage: lastError,
     };
   }
 }
