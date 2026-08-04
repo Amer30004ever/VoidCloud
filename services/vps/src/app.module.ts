@@ -6,6 +6,7 @@ import { VpsModule } from './vps/vps.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ClustersModule } from './clusters/clusters.module';
+import { PublicApiModule } from './public-api/public-api.module';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
