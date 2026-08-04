@@ -38,6 +38,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     const { password: _, ...result } = user;
-    return { ...result, jti: payload.jti, exp: payload.exp, iat: payload.iat };
+    return { ...result, jti: payload.jti, exp: payload.exp, iat: payload.iat, impersonatedBy: payload.impersonatedBy };
   }
 }
