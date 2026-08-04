@@ -16,7 +16,7 @@ jest.mock('@opentelemetry/sdk-node', () => ({
     }
     start = startMock;
   },
-}));
+}), { virtual: true });
 
 jest.mock('@opentelemetry/exporter-trace-otlp-http', () => ({
   OTLPTraceExporter: class {
@@ -24,28 +24,28 @@ jest.mock('@opentelemetry/exporter-trace-otlp-http', () => ({
       exporterCtor(cfg);
     }
   },
-}));
+}), { virtual: true });
 
 jest.mock('@opentelemetry/resources', () => ({
   Resource: class {
     constructor(public attrs: any) {}
   },
-}));
+}), { virtual: true });
 
 jest.mock('@opentelemetry/semantic-conventions', () => ({
   SemanticResourceAttributes: {
     SERVICE_NAME: 'service.name',
     SERVICE_VERSION: 'service.version',
   },
-}));
+}), { virtual: true });
 
 jest.mock('@opentelemetry/auto-instrumentations-node', () => ({
   getNodeAutoInstrumentations: jest.fn(() => []),
-}));
+}), { virtual: true });
 
 jest.mock('@sentry/opentelemetry', () => ({
   SentrySpanProcessor: class {},
-}));
+}), { virtual: true });
 
 describe('Tier 6.2 — initTracing', () => {
   beforeEach(() => {
