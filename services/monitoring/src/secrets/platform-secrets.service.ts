@@ -26,7 +26,7 @@ export class PlatformSecretsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  list() {
+  async list() {
     const secrets = await this.prisma.platformSecret.findMany({
       orderBy: { key: 'asc' },
       select: {
