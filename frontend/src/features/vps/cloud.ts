@@ -932,11 +932,25 @@ export const cloudMonitoring = {
 export type AppCatalogItem = { id: string; name: string; description: string; icon: string; category: string };
 export type InstalledApp = { id: string; name: string; status: string; installedAt: string };
 
+export type AppStatusResponse = { appId: string; status: string; message?: string };
+
 export const cloudApps = {
   catalog: async (): Promise<AppCatalogItem[]> =>
     (await api.get<AppCatalogItem[]>('/vps/apps/catalog')).data,
+  status: async (vpsId: string, appId: string): Promise<AppStatusResponse> =>
+    (await api.get<AppStatusResponse>(`/vps/${vpsId}/apps/${appId}/status`)).data,
   install: async (vpsId: string, appId: string) =>
     (await api.post(`/vps/${vpsId}/apps/${appId}/install`)).data,
   uninstall: async (vpsId: string, appId: string) =>
     (await api.delete(`/vps/${vpsId}/apps/${appId}`)).data,
+};
+
+export const cloudAgent = {
+  dashboard: async () => (await api.get('/agent/dashboard')).data,
+  conversations: async () => (await api.get('/agent/conversations')).data,
+  leads: async () => (await api.get('/agent/leads')).data,
+  reply: async (conversationId: string, content: string) =>
+    (await api.post(`/agent/conversations/${conversationId}/reply`, { content })).data,
+  updateLeadStatus: async (leadId: string, status: string) =>
+    (await api.patch(`/agent/leads/${leadId}/status`, { status })).data,
 };
