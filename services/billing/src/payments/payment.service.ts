@@ -11,6 +11,14 @@ import {
 import { PaymobGateway, HttpClient } from './paymob.gateway';
 import { StripeGateway, StripeHttpClient } from './stripe.gateway';
 import { PaypalGateway, PaypalHttpClient } from './paypal.gateway';
+import { makeLiveHttp } from './http-client';
+import {
+  resolveSecrets,
+  assessReadiness,
+  PAYMOB_SECRET_KEYS,
+  type SecretStore,
+  type GatewayReadiness,
+} from './payment-secrets';
 
 export interface CheckoutInput {
   userId: string;
@@ -112,12 +120,13 @@ export class PaymentService {
       billingData: { invoice_number: invoice.number },
     };
 
-    const result = await this.gateway.createCheckout(req);
+    const gateway = await this.activeGateway();
+    const result = await gateway.createCheckout(req);
 
     await this.prisma.cloudInvoice.update({
       where: { id: invoice.id },
       data: {
-        provider: this.gateway.name,
+        provider: gateway.name,
         providerRef: result.gatewayRef,
         metadata: {
           ...((invoice.metadata as object) ?? {}),
@@ -139,7 +148,7 @@ export class PaymentService {
     return {
       ...result,
       invoiceId: invoice.id,
-      provider: this.gateway.name,
+      provider: gateway.name,
       amount,
       currency: invoice.currency,
       invoice: {
@@ -152,7 +161,7 @@ export class PaymentService {
 
   /** Verify + apply a gateway webhook. Returns the updated invoice or null if rejected. */
   async handleWebhook(rawBody: string | Buffer, signature: string | undefined) {
-    return this.applyWebhook(this.gateway, rawBody, signature);
+    return this.applyWebhook(await this.activeGateway(), rawBody, signature);
   }
 
   /**
