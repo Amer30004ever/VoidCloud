@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { WhatsappBroadcastModule } from './whatsapp-broadcast/whatsapp-broadcast.module';
+import { SupportModule } from './support/support.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -18,6 +19,7 @@ import { HealthController } from './health/health.controller';
     CrmModule,
     HealthModule,
     WhatsappBroadcastModule,
+    SupportModule,
   ],
   controllers: [HealthController],
   providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }],
