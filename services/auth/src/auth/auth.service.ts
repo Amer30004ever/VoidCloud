@@ -35,6 +35,9 @@ const MAX_FAILED_ATTEMPTS = 10;
 const LOCK_WINDOW_MS = 15 * 60 * 1000;
 const ATTEMPT_HISTORY_MS = 30 * 60 * 1000;
 
+/** Impersonation JWT lifetime — mirrored into the audit trail. */
+const IMPERSONATION_TTL_MS = 15 * 60 * 1000;
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
