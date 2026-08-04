@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createCorrelationIdMiddleware, getCorrelationId } from '../../../shared/logging';
+import { createCorrelationIdMiddleware, getCorrelationId } from '../../../services/shared/logging';
 
 describe('Correlation ID middleware (Prompt 6.1)', () => {
   const middleware = createCorrelationIdMiddleware();
