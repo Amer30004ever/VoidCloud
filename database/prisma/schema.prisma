@@ -204,6 +204,7 @@ model User {
   cloudInvoices        CloudInvoice[]
   cloudPaymentMethods  CloudPaymentMethod[]
   creditTransactions   CreditTransaction[]
+  slaCredits           SlaCredit[]
   vpsAlertRules        VpsAlertRule[]       @relation("UserVpsAlertRules")
   sshKeys              SSHKey[]
   firewallRules        FirewallRule[]
@@ -1165,6 +1166,7 @@ model CloudDeployment {
   ptrRecordRequests       PtrRecordRequest[]
   provisionJobs           VpsProvisionJob[]
   creditTransactions      CreditTransaction[]
+  slaCredits              SlaCredit[]
   migrations              VPSMigration[]
   organizationId          String?
   organization            Organization?              @relation(fields: [organizationId], references: [id], onDelete: SetNull)
@@ -2181,4 +2183,26 @@ model SupportTicketMessage {
 
   @@index([ticketId])
   @@map("support_ticket_messages")
+}
+
+/// Tier 9 — SLA-based automatic credit refunds (one row per VPS per billing period)
+model SlaCredit {
+  id              String          @id @default(uuid())
+  vpsId           String
+  cloudDeployment CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodStart     DateTime
+  periodEnd       DateTime
+  uptimePercent   Float
+  downtimeMinutes Float
+  creditPercent   Int
+  amount          Float
+  transactionId   String?
+  createdAt       DateTime        @default(now())
+
+  @@unique([vpsId, periodStart])
+  @@index([userId])
+  @@index([periodStart])
+  @@map("sla_credits")
 }

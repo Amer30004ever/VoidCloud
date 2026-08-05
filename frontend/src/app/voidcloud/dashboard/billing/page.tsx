@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { cloudApi, CloudPlan } from "@/features/vps/cloud";
+import { cloudApi, CloudPlan, SlaCreditItem } from "@/features/vps/cloud";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 type Provider = "STRIPE_CARD" | "PAYPAL" | "FAWRY" | "INSTAPAY" | "CASH";
@@ -146,9 +146,64 @@ export default function BillingPage() {
       )}
 
       {result && <ResultPanel result={result} onReset={() => { setResult(null); setSelPlan(null); }} />}
+
+      <SlaCreditsCard />
     </div>
   );
 }
+
+function SlaCreditsCard() {
+  const [items, setItems] = useState<SlaCreditItem[] | null>(null);
+
+  useEffect(() => {
+    cloudApi.slaCredits.list().then(setItems).catch(() => setItems([]));
+  }, []);
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
+      <h2 className="vc-h2">SLA credits</h2>
+      <p className="mb-4 text-xs text-white/60">
+        Automatic refunds issued when a VPS falls below the 99.9% monthly uptime target.
+      </p>
+
+      {items === null && <div className="h-16 animate-pulse rounded-lg bg-white/5" />}
+
+      {items?.length === 0 && (
+        <p className="text-sm text-white/60">
+          No SLA credits issued — every VPS has met its uptime target.
+        </p>
+      )}
+
+      {items && items.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs uppercase text-white/50">
+              <tr>
+                <th className="py-2 pr-4">Period</th>
+                <th className="py-2 pr-4">Uptime</th>
+                <th className="py-2 pr-4">Downtime</th>
+                <th className="py-2 pr-4">Credit</th>
+                <th className="py-2">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((c) => (
+                <tr key={c.id} className="border-t border-white/5">
+                  <td className="py-2 pr-4">{new Date(c.periodStart).toISOString().slice(0, 7)}</td>
+                  <td className="py-2 pr-4">{c.uptimePercent}%</td>
+                  <td className="py-2 pr-4">{Math.round(c.downtimeMinutes)} min</td>
+                  <td className="py-2 pr-4">{c.creditPercent}%</td>
+                  <td className="py-2 font-semibold text-green-300">{c.amount.toFixed(2)} EGP</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function StatusPill({ status }: { status: string }) {
   const c: Record<string, string> = {

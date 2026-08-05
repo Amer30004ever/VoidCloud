@@ -154,6 +154,18 @@ export interface ProvisionJob {
   updatedAt: string;
 }
 
+export interface SlaCreditItem {
+  id: string;
+  vpsId: string;
+  periodStart: string;
+  periodEnd: string;
+  uptimePercent: number;
+  downtimeMinutes: number;
+  creditPercent: number;
+  amount: number;
+  createdAt: string;
+}
+
 export const cloudApi = {
   plans: {
     list: async () => (await api.get<CloudPlan[]>("/billing/plans")).data,
@@ -216,6 +228,11 @@ export const cloudApi = {
     canStartVps: async (billingMode?: string) =>
       (await api.get<{ allowed: boolean; reason?: string }>("/credits/can-start-vps", { params: { billingMode } })).data,
   },
+  slaCredits: {
+    list: async (limit = 12) =>
+      (await api.get<SlaCreditItem[]>("/billing/sla-credits", { params: { limit } })).data,
+  },
+
   admin: {
     stats: async () => (await api.get("/cloud/admin/stats")).data,
     billingStats: async () => (await api.get("/billing/admin/billing/stats")).data,
