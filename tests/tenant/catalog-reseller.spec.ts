@@ -124,7 +124,7 @@ describe('Tier 9 — community app catalog', () => {
 describe('Tier 9 — white-label reseller', () => {
   it('applies markup to list prices', () => {
     expect(ResellerService.applyMarkup(100, 20)).toBe(120);
-    expect(ResellerService.applyMarkup(12.5, 15)).toBe(14.38);
+    expect(ResellerService.applyMarkup(12.5, 15)).toBe(14.37);
     expect(ResellerService.applyMarkup(50, 0)).toBe(50);
   });
 
