@@ -148,7 +148,9 @@ describe('Tier 9 — Egypt ETA e-invoicing', () => {
     const svc = new EtaInvoiceService(prisma);
     await svc.submit('inv1');
     const upsert = prisma.etaInvoiceSubmission.upsert.mock.calls[0][0];
-    expect(upsert.create.status).toBe('PENDING');
+    expect(upsert.where).toEqual({ invoiceId: 'inv1' });
+    expect(upsert.update.status).toBe('PENDING');
+    expect(upsert.create.status).toBeUndefined();
     process.env = previous;
   });
 
