@@ -219,4 +219,4 @@ function deactivate() {
   provider.dispose();
 }
 
-module.exports = { activate, deactivate };
+module.exports = { activate, deactivate, SemanticSearchProvider };
