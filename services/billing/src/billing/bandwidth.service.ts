@@ -167,11 +167,11 @@ export class BandwidthService {
     if (overage.amount > 0) {
       const charge = await this.credits.consume(
         vps.userId,
-        overage.amount,
         vps.id,
-        `Bandwidth overage: ${overage.overageGb} GB over ${includedGb} GB on "${vps.name}"`,
+        overage.amount,
         {
           source: 'bandwidth_overage',
+          reason: `Bandwidth overage: ${overage.overageGb} GB over ${includedGb} GB on "${vps.name}"`,
           periodStart: periodStart.toISOString(),
           periodEnd: periodEnd.toISOString(),
           usedGb: overage.usedGb,
@@ -181,7 +181,7 @@ export class BandwidthService {
         },
         { actorId: 'system:bandwidth-metering' },
       );
-      transactionId = (charge as { transactionId?: string })?.transactionId;
+      transactionId = charge.transactionId;
     }
 
     await this.prisma.bandwidthOverage.create({
