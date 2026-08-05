@@ -1,4 +1,0 @@
-{
-  "token": "NONE",
-  "theme": "NONE"
-}

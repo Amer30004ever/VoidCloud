@@ -1130,6 +1130,7 @@ model CloudDeployment {
   // VPS-specific fields (stubbed Proxmox provisioning)
   hostname           String?
   ipv4Address        String?
+  ipv6Address        String?
   rootPasswordHash   String?
   proxmoxVMID        Int?
   proxmoxNode        String?
@@ -1168,6 +1169,9 @@ model CloudDeployment {
   creditTransactions      CreditTransaction[]
   slaCredits              SlaCredit[]
   migrations              VPSMigration[]
+  bandwidthSamples        BandwidthSample[]
+  bandwidthOverages       BandwidthOverage[]
+  floatingIps             FloatingIp[]
   organizationId          String?
   organization            Organization?              @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   apps                    String[]               @default([])
@@ -2205,4 +2209,75 @@ model SlaCredit {
   @@index([userId])
   @@index([periodStart])
   @@map("sla_credits")
+}
+
+// ============================================================
+// Tier 9 — Bandwidth metering & overage billing
+// ============================================================
+
+model BandwidthSample {
+  id        String          @id @default(uuid())
+  vpsId     String
+  vps       CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  userId    String
+  /// Cumulative counters as reported by the hypervisor NIC (monotonic, reset on reboot).
+  rxBytes   BigInt
+  txBytes   BigInt
+  sampledAt DateTime        @default(now())
+
+  @@index([vpsId, sampledAt])
+  @@index([userId])
+  @@map("bandwidth_samples")
+}
+
+model BandwidthOverage {
+  id            String          @id @default(uuid())
+  vpsId         String
+  vps           CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  userId        String
+  periodStart   DateTime
+  periodEnd     DateTime
+  includedGb    Float
+  usedGb        Float
+  overageGb     Float
+  ratePerGb     Float
+  amount        Float
+  transactionId String?
+  createdAt     DateTime        @default(now())
+
+  @@unique([vpsId, periodStart])
+  @@index([userId])
+  @@index([periodStart])
+  @@map("bandwidth_overages")
+}
+
+// ============================================================
+// Tier 9 — Floating IP pool (IPv4 + IPv6)
+// ============================================================
+
+enum FloatingIpStatus {
+  AVAILABLE
+  RESERVED
+  ASSIGNED
+}
+
+model FloatingIp {
+  id         String           @id @default(uuid())
+  address    String           @unique
+  ipVersion  Int              @default(4)
+  cidr       String?
+  gateway    String?
+  poolName   String           @default("default")
+  status     FloatingIpStatus @default(AVAILABLE)
+  userId     String?
+  vpsId      String?
+  vps        CloudDeployment? @relation(fields: [vpsId], references: [id], onDelete: SetNull)
+  reservedAt DateTime?
+  assignedAt DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([status, ipVersion, poolName])
+  @@index([userId])
+  @@map("floating_ips")
 }
