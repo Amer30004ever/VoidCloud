@@ -64,7 +64,7 @@ model Tenant {
 
   userTenants   UserTenant[]
   conversations Conversation[]
-  apiKeys        ApiKey[]
+  apiKeys       ApiKey[]
 
   @@map("tenants")
 }
@@ -257,14 +257,14 @@ model AgentInvite {
 }
 
 model ToSAcceptance {
-  id            String    @id @default(uuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tosVersion    String
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tosVersion     String
   privacyVersion String
-  acceptedAt    DateTime  @default(now())
-  ipAddress     String?
-  userAgent     String?
+  acceptedAt     DateTime @default(now())
+  ipAddress      String?
+  userAgent      String?
 
   @@unique([userId, tosVersion])
   @@map("tos_acceptances")
@@ -1173,7 +1173,7 @@ model CloudDeployment {
   bandwidthOverages       BandwidthOverage[]
   floatingIps             FloatingIp[]
   organizationId          String?
-  organization            Organization?              @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  organization            Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   apps                    String[]               @default([])
   installedApps           Json?
   controlPanel            String?
@@ -1311,6 +1311,13 @@ model VPSSnapshot {
   status              String          @default("CREATING")
   proxmoxSnapshotName String?
   errorMessage        String?
+  exportStatus        String?
+  exportFormat        String?
+  exportBucket        String?
+  exportObjectKey     String?
+  exportSizeBytes     BigInt?
+  exportUrl           String?
+  exportExpiresAt     DateTime?
   createdAt           DateTime        @default(now())
   completedAt         DateTime?
 
@@ -1658,17 +1665,17 @@ model UsageMetric {
 
 // Prompt 5.1: Predictive scaling recommendations
 model VpsRecommendation {
-  id           String   @id @default(uuid())
-  vpsId        String
-  vps         CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
-  type         String
-  message      String
-  severity     String   @default("info")
-  currentValue Float?
+  id             String          @id @default(uuid())
+  vpsId          String
+  vps            CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  type           String
+  message        String
+  severity       String          @default("info")
+  currentValue   Float?
   suggestedValue Float?
-  unit         String?
-  acknowledged Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  unit           String?
+  acknowledged   Boolean         @default(false)
+  createdAt      DateTime        @default(now())
 
   @@index([vpsId])
   @@index([acknowledged])
@@ -1676,18 +1683,18 @@ model VpsRecommendation {
 
 // Prompt 5.4: API usage analytics
 model ApiUsageLog {
-  id          String          @id @default(uuid())
-  userId      String
-  tenantId    String?
-  vpsId       String?
-  vps         CloudDeployment? @relation(fields: [vpsId], references: [id], onDelete: SetNull)
+  id         String           @id @default(uuid())
+  userId     String
+  tenantId   String?
+  vpsId      String?
+  vps        CloudDeployment? @relation(fields: [vpsId], references: [id], onDelete: SetNull)
   endpoint   String
-  method      String
-  statusCode  Int
-  responseMs  Int
-  userAgent   String?
-  ipAddress   String?
-  createdAt   DateTime @default(now())
+  method     String
+  statusCode Int
+  responseMs Int
+  userAgent  String?
+  ipAddress  String?
+  createdAt  DateTime         @default(now())
 
   @@index([userId, createdAt])
   @@index([tenantId, createdAt])
@@ -1986,14 +1993,14 @@ model ServiceHealthHourlyRollup {
 
 /// Per-VPS reachability log for Prompt 6.3a tenant VPS-down alerting.
 model VpsHealthLog {
-  id            String    @id @default(uuid())
-  vpsId         String
+  id              String          @id @default(uuid())
+  vpsId           String
   cloudDeployment CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
-  status        String    // REACHABLE | UNREACHABLE
-  failureType   String?   // TIMEOUT | NETWORK | PROXMOX_STOPPED | UNKNOWN
-  responseTimeMs Int?
-  errorMessage  String?
-  checkedAt     DateTime  @default(now())
+  status          String // REACHABLE | UNREACHABLE
+  failureType     String? // TIMEOUT | NETWORK | PROXMOX_STOPPED | UNKNOWN
+  responseTimeMs  Int?
+  errorMessage    String?
+  checkedAt       DateTime        @default(now())
 
   @@index([vpsId])
   @@index([checkedAt])
@@ -2073,14 +2080,14 @@ model PlatformSetting {
 
 /// Encrypted runtime secrets for platform services (SMTP, 3rd-party API keys, etc.)
 model PlatformSecret {
-  id              String    @id @default(uuid())
-  key             String    @unique
-  encryptedValue  String
-  description     String?
-  lastRotatedAt   DateTime?
-  updatedBy       String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(uuid())
+  key            String    @unique
+  encryptedValue String
+  description    String?
+  lastRotatedAt  DateTime?
+  updatedBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@map("platform_secrets")
 }
@@ -2280,4 +2287,318 @@ model FloatingIp {
   @@index([status, ipVersion, poolName])
   @@index([userId])
   @@map("floating_ips")
+}
+
+// ---------------------------------------------------------------------------
+// Tier 9 — Platform expansion: managed services, storage, reseller, compliance
+// ---------------------------------------------------------------------------
+
+enum ManagedServiceStatus {
+  PROVISIONING
+  RUNNING
+  STOPPED
+  FAILED
+  DELETED
+}
+
+enum ManagedDatabaseEngine {
+  POSTGRES
+  MYSQL
+  REDIS
+  MONGODB
+}
+
+model ManagedDatabase {
+  id             String                @id @default(uuid())
+  userId         String
+  organizationId String?
+  name           String
+  engine         ManagedDatabaseEngine
+  version        String
+  planCode       String
+  cpuCores       Int                   @default(1)
+  memoryMb       Int                   @default(1024)
+  storageGb      Int                   @default(10)
+  status         ManagedServiceStatus  @default(PROVISIONING)
+  host           String?
+  port           Int?
+  databaseName   String?
+  username       String?
+  passwordCipher String?
+  nodeName       String?
+  clusterId      String?
+  backupsEnabled Boolean               @default(true)
+  errorMessage   String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  deletedAt      DateTime?
+
+  backups ManagedDatabaseBackup[]
+
+  @@unique([userId, name])
+  @@index([status])
+  @@index([organizationId])
+  @@map("managed_databases")
+}
+
+model ManagedDatabaseBackup {
+  id          String          @id @default(uuid())
+  databaseId  String
+  database    ManagedDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  sizeBytes   BigInt          @default(0)
+  status      String          @default("PENDING")
+  location    String?
+  createdAt   DateTime        @default(now())
+  completedAt DateTime?
+
+  @@index([databaseId])
+  @@map("managed_database_backups")
+}
+
+model ObjectStorageBucket {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String   @unique
+  region      String   @default("eu-central")
+  publicRead  Boolean  @default(false)
+  versioning  Boolean  @default(false)
+  quotaGb     Int      @default(50)
+  usedBytes   BigInt   @default(0)
+  objectCount Int      @default(0)
+  endpoint    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  keys ObjectStorageKey[]
+
+  @@index([userId])
+  @@map("object_storage_buckets")
+}
+
+model ObjectStorageKey {
+  id           String              @id @default(uuid())
+  bucketId     String
+  bucket       ObjectStorageBucket @relation(fields: [bucketId], references: [id], onDelete: Cascade)
+  userId       String
+  label        String
+  accessKey    String              @unique
+  secretCipher String
+  readOnly     Boolean             @default(false)
+  lastUsedAt   DateTime?
+  revokedAt    DateTime?
+  createdAt    DateTime            @default(now())
+
+  @@index([bucketId])
+  @@index([userId])
+  @@map("object_storage_keys")
+}
+
+model ManagedK8sCluster {
+  id               String               @id @default(uuid())
+  userId           String
+  organizationId   String?
+  name             String
+  k8sVersion       String               @default("1.31")
+  region           String               @default("eu-central")
+  status           ManagedServiceStatus @default(PROVISIONING)
+  endpoint         String?
+  kubeconfigCipher String?
+  errorMessage     String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  deletedAt        DateTime?
+
+  nodePools ManagedK8sNodePool[]
+
+  @@unique([userId, name])
+  @@index([status])
+  @@map("managed_k8s_clusters")
+}
+
+model ManagedK8sNodePool {
+  id        String               @id @default(uuid())
+  clusterId String
+  cluster   ManagedK8sCluster    @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  name      String
+  nodeCount Int                  @default(1)
+  cpuCores  Int                  @default(2)
+  memoryMb  Int                  @default(4096)
+  storageGb Int                  @default(40)
+  autoscale Boolean              @default(false)
+  minNodes  Int                  @default(1)
+  maxNodes  Int                  @default(3)
+  status    ManagedServiceStatus @default(PROVISIONING)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@unique([clusterId, name])
+  @@map("managed_k8s_node_pools")
+}
+
+enum VmImportStatus {
+  PENDING
+  DOWNLOADING
+  CONVERTING
+  IMPORTING
+  COMPLETED
+  FAILED
+}
+
+model VmImportJob {
+  id              String         @id @default(uuid())
+  userId          String
+  name            String
+  sourceType      String         @default("URL")
+  sourceUrl       String?
+  sourceFormat    String         @default("qcow2")
+  sizeBytes       BigInt         @default(0)
+  checksum        String?
+  targetClusterId String?
+  targetNode      String?
+  cpuCores        Int            @default(2)
+  memoryMb        Int            @default(2048)
+  diskGb          Int            @default(40)
+  status          VmImportStatus @default(PENDING)
+  progress        Int            @default(0)
+  vpsId           String?
+  errorMessage    String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([userId, status])
+  @@map("vm_import_jobs")
+}
+
+enum CatalogSubmissionStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model CatalogApp {
+  id           String                  @id @default(uuid())
+  slug         String                  @unique
+  name         String
+  summary      String
+  description  String?
+  category     String                  @default("other")
+  iconUrl      String?
+  repoUrl      String?
+  composeSpec  Json?
+  authorId     String
+  authorName   String?
+  status       CatalogSubmissionStatus @default(PENDING_REVIEW)
+  reviewerId   String?
+  reviewNotes  String?
+  installCount Int                     @default(0)
+  ratingSum    Int                     @default(0)
+  ratingCount  Int                     @default(0)
+  publishedAt  DateTime?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  reviews CatalogAppReview[]
+
+  @@index([status, category])
+  @@map("catalog_apps")
+}
+
+model CatalogAppReview {
+  id        String     @id @default(uuid())
+  appId     String
+  app       CatalogApp @relation(fields: [appId], references: [id], onDelete: Cascade)
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime   @default(now())
+
+  @@unique([appId, userId])
+  @@map("catalog_app_reviews")
+}
+
+model ResellerBrand {
+  id             String   @id @default(uuid())
+  ownerId        String
+  organizationId String?
+  slug           String   @unique
+  companyName    String
+  domain         String?  @unique
+  logoUrl        String?
+  primaryColor   String   @default("#6366f1")
+  supportEmail   String?
+  markupPercent  Float    @default(20)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([ownerId])
+  @@map("reseller_brands")
+}
+
+model ConsolidatedInvoice {
+  id             String    @id @default(uuid())
+  organizationId String
+  periodStart    DateTime
+  periodEnd      DateTime
+  currency       String    @default("USD")
+  subtotal       Float     @default(0)
+  taxAmount      Float     @default(0)
+  total          Float     @default(0)
+  memberCount    Int       @default(0)
+  invoiceIds     String[]  @default([])
+  status         String    @default("DRAFT")
+  issuedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([organizationId, periodStart])
+  @@index([organizationId])
+  @@map("consolidated_invoices")
+}
+
+enum EtaSubmissionStatus {
+  PENDING
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+}
+
+model EtaInvoiceSubmission {
+  id            String              @id @default(uuid())
+  invoiceId     String              @unique
+  internalId    String
+  uuid          String?
+  longId        String?
+  submissionUid String?
+  totalEGP      Float
+  taxEGP        Float               @default(0)
+  status        EtaSubmissionStatus @default(PENDING)
+  documentJson  Json
+  errorMessage  String?
+  submittedAt   DateTime?
+  acceptedAt    DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([status])
+  @@map("eta_invoice_submissions")
+}
+
+model DdosMitigationEvent {
+  id         String    @id @default(uuid())
+  vpsId      String?
+  targetIp   String
+  tier       String    @default("STANDARD")
+  attackType String    @default("VOLUMETRIC")
+  peakMbps   Float     @default(0)
+  peakPps    Float     @default(0)
+  blockedIps Int       @default(0)
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+  mitigated  Boolean   @default(true)
+
+  @@index([vpsId])
+  @@index([startedAt])
+  @@map("ddos_mitigation_events")
 }
