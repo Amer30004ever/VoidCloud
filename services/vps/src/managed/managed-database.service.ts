@@ -65,14 +65,14 @@ export class ManagedDatabaseService {
    */
   private async selectPlacement(plan: ManagedDbPlan) {
     const clusters = await this.prisma.proxmoxCluster.findMany({
-      where: { status: 'ONLINE', enabled: true },
+      where: { status: 'ACTIVE' },
     });
     const candidates = clusters
       .map((c: any) => ({
         cluster: c,
-        freeMemMb: Math.max(0, (c.totalMemoryMb ?? 0) - (c.usedMemoryMb ?? 0)),
-        freeCpu: Math.max(0, (c.totalCpuCores ?? 0) - (c.usedCpuCores ?? 0)),
-        freeDiskGb: Math.max(0, (c.totalStorageGb ?? 0) - (c.usedStorageGb ?? 0)),
+        freeMemMb: Math.max(0, Number(c.ramTotal ?? 0) - Number(c.ramUsed ?? 0)) / 1024 ** 2,
+        freeCpu: Math.max(0, (c.cpuTotal ?? 0) - (c.cpuUsed ?? 0)),
+        freeDiskGb: Math.max(0, Number(c.diskTotal ?? 0) - Number(c.diskUsed ?? 0)) / 1024 ** 3,
       }))
       .filter(
         (c) =>
@@ -131,7 +131,7 @@ export class ManagedDatabaseService {
         backupsEnabled: input.backupsEnabled ?? true,
         status: cluster ? 'PROVISIONING' : 'PROVISIONING',
         clusterId: cluster?.id ?? null,
-        nodeName: cluster?.nodeName ?? null,
+        nodeName: cluster?.name ?? null,
         databaseName: input.engine === 'REDIS' ? null : name.replace(/-/g, '_'),
         username,
         passwordCipher: encryptSecret(password),
