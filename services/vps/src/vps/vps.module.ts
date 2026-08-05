@@ -13,12 +13,14 @@ import { ClustersModule } from '../clusters/clusters.module';
 import { BackupModule } from '../backup/backup.module';
 import { ApiUsageModule } from '../../../shared/api-usage/api-usage.module';
 import { K8sAppService } from '../k8s/k8s-app.service';
+import { FloatingIpService } from '../network/floating-ip.service';
+import { FloatingIpController } from '../network/floating-ip.controller';
 
 import { CreditService } from '../../../billing/src/billing/credit.service';
 
 @Module({
   imports: [ClustersModule, ScheduleModule.forRoot(), BackupModule, ApiUsageModule],
-  controllers: [VpsController, IsolationController],
-  providers: [VpsService, VpsProvisionService, QuotaReconciliationService, DomainVerificationScheduler, ProxmoxService, IsolationReconcilerService, K8sAppService, CreditService],
+  controllers: [VpsController, IsolationController, FloatingIpController],
+  providers: [VpsService, VpsProvisionService, QuotaReconciliationService, DomainVerificationScheduler, ProxmoxService, IsolationReconcilerService, K8sAppService, FloatingIpService, CreditService],
 })
 export class VpsModule { }

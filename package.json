@@ -26,12 +26,20 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@replit/vite-plugin-runtime-error-modal": "^0.0.6",
     "@tailwindcss/vite": "^4",
     "@vitejs/plugin-react": "^5",
-    "@replit/vite-plugin-runtime-error-modal": "^0.0.6",
     "prettier": "^3.8.4",
+    "reflect-metadata": "^0.2.2",
+    "ts-jest": "^29.4.12",
     "typescript": "~5.9.3",
     "vite": "^7"
   },
-  "dependencies": {}
+  "pnpm": {
+    "overrides": {
+      "@nestjs/common": "11.1.28",
+      "@nestjs/core": "11.1.28",
+      "class-validator": "0.14.4"
+    }
+  }
 }
