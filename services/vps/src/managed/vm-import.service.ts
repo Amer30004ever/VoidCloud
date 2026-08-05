@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { assertSafeUrl } from '../../../../shared/ssrf/url-validator';
+import { validateWebhookUrl } from '../../../../shared/ssrf/url-validator';
 
 const ALLOWED_FORMATS = ['qcow2', 'vmdk', 'vhdx', 'raw', 'ova'];
 const MAX_SIZE_BYTES = 512 * 1024 ** 3; // 512 GiB
@@ -50,7 +50,13 @@ export class VmImportService {
     }
 
     // Block private/link-local targets — the importer fetches this URL server-side.
-    await assertSafeUrl(input.sourceUrl);
+    try {
+      await validateWebhookUrl(input.sourceUrl);
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Invalid source URL',
+      );
+    }
 
     const sizeBytes = Math.max(0, Math.floor(input.sizeBytes ?? 0));
     if (sizeBytes > MAX_SIZE_BYTES) {
