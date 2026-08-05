@@ -618,7 +618,13 @@ describe('AuthService.impersonate', () => {
           action: 'USER_IMPERSONATED',
           adminId: 'admin-1',
           userId: 'target-1',
-          details: { reason: 'support case', targetUserName: 'Target', targetUserRole: 'USER' },
+          details: expect.objectContaining({
+            reason: 'support case',
+            targetUserName: 'Target',
+            targetUserRole: 'USER',
+            jti: expect.any(String),
+            expiresAt: expect.any(String),
+          }),
         }),
       }),
     );
