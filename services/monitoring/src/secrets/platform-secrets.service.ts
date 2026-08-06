@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { withImpersonation, AuditActor } from '../common/audit-impersonation';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptSecret, decryptSecret, maskSecret } from '../../../shared/crypto/crypto.util';
 
@@ -26,7 +27,7 @@ export class PlatformSecretsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async list() {
+  async list(actor?: AuditActor) {
     const secrets = await this.prisma.platformSecret.findMany({
       orderBy: { key: 'asc' },
       select: {
@@ -42,6 +43,8 @@ export class PlatformSecretsService {
     await this.prisma.auditLog.create({
       data: {
         action: 'PLATFORM_SECRETS_LIST',
+        userId: actor?.id,
+        details: withImpersonation({}, actor) as any,
         status: 'SUCCESS',
       },
     });
@@ -51,7 +54,7 @@ export class PlatformSecretsService {
     }));
   }
 
-  async getReveal(id: string) {
+  async getReveal(id: string, actor?: AuditActor) {
     const secret = await this.prisma.platformSecret.findUnique({ where: { id } });
     if (!secret) return null;
     const plain = decryptSecret(secret.encryptedValue);
@@ -60,15 +63,16 @@ export class PlatformSecretsService {
     await this.prisma.auditLog.create({
       data: {
         action: 'PLATFORM_SECRET_REVEAL',
+        userId: actor?.id,
         resource: `platform_secret:${id}`,
-        details: { key: secret.key } as any,
+        details: withImpersonation({ key: secret.key }, actor) as any,
         status: 'SUCCESS',
       },
     });
     return { id: secret.id, key: secret.key, plainValue: plain };
   }
 
-  async create(dto: CreateSecretDto, userId?: string) {
+  async create(dto: CreateSecretDto, userId?: string, actor?: AuditActor) {
     const encrypted = encryptSecret(dto.value);
     const secret = await this.prisma.platformSecret.create({
       data: {
@@ -82,15 +86,16 @@ export class PlatformSecretsService {
     this.prisma.auditLog.create({
       data: {
         action: 'PLATFORM_SECRET_CREATE',
+        userId,
         resource: `platform_secret:${secret.id}`,
-        details: { key: secret.key } as any,
+        details: withImpersonation({ key: secret.key }, actor) as any,
         status: 'SUCCESS',
       },
     }).catch(() => {});
     return secret;
   }
 
-  async update(id: string, dto: UpdateSecretDto, userId?: string) {
+  async update(id: string, dto: UpdateSecretDto, userId?: string, actor?: AuditActor) {
     const existing = await this.prisma.platformSecret.findUnique({ where: { id } });
     if (!existing) return null;
     const encrypted = encryptSecret(dto.value);
@@ -106,15 +111,16 @@ export class PlatformSecretsService {
     this.prisma.auditLog.create({
       data: {
         action: 'PLATFORM_SECRET_UPDATE',
+        userId,
         resource: `platform_secret:${id}`,
-        details: { key: secret.key } as any,
+        details: withImpersonation({ key: secret.key }, actor) as any,
         status: 'SUCCESS',
       },
     }).catch(() => {});
     return secret;
   }
 
-  async delete(id: string) {
+  async delete(id: string, actor?: AuditActor) {
     const existing = await this.prisma.platformSecret.findUnique({ where: { id } });
     if (!existing) return false;
     await this.prisma.platformSecret.delete({ where: { id } });
@@ -122,8 +128,9 @@ export class PlatformSecretsService {
     this.prisma.auditLog.create({
       data: {
         action: 'PLATFORM_SECRET_DELETE',
+        userId: actor?.id,
         resource: `platform_secret:${id}`,
-        details: { key: existing.key } as any,
+        details: withImpersonation({ key: existing.key }, actor) as any,
         status: 'SUCCESS',
       },
     }).catch(() => {});

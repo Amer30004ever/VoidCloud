@@ -2327,6 +2327,7 @@ model ManagedDatabase {
   passwordCipher String?
   nodeName       String?
   clusterId      String?
+  proxmoxVmid    Int?
   backupsEnabled Boolean               @default(true)
   errorMessage   String?
   createdAt      DateTime              @default(now())

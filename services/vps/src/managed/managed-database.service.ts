@@ -8,6 +8,7 @@ import {
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptSecret, decryptSecret } from '../../../../shared/crypto/crypto.util';
+import { ManagedDatabaseProvisionerService } from './managed-database-provisioner.service';
 
 export type ManagedEngine = 'POSTGRES' | 'MYSQL' | 'REDIS' | 'MONGODB';
 
@@ -47,7 +48,10 @@ const NAME_RE = /^[a-z][a-z0-9-]{2,30}$/;
 export class ManagedDatabaseService {
   private readonly logger = new Logger(ManagedDatabaseService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly provisioner?: ManagedDatabaseProvisionerService,
+  ) {}
 
   plans() {
     return MANAGED_DB_PLANS;
@@ -140,6 +144,16 @@ export class ManagedDatabaseService {
     });
 
     this.logger.log(`Managed ${input.engine} "${name}" queued for user ${userId}`);
+
+    // Kick off the real Proxmox LXC provisioning. Fire-and-forget: the row
+    // carries the status/errorMessage so the HTTP caller is never blocked on
+    // a cold Proxmox call.
+    if (this.provisioner) {
+      void this.provisioner.provision(record.id).catch((e) => {
+        this.logger.error(`provision dispatch failed: ${e?.message ?? e}`);
+      });
+    }
+
     return this.toPublic(record);
   }
 
@@ -207,6 +221,9 @@ export class ManagedDatabaseService {
     if (record.status === 'FAILED') {
       throw new BadRequestException('Instance is in a failed state');
     }
+    if (this.provisioner) {
+      await this.provisioner.setPower(record, action);
+    }
     const updated = await this.prisma.managedDatabase.update({
       where: { id: record.id },
       data: { status: action === 'start' ? 'RUNNING' : 'STOPPED' },
@@ -219,6 +236,9 @@ export class ManagedDatabaseService {
     const plan = this.plan(planCode);
     if (plan.storageGb < record.storageGb) {
       throw new BadRequestException('Storage cannot be reduced');
+    }
+    if (this.provisioner) {
+      await this.provisioner.resize(record, plan);
     }
     const updated = await this.prisma.managedDatabase.update({
       where: { id: record.id },
@@ -234,9 +254,23 @@ export class ManagedDatabaseService {
 
   async createBackup(userId: string, id: string) {
     const record = await this.owned(userId, id);
-    return this.prisma.managedDatabaseBackup.create({
+    const backup = await this.prisma.managedDatabaseBackup.create({
       data: { databaseId: record.id, status: 'PENDING' },
     });
+    if (this.provisioner) {
+      void this.provisioner
+        .backup(record)
+        .then((r) => this.completeBackup(backup.id, r.sizeBytes, r.location))
+        .catch((e) =>
+          this.prisma.managedDatabaseBackup
+            .update({
+              where: { id: backup.id },
+              data: { status: 'FAILED', location: String(e?.message ?? e).slice(0, 200) },
+            })
+            .catch(() => undefined),
+        );
+    }
+    return backup;
   }
 
   async completeBackup(backupId: string, sizeBytes: number, location: string) {
@@ -253,6 +287,11 @@ export class ManagedDatabaseService {
 
   async destroy(userId: string, id: string) {
     const record = await this.owned(userId, id);
+    if (this.provisioner) {
+      await this.provisioner.destroy(record).catch((e) => {
+        this.logger.warn(`Proxmox destroy failed for ${record.id}: ${e?.message ?? e}`);
+      });
+    }
     await this.prisma.managedDatabase.update({
       where: { id: record.id },
       data: { status: 'DELETED', deletedAt: new Date() },

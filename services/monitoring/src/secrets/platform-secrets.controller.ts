@@ -15,6 +15,8 @@ import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 
+type Actor = { id: string; role?: string; email?: string; impersonatedBy?: string };
+
 @Controller('monitoring/secrets')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PlatformSecretsController {
@@ -22,32 +24,32 @@ export class PlatformSecretsController {
 
   @Get()
   @Roles(Role.SUPER_ADMIN)
-  list() {
-    return this.secrets.list();
+  list(@CurrentUser() user: Actor) {
+    return this.secrets.list(user);
   }
 
   @Post()
   @Roles(Role.SUPER_ADMIN)
   async create(
     @Body() body: CreateSecretDto,
-    @CurrentUser() user: { id: string; impersonatedBy?: string },
+    @CurrentUser() user: Actor,
   ) {
     if (!body.key || !body.value) {
       throw new BadRequestException('key and value are required');
     }
-    return this.secrets.create(body, user.id);
+    return this.secrets.create(body, user.id, user);
   }
 
   @Get(':id/reveal')
   @Roles(Role.SUPER_ADMIN)
-  async reveal(@Param('id') id: string) {
-    return this.secrets.getReveal(id);
+  async reveal(@Param('id') id: string, @CurrentUser() user: Actor) {
+    return this.secrets.getReveal(id, user);
   }
 
   @Delete(':id')
   @Roles(Role.SUPER_ADMIN)
-  async remove(@Param('id') id: string, @CurrentUser() user: { id: string }) {
-    const ok = await this.secrets.delete(id);
+  async remove(@Param('id') id: string, @CurrentUser() user: Actor) {
+    const ok = await this.secrets.delete(id, user);
     if (!ok) {
       throw new BadRequestException('Secret not found');
     }
