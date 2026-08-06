@@ -50,7 +50,7 @@ export class VpsController {
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a VPS instance' })
   @ApiResponse({ status: 201, description: 'VPS created' })
-  create(@Body() dto: CreateVpsDto, @CurrentUser() user: { id: string; role: Role }) {
+  create(@Body() dto: CreateVpsDto, @CurrentUser() user: { id: string; role: Role; impersonatedBy?: string }) {
     return this.vpsService.create(dto, user);
   }
 
@@ -202,7 +202,7 @@ export class VpsController {
   addDomain(
     @Param('id') id: string,
     @Body() dto: { domain: string },
-    @CurrentUser() user: { id: string; role: Role },
+    @CurrentUser() user: { id: string; role: Role; impersonatedBy?: string },
   ) {
     return this.vpsService.addDomain(id, user.id, dto.domain);
   }
@@ -255,7 +255,7 @@ export class VpsController {
 
   @Get(':vpsId/apps/:appId/status')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
-  appStatus(@Param('vpsId') vpsId: string, @Param('appId') appId: string, @CurrentUser() user: { id: string; role: Role }) {
+  appStatus(@Param('vpsId') vpsId: string, @Param('appId') appId: string, @CurrentUser() user: { id: string; role: Role; impersonatedBy?: string }) {
     return this.vpsService.getAppStatus(vpsId, user, appId);
   }
 
@@ -266,13 +266,13 @@ export class VpsController {
 
   @Post(':vpsId/apps/:appId/install')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
-  installApp(@Param('vpsId') vpsId: string, @Param('appId') appId: string, @CurrentUser() user: { id: string; role: Role }) {
+  installApp(@Param('vpsId') vpsId: string, @Param('appId') appId: string, @CurrentUser() user: { id: string; role: Role; impersonatedBy?: string }) {
     return this.vpsService.installApp(vpsId, user, appId);
   }
 
   @Delete(':vpsId/apps/:appId')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
-  uninstallApp(@Param('vpsId') vpsId: string, @Param('appId') appId: string, @CurrentUser() user: { id: string; role: Role }) {
+  uninstallApp(@Param('vpsId') vpsId: string, @Param('appId') appId: string, @CurrentUser() user: { id: string; role: Role; impersonatedBy?: string }) {
     return this.vpsService.uninstallApp(vpsId, user, appId);
   }
 }

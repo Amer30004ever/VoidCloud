@@ -29,7 +29,7 @@ export class VpsService {
     private readonly k8sApp: K8sAppService,
   ) {}
 
-  async list(user: { id: string; role: Role }) {
+  async list(user: { id: string; role: Role; impersonatedBy?: string }) {
     const where =
       user.role === Role.SUPER_ADMIN ? {} : { userId: user.id };
     return this.prisma.cloudDeployment.findMany({
@@ -38,12 +38,12 @@ export class VpsService {
     });
   }
 
-  async get(id: string, user: { id: string; role: Role }) {
+  async get(id: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(id, user);
     return vps;
   }
 
-  async create(dto: CreateVpsDto, user: { id: string; role: Role }) {
+  async create(dto: CreateVpsDto, user: { id: string; role: Role; impersonatedBy?: string }) {
     const tenantId = await this.resolveTenantId(user);
     await this.assertQuota(tenantId, dto);
 
@@ -115,7 +115,7 @@ export class VpsService {
     return deployment;
   }
 
-  async update(id: string, dto: UpdateVpsDto, user: { id: string; role: Role }) {
+  async update(id: string, dto: UpdateVpsDto, user: { id: string; role: Role; impersonatedBy?: string }) {
     await this.findOwned(id, user);
     return this.prisma.cloudDeployment.update({
       where: { id },
@@ -123,7 +123,7 @@ export class VpsService {
     });
   }
 
-  async start(id: string, user: { id: string; role: Role }) {
+  async start(id: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(id, user);
     if (vps.billingMode === 'PAY_AS_YOU_GO') {
       const canStart = await this.creditService.canStartPaygVps(user.id, 1);
@@ -144,7 +144,7 @@ export class VpsService {
     return this.setStatus(id, CloudDeploymentStatus.RUNNING);
   }
 
-  async stop(id: string, user: { id: string; role: Role }) {
+  async stop(id: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(id, user);
     if (vps.proxmoxVMID) {
       await this.proxmox.stopContainer(vps.proxmoxVMID, vps.proxmoxNode ?? undefined);
@@ -152,12 +152,12 @@ export class VpsService {
     return this.setStatus(id, CloudDeploymentStatus.STOPPED);
   }
 
-  async restart(id: string, user: { id: string; role: Role }) {
+  async restart(id: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     await this.stop(id, user);
     return this.start(id, user);
   }
 
-  async remove(id: string, user: { id: string; role: Role }) {
+  async remove(id: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(id, user);
     const tenantId = vps.tenantId ?? user.id;
     if (vps.proxmoxVMID) {
@@ -168,7 +168,7 @@ export class VpsService {
     return { success: true };
   }
 
-  async status(id: string, user: { id: string; role: Role }) {
+  async status(id: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(id, user);
     if (!vps.proxmoxVMID) {
       return { status: vps.status, live: false };
@@ -180,7 +180,7 @@ export class VpsService {
     return { status: vps.status, live };
   }
 
-  async snapshot(id: string, user: { id: string; role: Role }) {
+  async snapshot(id: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(id, user);
     return {
       success: true,
@@ -192,22 +192,22 @@ export class VpsService {
     };
   }
 
-  async backups(id: string, user: { id: string; role: Role }) {
+  async backups(id: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(id, user);
     return this.backupSchedulerService.getBackups(vps.id);
   }
 
-  async getBackupSchedule(id: string, user: { id: string; role: Role }) {
+  async getBackupSchedule(id: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(id, user);
     return this.backupSchedulerService.getSchedule(vps.id);
   }
 
-  async createBackupSchedule(id: string, dto: CreateBackupScheduleDto, user: { id: string; role: Role }) {
+  async createBackupSchedule(id: string, dto: CreateBackupScheduleDto, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(id, user);
     return this.backupSchedulerService.createSchedule(vps.id, dto);
   }
 
-  async restoreBackup(backupId: string, user: { id: string; role: Role }) {
+  async restoreBackup(backupId: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const backup = await this.prisma.cloudBackup.findUnique({
       where: { id: backupId },
       include: { deployment: true },
@@ -224,7 +224,7 @@ export class VpsService {
   async resize(
     id: string,
     resources: { cpu?: number; memory?: number; storage?: number },
-    user: { id: string; role: Role },
+    user: { id: string; role: Role; impersonatedBy?: string },
   ) {
     const vps = await this.findOwned(id, user);
     const tenantId = vps.tenantId ?? user.id;
@@ -237,7 +237,7 @@ export class VpsService {
     return updated;
   }
 
-  async console(id: string, user: { id: string; role: Role }) {
+  async console(id: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(id, user);
     if (!vps.proxmoxVMID) {
       throw new BadRequestException('Console unavailable');
@@ -248,7 +248,7 @@ export class VpsService {
     };
   }
 
-  async clone(id: string, name: string, user: { id: string; role: Role }) {
+  async clone(id: string, name: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(id, user);
     return this.create(
       {
@@ -261,7 +261,7 @@ export class VpsService {
     );
   }
 
-  async getQuota(user: { id: string; role: Role }) {
+  async getQuota(user: { id: string; role: Role; impersonatedBy?: string }) {
     const tenantId = await this.resolveTenantId(user);
     const quota = await this.prisma.tenantQuota.findUnique({ where: { tenantId } });
     if (!quota) {
@@ -340,7 +340,7 @@ export class VpsService {
     });
   }
 
-  async listDomains(vpsId: string, user: { id: string; role: Role }) {
+  async listDomains(vpsId: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     const vps = await this.findOwned(vpsId, user);
     return this.prisma.domain.findMany({
       where: { vpsId: vps.id },
@@ -381,7 +381,7 @@ export class VpsService {
     return domain;
   }
 
-  private async resolveTenantId(user: { id: string; role: Role }): Promise<string> {
+  private async resolveTenantId(user: { id: string; role: Role; impersonatedBy?: string }): Promise<string> {
     if (user.role === Role.SUPER_ADMIN) {
       return user.id;
     }
@@ -484,7 +484,7 @@ export class VpsService {
     }).catch(() => undefined);
   }
 
-  private findOwned(id: string, user: { id: string; role: Role }) {
+  private findOwned(id: string, user: { id: string; role: Role; impersonatedBy?: string }) {
     return this.prisma.cloudDeployment.findUnique({ where: { id } }).then((vps) => {
       if (!vps) throw new NotFoundException('VPS not found');
       if (user.role !== Role.SUPER_ADMIN && vps.userId !== user.id) {
@@ -514,7 +514,7 @@ export class VpsService {
     ];
   }
 
-  async installApp(vpsId: string, user: { id: string; role: Role }, appId: string) {
+  async installApp(vpsId: string, user: { id: string; role: Role; impersonatedBy?: string }, appId: string) {
     const vps = await this.findOwned(vpsId, user);
     const installed = (vps.installedApps as Record<string, any>[]) || [];
     if (installed.find((a) => a.id === appId)) {
@@ -550,7 +550,7 @@ export class VpsService {
     return entry;
   }
 
-  async uninstallApp(vpsId: string, user: { id: string; role: Role }, appId: string) {
+  async uninstallApp(vpsId: string, user: { id: string; role: Role; impersonatedBy?: string }, appId: string) {
     const vps = await this.findOwned(vpsId, user);
     const installed = ((vps.installedApps as Record<string, any>[]) || []).filter((a) => a.id !== appId);
 
@@ -569,7 +569,7 @@ export class VpsService {
     return { ok: true };
   }
 
-  async getAppStatus(vpsId: string, user: { id: string; role: Role }, appId: string) {
+  async getAppStatus(vpsId: string, user: { id: string; role: Role; impersonatedBy?: string }, appId: string) {
     const vps = await this.findOwned(vpsId, user);
     const installed = (vps.installedApps as Record<string, any>[]) || [];
     const entry = installed.find((a) => a.id === appId);
