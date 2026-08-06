@@ -588,7 +588,7 @@ export class VpsService {
 
   private async writeAudit(
     action: string,
-    actor: { id: string; role: Role },
+    actor: { id: string; role: Role; impersonatedBy?: string },
     vps: { id: string; name?: string; tenantId?: string },
     details?: Record<string, unknown>,
     status: string = 'SUCCESS',
@@ -599,15 +599,19 @@ export class VpsService {
           action,
           userId: actor.id,
           resource: `vps:${vps.id}`,
-          details: {
-            vpsId: vps.id,
-            vpsName: vps.name,
-            tenantId: vps.tenantId,
-            ...(details ?? {}),
-          } as never,
+          details: withImpersonation(
+            {
+              vpsId: vps.id,
+              vpsName: vps.name,
+              tenantId: vps.tenantId,
+              ...(details ?? {}),
+            },
+            actor,
+          ) as never,
           status,
         },
       });
+
     } catch (e: any) {
       this.logger.warn(`audit log failed (${action}): ${e?.message ?? e}`);
     }
