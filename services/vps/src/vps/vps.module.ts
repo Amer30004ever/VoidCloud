@@ -15,6 +15,7 @@ import { ApiUsageModule } from '../../../shared/api-usage/api-usage.module';
 import { K8sAppService } from '../k8s/k8s-app.service';
 import { FloatingIpService } from '../network/floating-ip.service';
 import { FloatingIpController } from '../network/floating-ip.controller';
+import { ManagedDatabaseProvisionerService } from '../managed/managed-database-provisioner.service';
 import { ManagedDatabaseService } from '../managed/managed-database.service';
 import { ManagedDatabaseController } from '../managed/managed-database.controller';
 import { ObjectStorageService } from '../managed/object-storage.service';
@@ -29,6 +30,7 @@ import { CreditService } from '../../../billing/src/billing/credit.service';
 @Module({
   imports: [ClustersModule, ScheduleModule.forRoot(), BackupModule, ApiUsageModule],
   controllers: [VpsController, IsolationController, FloatingIpController, ManagedDatabaseController, ObjectStorageController, ManagedK8sController, VmImportController],
-  providers: [VpsService, VpsProvisionService, QuotaReconciliationService, DomainVerificationScheduler, ProxmoxService, IsolationReconcilerService, K8sAppService, FloatingIpService, ManagedDatabaseService, ObjectStorageService, ManagedK8sService, VmImportService, CreditService],
+  providers: [VpsService, VpsProvisionService, QuotaReconciliationService, DomainVerificationScheduler, ProxmoxService, IsolationReconcilerService, K8sAppService, FloatingIpService, ManagedDatabaseService,
+    ManagedDatabaseProvisionerService, ObjectStorageService, ManagedK8sService, VmImportService, CreditService],
 })
 export class VpsModule { }
