@@ -26,6 +26,7 @@ import {
   Wallet,
   Webhook,
   Gem,
+  Upload,
 } from "lucide-react";
 import api from "@/lib/api";
 import { API_BASE_URL } from "@/lib/constants";
