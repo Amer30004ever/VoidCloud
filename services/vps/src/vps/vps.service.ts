@@ -14,6 +14,8 @@ import { CreateBackupScheduleDto } from '../backup/backup.dto';
 import { VpsBackupSchedulerService } from '../backup/backup-scheduler.service';
 import { K8sAppService } from '../k8s/k8s-app.service';
 import { randomBytes } from 'crypto';
+import { withImpersonation } from '../common/audit-impersonation';
+
 
 @Injectable()
 export class VpsService {
