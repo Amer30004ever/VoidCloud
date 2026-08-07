@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+import { withImpersonation, AuditActor } from '../common/audit-impersonation';
   computeDeadlines,
   evaluateSla,
   escalatedPriority,
@@ -160,11 +161,10 @@ export class SupportService {
         action: 'SUPPORT_TICKET_STATUS_CHANGED',
         adminId: user.id,
         resource: id,
-        details: {
-          from: ticket.status,
-          to: status,
-          ...(user.impersonatedBy ? { impersonatedBy: user.impersonatedBy } : {}),
-        } as never,
+        details: withImpersonation(
+          { from: ticket.status, to: status },
+          user as AuditActor,
+        ) as never,
       } as never,
     });
 
