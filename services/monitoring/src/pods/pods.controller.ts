@@ -10,6 +10,7 @@ import { Roles } from '../decorators/roles.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { PodsK8sService } from './pods.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { withImpersonation, AuditActor } from '../common/audit-impersonation';
 
 @Controller('pods')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -46,10 +47,10 @@ export class PodsController {
     }
     await this.verifyReauth(user.id, body.password, body.totpCode);
 
-    const auditDetails: Record<string, unknown> = { namespace, pod: name, reauthMethod: body.password ? 'password' : 'totp' };
-    if (user.impersonatedBy) {
-      auditDetails.impersonatedBy = user.impersonatedBy;
-    }
+    const auditDetails = withImpersonation(
+      { namespace, pod: name, reauthMethod: body.password ? 'password' : 'totp' },
+      user as AuditActor,
+    );
     await this.prisma.auditLog.create({
       data: {
         action: 'POD_RESTART_INITIATED',

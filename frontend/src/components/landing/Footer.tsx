@@ -62,7 +62,7 @@ export function Footer() {
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-2 text-lg font-bold">
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950">
-                ☁
+                ☁️
               </span>
               VoidCloud
             </Link>

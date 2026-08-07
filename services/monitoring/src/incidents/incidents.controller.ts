@@ -6,6 +6,7 @@ import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { Role } from '@prisma/client';
+import { withImpersonation, AuditActor } from '../common/audit-impersonation';
 
 type IncidentSeverity = 'DEGRADED' | 'PARTIAL_OUTAGE' | 'MAJOR_OUTAGE';
 type IncidentStatus = 'INVESTIGATING' | 'IDENTIFIED' | 'MONITORING' | 'RESOLVED';
@@ -60,8 +61,10 @@ export class IncidentsController {
       include: { updates: true },
     });
 
-    const createDetails: Record<string, unknown> = { title: incident.title, severity: incident.severity };
-    if (user.impersonatedBy) createDetails.impersonatedBy = user.impersonatedBy;
+    const createDetails = withImpersonation(
+      { title: incident.title, severity: incident.severity },
+      user as AuditActor,
+    );
 
     await this.prisma.auditLog.create({
       data: {
@@ -102,8 +105,10 @@ export class IncidentsController {
       });
     }
 
-    const updateDetails: Record<string, unknown> = { status: body.status, message: body.message.slice(0, 200) };
-    if (user.impersonatedBy) updateDetails.impersonatedBy = user.impersonatedBy;
+    const updateDetails = withImpersonation(
+      { status: body.status, message: body.message.slice(0, 200) },
+      user as AuditActor,
+    );
 
     await this.prisma.auditLog.create({
       data: {

@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AbuseCategory } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { withImpersonation } from '../common/audit-impersonation';
 
 export interface AbuseReportInput {
   reporterName?: string;
@@ -82,8 +83,7 @@ export class AbuseService {
         resolvedAt: status === 'RESOLVED' || status === 'DISMISSED' || status === 'ACTION_TAKEN' ? new Date() : undefined,
       },
     });
-    const details: Record<string, unknown> = { status };
-    if (impersonatedBy) details.impersonatedBy = impersonatedBy;
+    const details = withImpersonation({ status }, { impersonatedBy });
     await this.prisma.auditLog.create({
       data: {
         action: 'ABUSE_REPORT_RESOLVE',
