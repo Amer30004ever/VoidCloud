@@ -45,16 +45,19 @@ export class CreditService {
                     userId: params.targetUserId,
                     adminId: params.adminId,
                     resource: `credit:${params.type.toLowerCase()}`,
-                    details: {
-                        actorId: params.actorId,
-                        amount: params.amount,
-                        balanceAfter: params.balanceAfter,
-                        reason: params.reason,
-                        relatedVpsId: params.relatedVpsId,
-                        transactionId: params.transactionId,
-                        transactionType: params.type,
-                        ...(params.impersonatedBy ? { impersonatedBy: params.impersonatedBy } : {}),
-                    } as never,
+                    details: withImpersonation(
+                        {
+                            actorId: params.actorId,
+                            amount: params.amount,
+                            balanceAfter: params.balanceAfter,
+                            reason: params.reason,
+                            relatedVpsId: params.relatedVpsId,
+                            transactionId: params.transactionId,
+                            transactionType: params.type,
+                        },
+                        { impersonatedBy: params.impersonatedBy },
+                    ) as never,
+
                 },
             });
         } catch (error) {
