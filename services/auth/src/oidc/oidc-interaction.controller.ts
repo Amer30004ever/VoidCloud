@@ -67,6 +67,7 @@ export class OidcInteractionController {
   }
 
   /** Verify platform credentials and complete the `login` prompt. */
+  @Public()
   @Post(':uid/login')
   async login(
     @Param('uid') uid: string,
@@ -108,6 +109,7 @@ export class OidcInteractionController {
   }
 
   /** Grant the requested scopes and finish the `consent` prompt. */
+  @Public()
   @Post(':uid/confirm')
   async confirm(@Param('uid') uid: string, @Req() req: any, @Res() res: any) {
     const provider = this.provider();
@@ -151,6 +153,7 @@ export class OidcInteractionController {
   }
 
   /** Abort the authorization; the client receives `access_denied`. */
+  @Public()
   @Post(':uid/abort')
   async abort(@Param('uid') _uid: string, @Req() req: any, @Res() res: any) {
     const provider = this.provider();
