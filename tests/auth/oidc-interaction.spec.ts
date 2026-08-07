@@ -7,7 +7,16 @@
  * scopes/claims before handing control back to oidc-provider.
  */
 import * as bcrypt from 'bcrypt';
-import { OidcInteractionController } from '../../services/auth/src/oidc/oidc-interaction.controller';
+
+// The controller only needs the provider *instance* (injected in tests), but it
+// imports OidcProviderService, which pulls in the heavy oidc-provider package.
+jest.mock('oidc-provider', () => ({ Provider: class {} }), { virtual: true });
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const {
+  OidcInteractionController,
+} = require('../../services/auth/src/oidc/oidc-interaction.controller');
+
 
 type Res = {
   statusCode: number;
