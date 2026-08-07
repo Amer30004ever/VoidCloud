@@ -1,7 +1,9 @@
 import { Module, OnModuleInit, Inject } from '@nestjs/common';
 import { OidcProviderService } from './oidc-provider.service';
+import { OidcInteractionController } from './oidc-interaction.controller';
 
 @Module({
+  controllers: [OidcInteractionController],
   providers: [OidcProviderService],
   exports: [OidcProviderService],
 })
