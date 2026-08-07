@@ -28,9 +28,63 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 11434
+              name: http
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:11434"
+            # Embedding model backing the code-server semantic search extension.
+            - name: OLLAMA_EMBEDDING_MODEL
+              value: "nomic-embed-text"
+          # Pull the embedding model once the server is up. Idempotent: `ollama
+          # pull` is a no-op when the model is already present in the volume.
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    for i in $(seq 1 60); do
+                      ollama list >/dev/null 2>&1 && break
+                      sleep 2
+                    done
+                    ollama pull "${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}" || true
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
           volumeMounts:
             - name: ollama-storage
               mountPath: /root/.ollama
       volumes:
         - name: ollama-storage
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: ollama-models
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: voidcloud
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+
