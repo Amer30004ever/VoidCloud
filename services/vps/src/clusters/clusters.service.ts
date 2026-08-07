@@ -8,6 +8,7 @@ import * as https from 'https';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptSecret, decryptSecret, maskSecret } from './crypto.util';
+import { withImpersonation } from '../common/audit-impersonation';
 
 export interface ClusterInput {
   name: string;
@@ -73,14 +74,14 @@ export class ClustersService {
     details?: Record<string, unknown>,
   ) {
     try {
-      const auditDetails: Record<string, unknown> = {
-        clusterId: cluster?.id ?? null,
-        clusterName: cluster?.name ?? null,
-        ...(details ?? {}),
-      };
-      if ((actor as any)?.impersonatedBy) {
-        auditDetails.impersonatedBy = (actor as any).impersonatedBy;
-      }
+      const auditDetails = withImpersonation(
+        {
+          clusterId: cluster?.id ?? null,
+          clusterName: cluster?.name ?? null,
+          ...(details ?? {}),
+        },
+        actor as any,
+      );
       await this.prisma.auditLog.create({
         data: {
           action,

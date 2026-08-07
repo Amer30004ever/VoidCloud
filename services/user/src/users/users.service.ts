@@ -17,6 +17,7 @@ import {
   generateRandomPassword,
   hashPassword,
 } from '../common/utils/password.util';
+import { withImpersonation } from '../common/audit-impersonation';
 
 const userSelect = {
   id: true,
@@ -46,10 +47,10 @@ export class UsersService {
     impersonatedBy?: string,
   ) {
     try {
-      const mergedDetails = {
-        ...(details as Record<string, unknown> | undefined),
-        ...(impersonatedBy ? { impersonatedBy } : {}),
-      };
+      const mergedDetails = withImpersonation(
+        details as Record<string, unknown> | undefined,
+        { impersonatedBy },
+      );
       await this.prisma.auditLog.create({
         data: {
           action,
