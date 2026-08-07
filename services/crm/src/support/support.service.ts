@@ -2,13 +2,13 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
-import { withImpersonation, AuditActor } from '../common/audit-impersonation';
   computeDeadlines,
   evaluateSla,
   escalatedPriority,
   targetFor,
   type SlaEvaluation,
 } from './sla';
+import { withImpersonation, AuditActor } from '../common/audit-impersonation';
 
 export interface AuthUser {
   id: string;
