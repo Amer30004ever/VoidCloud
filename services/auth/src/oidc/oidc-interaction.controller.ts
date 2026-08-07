@@ -36,6 +36,7 @@ export class OidcInteractionController {
   ) {}
 
   /** Render the login or consent screen for an interaction. */
+  @Public()
   @Get(':uid')
   async show(@Param('uid') uid: string, @Req() req: Request, @Res() res: Response) {
     const provider: any = this.oidc.getProvider();
@@ -59,6 +60,7 @@ export class OidcInteractionController {
   }
 
   /** Verify platform credentials and finish the login prompt. */
+  @Public()
   @Post(':uid/login')
   async login(
     @Param('uid') uid: string,
@@ -94,6 +96,7 @@ export class OidcInteractionController {
   }
 
   /** Grant the requested scopes/claims and finish the consent prompt. */
+  @Public()
   @Post(':uid/confirm')
   async confirm(@Param('uid') _uid: string, @Req() req: Request, @Res() res: Response) {
     const provider: any = this.oidc.getProvider();
@@ -129,6 +132,7 @@ export class OidcInteractionController {
   }
 
   /** User declined — end the interaction with an OIDC access_denied error. */
+  @Public()
   @Post(':uid/abort')
   async abort(@Param('uid') _uid: string, @Req() req: Request, @Res() res: Response) {
     const provider: any = this.oidc.getProvider();
