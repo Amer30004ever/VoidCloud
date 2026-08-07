@@ -8,6 +8,7 @@ import {
   targetFor,
   type SlaEvaluation,
 } from './sla';
+import { withImpersonation, AuditActor } from '../common/audit-impersonation';
 
 export interface AuthUser {
   id: string;
@@ -160,11 +161,10 @@ export class SupportService {
         action: 'SUPPORT_TICKET_STATUS_CHANGED',
         adminId: user.id,
         resource: id,
-        details: {
-          from: ticket.status,
-          to: status,
-          ...(user.impersonatedBy ? { impersonatedBy: user.impersonatedBy } : {}),
-        } as never,
+        details: withImpersonation(
+          { from: ticket.status, to: status },
+          user as AuditActor,
+        ) as never,
       } as never,
     });
 

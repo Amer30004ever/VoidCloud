@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Provider } from 'oidc-provider';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface OidcClientConfig {
   client_id: string;
@@ -15,7 +16,17 @@ export class OidcProviderService {
   private provider: Provider | null = null;
   private initPromise: Promise<void> | null = null;
 
-  constructor() {}
+  constructor(private readonly prisma: PrismaService) {}
+
+  /** Absolute base URL the interaction (login/consent) pages are served from. */
+  private interactionBase(): string {
+    return (
+      process.env.OIDC_INTERACTION_BASE_URL ||
+      process.env.OIDC_ISSUER ||
+      'https://api.voidcloud.cc.cd'
+    ).replace(/\/$/, '');
+  }
+
 
   async initialize() {
     if (this.provider) return;
@@ -66,6 +77,9 @@ export class OidcProviderService {
         });
       }
 
+      const prisma = this.prisma;
+      const interactionBase = this.interactionBase();
+
       this.provider = new Provider(issuer, {
         clients,
         scopes: ['openid', 'profile', 'email'],
@@ -74,12 +88,47 @@ export class OidcProviderService {
           profile: ['name', 'preferred_username'],
           email: ['email', 'email_verified'],
         },
+        /**
+         * Login/consent screens are served by OidcInteractionController, which
+         * lives outside the `/oidc` provider mount so the provider middleware
+         * does not swallow the request.
+         */
+        interactions: {
+          url(_ctx: any, interaction: any) {
+            return `${interactionBase}/auth/oidc/interaction/${interaction.uid}`;
+          },
+        },
+        /**
+         * Resolve the platform user behind an authenticated session and expose
+         * the standard OIDC claims Gitea/Portainer map onto their accounts.
+         */
+        async findAccount(_ctx: any, sub: string) {
+          const user = await prisma.user.findUnique({
+            where: { id: sub },
+            select: { id: true, email: true, name: true, isActive: true, role: true },
+          });
+          if (!user || !user.isActive) return undefined;
+          return {
+            accountId: user.id,
+            async claims() {
+              return {
+                sub: user.id,
+                name: user.name,
+                preferred_username: user.email,
+                email: user.email,
+                email_verified: true,
+                groups: [user.role],
+              };
+            },
+          };
+        },
         features: {
           registration: { enabled: false },
           revocation: { enabled: false },
           backchannelLogout: { enabled: false },
           deviceFlow: { enabled: false },
         },
+
         ttl: {
           AccessToken: 3600,
           RefreshToken: 86400,
