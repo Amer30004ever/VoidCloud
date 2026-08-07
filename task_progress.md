@@ -6,13 +6,16 @@
 - [x] K8s Job manifests for Gitea and Portainer bootstrap
 - [x] OIDC interaction endpoint for login flow (ADDED)
 
-## 5.13b (Semantic Code Search) - IN PROGRESS
+## 5.13b (Semantic Code Search) - COMPLETED ✅
 - [x] SemanticSearch.tsx UI component exists
 - [x] Ollama K8s deployment exists
-- [ ] Create VS Code extension for semantic code search
-- [ ] Bundle extension into vendored code-server Docker image
-- [ ] Wire up Ollama embedding endpoint in code-server
+- [x] VS Code extension created (`kubernetes/marketplace/code-server/extension/extension.js`)
+- [x] Extension bundled into vendored code-server Docker image
+- [x] Ollama embedding endpoint wired via ConfigMap `OLLAMA_URL`
 
-## Additional: OIDC Login Flow
-- [ ] Implement OIDC interaction controller for login flow
-- [ ] Add callback handlers for Gitea/Portainer
+## Additional: OIDC Login Flow - COMPLETED ✅
+- [x] Implemented OIDC interaction controller (`oidc-interaction.controller.ts`)
+- [x] Added Gitea OAuth2 client flow (`/auth/gitea`, `/auth/gitea/callback`)
+- [x] Added Portainer OAuth2 client flow (`/auth/portainer`, `/auth/portainer/callback`)
+- [x] Wired Gitea/Portainer buttons into frontend login page
+- [x] Added Gitea/Portainer to dashboard settings linked accounts

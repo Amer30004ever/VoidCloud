@@ -341,9 +341,94 @@ export class AuthController {
     if (!email) throw new BadRequestException('GitHub email not available');
     const result = await this.authService.upsertOAuthLogin({
       provider: 'github',
+      providerAccountId: String(profileRes.data.id),
+      email,
+      name: profileRes.data.name || profileRes.data.login,
+      context: verified.context as any,
+      inviteToken: verified.inviteToken || undefined,
+    });
+    return this.redirectToFrontend(result);
+  }
+
+  @Get('gitea')
+  async giteaAuthRedirect(@Query('context') context: string, @Query('inviteToken') inviteToken?: string) {
+    const state = this.signState({ context: context || 'user_signup', inviteToken: inviteToken || '' });
+    const base = `${process.env.GITEA_URL || 'http://gitea.voidcloud.svc.cluster.local:3000'}/login/oauth/authorize`;
+    const params = new URLSearchParams({
+      client_id: process.env.GITEA_CLIENT_ID || '',
+      redirect_uri: `${process.env.BACKEND_URL || ''}/api/v1/auth/gitea/callback`,
+      scope: 'user:email',
+      state,
+    });
+    return { url: `${base}?${params.toString()}` };
+  }
+
+  @Get('gitea/callback')
+  async giteaCallback(@Query('code') code: string, @Query('state') state: string) {
+    const verified = this.verifyState(state);
+    const giteaUrl = process.env.GITEA_URL || 'http://gitea.voidcloud.svc.cluster.local:3000';
+    const tokenRes = await axios.post(`${giteaUrl}/login/oauth/access_token`, {
+      client_id: process.env.GITEA_CLIENT_ID,
+      client_secret: process.env.GITEA_CLIENT_SECRET,
+      code,
+      redirect_uri: `${process.env.BACKEND_URL || ''}/api/v1/auth/gitea/callback`,
+      grant_type: 'authorization_code',
+    }, { headers: { Accept: 'application/json' } });
+    const accessToken = tokenRes.data.access_token;
+    const profileRes = await axios.get(`${giteaUrl}/api/v1/user`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const profile = profileRes.data;
+    const email = profile.email || profile.login;
+    if (!email) throw new BadRequestException('Gitea email not available');
+    const result = await this.authService.upsertOAuthLogin({
+      provider: 'gitea',
       providerAccountId: String(profile.id),
       email,
-      name: profile.name || profile.login,
+      name: profile.full_name || profile.login,
+      context: verified.context as any,
+      inviteToken: verified.inviteToken || undefined,
+    });
+    return this.redirectToFrontend(result);
+  }
+
+  @Get('portainer')
+  async portainerAuthRedirect(@Query('context') context: string, @Query('inviteToken') inviteToken?: string) {
+    const state = this.signState({ context: context || 'user_signup', inviteToken: inviteToken || '' });
+    const base = `${process.env.PORTAINER_URL || 'http://portainer.voidcloud.svc.cluster.local:9000'}/api/oauth/authorize`;
+    const params = new URLSearchParams({
+      client_id: process.env.PORTAINER_CLIENT_ID || '',
+      redirect_uri: `${process.env.BACKEND_URL || ''}/api/v1/auth/portainer/callback`,
+      response_type: 'code',
+      scope: 'openid profile email',
+      state,
+    });
+    return { url: `${base}?${params.toString()}` };
+  }
+
+  @Get('portainer/callback')
+  async portainerCallback(@Query('code') code: string, @Query('state') state: string) {
+    const verified = this.verifyState(state);
+    const portainerUrl = process.env.PORTAINER_URL || 'http://portainer.voidcloud.svc.cluster.local:9000';
+    const tokenRes = await axios.post(`${portainerUrl}/api/oauth/token`, {
+      client_id: process.env.PORTAINER_CLIENT_ID,
+      client_secret: process.env.PORTAINER_CLIENT_SECRET,
+      code,
+      redirect_uri: `${process.env.BACKEND_URL || ''}/api/v1/auth/portainer/callback`,
+      grant_type: 'authorization_code',
+    });
+    const accessToken = tokenRes.data.access_token;
+    const profileRes = await axios.get(`${portainerUrl}/api/oauth/userinfo`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const profile = profileRes.data;
+    const email = profile.email;
+    if (!email) throw new BadRequestException('Portainer email not available');
+    const result = await this.authService.upsertOAuthLogin({
+      provider: 'portainer',
+      providerAccountId: String(profile.sub || profile.id),
+      email,
+      name: profile.name || email,
       context: verified.context as any,
       inviteToken: verified.inviteToken || undefined,
     });

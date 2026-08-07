@@ -404,9 +404,18 @@ function AccountsTab() {
   async function link(provider: string) {
     setMsg(null); setBusy(true);
     try {
-      const url = provider === 'google'
-        ? 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID + '&redirect_uri=' + encodeURIComponent(window.location.origin + '/api/v1/auth/google/callback') + '&response_type=code&scope=email profile'
-        : 'https://github.com/login/oauth/authorize?client_id=' + process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID + '&redirect_uri=' + encodeURIComponent(window.location.origin + '/api/v1/auth/github/callback') + '&scope=user:email';
+      let url = '';
+      if (provider === 'google') {
+        url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID + '&redirect_uri=' + encodeURIComponent(window.location.origin + '/api/v1/auth/google/callback') + '&response_type=code&scope=email profile';
+      } else if (provider === 'github') {
+        url = 'https://github.com/login/oauth/authorize?client_id=' + process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID + '&redirect_uri=' + encodeURIComponent(window.location.origin + '/api/v1/auth/github/callback') + '&scope=user:email';
+      } else if (provider === 'gitea') {
+        const base = process.env.NEXT_PUBLIC_GITEA_URL || 'http://gitea.voidcloud.svc.cluster.local:3000';
+        url = base + '/login/oauth/authorize?client_id=' + process.env.NEXT_PUBLIC_GITEA_CLIENT_ID + '&redirect_uri=' + encodeURIComponent(window.location.origin + '/api/v1/auth/gitea/callback') + '&scope=user:email';
+      } else if (provider === 'portainer') {
+        const base = process.env.NEXT_PUBLIC_PORTAINER_URL || 'http://portainer.voidcloud.svc.cluster.local:9000';
+        url = base + '/api/oauth/authorize?client_id=' + process.env.NEXT_PUBLIC_PORTAINER_CLIENT_ID + '&redirect_uri=' + encodeURIComponent(window.location.origin + '/api/v1/auth/portainer/callback') + '&response_type=code&scope=openid profile email';
+      }
       window.location.href = url + '&state=' + encodeURIComponent(JSON.stringify({ context: 'link' }));
     } catch (e: any) {
       setMsg({ kind: "err", text: e?.response?.data?.message ?? "Failed to link" });
@@ -430,7 +439,7 @@ function AccountsTab() {
       <h3 className="text-sm font-semibold text-foreground">Linked accounts</h3>
       <p className="text-xs text-white/60">Link social accounts to sign in more conveniently. You must always keep at least one sign-in method.</p>
       <div className="space-y-3">
-        {['google', 'github'].map((provider) => {
+        {['google', 'github', 'gitea', 'portainer'].map((provider) => {
           const linked = providers.includes(provider);
           return (
             <div key={provider} className="flex items-center justify-between vc-card p-4">

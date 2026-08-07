@@ -25,7 +25,13 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        // Allows running against a preinstalled browser in constrained sandboxes.
+        ...(chromiumPath ? { launchOptions: { executablePath: chromiumPath } } : {}),
+      },
+    },
+    {
+      name: "mobile-chromium",
+      use: {
+        ...devices["iPhone 12 Pro"],
         ...(chromiumPath ? { launchOptions: { executablePath: chromiumPath } } : {}),
       },
     },

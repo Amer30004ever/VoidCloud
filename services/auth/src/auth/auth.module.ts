@@ -13,6 +13,7 @@ import { TenantIsolationService } from '../rbac/tenant-isolation.service';
 import { BillingModule } from '../../../billing/src/billing/billing.module';
 import { TosModule } from '../tos/tos.module';
 import { DeletionModule } from '../deletion/deletion.module';
+import { OidcInteractionController } from '../oidc/oidc-interaction.controller';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { DeletionModule } from '../deletion/deletion.module';
     TosModule,
     DeletionModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, OidcInteractionController],
   providers: [AuthService, JwtStrategy, GoogleStrategy, GitHubStrategy, TwoFactorService, TokenRevocationService, TenantIsolationService],
   exports: [AuthService, JwtModule, TokenRevocationService],
 })

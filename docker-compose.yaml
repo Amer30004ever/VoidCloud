@@ -51,8 +51,8 @@ services:
       REDIS_PORT: 6379
       SMTP_HOST: smtp.gmail.com
       SMTP_PORT: 587
-      SMTP_USER: support.voidcloud@gmail.com
-      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_USER: ${SMTP_USER:-REPLACE_WITH_SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS:-REPLACE_WITH_SMTP_PASS}
     ports:
       - "3001:3001"
     depends_on:
@@ -229,8 +229,8 @@ services:
       REDIS_PORT: 6379
       SMTP_HOST: smtp.gmail.com
       SMTP_PORT: 587
-      SMTP_USER: support.voidcloud@gmail.com
-      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_USER: ${SMTP_USER:-REPLACE_WITH_SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS:-REPLACE_WITH_SMTP_PASS}
     ports:
       - "3008:3008"
     depends_on:

@@ -14,6 +14,14 @@ const REPO = path.resolve(__dirname, '../..');
 const BACKUP = path.join(REPO, 'database/scripts/backup.sh');
 const DRILL = path.join(REPO, 'database/scripts/restore-drill.sh');
 
+function toBashPath(p: string): string {
+  if (process.platform !== 'win32') return p;
+  return p.replace(/^([A-Za-z]):\\/, (_, d) => `/mnt/${d.toLowerCase()}/`).replace(/\\/g, '/');
+}
+
+const BACKUP_BASH = toBashPath(BACKUP);
+const DRILL_BASH = toBashPath(DRILL);
+
 let tmp: string;
 let binDir: string;
 let backupDir: string;
@@ -24,18 +32,21 @@ function stub(name: string, body: string) {
 }
 
 function run(script: string, env: Record<string, string> = {}) {
-  return execFileSync('bash', [script], {
+  const bashScript = toBashPath(script);
+  const bashBinDir = toBashPath(binDir);
+  const bashBackupDir = toBashPath(backupDir);
+  const inlineEnv = [
+    `export PATH="${bashBinDir}:/usr/local/bin:/usr/bin:/bin"`,
+    `export BACKUP_DIR="${bashBackupDir}"`,
+    `export DB_HOST="${env.DB_HOST ?? 'localhost'}"`,
+    `export DB_NAME="${env.DB_NAME ?? 'testdb'}"`,
+    `export DB_USER="${env.DB_USER ?? 'tester'}"`,
+    `export DB_PASS="${env.DB_PASS ?? 'secret'}"`,
+    `export RETENTION_DAYS="${env.RETENTION_DAYS ?? '7'}"`,
+  ].join('\n');
+  const bashCmd = `${inlineEnv}\nbash "${bashScript}"`;
+  return execFileSync('bash', ['-c', bashCmd], {
     encoding: 'utf8',
-    env: {
-      ...process.env,
-      PATH: `${binDir}:${process.env.PATH}`,
-      BACKUP_DIR: backupDir,
-      DB_HOST: 'localhost',
-      DB_NAME: 'testdb',
-      DB_USER: 'tester',
-      DB_PASS: 'secret',
-      ...env,
-    },
   });
 }
 
@@ -64,7 +75,7 @@ describe('Tier 6.5 — backup.sh', () => {
   });
 
   it('passes the configured connection params to pg_dump', () => {
-    stub('pg_dump', `echo "$@" > "${tmp}/args.txt"; echo "-- dump"`);
+    stub('pg_dump', `echo "$@" > "${toBashPath(tmp)}/args.txt"; echo "-- dump"`);
     run(BACKUP);
 
     const args = fs.readFileSync(path.join(tmp, 'args.txt'), 'utf8');
@@ -84,7 +95,7 @@ describe('Tier 6.5 — backup.sh', () => {
     const old = new Date(Date.now() - 30 * 864e5);
     fs.utimesSync(stale, old, old);
 
-    run(BACKUP, { RETENTION_DAYS: '7' });
+    run(BACKUP_BASH, { RETENTION_DAYS: '7' });
 
     expect(fs.existsSync(stale)).toBe(false);
     expect(fs.existsSync(fresh)).toBe(true);
@@ -92,7 +103,7 @@ describe('Tier 6.5 — backup.sh', () => {
 
   it('fails loudly when pg_dump fails (set -o pipefail)', () => {
     stub('pg_dump', 'echo "connection refused" >&2; exit 1');
-    expect(() => run(BACKUP)).toThrow();
+    expect(() => run(BACKUP_BASH)).toThrow();
   });
 });
 
@@ -125,7 +136,7 @@ describe('Tier 6.5 — restore-drill.sh', () => {
     run(BACKUP); // produce a real gzipped backup first
     stubPostgresForDrill('37');
 
-    const out = run(DRILL);
+    const out = run(DRILL_BASH);
     expect(out).toContain('Tables: 37');
     expect(out).toContain('Rows: 42');
     expect(out).toContain('Restore drill completed successfully');
