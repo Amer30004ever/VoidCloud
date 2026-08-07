@@ -1,6 +1,8 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingMode, CreditTransactionType, CloudDeploymentStatus, CloudSubscriptionStatus, Prisma } from '@prisma/client';
+import { withImpersonation } from '../common/audit-impersonation';
+
 
 export interface CreditAuditContext {
     actorId: string;
