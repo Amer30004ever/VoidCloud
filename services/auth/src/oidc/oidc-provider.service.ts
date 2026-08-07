@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Provider } from 'oidc-provider';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface OidcClientConfig {
   client_id: string;
@@ -15,7 +16,17 @@ export class OidcProviderService {
   private provider: Provider | null = null;
   private initPromise: Promise<void> | null = null;
 
-  constructor() {}
+  constructor(private readonly prisma: PrismaService) {}
+
+  /** Absolute base URL the interaction (login/consent) pages are served from. */
+  private interactionBase(): string {
+    return (
+      process.env.OIDC_INTERACTION_BASE_URL ||
+      process.env.OIDC_ISSUER ||
+      'https://api.voidcloud.cc.cd'
+    ).replace(/\/$/, '');
+  }
+
 
   async initialize() {
     if (this.provider) return;
