@@ -18,7 +18,8 @@ spec:
     spec:
       containers:
         - name: code-server
-          image: codercom/code-server:latest
+          image: voidcloud/code-server:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
               name: http

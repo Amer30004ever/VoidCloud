@@ -7,14 +7,24 @@
   "engines": {
     "vscode": "^1.80.0"
   },
-  "categories": ["Other"],
-  "activationEvents": ["onStartupFinished"],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
       {
         "command": "voidcloud.semanticSearch",
-        "title": "Semantic Code Search"
+        "title": "Semantic Code Search",
+        "category": "VoidCloud"
+      },
+      {
+        "command": "voidcloud.reindexWorkspace",
+        "title": "Reindex Workspace for Semantic Search",
+        "category": "VoidCloud"
       }
     ],
     "configuration": {
@@ -36,7 +46,14 @@
           "description": "Debounce delay for workspace indexing"
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+        "command": "voidcloud.semanticSearch",
+        "key": "ctrl+alt+f",
+        "mac": "cmd+alt+f"
+      }
+    ]
   },
   "scripts": {
     "lint": "echo 'no lint'",
