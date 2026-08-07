@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Req, Res, HttpStatus, Param, UseGuards, Public } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res, HttpStatus, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 
 /**
  * OIDC interaction controller.
