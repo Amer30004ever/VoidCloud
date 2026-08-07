@@ -12,6 +12,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { OidcProviderService } from './oidc-provider.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 /**
  * Login + consent screens for the embedded OIDC provider.
@@ -23,6 +24,13 @@ import { OidcProviderService } from './oidc-provider.service';
  * `interactionFinished`, which issues the authorization code that Gitea and
  * Portainer exchange on their own callback endpoints.
  */
+/**
+ * Every route here runs *before* the user has a platform session — the caller
+ * is authenticated by the signed `_interaction` cookie that `oidc-provider`
+ * issued for this specific `uid`, and `interactionDetails()` rejects anything
+ * else. They are therefore intentionally @Public().
+ */
+@Public()
 @Controller('auth/oidc/interaction')
 export class OidcInteractionController {
   private readonly logger = new Logger(OidcInteractionController.name);
