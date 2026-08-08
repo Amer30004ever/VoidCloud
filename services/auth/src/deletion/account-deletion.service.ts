@@ -10,12 +10,14 @@ import { Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { withImpersonation, type AuditActor } from '../common/audit-impersonation';
 
 @Injectable()
 export class AccountDeletionService {
   private readonly logger = new Logger(AccountDeletionService.name);
 
   constructor(private prisma: PrismaService) {}
+
 
   async deleteAccount(userId: string, password: string) {
     const user = await this.prisma.user.findUnique({
