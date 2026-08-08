@@ -188,8 +188,9 @@ async function main() {
         redirect_uri: redirectUri,
       }).toString(),
     });
-    assert.equal(tokenRes.status, 200, `token exchange failed: ${await tokenRes.text()}`);
-    return tokenRes.json() as Promise<any>;
+    const payload: any = await tokenRes.json();
+    assert.equal(tokenRes.status, 200, `token exchange failed: ${JSON.stringify(payload)}`);
+    return payload;
   };
 
   await check('Gitea client completes code exchange and receives claims', async () => {
