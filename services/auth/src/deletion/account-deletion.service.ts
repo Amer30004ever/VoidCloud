@@ -19,7 +19,7 @@ export class AccountDeletionService {
   constructor(private prisma: PrismaService) {}
 
 
-  async deleteAccount(userId: string, password: string) {
+  async deleteAccount(userId: string, password: string, actor?: AuditActor) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, email: true, password: true, role: true },
@@ -37,14 +37,22 @@ export class AccountDeletionService {
         userId,
         userEmail: user.email,
         resource: userId,
-        details: { reason: 'user_requested' } as Prisma.InputJsonValue,
+        details: withImpersonation(
+          { reason: 'user_requested' },
+          actor,
+        ) as Prisma.InputJsonValue,
       },
     });
 
     return { ok: true };
   }
 
-  async adminDelete(actorId: string, targetUserId: string, reason?: string) {
+  async adminDelete(
+    actorId: string,
+    targetUserId: string,
+    reason?: string,
+    actor?: AuditActor,
+  ) {
     if (!reason) {
       throw new BadRequestException('A reason is required for admin deletion');
     }
@@ -68,9 +76,13 @@ export class AccountDeletionService {
         userId: targetUserId,
         userEmail: target.email,
         resource: targetUserId,
-        details: { reason, targetRole: target.role } as Prisma.InputJsonValue,
+        details: withImpersonation(
+          { reason, targetRole: target.role },
+          actor,
+        ) as Prisma.InputJsonValue,
       },
     });
+
 
     return { ok: true };
   }
