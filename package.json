@@ -14,7 +14,8 @@
     "typecheck": "tsc --build",
     "test": "cd tests && npm test",
     "test:jest": "cd tests && npm run test:jest",
-    "test:node": "cd tests && npm run test:node"
+    "test:node": "cd tests && npm run test:node",
+    "verify:oidc": "tsx scripts/verify-oidc-roundtrip.ts"
   },
   "private": true,
   "overrides": {
