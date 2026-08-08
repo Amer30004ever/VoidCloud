@@ -123,6 +123,9 @@ export class OidcProviderService {
           };
         },
         features: {
+          // Must stay off: the built-in dev interaction screens otherwise
+          // override our interactions.url and swallow the login/consent flow.
+          devInteractions: { enabled: false },
           registration: { enabled: false },
           revocation: { enabled: false },
           backchannelLogout: { enabled: false },
