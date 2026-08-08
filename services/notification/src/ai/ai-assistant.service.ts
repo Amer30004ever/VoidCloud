@@ -74,11 +74,11 @@ export class AiToolsService {
           action: `AI_TOOL_${toolName.toUpperCase()}`,
           userId: user.id,
           resource: `ai-tool:${toolName}`,
-          details: {
-            arguments: args,
-            result,
-            ...(user.impersonatedBy ? { impersonatedBy: user.impersonatedBy } : {}),
-          } as never,
+          details: withImpersonation(
+            { arguments: args, result },
+            user as { impersonatedBy?: string },
+          ) as never,
+
           status,
         },
       });
