@@ -602,10 +602,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'GDPR-style soft-delete current user account' })
   async deleteOwnAccount(
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { id: string; impersonatedBy?: string },
     @Body() body: { password: string },
   ) {
-    return this.deletionService.deleteAccount(user.id, body.password);
+    return this.deletionService.deleteAccount(user.id, body.password, user);
   }
 
   @Post('admin/users/:id/delete')
@@ -614,10 +614,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Force GDPR anonymize any user account — SUPER_ADMIN only' })
   async adminDeleteUser(
-    @CurrentUser() user: { id: string; role: Role },
+    @CurrentUser() user: { id: string; role: Role; impersonatedBy?: string },
     @Param('id') targetUserId: string,
     @Body() body: { reason: string },
   ) {
-    return this.deletionService.adminDelete(user.id, targetUserId, body.reason);
+    return this.deletionService.adminDelete(user.id, targetUserId, body.reason, user);
   }
+
 }
