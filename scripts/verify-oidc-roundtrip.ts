@@ -160,7 +160,8 @@ async function main() {
       jar.capture(res);
       const location = res.headers.get('location');
       if (!location) {
-        assert.fail(`no redirect at hop ${hop}: ${res.status} ${(await res.text()).slice(0, 200)}`);
+        const body = await res.text();
+        assert.fail(`no redirect at hop ${hop}: ${res.status} ${body.slice(0, 200)}`);
       }
       const next = new URL(location, origin);
       if (next.pathname.startsWith('/auth/oidc/interaction/')) sawInteraction = true;
