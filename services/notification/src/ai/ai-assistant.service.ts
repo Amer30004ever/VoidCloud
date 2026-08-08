@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { withImpersonation } from '../common/audit-impersonation';
+
 
 export interface AiContext {
   vpsCount: number;
