@@ -2,10 +2,6 @@
   "name": "workspace",
   "version": "0.0.0",
   "license": "MIT",
-  "workspaces": [
-    "frontend",
-    "lib/*"
-  ],
   "scripts": {
     "dev": "cd frontend && PORT=8080 bun run dev -- -p 8080 -H 0.0.0.0",
     "build": "cd frontend && bun run build && cd .. && node scripts/assemble-dist.mjs",
@@ -15,7 +11,10 @@
     "test": "cd tests && npm test",
     "test:jest": "cd tests && npm run test:jest",
     "test:node": "cd tests && npm run test:node",
-    "verify:oidc": "tsx scripts/verify-oidc-roundtrip.ts"
+    "verify:oidc": "tsx scripts/verify-oidc-roundtrip.ts",
+    "postinstall": "node scripts/link-next.mjs",
+    "link:next": "node scripts/link-next.mjs",
+    "verify:next": "node scripts/link-next.mjs --check"
   },
   "private": true,
   "overrides": {

@@ -26,6 +26,24 @@ export interface ManagedDatabase {
   createdAt: string;
 }
 
+/** One step of the provisioning timeline (see GET /managed/databases/:id/events). */
+export interface ManagedDatabaseEvent {
+  id: string;
+  status: "PROVISIONING" | "RUNNING" | "FAILED" | string;
+  step: string;
+  message?: string | null;
+  detail?: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface ManagedDatabaseTimeline {
+  status: string;
+  errorMessage?: string | null;
+  provisionAttempts: number;
+  events: ManagedDatabaseEvent[];
+}
+
+
 export interface ObjectStorageKey {
   id: string;
   label: string;
@@ -106,6 +124,9 @@ export const managedApi = {
     resize: async (id: string, planCode: string) =>
       (await api.patch(`/managed/databases/${id}/plan`, { planCode })).data,
     backup: async (id: string) => (await api.post(`/managed/databases/${id}/backups`)).data,
+    events: async (id: string) =>
+      (await api.get<ManagedDatabaseTimeline>(`/managed/databases/${id}/events`)).data,
+
     destroy: async (id: string) => (await api.delete(`/managed/databases/${id}`)).data,
   },
   storage: {

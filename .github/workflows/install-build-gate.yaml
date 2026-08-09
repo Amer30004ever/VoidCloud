@@ -1,0 +1,81 @@
+name: Install & Build Gate
+
+# Guards the frontend build toolchain against the failure that has bitten this
+# repo repeatedly: an install rewrites `frontend/node_modules`, the `next`
+# package stops resolving from the frontend directory, and `next build` (plus
+# the dev supervisor) dies with "We couldn't find the Next.js package".
+#
+# The gate proves, on every push, that:
+#   1. a clean install succeeds from a cold cache,
+#   2. the root `postinstall` relink (scripts/link-next.mjs) actually ran and
+#      left frontend/node_modules/next resolvable,
+#   3. next build / tsc / ESLint all still pass afterwards.
+#
+# `--check` makes the relink script exit non-zero instead of warning, so a
+# regression fails CI here rather than in someone's preview.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: install-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install-and-build:
+    name: pnpm install -> relink -> build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # Cold, deterministic install — this is the step that historically broke
+      # the Next resolution, so nothing is restored into node_modules first.
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      # postinstall should already have done this; run it explicitly in strict
+      # mode so a silent failure cannot slip through.
+      - name: Verify the Next.js relink survived the install
+        run: node scripts/link-next.mjs --check
+
+      - name: Assert next is resolvable from the frontend directory
+        run: |
+          node -e "
+            const p = require.resolve('next/package.json', { paths: ['./frontend'] });
+            console.log('resolved next ->', p, require(p).version);
+          "
+
+      - name: Generate Prisma client
+        run: pnpm --filter ./tests run postinstall
+        continue-on-error: false
+
+      - name: Typecheck
+        run: npx tsc --build
+
+      - name: Lint
+        run: pnpm --filter ./frontend run lint
+
+      - name: Build frontend
+        run: pnpm --filter ./frontend run build
+
+      # The relink must still hold after a build, since `next build` also writes
+      # into node_modules in some configurations.
+      - name: Re-verify the relink after build
+        run: node scripts/link-next.mjs --check
+
+      - name: Assemble dist
+        run: node scripts/assemble-dist.mjs

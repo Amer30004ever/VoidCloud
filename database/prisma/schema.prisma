@@ -2334,12 +2334,43 @@ model ManagedDatabase {
   updatedAt      DateTime              @updatedAt
   deletedAt      DateTime?
 
+  /// Idempotent provisioning (see ManagedDatabaseProvisionerService.provision):
+  /// a worker claims the row by stamping this; a claim older than the lease TTL
+  /// is treated as a crashed worker and may be re-claimed.
+  provisionLockedAt DateTime?
+  /// Monotonic counter of provisioning attempts, for observability/backoff.
+  provisionAttempts Int      @default(0)
+  /// Set once the LXC exists, so a retry reconciles instead of re-creating.
+  provisionedAt     DateTime?
+
   backups ManagedDatabaseBackup[]
+  events  ManagedDatabaseEvent[]
 
   @@unique([userId, name])
   @@index([status])
   @@index([organizationId])
+  @@index([status, provisionLockedAt])
   @@map("managed_databases")
+}
+
+/// Append-only provisioning timeline for a managed database. The tenant UI
+/// streams these rows to show PROVISIONING -> RUNNING/FAILED transitions with
+/// the exact errorMessage that was persisted on the parent row.
+model ManagedDatabaseEvent {
+  id         String               @id @default(uuid())
+  databaseId String
+  database   ManagedDatabase      @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  status     ManagedServiceStatus
+  /// Short human-readable step label, e.g. "Creating LXC container".
+  step       String
+  /// Failure detail copied from the provisioning error, when the step failed.
+  message    String?
+  /// Non-sensitive structured detail (vmid, node, endpoint, durationMs).
+  detail     Json?
+  createdAt  DateTime             @default(now())
+
+  @@index([databaseId, createdAt])
+  @@map("managed_database_events")
 }
 
 model ManagedDatabaseBackup {

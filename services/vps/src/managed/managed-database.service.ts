@@ -198,6 +198,39 @@ export class ManagedDatabaseService {
     return this.toPublic(await this.owned(userId, id));
   }
 
+  /**
+   * Provisioning timeline for one instance, oldest step first.
+   *
+   * Goes through `owned()` first so a tenant can never read another tenant's
+   * timeline (the events themselves carry vmid/node detail). Returns the
+   * parent row's current status and errorMessage alongside the steps so the UI
+   * can render a live progress view from a single request.
+   */
+  async events(userId: string, id: string) {
+    const record: any = await this.owned(userId, id);
+    const events = await ((this.prisma as any).managedDatabaseEvent
+      ?.findMany({
+        where: { databaseId: record.id },
+        orderBy: { createdAt: 'asc' },
+        take: 200,
+      })
+      .catch(() => []) ?? Promise.resolve([]));
+    return {
+      status: record.status,
+      errorMessage: record.errorMessage ?? null,
+      provisionAttempts: record.provisionAttempts ?? 0,
+      events: (events as any[]).map((e) => ({
+        id: e.id,
+        status: e.status,
+        step: e.step,
+        message: e.message ?? null,
+        detail: e.detail ?? null,
+        createdAt: e.createdAt,
+      })),
+    };
+  }
+
+
   /** Reveal the connection string; only the owner may call this. */
   async connectionString(userId: string, id: string) {
     const record: any = await this.owned(userId, id);

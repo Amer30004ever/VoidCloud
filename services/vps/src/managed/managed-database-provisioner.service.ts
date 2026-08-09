@@ -46,15 +46,112 @@ export class ManagedDatabaseProvisionerService {
   }
 
   /**
+   * How long a provisioning claim stays valid. A row whose `provisionLockedAt`
+   * is older than this is assumed to belong to a worker that crashed mid-flight
+   * and may be re-claimed. Must comfortably exceed the worst-case create+boot
+   * poll window (waitForRunning: 15 x 2s) plus Proxmox task latency.
+   */
+  private static readonly LEASE_MS = 5 * 60 * 1000;
+
+  /** Append a step to the provisioning timeline. Never throws into the caller. */
+  private async recordEvent(
+    databaseId: string,
+    status: 'PROVISIONING' | 'RUNNING' | 'FAILED',
+    step: string,
+    extra?: { message?: string; detail?: Record<string, unknown> },
+  ): Promise<void> {
+    await (this.prisma as any).managedDatabaseEvent
+      ?.create({
+        data: {
+          databaseId,
+          status,
+          step,
+          message: extra?.message ?? null,
+          detail: (extra?.detail ?? undefined) as any,
+        },
+      })
+      .catch(() => undefined);
+  }
+
+  /**
    * Create the LXC container that backs a managed database row, boot it, and
    * flip the row to RUNNING (or FAILED). Safe to call fire-and-forget; every
    * failure is persisted on the row rather than thrown at the HTTP caller.
+   *
+   * Idempotency
+   * -----------
+   * Repeated calls for the same `databaseId` never create a second LXC:
+   *
+   *  1. Terminal rows (RUNNING with a vmid, or soft-deleted) return immediately.
+   *  2. A row that already has `proxmoxVmid` is *reconciled*, not re-created:
+   *     we re-run start + wait against the existing container. This is the
+   *     partial-failure recovery path (container created, then the worker died
+   *     before it reached RUNNING).
+   *  3. Otherwise the worker claims the row with a conditional update on
+   *     `provisionLockedAt` (null or expired). Exactly one concurrent caller's
+   *     update matches; the losers see `count === 0` and bail out. This is the
+   *     same optimistic-claim pattern used by the cluster scheduler.
    */
   async provision(databaseId: string): Promise<void> {
     const record: any = await this.prisma.managedDatabase.findUnique({
       where: { id: databaseId },
     });
     if (!record || record.deletedAt) return;
+
+    // (1) Already finished — nothing to do.
+    if (record.status === 'RUNNING' && record.proxmoxVmid) {
+      this.logger.log(
+        `Managed DB ${record.name} already RUNNING on vmid=${record.proxmoxVmid}; skipping duplicate provision`,
+      );
+      return;
+    }
+
+    // (2) Container already exists → reconcile instead of creating a duplicate.
+    if (record.proxmoxVmid) {
+      await this.recordEvent(record.id, 'PROVISIONING', 'Resuming existing container', {
+        detail: { vmid: record.proxmoxVmid, node: record.nodeName ?? null },
+      });
+      try {
+        await this.proxmox.startContainer(record.proxmoxVmid, record.nodeName ?? undefined);
+        await this.waitForRunning(record.proxmoxVmid, record.nodeName ?? undefined);
+        await this.markRunning(record, record.host ?? null, record.proxmoxVmid, record.nodeName);
+      } catch (e: any) {
+        await this.markFailed(record, e);
+      }
+      return;
+    }
+
+    // (3) Claim the row. Only one concurrent caller wins.
+    const leaseCutoff = new Date(Date.now() - ManagedDatabaseProvisionerService.LEASE_MS);
+    const claim = await this.prisma.managedDatabase.updateMany({
+      where: {
+        id: record.id,
+        proxmoxVmid: null,
+        deletedAt: null,
+        OR: [{ provisionLockedAt: null }, { provisionLockedAt: { lt: leaseCutoff } }],
+      },
+      data: {
+        provisionLockedAt: new Date(),
+        provisionAttempts: { increment: 1 },
+        status: 'PROVISIONING',
+        errorMessage: null,
+      },
+    });
+    if (claim.count === 0) {
+      this.logger.warn(
+        `Managed DB ${record.name} is already being provisioned by another worker; skipping`,
+      );
+      return;
+    }
+
+    await this.recordEvent(record.id, 'PROVISIONING', 'Creating LXC container', {
+      detail: {
+        engine: record.engine,
+        cpuCores: record.cpuCores,
+        memoryMb: record.memoryMb,
+        storageGb: record.storageGb,
+      },
+    });
 
     try {
       const result = await this.proxmox.createContainer({
@@ -66,39 +163,74 @@ export class ManagedDatabaseProvisionerService {
         tenantId: record.organizationId ?? record.userId,
       });
 
-      await this.prisma.managedDatabase.update({
-        where: { id: record.id },
-        data: { proxmoxVmid: result.vmid, nodeName: result.node },
-      });
-
-      await this.proxmox.startContainer(result.vmid, result.node);
-      await this.waitForRunning(result.vmid, result.node);
-
+      // Persist the vmid immediately: if the process dies after this point, the
+      // reconcile path (2) picks the same container up instead of creating one.
       await this.prisma.managedDatabase.update({
         where: { id: record.id },
         data: {
-          status: 'RUNNING',
-          host: result.ipv4Address,
-          errorMessage: null,
+          proxmoxVmid: result.vmid,
+          nodeName: result.node,
+          provisionedAt: new Date(),
         },
       });
-      this.logger.log(
-        `Managed ${record.engine} ${record.name} running on vmid=${result.vmid} node=${result.node} ip=${result.ipv4Address}`,
-      );
+      await this.recordEvent(record.id, 'PROVISIONING', 'Container created', {
+        detail: { vmid: result.vmid, node: result.node },
+      });
+
+      await this.proxmox.startContainer(result.vmid, result.node);
+      await this.recordEvent(record.id, 'PROVISIONING', 'Booting container', {
+        detail: { vmid: result.vmid, node: result.node },
+      });
+      await this.waitForRunning(result.vmid, result.node);
+
+      await this.markRunning(record, result.ipv4Address, result.vmid, result.node);
     } catch (e: any) {
-      const message = String(e?.message ?? e).slice(0, 500);
-      this.logger.error(`Managed DB ${record.name} provisioning failed: ${message}`);
-      await this.prisma.managedDatabase
-        .update({
-          where: { id: record.id },
-          data: { status: 'FAILED', errorMessage: message },
-        })
-        .catch(() => undefined);
+      await this.markFailed(record, e);
     }
   }
 
+  private async markRunning(
+    record: any,
+    host: string | null,
+    vmid: number,
+    node?: string | null,
+  ): Promise<void> {
+    await this.prisma.managedDatabase.update({
+      where: { id: record.id },
+      data: {
+        status: 'RUNNING',
+        host: host ?? undefined,
+        errorMessage: null,
+        provisionLockedAt: null,
+      },
+    });
+    await this.recordEvent(record.id, 'RUNNING', 'Instance ready', {
+      detail: { vmid, node: node ?? null, host },
+    });
+    this.logger.log(
+      `Managed ${record.engine} ${record.name} running on vmid=${vmid} node=${node} ip=${host}`,
+    );
+  }
+
+  private async markFailed(record: any, e: any): Promise<void> {
+    const message = String(e?.message ?? e).slice(0, 500);
+    this.logger.error(`Managed DB ${record.name} provisioning failed: ${message}`);
+    await this.prisma.managedDatabase
+      .update({
+        where: { id: record.id },
+        // Release the lease so an operator retry can re-claim the row.
+        data: { status: 'FAILED', errorMessage: message, provisionLockedAt: null },
+      })
+      .catch(() => undefined);
+    await this.recordEvent(record.id, 'FAILED', 'Provisioning failed', { message });
+  }
+
   /** Poll the container until Proxmox reports it running (bounded). */
-  private async waitForRunning(vmid: number, node: string, attempts = 15): Promise<void> {
+  private async waitForRunning(
+    vmid: number,
+    node?: string,
+    attempts = 15,
+  ): Promise<void> {
     for (let i = 0; i < attempts; i++) {
       const status = await this.proxmox.getStatus(vmid, node).catch(() => null);
       if (status?.status === 'running') return;

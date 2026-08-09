@@ -243,7 +243,10 @@ describeIfTls('Proxmox live lifecycle against an emulated PVE API', () => {
           updates.push(args.data);
           return record;
         }),
+        // Provisioning now claims the row before creating an LXC (idempotency).
+        updateMany: jest.fn(async () => ({ count: 1 })),
       },
+      managedDatabaseEvent: { create: jest.fn(async () => ({})) },
     };
     const provisioner = new ManagedDatabaseProvisionerService(prisma, new ProxmoxService());
     await provisioner.provision('db-1');
