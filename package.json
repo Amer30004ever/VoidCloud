@@ -2,6 +2,10 @@
   "name": "workspace",
   "version": "0.0.0",
   "license": "MIT",
+  "workspaces": [
+    "frontend",
+    "lib/*"
+  ],
   "scripts": {
     "dev": "cd frontend && PORT=8080 bun run dev -- -p 8080 -H 0.0.0.0",
     "build": "cd frontend && bun run build && cd .. && node scripts/assemble-dist.mjs",
@@ -19,11 +23,15 @@
   "private": true,
   "overrides": {
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3"
   },
   "resolutions": {
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3"
   },
   "devDependencies": {
     "@replit/vite-plugin-runtime-error-modal": "^0.0.6",
