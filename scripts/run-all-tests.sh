@@ -146,7 +146,8 @@ fi
 if wants node-tests; then
   header "2. Node test runner (scripts/__tests__)"
   if compgen -G "scripts/__tests__/*.test.mjs" > /dev/null; then
-    run_stage node-tests node --test scripts/__tests__/
+    # shellcheck disable=SC2046  # intentional word-splitting over the glob
+    run_stage node-tests node --test $(ls scripts/__tests__/*.test.mjs)
   else
     skip_stage "no scripts/__tests__/*.test.mjs"
   fi
