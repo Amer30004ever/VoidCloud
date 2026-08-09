@@ -10,6 +10,7 @@ import {
   type ManagedEngine,
 } from "@/features/vps/managed";
 import { WidgetBoundary } from "@workspace/ui-kit/widget-boundary";
+import { ProvisioningTimeline } from "@/components/managed/ProvisioningTimeline";
 
 const ENGINES: ManagedEngine[] = ["POSTGRES", "MYSQL", "REDIS", "MONGODB"];
 
@@ -230,6 +231,13 @@ export default function ManagedDatabasesPage() {
                       {creds.uri}
                     </p>
                   )}
+                  {/* Live status stream: only mounted while the instance is
+                      still provisioning or has failed, so healthy rows stay
+                      quiet and make no polling requests. */}
+                  {(d.status === "PROVISIONING" || d.status === "FAILED") && (
+                    <ProvisioningTimeline databaseId={d.id} currentStatus={d.status} />
+                  )}
+
                 </div>
               );
             })}

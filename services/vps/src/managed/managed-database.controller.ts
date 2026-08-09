@@ -56,11 +56,20 @@ export class ManagedDatabaseController {
     return this.databases.get(req.user.id, id);
   }
 
+  @Get(':id/events')
+  @ApiOperation({
+    summary: 'Provisioning timeline (status transitions) for one instance',
+  })
+  events(@Req() req: any, @Param('id') id: string) {
+    return this.databases.events(req.user.id, id);
+  }
+
   @Get(':id/connection')
   @ApiOperation({ summary: 'Reveal the connection string (owner only)' })
   connection(@Req() req: any, @Param('id') id: string) {
     return this.databases.connectionString(req.user.id, id);
   }
+
 
   @Post(':id/start')
   start(@Req() req: any, @Param('id') id: string) {

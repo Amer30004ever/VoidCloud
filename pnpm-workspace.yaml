@@ -80,6 +80,13 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # Pin a single copy of the React typings across the workspace. Two
+  # different @types/react patch versions (e.g. 19.2.14 in frontend and
+  # 19.2.17 pulled transitively by a UI primitive) produce structurally
+  # incompatible `React.Key`/JSX types and fail `next build` with
+  # "Type 'unique symbol' is not assignable to type 'Key'".
+  "@types/react": "19.2.14"
+  "@types/react-dom": "19.2.3"
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"

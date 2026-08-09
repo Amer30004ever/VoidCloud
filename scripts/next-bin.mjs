@@ -1,40 +1,46 @@
 #!/usr/bin/env node
-// Resolves the Next.js CLI wherever it is installed (frontend/node_modules or
-// hoisted to the workspace root) and runs it with the given arguments.
-import { createRequire } from "node:module";
+/**
+ * Thin wrapper that runs the Next.js CLI from wherever it actually lives.
+ *
+ * Path resolution is delegated to scripts/resolve-next.mjs so that this file,
+ * scripts/link-next.mjs and scripts/assemble-dist.mjs can never drift apart or
+ * hardcode `frontend/node_modules/next/dist/bin/next`.
+ *
+ * If the link is missing (e.g. a bare `pnpm install` just rewrote
+ * frontend/node_modules and postinstall did not run), repair it in-process
+ * before invoking the CLI — Next's own workspace-root inference needs
+ * `next/package.json` to be resolvable from the frontend directory.
+ */
 import { spawnSync } from "node:child_process";
-import path from "node:path";
-import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { FRONTEND_DIR, resolveNextBin, frontendLinkIsValid } from "./resolve-next.mjs";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const candidates = [
-  path.join(root, "frontend", "node_modules", "next", "dist", "bin", "next"),
-  path.join(root, "node_modules", "next", "dist", "bin", "next"),
-];
-
-let bin = candidates.find((p) => existsSync(p));
-
-if (!bin) {
-  for (const from of [path.join(root, "frontend", "package.json"), path.join(root, "package.json")]) {
-    try {
-      const require = createRequire(from);
-      bin = path.join(path.dirname(require.resolve("next/package.json")), "dist", "bin", "next");
-      if (existsSync(bin)) break;
-      bin = undefined;
-    } catch {
-      /* keep looking */
-    }
-  }
-}
-
-if (!bin) {
-  console.error("[next-bin] Could not locate the Next.js CLI. Run an install first.");
+let found;
+try {
+  found = resolveNextBin();
+} catch (e) {
+  console.error(`[next-bin] ${e.message}`);
   process.exit(1);
 }
 
-const result = spawnSync(process.execPath, [bin, ...process.argv.slice(2)], {
+if (!frontendLinkIsValid()) {
+  console.log("[next-bin] frontend/node_modules/next is missing or stale — repairing");
+  const relink = spawnSync(process.execPath, [new URL("./link-next.mjs", import.meta.url).pathname], {
+    stdio: "inherit",
+  });
+  if (relink.status !== 0) {
+    console.warn("[next-bin] relink did not succeed; continuing with the resolved CLI path");
+  }
+}
+
+console.log(`[next-bin] using ${found.binPath} (${found.source})`);
+
+const result = spawnSync(process.execPath, [found.binPath, ...process.argv.slice(2)], {
   stdio: "inherit",
-  cwd: path.join(root, "frontend"),
+  cwd: FRONTEND_DIR,
 });
+
+if (result.error) {
+  console.error(`[next-bin] failed to run the Next.js CLI: ${result.error.message}`);
+  process.exit(1);
+}
 process.exit(result.status ?? 1);

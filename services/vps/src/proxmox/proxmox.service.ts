@@ -165,6 +165,44 @@ export class ProxmoxService {
     };
   }
 
+  /**
+   * Structured trace of a single Proxmox HTTP call.
+   *
+   * Emitted as one JSON line per request so a failed provision can be traced to
+   * the exact HTTP call (node, vmid, endpoint, status, duration) in Loki/ELK
+   * without regex-scraping prose log messages. Never contains the API token,
+   * the container root password, or any request body values.
+   */
+  private logPveCall(entry: {
+    phase: 'request' | 'response' | 'error';
+    method: string;
+    path: string;
+    node?: string;
+    vmid?: number;
+    statusCode?: number;
+    durationMs?: number;
+    error?: string;
+  }): void {
+    const record = {
+      event: 'proxmox.api',
+      ...entry,
+      endpoint: `${this.baseUrl}/api2/json${entry.path}`,
+    };
+    const line = JSON.stringify(record);
+    if (entry.phase === 'error') this.logger.error(line);
+    else this.logger.log(line);
+  }
+
+  /** Pull node/vmid out of a PVE path like /nodes/pve-1/lxc/123/status/start. */
+  private describePath(path: string): { node?: string; vmid?: number } {
+    const node = /\/nodes\/([^/]+)/.exec(path)?.[1];
+    const vmidRaw = /\/lxc\/(\d+)/.exec(path)?.[1];
+    return {
+      node,
+      vmid: vmidRaw ? Number(vmidRaw) : undefined,
+    };
+  }
+
   private async pveRequest<T = unknown>(
     method: string,
     path: string,
@@ -198,12 +236,27 @@ export class ProxmoxService {
       agent: this.agent,
     };
 
+    const { node, vmid } = this.describePath(path);
+    const startedAt = Date.now();
+    this.logPveCall({ phase: 'request', method, path, node, vmid });
+
     return new Promise((resolve, reject) => {
       const req = https.request(url, options, (res) => {
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
+          const durationMs = Date.now() - startedAt;
           if (!res.statusCode || res.statusCode >= 400) {
+            this.logPveCall({
+              phase: 'error',
+              method,
+              path,
+              node,
+              vmid,
+              statusCode: res.statusCode,
+              durationMs,
+              error: data.slice(0, 200),
+            });
             reject(
               new ServiceUnavailableException(
                 `Proxmox ${method} ${path} → ${res.statusCode} ${data.slice(0, 200)}`,
@@ -211,6 +264,15 @@ export class ProxmoxService {
             );
             return;
           }
+          this.logPveCall({
+            phase: 'response',
+            method,
+            path,
+            node,
+            vmid,
+            statusCode: res.statusCode,
+            durationMs,
+          });
           try {
             const json = JSON.parse(data) as { data?: T };
             resolve(json?.data as T);
@@ -224,7 +286,18 @@ export class ProxmoxService {
         });
       });
 
-      req.on('error', reject);
+      req.on('error', (err) => {
+        this.logPveCall({
+          phase: 'error',
+          method,
+          path,
+          node,
+          vmid,
+          durationMs: Date.now() - startedAt,
+          error: err.message,
+        });
+        reject(err);
+      });
       if (body) req.write(body);
       req.end();
     });
@@ -422,6 +495,16 @@ export class ProxmoxService {
       start: 1,
       features: 'nesting=1',
     };
+    // Structured breadcrumb for the createContainer call itself: this is the
+    // line to grep (event=proxmox.createContainer) when a provision fails and
+    // you need the node/vmid/endpoint that was actually hit.
+    this.logPveCall({
+      phase: 'request',
+      method: 'POST',
+      path: `/nodes/${targetNode}/lxc`,
+      node: targetNode,
+      vmid,
+    });
     try {
       await this.pveRequest('POST', `/nodes/${targetNode}/lxc`, params);
     } catch (e) {
@@ -434,8 +517,16 @@ export class ProxmoxService {
       this.logger.warn(`Firewall apply skipped for vmid=${vmid}: ${e.message}`),
     );
     this.logger.log(
-      `Proxmox created LXC vmid=${vmid} ip=${ipv4Address} node=${targetNode} template=${templateId}` +
-        (net.vlanTag ? ` vlan=${net.vlanTag}` : ''),
+      JSON.stringify({
+        event: 'proxmox.createContainer',
+        outcome: 'created',
+        node: targetNode,
+        vmid,
+        templateId,
+        endpoint: `${this.baseUrl}/api2/json/nodes/${targetNode}/lxc`,
+        ipv4Address,
+        vlan: net.vlanTag ?? null,
+      }),
     );
     return { vmid, ipv4Address, node: targetNode, rootPassword };
   }
@@ -445,7 +536,16 @@ export class ProxmoxService {
       this.logger.log(`[STUB] start vmid=${vmid}`);
       return;
     }
-    await this.pveRequest('POST', `/nodes/${node}/lxc/${vmid}/status/start`);
+    const path = `/nodes/${node}/lxc/${vmid}/status/start`;
+    this.logger.log(
+      JSON.stringify({
+        event: 'proxmox.startContainer',
+        node,
+        vmid,
+        endpoint: `${this.baseUrl}/api2/json${path}`,
+      }),
+    );
+    await this.pveRequest('POST', path);
   }
 
   async stopContainer(vmid: number, node = this.node): Promise<void> {
