@@ -27,9 +27,12 @@ const PROBE_KINDS = ['livenessProbe', 'readinessProbe', 'startupProbe'];
 // Services that legitimately serve health elsewhere (NOT crash-loops):
 //  - frontend: Next.js app, no global api/v1 prefix, health at root.
 //  - openwa: separate OpenWA gateway pod on :2785, health/docs at /api/docs.
+//  - ollama: upstream third-party image; it has no NestJS prefix and exposes
+//    readiness at /api/tags (the documented "is the model server up" endpoint).
 const KNOWN_EXCEPTIONS = new Map([
   ['frontend', '/'],
   ['openwa', '/api/docs'],
+  ['ollama', '/api/tags'],
 ]);
 
 function* walk(dir) {
