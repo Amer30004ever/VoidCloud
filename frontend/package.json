@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node ./node_modules/next/dist/bin/next dev",
-    "build": "node ./node_modules/next/dist/bin/next build",
-    "start": "node ./node_modules/next/dist/bin/next start",
+    "dev": "node ../scripts/next-bin.mjs dev",
+    "build": "node ../scripts/next-bin.mjs build",
+    "start": "node ../scripts/next-bin.mjs start",
     "lint": "eslint",
     "test": "jest --passWithNoTests"
   },
