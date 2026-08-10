@@ -97,7 +97,7 @@ export class ManagedDatabaseProvisionerService {
           step,
           message: extra?.message ?? null,
           correlationId,
-          detail: ({ ...(extra?.detail ?? {}), correlationId } ?? undefined) as any,
+          detail: { ...(extra?.detail ?? {}), correlationId } as any,
         },
       })
       .catch(() => undefined);
