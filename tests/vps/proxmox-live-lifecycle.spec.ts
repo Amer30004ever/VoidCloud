@@ -136,6 +136,7 @@ describeIfTls('Proxmox live lifecycle against an emulated PVE API', () => {
   beforeEach(() => {
     calls = [];
     statusSequence = [];
+    failStart = false;
   });
 
   it('reports live mode and rejects calls without the API token header', async () => {
