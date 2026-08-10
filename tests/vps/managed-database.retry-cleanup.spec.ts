@@ -177,7 +177,7 @@ describe('ManagedDatabaseProvisioner — backoff, bounded attempts, orphan clean
       createContainer: jest.fn(async () => ({ vmid: 700, node: 'pve-1', ipv4Address: '10.0.0.9' })),
       startContainer: jest.fn(async () => undefined),
       destroyContainer: jest.fn(),
-      getContainerStatus: jest.fn(async () => ({ status: 'running' })),
+      getStatus: jest.fn(async () => ({ status: 'running' })),
       runWithCorrelation: <T,>(_id: string, fn: () => Promise<T>) => fn(),
     };
 
