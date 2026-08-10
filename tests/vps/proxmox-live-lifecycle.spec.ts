@@ -87,6 +87,11 @@ describeIfTls('Proxmox live lifecycle against an emulated PVE API', () => {
         if (/^\/nodes\/[^/]+\/lxc$/.test(p) && req.method === 'GET') return send([]);
         if (/^\/nodes\/[^/]+\/lxc$/.test(p) && req.method === 'POST')
           return send('UPID:create');
+        if (failStart && /status\/start$/.test(p)) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ errors: 'CT 1234 failed to start: no free memory' }));
+          return;
+        }
         if (/status\/current$/.test(p))
           return send({
             status: statusSequence.shift() ?? 'running',
