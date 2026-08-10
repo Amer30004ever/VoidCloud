@@ -1,5 +1,7 @@
 /* Tier 9 — Managed platform API client (databases, object storage, K8s, VM import). */
 import api from "@/lib/api";
+import { API_BASE_URL } from "@/lib/constants";
+
 
 export type ManagedEngine = "POSTGRES" | "MYSQL" | "REDIS" | "MONGODB";
 
@@ -33,6 +35,8 @@ export interface ManagedDatabaseEvent {
   step: string;
   message?: string | null;
   detail?: Record<string, unknown> | null;
+  /** Trace id shared with the structured `proxmox.api` log line of the attempt. */
+  correlationId?: string | null;
   createdAt: string;
 }
 
@@ -40,8 +44,11 @@ export interface ManagedDatabaseTimeline {
   status: string;
   errorMessage?: string | null;
   provisionAttempts: number;
+  correlationId?: string | null;
+  nextRetryAt?: string | null;
   events: ManagedDatabaseEvent[];
 }
+
 
 
 export interface ObjectStorageKey {
@@ -126,6 +133,77 @@ export const managedApi = {
     backup: async (id: string) => (await api.post(`/managed/databases/${id}/backups`)).data,
     events: async (id: string) =>
       (await api.get<ManagedDatabaseTimeline>(`/managed/databases/${id}/events`)).data,
+
+    /**
+     * Subscribe to the live provisioning timeline over Server-Sent Events.
+     *
+     * Implemented with fetch + a stream reader rather than `EventSource`
+     * because EventSource cannot send the Authorization header, and the
+     * endpoint is JWT-guarded like every other managed route.
+     *
+     * Returns an unsubscribe function. `onError` lets the caller fall back to
+     * polling when the browser/proxy cannot hold a streaming connection.
+     */
+    streamEvents: (
+      id: string,
+      onMessage: (t: ManagedDatabaseTimeline) => void,
+      onError?: (e: unknown) => void,
+    ): (() => void) => {
+      const controller = new AbortController();
+
+      void (async () => {
+        try {
+          const token =
+            typeof window === "undefined"
+              ? null
+              : localStorage.getItem("voidcloud_token") ||
+                sessionStorage.getItem("voidcloud_token");
+          const res = await fetch(
+            `${API_BASE_URL}/managed/databases/${id}/events/stream`,
+            {
+              headers: {
+                Accept: "text/event-stream",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+              signal: controller.signal,
+            },
+          );
+          if (!res.ok || !res.body) throw new Error(`SSE failed (${res.status})`);
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            // SSE frames are separated by a blank line.
+            const frames = buffer.split("\n\n");
+            buffer = frames.pop() ?? "";
+            for (const frame of frames) {
+              const dataLine = frame
+                .split("\n")
+                .filter((l) => l.startsWith("data:"))
+                .map((l) => l.slice(5).trim())
+                .join("");
+              if (!dataLine) continue;
+              try {
+                onMessage(JSON.parse(dataLine) as ManagedDatabaseTimeline);
+              } catch {
+                /* ignore malformed keep-alive frames */
+              }
+            }
+          }
+        } catch (e) {
+          if (!controller.signal.aborted) onError?.(e);
+        }
+      })();
+
+      return () => controller.abort();
+    },
+
+
 
     destroy: async (id: string) => (await api.delete(`/managed/databases/${id}`)).data,
   },

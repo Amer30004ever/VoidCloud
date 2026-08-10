@@ -2342,6 +2342,12 @@ model ManagedDatabase {
   provisionAttempts Int      @default(0)
   /// Set once the LXC exists, so a retry reconciles instead of re-creating.
   provisionedAt     DateTime?
+  /// Earliest time a retry may re-claim the row (exponential backoff).
+  nextRetryAt       DateTime?
+  /// Correlation/trace id of the most recent provisioning attempt. The same id
+  /// is stamped on every timeline event and on every structured proxmox.api log
+  /// line emitted during that attempt, so a failed event links to the exact HTTP call.
+  correlationId     String?
 
   backups ManagedDatabaseBackup[]
   events  ManagedDatabaseEvent[]
@@ -2367,9 +2373,13 @@ model ManagedDatabaseEvent {
   message    String?
   /// Non-sensitive structured detail (vmid, node, endpoint, durationMs).
   detail     Json?
+  /// Trace id shared with the structured proxmox.api log lines of the attempt.
+  correlationId String?
   createdAt  DateTime             @default(now())
 
   @@index([databaseId, createdAt])
+  @@index([correlationId])
+
   @@map("managed_database_events")
 }
 

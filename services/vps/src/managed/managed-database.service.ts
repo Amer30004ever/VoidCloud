@@ -6,6 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { Observable } from 'rxjs';
+
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptSecret, decryptSecret } from '../../../../shared/crypto/crypto.util';
 import { ManagedDatabaseProvisionerService } from './managed-database-provisioner.service';
@@ -194,6 +196,31 @@ export class ManagedDatabaseService {
     return record;
   }
 
+  /**
+   * Audit trail for timeline reads.
+   *
+   * The timeline exposes `errorMessage` and infrastructure detail (vmid, node),
+   * so both the authorized read and the refused cross-tenant attempt are
+   * recorded. Best-effort: auditing must never block or fail the read.
+   */
+  private async auditEventRead(
+    userId: string,
+    databaseId: string,
+    status: 'SUCCESS' | 'FAILED',
+  ): Promise<void> {
+    await (this.prisma as any).auditLog
+      ?.create({
+        data: {
+          userId,
+          action: 'MANAGED_DB_EVENTS_READ',
+          resource: 'managed_database',
+          resourceId: databaseId,
+          status,
+        },
+      })
+      .catch(() => undefined);
+  }
+
   async get(userId: string, id: string) {
     return this.toPublic(await this.owned(userId, id));
   }
@@ -204,10 +231,27 @@ export class ManagedDatabaseService {
    * Goes through `owned()` first so a tenant can never read another tenant's
    * timeline (the events themselves carry vmid/node detail). Returns the
    * parent row's current status and errorMessage alongside the steps so the UI
-   * can render a live progress view from a single request.
+   * can render a live progress view from a single request. The correlationId
+   * links a failed step to the exact structured `proxmox.api` log line.
    */
   async events(userId: string, id: string) {
-    const record: any = await this.owned(userId, id);
+    const record = await this.ownedForTimeline(userId, id);
+    await this.auditEventRead(userId, record.id, 'SUCCESS');
+    return this.timelineFor(record);
+  }
+
+  /** Ownership check for timeline access; a refusal is audited as FAILED. */
+  private async ownedForTimeline(userId: string, id: string): Promise<any> {
+    try {
+      return await this.owned(userId, id);
+    } catch (e) {
+      await this.auditEventRead(userId, id, 'FAILED');
+      throw e;
+    }
+  }
+
+  /** Timeline payload for an already-authorized row (no audit side effect). */
+  private async timelineFor(record: any) {
     const events = await ((this.prisma as any).managedDatabaseEvent
       ?.findMany({
         where: { databaseId: record.id },
@@ -216,19 +260,82 @@ export class ManagedDatabaseService {
       })
       .catch(() => []) ?? Promise.resolve([]));
     return {
-      status: record.status,
+      status: record.status as string,
       errorMessage: record.errorMessage ?? null,
       provisionAttempts: record.provisionAttempts ?? 0,
+      correlationId: record.correlationId ?? null,
+      nextRetryAt: record.nextRetryAt ?? null,
       events: (events as any[]).map((e) => ({
         id: e.id,
         status: e.status,
         step: e.step,
         message: e.message ?? null,
         detail: e.detail ?? null,
+        correlationId: e.correlationId ?? null,
         createdAt: e.createdAt,
       })),
     };
   }
+
+
+  /**
+   * Server-Sent Events stream of the same timeline.
+   *
+   * The producer is a short server-side poll (1s) rather than a DB LISTEN: the
+   * provisioning writer is a plain Prisma insert, and a 1s server-side tick is
+   * invisible to the user while keeping the browser at exactly one open
+   * connection instead of a request every 3s. The stream completes on its own
+   * once the instance reaches a terminal state, so idle dashboards hold nothing.
+   */
+  eventStream(userId: string, id: string): Observable<{ data: any }> {
+    const TERMINAL = new Set(['RUNNING', 'FAILED', 'STOPPED', 'DELETED']);
+    let lastCount = -1;
+    let lastStatus = '';
+
+    return new Observable<{ data: any }>((subscriber) => {
+      let stopped = false;
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      let audited = false;
+
+      const tick = async () => {
+        if (stopped) return;
+        try {
+          // Ownership is re-checked on every tick (access can be revoked
+          // mid-stream) but only the first read is audited, so a long-lived
+          // stream cannot flood the audit log.
+          const record = await this.ownedForTimeline(userId, id);
+          if (!audited) {
+            audited = true;
+            await this.auditEventRead(userId, record.id, 'SUCCESS');
+          }
+          const payload = await this.timelineFor(record);
+          // Only push when something actually changed.
+          if (payload.events.length !== lastCount || payload.status !== lastStatus) {
+            lastCount = payload.events.length;
+            lastStatus = payload.status;
+            subscriber.next({ data: payload });
+          }
+          if (TERMINAL.has(payload.status)) {
+            subscriber.complete();
+            return;
+          }
+        } catch (e) {
+          subscriber.error(e);
+          return;
+        }
+        timer = setTimeout(tick, 1000);
+      };
+
+
+      void tick();
+      return () => {
+        stopped = true;
+        if (timer) clearTimeout(timer);
+      };
+    });
+  }
+
+
 
 
   /** Reveal the connection string; only the owner may call this. */

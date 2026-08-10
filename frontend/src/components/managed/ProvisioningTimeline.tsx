@@ -4,19 +4,24 @@
  * Live provisioning timeline for a managed database.
  *
  * Streams the append-only `ManagedDatabaseEvent` rows written by
- * ManagedDatabaseProvisionerService (GET /managed/databases/:id/events) so a
- * tenant can watch PROVISIONING -> RUNNING/FAILED with the exact per-step
- * detail (vmid, node) and, on failure, the errorMessage persisted on the row.
+ * ManagedDatabaseProvisionerService so a tenant can watch
+ * PROVISIONING -> RUNNING/FAILED with the exact per-step detail (vmid, node)
+ * and, on failure, the errorMessage persisted on the row.
  *
- * Polling rather than SSE: the backend is a plain REST controller, and a 3s
- * poll is well inside the provisioning window (create + boot is tens of
- * seconds). Polling stops as soon as the instance reaches a terminal state so
- * an idle dashboard makes no ongoing requests.
+ * Transport: Server-Sent Events (GET /managed/databases/:id/events/stream) so
+ * transitions appear the moment they are written. If the stream cannot be
+ * established (proxy buffering, older browser), it degrades to the polled
+ * endpoint on a 3s timer — the payload shape is identical either way.
+ *
+ * Each step carries the correlationId of its provisioning attempt; that is the
+ * same id stamped on the structured `proxmox.api` log lines, so a failed event
+ * can be pasted straight into a log query to reach the exact HTTP call.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  Copy,
   Loader2,
   Clock,
 } from "lucide-react";
@@ -37,6 +42,7 @@ export function ProvisioningTimeline({
 }) {
   const [data, setData] = useState<ManagedDatabaseTimeline | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
@@ -54,22 +60,45 @@ export function ProvisioningTimeline({
 
   useEffect(() => {
     let cancelled = false;
+    let stopStream: (() => void) | null = null;
 
-    const tick = async () => {
-      const status = await load();
-      if (cancelled) return;
-      // Keep polling only while the instance is still moving.
-      if (!TERMINAL.has(status)) {
-        timer.current = setTimeout(tick, POLL_MS);
-      }
+    const startPolling = () => {
+      const tick = async () => {
+        const status = await load();
+        if (cancelled) return;
+        // Keep polling only while the instance is still moving.
+        if (!TERMINAL.has(status)) {
+          timer.current = setTimeout(tick, POLL_MS);
+        }
+      };
+      void tick();
     };
 
-    void tick();
+    stopStream = managedApi.databases.streamEvents(
+      databaseId,
+      (payload) => {
+        if (cancelled) return;
+        setData(payload);
+        setError(null);
+        setLive(true);
+      },
+      () => {
+        // Stream unavailable — fall back to polling without surfacing an error.
+        if (cancelled) return;
+        setLive(false);
+        startPolling();
+      },
+    );
+
+    // Seed immediately so the first paint isn't empty while the stream opens.
+    void load();
+
     return () => {
       cancelled = true;
+      stopStream?.();
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [load]);
+  }, [databaseId, load]);
 
   const events = data?.events ?? [];
   const status = data?.status ?? currentStatus;
@@ -90,15 +119,23 @@ export function ProvisioningTimeline({
 
   return (
     <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-white/60">
           Provisioning timeline
         </h4>
-        {(data?.provisionAttempts ?? 0) > 1 && (
-          <span className="text-[11px] text-white/40">
-            attempt {data?.provisionAttempts}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {live && inFlight && (
+            <span className="flex items-center gap-1 text-[11px] text-emerald-300">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+              live
+            </span>
+          )}
+          {(data?.provisionAttempts ?? 0) > 1 && (
+            <span className="text-[11px] text-white/40">
+              attempt {data?.provisionAttempts}
+            </span>
+          )}
+        </div>
       </div>
 
       <ol className="space-y-2">
@@ -124,6 +161,7 @@ export function ProvisioningTimeline({
                 {ev.message && (
                   <p className="mt-0.5 break-words text-[11px] text-red-300">{ev.message}</p>
                 )}
+                {ev.correlationId && <TraceId id={ev.correlationId} />}
               </div>
             </li>
           );
@@ -135,7 +173,37 @@ export function ProvisioningTimeline({
           {data.errorMessage}
         </p>
       )}
+
+      {data?.nextRetryAt && status === "FAILED" && (
+        <p className="mt-2 text-[11px] text-white/45">
+          Automatic retry after {new Date(data.nextRetryAt).toLocaleTimeString()}
+        </p>
+      )}
     </div>
+  );
+}
+
+/**
+ * Copyable trace id. Pasting this into the log search returns exactly the
+ * `proxmox.api` lines (method, path, node, vmid, status, duration) of the
+ * attempt that produced this step.
+ */
+function TraceId({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void navigator.clipboard?.writeText(id);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      title="Copy trace id for log search"
+      className="mt-0.5 inline-flex items-center gap-1 font-mono text-[10px] text-white/30 transition hover:text-white/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/60"
+    >
+      <Copy className="h-3 w-3" aria-hidden="true" />
+      {copied ? "copied" : id}
+    </button>
   );
 }
 
@@ -148,3 +216,4 @@ function StepIcon({ status }: { status: string }) {
   }
   return <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin text-cyan-400" aria-hidden="true" />;
 }
+
