@@ -50,6 +50,7 @@ describeIfTls('Proxmox live lifecycle against an emulated PVE API', () => {
   let ProxmoxService: any;
   let ManagedDatabaseProvisionerService: any;
   let statusSequence: string[] = [];
+  let failStart = false;
   const savedEnv = { ...process.env };
 
   beforeAll(async () => {
@@ -86,6 +87,11 @@ describeIfTls('Proxmox live lifecycle against an emulated PVE API', () => {
         if (/^\/nodes\/[^/]+\/lxc$/.test(p) && req.method === 'GET') return send([]);
         if (/^\/nodes\/[^/]+\/lxc$/.test(p) && req.method === 'POST')
           return send('UPID:create');
+        if (failStart && /status\/start$/.test(p)) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ errors: 'CT 1234 failed to start: no free memory' }));
+          return;
+        }
         if (/status\/current$/.test(p))
           return send({
             status: statusSequence.shift() ?? 'running',
@@ -130,6 +136,7 @@ describeIfTls('Proxmox live lifecycle against an emulated PVE API', () => {
   beforeEach(() => {
     calls = [];
     statusSequence = [];
+    failStart = false;
   });
 
   it('reports live mode and rejects calls without the API token header', async () => {
@@ -281,4 +288,53 @@ describeIfTls('Proxmox live lifecycle against an emulated PVE API', () => {
     expect(updates[0]).toMatchObject({ status: 'FAILED' });
     expect(updates[0].errorMessage).toContain('storage local-lvm full');
   });
+
+  /**
+   * Orphan cleanup, verified on the wire.
+   *
+   * The unit-level spec (managed-database.retry-cleanup.spec.ts) mocks
+   * ProxmoxService entirely, so it only proves the provisioner *calls* a method
+   * named destroyContainer. This case drives the REAL client: the emulated PVE
+   * accepts the create, then rejects /status/start, and we assert an actual
+   * HTTP DELETE for the exact vmid reaches the API with purge semantics.
+   */
+  it('fires a real DELETE for the orphaned vmid when boot fails after create', async () => {
+    failStart = true;
+    const record: any = {
+      id: 'db-3', name: 'orphan', engine: 'POSTGRES',
+      cpuCores: 1, memoryMb: 512, storageGb: 10,
+      organizationId: 'tenant-9',
+    };
+    const updates: any[] = [];
+    const prisma: any = {
+      managedDatabase: {
+        findUnique: jest.fn().mockResolvedValue(record),
+        update: jest.fn(async (args: any) => {
+          updates.push(args.data);
+          return record;
+        }),
+        updateMany: jest.fn(async (args: any) => {
+          if (args?.data) updates.push(args.data);
+          return { count: 1 };
+        }),
+      },
+      managedDatabaseEvent: { create: jest.fn(async () => ({})) },
+    };
+    const provisioner = new ManagedDatabaseProvisionerService(prisma, new ProxmoxService());
+    await expect(provisioner.provision('db-3')).resolves.toBeUndefined();
+
+    // The container really was created on the emulated cluster...
+    expect(calls.some((c) => c.method === 'POST' && c.path.endsWith('/lxc'))).toBe(true);
+    // ...and the half-built CT was destroyed over HTTP, not just "logically".
+    const del = calls.find((c) => c.method === 'DELETE');
+    expect(del).toBeDefined();
+    expect(del!.path).toBe('/api2/json/nodes/pve-eg-2/lxc/1234');
+    expect(del!.params.purge).toBe('1');
+    expect(del!.params['destroy-unreferenced-disks']).toBe('1');
+
+    // Row ends FAILED and no vmid is left dangling for the next retry.
+    const failed = updates.find((u) => u.status === 'FAILED');
+    expect(failed).toBeDefined();
+    expect(failed.proxmoxVmid ?? null).toBeNull();
+  }, 20000);
 });
