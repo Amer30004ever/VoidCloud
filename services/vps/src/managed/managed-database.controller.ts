@@ -3,16 +3,20 @@ import {
   Controller,
   Delete,
   Get,
+  MessageEvent,
   Param,
   Patch,
   Post,
   Req,
+  Sse,
   UseGuards,
 } from '@nestjs/common';
+import type { Observable } from 'rxjs';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { ManagedDatabaseService, ManagedEngine } from './managed-database.service';
+
 
 @Controller('managed/databases')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -63,6 +67,17 @@ export class ManagedDatabaseController {
   events(@Req() req: any, @Param('id') id: string) {
     return this.databases.events(req.user.id, id);
   }
+
+  @Sse(':id/events/stream')
+  @ApiOperation({
+    summary: 'Live provisioning timeline (Server-Sent Events)',
+  })
+  eventStream(@Req() req: any, @Param('id') id: string): Observable<MessageEvent> {
+    // Same ownership + audit path as the polled endpoint; the stream simply
+    // pushes each change instead of waiting for the client to ask again.
+    return this.databases.eventStream(req.user.id, id) as Observable<MessageEvent>;
+  }
+
 
   @Get(':id/connection')
   @ApiOperation({ summary: 'Reveal the connection string (owner only)' })

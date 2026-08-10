@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+
 import { ProxmoxService } from '../proxmox/proxmox.service';
 import { decryptSecret } from '../../../../shared/crypto/crypto.util';
 import type { ManagedEngine } from './managed-database.service';
@@ -53,6 +55,32 @@ export class ManagedDatabaseProvisionerService {
    */
   private static readonly LEASE_MS = 5 * 60 * 1000;
 
+  /**
+   * Bounded exponential backoff. A transient Proxmox failure (node briefly
+   * unreachable, task queue busy) is retried, but the delay doubles each time
+   * and the row gives up permanently after MAX_ATTEMPTS so a flapping cluster
+   * cannot be thrashed by an unbounded retry loop.
+   */
+  private static readonly MAX_ATTEMPTS = 5;
+  private static readonly BASE_BACKOFF_MS = 15_000;
+  private static readonly MAX_BACKOFF_MS = 10 * 60 * 1000;
+
+  /** Delay before attempt N+1 (1-indexed attempts), with ±20% jitter. */
+  static backoffMs(attempt: number): number {
+    const raw =
+      ManagedDatabaseProvisionerService.BASE_BACKOFF_MS * 2 ** Math.max(0, attempt - 1);
+    const capped = Math.min(raw, ManagedDatabaseProvisionerService.MAX_BACKOFF_MS);
+    const jitter = capped * 0.2 * (Math.random() * 2 - 1);
+    return Math.round(capped + jitter);
+  }
+
+  /** Correlation id of the attempt currently running, per database row. */
+  private readonly activeCorrelation = new Map<string, string>();
+
+  private newCorrelationId(): string {
+    return `prov_${Date.now().toString(36)}_${randomBytes(6).toString('hex')}`;
+  }
+
   /** Append a step to the provisioning timeline. Never throws into the caller. */
   private async recordEvent(
     databaseId: string,
@@ -60,6 +88,7 @@ export class ManagedDatabaseProvisionerService {
     step: string,
     extra?: { message?: string; detail?: Record<string, unknown> },
   ): Promise<void> {
+    const correlationId = this.activeCorrelation.get(databaseId) ?? null;
     await (this.prisma as any).managedDatabaseEvent
       ?.create({
         data: {
@@ -67,7 +96,8 @@ export class ManagedDatabaseProvisionerService {
           status,
           step,
           message: extra?.message ?? null,
-          detail: (extra?.detail ?? undefined) as any,
+          correlationId,
+          detail: ({ ...(extra?.detail ?? {}), correlationId } ?? undefined) as any,
         },
       })
       .catch(() => undefined);
@@ -88,11 +118,25 @@ export class ManagedDatabaseProvisionerService {
    *     partial-failure recovery path (container created, then the worker died
    *     before it reached RUNNING).
    *  3. Otherwise the worker claims the row with a conditional update on
-   *     `provisionLockedAt` (null or expired). Exactly one concurrent caller's
-   *     update matches; the losers see `count === 0` and bail out. This is the
-   *     same optimistic-claim pattern used by the cluster scheduler.
+   *     `provisionLockedAt` (null or expired) and `nextRetryAt`. Exactly one
+   *     concurrent caller's update matches; the losers see `count === 0`.
+   *
+   * Every attempt runs inside a correlation context, so the timeline events and
+   * the structured `proxmox.api` log lines share one trace id.
    */
   async provision(databaseId: string): Promise<void> {
+    const correlationId = this.newCorrelationId();
+    this.activeCorrelation.set(databaseId, correlationId);
+    try {
+      await this.proxmox.runWithCorrelation(correlationId, () =>
+        this.provisionInner(databaseId, correlationId),
+      );
+    } finally {
+      this.activeCorrelation.delete(databaseId);
+    }
+  }
+
+  private async provisionInner(databaseId: string, correlationId: string): Promise<void> {
     const record: any = await this.prisma.managedDatabase.findUnique({
       where: { id: databaseId },
     });
@@ -106,8 +150,27 @@ export class ManagedDatabaseProvisionerService {
       return;
     }
 
+    // Bounded attempts: stop permanently instead of thrashing Proxmox.
+    if ((record.provisionAttempts ?? 0) >= ManagedDatabaseProvisionerService.MAX_ATTEMPTS) {
+      this.logger.warn(
+        `Managed DB ${record.name} exhausted ${record.provisionAttempts} provisioning attempts; not retrying`,
+      );
+      return;
+    }
+
+    // Backoff window still open — a retry now would just re-hit the same fault.
+    if (record.nextRetryAt && new Date(record.nextRetryAt).getTime() > Date.now()) {
+      this.logger.warn(
+        `Managed DB ${record.name} is in backoff until ${new Date(record.nextRetryAt).toISOString()}; skipping`,
+      );
+      return;
+    }
+
     // (2) Container already exists → reconcile instead of creating a duplicate.
     if (record.proxmoxVmid) {
+      await this.prisma.managedDatabase
+        .update({ where: { id: record.id }, data: { correlationId } })
+        .catch(() => undefined);
       await this.recordEvent(record.id, 'PROVISIONING', 'Resuming existing container', {
         detail: { vmid: record.proxmoxVmid, node: record.nodeName ?? null },
       });
@@ -122,6 +185,7 @@ export class ManagedDatabaseProvisionerService {
     }
 
     // (3) Claim the row. Only one concurrent caller wins.
+    const now = new Date();
     const leaseCutoff = new Date(Date.now() - ManagedDatabaseProvisionerService.LEASE_MS);
     const claim = await this.prisma.managedDatabase.updateMany({
       where: {
@@ -129,12 +193,15 @@ export class ManagedDatabaseProvisionerService {
         proxmoxVmid: null,
         deletedAt: null,
         OR: [{ provisionLockedAt: null }, { provisionLockedAt: { lt: leaseCutoff } }],
+        AND: [{ OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: now } }] }],
       },
       data: {
-        provisionLockedAt: new Date(),
+        provisionLockedAt: now,
         provisionAttempts: { increment: 1 },
         status: 'PROVISIONING',
         errorMessage: null,
+        nextRetryAt: null,
+        correlationId,
       },
     });
     if (claim.count === 0) {
@@ -153,6 +220,7 @@ export class ManagedDatabaseProvisionerService {
       },
     });
 
+    let created: { vmid: number; node?: string } | null = null;
     try {
       const result = await this.proxmox.createContainer({
         hostname: `db-${record.name}`,
@@ -162,6 +230,7 @@ export class ManagedDatabaseProvisionerService {
         templateId: this.templateIdFor(record.engine as ManagedEngine),
         tenantId: record.organizationId ?? record.userId,
       });
+      created = { vmid: result.vmid, node: result.node };
 
       // Persist the vmid immediately: if the process dies after this point, the
       // reconcile path (2) picks the same container up instead of creating one.
@@ -185,7 +254,47 @@ export class ManagedDatabaseProvisionerService {
 
       await this.markRunning(record, result.ipv4Address, result.vmid, result.node);
     } catch (e: any) {
+      // A container that was created but never reached RUNNING is a half-built
+      // artefact: destroy it and drop the vmid so the next attempt starts from a
+      // clean state instead of reconciling a broken/orphaned LXC forever.
+      await this.cleanupPartial(record, created);
       await this.markFailed(record, e);
+    }
+  }
+
+  /**
+   * Destroy a partially created LXC and release its vmid from the row.
+   *
+   * Best-effort: a cleanup failure must never mask the original provisioning
+   * error, so it is recorded on the timeline as its own step and swallowed. If
+   * the destroy fails, the vmid is deliberately kept on the row so an operator
+   * (and the reconcile path) can still see the orphan rather than losing it.
+   */
+  private async cleanupPartial(
+    record: any,
+    created: { vmid: number; node?: string } | null,
+  ): Promise<void> {
+    if (!created) return;
+    try {
+      await this.proxmox.destroyContainer(created.vmid, created.node);
+      await this.prisma.managedDatabase.update({
+        where: { id: record.id },
+        data: { proxmoxVmid: null, nodeName: null, provisionedAt: null, host: null },
+      });
+      await this.recordEvent(record.id, 'FAILED', 'Cleaned up partial container', {
+        detail: { vmid: created.vmid, node: created.node ?? null, destroyed: true },
+      });
+      this.logger.warn(
+        `Destroyed partially created LXC vmid=${created.vmid} for managed DB ${record.name}`,
+      );
+    } catch (err: any) {
+      await this.recordEvent(record.id, 'FAILED', 'Partial container cleanup failed', {
+        message: String(err?.message ?? err).slice(0, 300),
+        detail: { vmid: created.vmid, node: created.node ?? null, orphaned: true },
+      });
+      this.logger.error(
+        `Orphaned LXC vmid=${created.vmid} for managed DB ${record.name}: ${err?.message ?? err}`,
+      );
     }
   }
 
@@ -202,6 +311,7 @@ export class ManagedDatabaseProvisionerService {
         host: host ?? undefined,
         errorMessage: null,
         provisionLockedAt: null,
+        nextRetryAt: null,
       },
     });
     await this.recordEvent(record.id, 'RUNNING', 'Instance ready', {
@@ -214,16 +324,37 @@ export class ManagedDatabaseProvisionerService {
 
   private async markFailed(record: any, e: any): Promise<void> {
     const message = String(e?.message ?? e).slice(0, 500);
-    this.logger.error(`Managed DB ${record.name} provisioning failed: ${message}`);
+    const attempt = (record.provisionAttempts ?? 0) + 1;
+    const exhausted = attempt >= ManagedDatabaseProvisionerService.MAX_ATTEMPTS;
+    const retryDelay = ManagedDatabaseProvisionerService.backoffMs(attempt);
+    const nextRetryAt = exhausted ? null : new Date(Date.now() + retryDelay);
+
+    this.logger.error(
+      `Managed DB ${record.name} provisioning failed (attempt ${attempt}/${ManagedDatabaseProvisionerService.MAX_ATTEMPTS}): ${message}`,
+    );
     await this.prisma.managedDatabase
       .update({
         where: { id: record.id },
-        // Release the lease so an operator retry can re-claim the row.
-        data: { status: 'FAILED', errorMessage: message, provisionLockedAt: null },
+        // Release the lease so a retry can re-claim the row once backoff elapses.
+        data: {
+          status: 'FAILED',
+          errorMessage: message,
+          provisionLockedAt: null,
+          nextRetryAt,
+        },
       })
       .catch(() => undefined);
-    await this.recordEvent(record.id, 'FAILED', 'Provisioning failed', { message });
+    await this.recordEvent(record.id, 'FAILED', 'Provisioning failed', {
+      message,
+      detail: {
+        attempt,
+        maxAttempts: ManagedDatabaseProvisionerService.MAX_ATTEMPTS,
+        retryInMs: exhausted ? null : retryDelay,
+        nextRetryAt: nextRetryAt?.toISOString() ?? null,
+      },
+    });
   }
+
 
   /** Poll the container until Proxmox reports it running (bounded). */
   private async waitForRunning(

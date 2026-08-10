@@ -4,7 +4,9 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { AsyncLocalStorage } from 'async_hooks';
 import * as https from 'https';
+
 import {
   getTemplateForPlan,
   TEMPLATE_MANIFEST,
@@ -166,6 +168,27 @@ export class ProxmoxService {
   }
 
   /**
+   * Correlation/trace id of the work unit currently driving Proxmox calls.
+   *
+   * AsyncLocalStorage rather than an extra parameter on every method: the id is
+   * generated once by the caller (e.g. one managed-database provisioning
+   * attempt) and every `proxmox.api` log line emitted anywhere inside that
+   * async context carries it, so a failed timeline event links to the exact
+   * HTTP call without threading the id through a dozen signatures.
+   */
+  private static readonly correlation = new AsyncLocalStorage<string>();
+
+  /** Run `fn` with every nested Proxmox log line tagged with `correlationId`. */
+  runWithCorrelation<T>(correlationId: string, fn: () => Promise<T>): Promise<T> {
+    return ProxmoxService.correlation.run(correlationId, fn);
+  }
+
+  /** Correlation id of the current async context, if any. */
+  currentCorrelationId(): string | undefined {
+    return ProxmoxService.correlation.getStore();
+  }
+
+  /**
    * Structured trace of a single Proxmox HTTP call.
    *
    * Emitted as one JSON line per request so a failed provision can be traced to
@@ -185,6 +208,7 @@ export class ProxmoxService {
   }): void {
     const record = {
       event: 'proxmox.api',
+      correlationId: this.currentCorrelationId() ?? null,
       ...entry,
       endpoint: `${this.baseUrl}/api2/json${entry.path}`,
     };
@@ -192,6 +216,7 @@ export class ProxmoxService {
     if (entry.phase === 'error') this.logger.error(line);
     else this.logger.log(line);
   }
+
 
   /** Pull node/vmid out of a PVE path like /nodes/pve-1/lxc/123/status/start. */
   private describePath(path: string): { node?: string; vmid?: number } {
@@ -519,6 +544,7 @@ export class ProxmoxService {
     this.logger.log(
       JSON.stringify({
         event: 'proxmox.createContainer',
+        correlationId: this.currentCorrelationId() ?? null,
         outcome: 'created',
         node: targetNode,
         vmid,
@@ -540,6 +566,7 @@ export class ProxmoxService {
     this.logger.log(
       JSON.stringify({
         event: 'proxmox.startContainer',
+        correlationId: this.currentCorrelationId() ?? null,
         node,
         vmid,
         endpoint: `${this.baseUrl}/api2/json${path}`,
