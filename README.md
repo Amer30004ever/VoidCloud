@@ -45,17 +45,41 @@ voidcloud/
 └── .gitlab-ci.yml            # GitLab CI/CD
 ```
 
+## Package manager: pnpm only
+
+> **This workspace uses pnpm exclusively. Never run `npm install` (or `npm ci`)
+> anywhere in this repo — not at the root, and not inside `frontend/`,
+> `services/*`, `lib/*`, `database/`, or `tests/`.**
+
+Running npm in any folder rewrites `node_modules` with a flat, non-workspace
+layout, drops the `@workspace/*` links, and breaks the Next.js CLI resolution.
+Every recurring "Cannot find module 'next'" / "Module not found" incident in
+this repo has had the same root cause: a session or tool defaulting to npm.
+It is not caused by any single config file, and no config fix will prevent it —
+only using pnpm will.
+
+```bash
+pnpm install            # always from the repo root
+pnpm --filter <pkg> add <dep>   # add a dependency to one workspace package
+```
+
+Do not commit `package-lock.json`. If one appears, delete it, remove the
+affected `node_modules`, and re-run `pnpm install` at the root.
+
 ## Local development
 
 ```bash
 # Infrastructure
 docker compose up -d postgres redis rabbitmq
 
+# Install once, from the repo root (never npm)
+pnpm install
+
 # Run a service (example: auth)
-cd services/auth && npm ci && npm run build && npm start
+pnpm --filter auth build && pnpm --filter auth start
 
 # Frontend
-cd frontend && npm ci && npm run dev
+pnpm --filter frontend dev
 ```
 
 Set `NEXT_PUBLIC_API_URL=https://api.voidcloud.cc.cd/api/v1` for production builds.
