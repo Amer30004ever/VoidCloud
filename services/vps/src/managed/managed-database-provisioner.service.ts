@@ -127,14 +127,18 @@ export class ManagedDatabaseProvisionerService {
   async provision(databaseId: string): Promise<void> {
     const correlationId = this.newCorrelationId();
     this.activeCorrelation.set(databaseId, correlationId);
+    const run = () => this.provisionInner(databaseId, correlationId);
     try {
-      await this.proxmox.runWithCorrelation(correlationId, () =>
-        this.provisionInner(databaseId, correlationId),
-      );
+      // Correlation propagation is a logging concern; a Proxmox client that
+      // doesn't provide it (test doubles, older builds) still provisions.
+      await (typeof (this.proxmox as any).runWithCorrelation === 'function'
+        ? this.proxmox.runWithCorrelation(correlationId, run)
+        : run());
     } finally {
       this.activeCorrelation.delete(databaseId);
     }
   }
+
 
   private async provisionInner(databaseId: string, correlationId: string): Promise<void> {
     const record: any = await this.prisma.managedDatabase.findUnique({
