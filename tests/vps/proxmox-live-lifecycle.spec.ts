@@ -50,6 +50,7 @@ describeIfTls('Proxmox live lifecycle against an emulated PVE API', () => {
   let ProxmoxService: any;
   let ManagedDatabaseProvisionerService: any;
   let statusSequence: string[] = [];
+  let failStart = false;
   const savedEnv = { ...process.env };
 
   beforeAll(async () => {
