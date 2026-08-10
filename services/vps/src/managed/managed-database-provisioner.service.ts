@@ -231,7 +231,7 @@ export class ManagedDatabaseProvisionerService {
         cpuCores: record.cpuCores,
         ramMB: record.memoryMb,
         storageGB: record.storageGb,
-        templateId: this.templateIdFor(record.engine as ManagedEngine),
+        templateId: this.templateIdFor(record.engine as ManagedEngine) as any,
         tenantId: record.organizationId ?? record.userId,
       });
       created = { vmid: result.vmid, node: result.node };
