@@ -1,9 +1,13 @@
 import type { NextConfig } from "next";
 import path from "path";
+import { fileURLToPath } from "node:url";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const nextConfig: NextConfig = {
   output: 'standalone',
   transpilePackages: ['@workspace/ui-kit'],
+  turbopack: { root: repoRoot },
   async rewrites() {
     const apiTarget = process.env.API_PROXY_TARGET || 'https://api.voidcloud.cc.cd/api/v1';
     return [

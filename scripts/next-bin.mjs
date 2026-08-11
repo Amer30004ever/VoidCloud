@@ -34,7 +34,13 @@ if (!frontendLinkIsValid()) {
 
 console.log(`[next-bin] using ${found.binPath} (${found.source})`);
 
-const result = spawnSync(process.execPath, [found.binPath, ...process.argv.slice(2)], {
+const rawArgs = process.argv.slice(2);
+// lovable.toml passes "dev frontend ..." / "build frontend ..." for historical
+// reasons. With cwd already set to FRONTEND_DIR, the trailing "frontend" is
+// interpreted as an extra project directory, so drop it for the Next CLI.
+const args = (rawArgs[1] === "frontend") ? [rawArgs[0], ...rawArgs.slice(2)] : rawArgs;
+
+const result = spawnSync(process.execPath, [found.binPath, ...args], {
   stdio: "inherit",
   cwd: FRONTEND_DIR,
 });
