@@ -2,11 +2,19 @@
   "name": "workspace",
   "version": "0.0.0",
   "license": "MIT",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10",
+    "npm": "please-use-pnpm",
+    "yarn": "please-use-pnpm"
+  },
   "workspaces": [
     "frontend",
     "lib/*"
   ],
   "scripts": {
+    "preinstall": "node scripts/enforce-pnpm.mjs",
     "dev": "cd frontend && PORT=8080 bun run dev -- -p 8080 -H 0.0.0.0",
     "build": "cd frontend && bun run build && cd .. && node scripts/assemble-dist.mjs",
     "build:dev": "cd frontend && bun run build && cd .. && node scripts/assemble-dist.mjs",

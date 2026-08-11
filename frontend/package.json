@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "preinstall": "node ../scripts/enforce-pnpm.mjs",
     "dev": "node ../scripts/next-bin.mjs dev",
     "build": "node ../scripts/next-bin.mjs build",
     "start": "node ../scripts/next-bin.mjs start",
