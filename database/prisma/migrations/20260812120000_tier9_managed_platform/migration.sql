@@ -77,6 +77,23 @@ ALTER TABLE "managed_database_backups" DROP CONSTRAINT IF EXISTS "managed_databa
 ALTER TABLE "managed_database_backups" ADD CONSTRAINT "managed_database_backups_databaseId_fkey"
   FOREIGN KEY ("databaseId") REFERENCES "managed_databases"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- Managed database provisioning timeline events.
+-- NOTE: no migration ever created this table, so the provisioning timeline
+-- was unqueryable on a fresh database.
+CREATE TABLE IF NOT EXISTS "managed_database_events" (
+  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "databaseId" TEXT NOT NULL,
+  "status" "ManagedServiceStatus" NOT NULL,
+  "step" TEXT NOT NULL,
+  "message" TEXT,
+  "detail" JSONB,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "managed_database_events_databaseId_fkey"
+    FOREIGN KEY ("databaseId") REFERENCES "managed_databases"("id") ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "managed_database_events_databaseId_createdAt_idx"
+  ON "managed_database_events"("databaseId", "createdAt");
+
 -- Object storage
 CREATE TABLE IF NOT EXISTS "object_storage_buckets" (
   "id" TEXT NOT NULL,
@@ -304,3 +321,13 @@ CREATE TABLE IF NOT EXISTS "ddos_mitigation_events" (
 );
 CREATE INDEX IF NOT EXISTS "ddos_mitigation_events_vpsId_idx" ON "ddos_mitigation_events"("vpsId");
 CREATE INDEX IF NOT EXISTS "ddos_mitigation_events_startedAt_idx" ON "ddos_mitigation_events"("startedAt");
+
+-- Columns from 20260810210000_managed_db_correlation_backoff, which sorts
+-- before this migration and is therefore a no-op on a fresh database.
+ALTER TABLE "managed_databases"
+  ADD COLUMN IF NOT EXISTS "nextRetryAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "correlationId" TEXT;
+ALTER TABLE "managed_database_events"
+  ADD COLUMN IF NOT EXISTS "correlationId" TEXT;
+CREATE INDEX IF NOT EXISTS "managed_database_events_correlationId_idx"
+  ON "managed_database_events" ("correlationId");
