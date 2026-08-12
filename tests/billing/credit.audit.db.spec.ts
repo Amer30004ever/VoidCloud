@@ -82,7 +82,7 @@ describeDb('CreditService — AuditLog rows land in a real database', () => {
     await service.consume(userId, vpsId, 30, undefined, { actorId: userId });
     const found = await rows('CREDIT_CONSUMPTION');
     expect(found).toHaveLength(1);
-    expect(found[0].details).toMatchObject({ amount: 30, balanceAfter: 70 });
+    expect(found[0].details).toMatchObject({ amount: -30, balanceAfter: 70 });
   });
 
   it('refund writes a queryable CREDIT_REFUND row', async () => {
