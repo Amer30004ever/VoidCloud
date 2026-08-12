@@ -304,3 +304,13 @@ CREATE TABLE IF NOT EXISTS "ddos_mitigation_events" (
 );
 CREATE INDEX IF NOT EXISTS "ddos_mitigation_events_vpsId_idx" ON "ddos_mitigation_events"("vpsId");
 CREATE INDEX IF NOT EXISTS "ddos_mitigation_events_startedAt_idx" ON "ddos_mitigation_events"("startedAt");
+
+-- Columns from 20260810210000_managed_db_correlation_backoff, which sorts
+-- before this migration and is therefore a no-op on a fresh database.
+ALTER TABLE "managed_databases"
+  ADD COLUMN IF NOT EXISTS "nextRetryAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "correlationId" TEXT;
+ALTER TABLE "managed_database_events"
+  ADD COLUMN IF NOT EXISTS "correlationId" TEXT;
+CREATE INDEX IF NOT EXISTS "managed_database_events_correlationId_idx"
+  ON "managed_database_events" ("correlationId");
