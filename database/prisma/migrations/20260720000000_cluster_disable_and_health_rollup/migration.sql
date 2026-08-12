@@ -1,11 +1,19 @@
 -- Cluster: track referencing deployments + failure classification
-ALTER TABLE "cloud_deployments"
+-- NOTE: the deployment table is "CloudDeployment" (Prisma default mapping);
+-- an earlier revision of this migration targeted a non-existent
+-- "cloud_deployments" table and therefore failed on any fresh database.
+ALTER TABLE "CloudDeployment"
   ADD COLUMN IF NOT EXISTS "proxmoxClusterId" TEXT;
-ALTER TABLE "cloud_deployments"
-  ADD CONSTRAINT "cloud_deployments_proxmoxClusterId_fkey"
-  FOREIGN KEY ("proxmoxClusterId") REFERENCES "proxmox_clusters"("id") ON DELETE SET NULL;
+DO $$
+BEGIN
+  ALTER TABLE "CloudDeployment"
+    ADD CONSTRAINT "cloud_deployments_proxmoxClusterId_fkey"
+    FOREIGN KEY ("proxmoxClusterId") REFERENCES "proxmox_clusters"("id") ON DELETE SET NULL;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 CREATE INDEX IF NOT EXISTS "cloud_deployments_proxmoxClusterId_idx"
-  ON "cloud_deployments"("proxmoxClusterId");
+  ON "CloudDeployment"("proxmoxClusterId");
 
 ALTER TABLE "proxmox_clusters"
   ADD COLUMN IF NOT EXISTS "lastErrorType" TEXT,
