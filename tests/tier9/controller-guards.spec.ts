@@ -80,6 +80,15 @@ class TestJwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 }
 
+/** Nest lifecycle hooks are invoked by the framework, not by a request. */
+const LIFECYCLE = new Set([
+  'onModuleInit',
+  'onModuleDestroy',
+  'onApplicationBootstrap',
+  'onApplicationShutdown',
+  'beforeApplicationShutdown',
+]);
+
 /** A service double whose every method records the call and returns `{ ok: true }`. */
 function spyService() {
   const calls: string[] = [];
@@ -88,6 +97,7 @@ function spyService() {
     get(_t, prop: string) {
       if (prop === '__calls') return calls;
       if (typeof prop !== 'string' || prop === 'then') return undefined;
+      if (LIFECYCLE.has(prop)) return undefined;
       return (...args: any[]) => {
         calls.push(prop);
         return Promise.resolve({ ok: true, args });
@@ -96,6 +106,7 @@ function spyService() {
   });
   return proxy;
 }
+
 
 async function mount(controller: any, tokens: Array<[any, any]>) {
   const moduleRef = await Test.createTestingModule({
