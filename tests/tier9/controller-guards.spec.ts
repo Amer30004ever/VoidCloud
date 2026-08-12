@@ -14,6 +14,23 @@
  * downstream service is replaced by a recording spy.
  */
 import 'reflect-metadata';
+
+// @kubernetes/client-node ships ESM-only; it is pulled in transitively by
+// VpsService and is irrelevant to guard behaviour.
+jest.mock('@kubernetes/client-node', () => ({
+  KubeConfig: class {
+    loadFromDefault() {}
+    loadFromCluster() {}
+    makeApiClient() {
+      return {};
+    }
+  },
+  CoreV1Api: class {},
+  AppsV1Api: class {},
+  NetworkingV1Api: class {},
+  BatchV1Api: class {},
+}));
+
 import { Injectable } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PassportModule, PassportStrategy } from '@nestjs/passport';
