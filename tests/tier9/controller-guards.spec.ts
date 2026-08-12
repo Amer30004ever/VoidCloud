@@ -126,6 +126,8 @@ type Case = {
   service: any; // primary service token asserted "never reached"
   extraProviders?: Array<[any, any]>;
   tenantRoute: { method: 'get' | 'post'; path: string };
+  /** Role that is legitimately allowed on tenantRoute (default USER). */
+  tenantRole?: string;
   adminRoute?: { method: 'get' | 'post'; path: string };
 };
 
@@ -181,6 +183,7 @@ const CASES: Case[] = [
     service: ConsolidatedInvoiceService,
     extraProviders: [[EtaInvoiceService, spyService()]],
     tenantRoute: { method: 'get', path: '/billing/enterprise/organizations/org-1/consolidated' },
+    tenantRole: 'ADMIN',
     adminRoute: { method: 'get', path: '/billing/enterprise/eta/submissions' },
   },
   {
@@ -232,7 +235,7 @@ describe('Tier 9 — controller guards reject before the service layer', () => {
       it('lets an authenticated tenant through to the service', async () => {
         const res = await (request(app.getHttpServer()) as any)
           [c.tenantRoute.method](c.tenantRoute.path)
-          .set('Authorization', `Bearer ${tokenFor('USER')}`)
+          .set('Authorization', `Bearer ${tokenFor(c.tenantRole ?? 'USER')}`)
           .send({});
         expect([200, 201]).toContain(res.status);
         expect(svc.__calls.length).toBeGreaterThan(0);
