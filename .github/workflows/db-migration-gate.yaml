@@ -1,0 +1,95 @@
+name: DB Migration Gate
+
+# Builds a database from a completely empty state by applying every migration
+# in order, then checks the resulting schema against schema.prisma for drift.
+# Same discipline as the service runtime gate, but for schema instead of code.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "database/prisma/**"
+      - ".github/workflows/db-migration-gate.yaml"
+  workflow_dispatch:
+
+jobs:
+  fresh-database:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: void_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: void_ci
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/void_ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install psql client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      # Step 1 — raw SQL replay. Every migration.sql must apply, in order,
+      # against an empty database. ON_ERROR_STOP turns any SQL error into a
+      # non-zero exit, so a broken or out-of-order migration fails the build.
+      - name: Apply every migration from empty state
+        run: |
+          set -euo pipefail
+          cd database/prisma/migrations
+          count=0
+          for dir in $(ls -d */ | sort); do
+            echo "::group::$dir"
+            psql -v ON_ERROR_STOP=1 -q -f "$dir/migration.sql"
+            echo "::endgroup::"
+            count=$((count + 1))
+          done
+          echo "Applied $count migrations to a fresh database."
+
+      # Step 2 — prisma must agree that the replayed history is complete.
+      # `migrate deploy` on the already-replayed DB is skipped; instead we
+      # rebuild in a second database through prisma itself so the
+      # _prisma_migrations bookkeeping is exercised too.
+      - name: Rebuild through prisma migrate deploy
+        working-directory: database
+        run: |
+          set -euo pipefail
+          psql -c 'CREATE DATABASE void_ci_prisma'
+          DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/void_ci_prisma \
+            npx --yes prisma@6.19.3 migrate deploy
+
+      # Step 3 — drift gate. The schema produced by migration history must
+      # match schema.prisma exactly. Any diff exits non-zero.
+      - name: Fail on schema drift
+        working-directory: database
+        run: |
+          set -euo pipefail
+          npx --yes prisma@6.19.3 migrate diff \
+            --from-url "postgresql://postgres:postgres@127.0.0.1:5432/void_ci_prisma" \
+            --to-schema-datamodel prisma/schema.prisma \
+            --exit-code \
+            --script > /tmp/drift.sql && echo "No drift." && exit 0
+
+          echo "::error::Schema drift detected between migration history and schema.prisma"
+          cat /tmp/drift.sql
+          exit 1
