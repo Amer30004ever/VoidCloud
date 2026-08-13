@@ -43,6 +43,9 @@ function run(script: string, env: Record<string, string> = {}) {
     `export DB_USER="${env.DB_USER ?? 'tester'}"`,
     `export DB_PASS="${env.DB_PASS ?? 'secret'}"`,
     `export RETENTION_DAYS="${env.RETENTION_DAYS ?? '7'}"`,
+    ...(env.EXPECTED_TABLES_FILE
+      ? [`export EXPECTED_TABLES_FILE="${env.EXPECTED_TABLES_FILE}"`]
+      : []),
   ].join('\n');
   const bashCmd = `${inlineEnv}\nbash "${bashScript}"`;
   return execFileSync('bash', ['-c', bashCmd], {
