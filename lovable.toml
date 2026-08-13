@@ -2,7 +2,7 @@
 [run]
 dev = "node scripts/next-bin.mjs dev . --hostname 0.0.0.0 --port 8080"
 build = "node scripts/next-bin.mjs build"
-install = "pnpm install && node scripts/link-next.mjs"
+install = "pnpm install"
 
 [build]
 output = "frontend/.next"
