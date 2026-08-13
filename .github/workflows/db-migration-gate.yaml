@@ -93,3 +93,16 @@ jobs:
           echo "::error::Schema drift detected between migration history and schema.prisma"
           cat /tmp/drift.sql
           exit 1
+
+      # Step 4 — the restore drill's safety net is only as good as its manifest.
+      # Regenerate the expected-table list and fail if it drifted from the repo.
+      - name: Expected-tables manifest is up to date
+        run: |
+          set -euo pipefail
+          node database/scripts/generate-expected-tables.mjs
+          if ! git diff --quiet -- database/scripts/expected-tables.txt kubernetes/postgres/expected-tables-configmap.yaml; then
+            echo "::error::expected-tables manifest is stale — run node database/scripts/generate-expected-tables.mjs and commit the result"
+            git --no-pager diff -- database/scripts/expected-tables.txt kubernetes/postgres/expected-tables-configmap.yaml
+            exit 1
+          fi
+          echo "Manifest up to date."

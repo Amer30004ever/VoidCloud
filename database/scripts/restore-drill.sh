@@ -40,7 +40,47 @@ if [ "${TABLE_COUNT}" -eq 0 ]; then
   exit 1
 fi
 
+# --- Schema completeness gate -------------------------------------------------
+# Counting tables cannot catch a backup taken from an already-broken schema.
+# Compare the restored table set against the expected manifest derived from
+# schema.prisma and fail loudly on ANY missing table.
+EXPECTED_TABLES_FILE="${EXPECTED_TABLES_FILE:-$(dirname "$0")/expected-tables.txt}"
+
+if [ ! -f "${EXPECTED_TABLES_FILE}" ]; then
+  echo "ERROR: Expected-tables manifest not found at ${EXPECTED_TABLES_FILE}." >&2
+  echo "       Run: node database/scripts/generate-expected-tables.mjs" >&2
+  exit 1
+fi
+
+ACTUAL_TABLES_FILE="$(mktemp)"
+trap 'rm -f "${ACTUAL_TABLES_FILE}" "${EXPECTED_SORTED:-}" "${MISSING_FILE:-}"' EXIT
+
+psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${SCRATCH_DB}" -t -A -c \
+  "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';" \
+  | sed '/^$/d' | LC_ALL=C sort > "${ACTUAL_TABLES_FILE}"
+
+EXPECTED_SORTED="$(mktemp)"
+grep -v '^[[:space:]]*$' "${EXPECTED_TABLES_FILE}" | grep -v '^#' | LC_ALL=C sort > "${EXPECTED_SORTED}"
+
+MISSING_FILE="$(mktemp)"
+LC_ALL=C comm -23 "${EXPECTED_SORTED}" "${ACTUAL_TABLES_FILE}" > "${MISSING_FILE}"
+MISSING_COUNT="$(wc -l < "${MISSING_FILE}" | tr -d ' ')"
+EXTRA_COUNT="$(LC_ALL=C comm -13 "${EXPECTED_SORTED}" "${ACTUAL_TABLES_FILE}" | grep -vc '^_prisma_migrations$' || true)"
+
+echo "  Expected tables: $(wc -l < "${EXPECTED_SORTED}" | tr -d ' ')"
+echo "  Missing tables: ${MISSING_COUNT}"
+echo "  Unexpected tables: ${EXTRA_COUNT}"
+
+if [ "${MISSING_COUNT}" -ne 0 ]; then
+  echo "ERROR: Schema completeness check failed — ${MISSING_COUNT} expected table(s) missing from the restored database:" >&2
+  sed 's/^/  - /' "${MISSING_FILE}" >&2
+  exit 1
+fi
+
+echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Schema completeness verified — all expected tables present."
+
 echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Restore drill completed successfully."
+
 
 echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Dropping scratch database ${SCRATCH_DB}..."
 dropdb -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" "${SCRATCH_DB}"

@@ -52,6 +52,11 @@ spec:
           volumeMounts:
             - name: backup-storage
               mountPath: /backups
+            - name: expected-tables
+              mountPath: /etc/voidcloud
+              readOnly: true
+            - name: scratch
+              mountPath: /tmp
           command:
             - /bin/sh
             - -c
@@ -79,6 +84,23 @@ spec:
                 echo "ERROR: Restore verification failed — no tables found in scratch database." >&2
                 exit 1
               fi
+              EXPECTED_TABLES_FILE=/etc/voidcloud/expected-tables.txt
+              if [ ! -f "$EXPECTED_TABLES_FILE" ]; then
+                echo "ERROR: Expected-tables manifest not mounted at $EXPECTED_TABLES_FILE" >&2
+                exit 1
+              fi
+              psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "${SCRATCH_DB}" -t -A -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';" | sed '/^$/d' | LC_ALL=C sort > /tmp/actual.txt
+              grep -v '^[[:space:]]*$' "$EXPECTED_TABLES_FILE" | grep -v '^#' | LC_ALL=C sort > /tmp/expected.txt
+              LC_ALL=C comm -23 /tmp/expected.txt /tmp/actual.txt > /tmp/missing.txt
+              MISSING_COUNT="$(wc -l < /tmp/missing.txt | tr -d ' ')"
+              echo "  Expected tables: $(wc -l < /tmp/expected.txt | tr -d ' ')"
+              echo "  Missing tables: ${MISSING_COUNT}"
+              if [ "${MISSING_COUNT}" -ne 0 ]; then
+                echo "ERROR: Schema completeness check failed — ${MISSING_COUNT} expected table(s) missing:" >&2
+                sed 's/^/  - /' /tmp/missing.txt >&2
+                exit 1
+              fi
+              echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Schema completeness verified — all expected tables present."
               echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Restore drill completed successfully."
               echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Dropping scratch database ${SCRATCH_DB}..."
               dropdb -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" "${SCRATCH_DB}"
@@ -87,3 +109,8 @@ spec:
         - name: backup-storage
           persistentVolumeClaim:
             claimName: voidcloud-backup-pvc
+        - name: expected-tables
+          configMap:
+            name: voidcloud-expected-tables
+        - name: scratch
+          emptyDir: {}

@@ -43,6 +43,9 @@ function run(script: string, env: Record<string, string> = {}) {
     `export DB_USER="${env.DB_USER ?? 'tester'}"`,
     `export DB_PASS="${env.DB_PASS ?? 'secret'}"`,
     `export RETENTION_DAYS="${env.RETENTION_DAYS ?? '7'}"`,
+    ...(env.EXPECTED_TABLES_FILE
+      ? [`export EXPECTED_TABLES_FILE="${env.EXPECTED_TABLES_FILE}"`]
+      : []),
   ].join('\n');
   const bashCmd = `${inlineEnv}\nbash "${bashScript}"`;
   return execFileSync('bash', ['-c', bashCmd], {
@@ -108,22 +111,35 @@ describe('Tier 6.5 — backup.sh', () => {
 });
 
 describe('Tier 6.5 — restore-drill.sh', () => {
-  function stubPostgresForDrill(tableCount: string) {
+  /**
+   * Schema-completeness aware stub: `tables` is the list of table names the
+   * restored database claims to contain.
+   */
+  function stubPostgresForDrill(tableCount: string, tables: string[] = []) {
     stub('dropdb', 'exit 0');
     stub('createdb', 'exit 0');
     stub(
       'psql',
-      `if [[ "$*" == *"information_schema.tables"* ]]; then echo "${tableCount}"; ` +
+      `if [[ "$*" == *"table_name FROM information_schema.tables"* ]]; then printf '%s\\n' ${tables
+        .map((t) => `"${t}"`)
+        .join(' ')}; ` +
+        `elif [[ "$*" == *"information_schema.tables"* ]]; then echo "${tableCount}"; ` +
         `elif [[ "$*" == *"n_live_tup"* ]]; then echo "42"; else cat > /dev/null; fi`,
     );
   }
 
+  function withManifest(tables: string[]): Record<string, string> {
+    const p = path.join(tmp, 'expected-tables.txt');
+    fs.writeFileSync(p, tables.join('\n') + '\n');
+    return { EXPECTED_TABLES_FILE: toBashPath(p) };
+  }
+
   it('exits non-zero when no backup file exists', () => {
-    stubPostgresForDrill('10');
+    stubPostgresForDrill('10', ['users']);
     fs.mkdirSync(backupDir, { recursive: true });
     let err: any;
     try {
-      run(DRILL);
+      run(DRILL, withManifest(['users']));
     } catch (e) {
       err = e;
     }
@@ -134,11 +150,12 @@ describe('Tier 6.5 — restore-drill.sh', () => {
   it('restores the latest backup and reports table/row counts', () => {
     stub('pg_dump', 'echo "-- dump"');
     run(BACKUP); // produce a real gzipped backup first
-    stubPostgresForDrill('37');
+    stubPostgresForDrill('37', ['users', 'tenants', 'CrmLead']);
 
-    const out = run(DRILL_BASH);
+    const out = run(DRILL_BASH, withManifest(['users', 'tenants', 'CrmLead']));
     expect(out).toContain('Tables: 37');
     expect(out).toContain('Rows: 42');
+    expect(out).toContain('Schema completeness verified');
     expect(out).toContain('Restore drill completed successfully');
   });
 
@@ -149,11 +166,55 @@ describe('Tier 6.5 — restore-drill.sh', () => {
 
     let err: any;
     try {
-      run(DRILL);
+      run(DRILL, withManifest(['users']));
     } catch (e) {
       err = e;
     }
     expect(err).toBeDefined();
     expect(String(err.stderr)).toContain('Restore verification failed');
   });
+
+  it('fails when expected tables are missing even though the count is non-zero', () => {
+    stub('pg_dump', 'echo "-- dump"');
+    run(BACKUP);
+    // Restored DB has plenty of tables, but the CRM tables are absent — exactly
+    // the drift class that a pure count check cannot see.
+    stubPostgresForDrill('124', ['users', 'tenants']);
+
+    let err: any;
+    try {
+      run(DRILL_BASH, withManifest(['CrmLead', 'WhatsappMessage', 'tenants', 'users']));
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeDefined();
+    expect(String(err.stderr)).toContain('Schema completeness check failed');
+    expect(String(err.stderr)).toContain('CrmLead');
+    expect(String(err.stderr)).toContain('WhatsappMessage');
+  });
+
+  it('fails when the expected-tables manifest is missing', () => {
+    stub('pg_dump', 'echo "-- dump"');
+    run(BACKUP);
+    stubPostgresForDrill('124', ['users']);
+
+    let err: any;
+    try {
+      run(DRILL_BASH, { EXPECTED_TABLES_FILE: toBashPath(path.join(tmp, 'nope.txt')) });
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeDefined();
+    expect(String(err.stderr)).toContain('Expected-tables manifest not found');
+  });
+
+  it('ignores _prisma_migrations as an unexpected extra table', () => {
+    stub('pg_dump', 'echo "-- dump"');
+    run(BACKUP);
+    stubPostgresForDrill('2', ['_prisma_migrations', 'users']);
+
+    const out = run(DRILL_BASH, withManifest(['users']));
+    expect(out).toContain('Unexpected tables: 0');
+  });
 });
+
