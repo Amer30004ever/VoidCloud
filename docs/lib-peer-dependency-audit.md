@@ -53,6 +53,10 @@ Confirmed by build, not by inspection:
   `rm -rf lib/db/dist lib/db/tsconfig.tsbuildinfo && tsc --build lib/db/tsconfig.json --force`
   → exit 0, no diagnostics.
 
-Caveat for future work: `lib/ui-kit` is **not** a reference in the root
-`tsconfig.json`, so `typecheck:libs` does not cover it. Add it there if it is
-ever meant to be gated by that script.
+Scope gap, now closed: `lib/ui-kit` was **not** a reference in the root
+`tsconfig.json`, so `typecheck:libs` never covered it — which is why its
+peer-only React gap could only surface as a failed production build. It is now
+listed as a project reference (with `jsx: react-jsx` and `types: ["react"]` in
+its own tsconfig), so every future dependency change there is gated by the same
+check. Any new `lib/*` package must be added to the root references too.
+

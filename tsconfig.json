@@ -11,6 +11,10 @@
     },
     {
       "path": "./lib/api-zod"
+    },
+    {
+      "path": "./lib/ui-kit"
     }
+
   ]
 }

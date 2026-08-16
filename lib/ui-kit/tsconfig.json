@@ -7,7 +7,9 @@
     "outDir": "dist",
     "rootDir": "src",
     "lib": ["dom", "es2022"],
-    "types": ["node", "react"]
+    "jsx": "react-jsx",
+    "types": ["react"]
+
   },
   "include": ["src"]
 }
