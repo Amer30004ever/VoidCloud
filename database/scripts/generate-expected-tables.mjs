@@ -16,7 +16,7 @@ const schema = readFileSync(resolve(repo, 'database/prisma/schema.prisma'), 'utf
 
 const lines = schema.split(/\r?\n/);
 const tables = new Set();
-const relationNames = new Set();
+const listRelationCounts = new Map();
 
 let current = null;
 let body = [];
@@ -35,12 +35,17 @@ for (const line of lines) {
   }
   if (current) {
     body.push(line);
-    // implicit many-to-many: relation("Name") on a list field
+    // A named relation on a list field is only an IMPLICIT many-to-many join
+    // table when BOTH sides are lists. A named one-to-many (list on one side,
+    // scalar + fields/references on the other) has no join table at all.
     const rel = line.match(/\w+\s+\w+\[\]\s+@relation\("([^"]+)"\)/);
-    if (rel) relationNames.add(rel[1]);
+    if (rel) listRelationCounts.set(rel[1], (listRelationCounts.get(rel[1]) ?? 0) + 1);
   }
 }
-for (const r of relationNames) tables.add(`_${r}`);
+for (const [name, count] of listRelationCounts) {
+  if (count >= 2) tables.add(`_${name}`);
+}
+
 
 const sorted = [...tables].sort();
 writeFileSync(resolve(repo, 'database/scripts/expected-tables.txt'), sorted.join('\n') + '\n');
