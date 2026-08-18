@@ -4,7 +4,12 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
+// Dev and production builds must never share a build directory: a production
+// `next build` wipes .next, which deletes the manifests an active dev server is
+// serving from and makes the preview return 500s until it is restarted.
+// next-bin.mjs sets NEXT_DIST_DIR=.next-dev for `dev`; builds keep .next.
 const nextConfig: NextConfig = {
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   output: 'standalone',
   transpilePackages: ['@workspace/ui-kit'],
   turbopack: { root: repoRoot },

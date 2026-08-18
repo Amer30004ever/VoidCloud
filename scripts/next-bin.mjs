@@ -40,9 +40,16 @@ const rawArgs = process.argv.slice(2);
 // interpreted as an extra project directory, so drop it for the Next CLI.
 const args = (rawArgs[1] === "frontend") ? [rawArgs[0], ...rawArgs.slice(2)] : rawArgs;
 
+// Keep dev and production builds in separate build directories so a build run
+// alongside a live dev server cannot delete the manifests the dev server is
+// serving from. next.config.ts reads NEXT_DIST_DIR.
+const distDir = args[0] === "dev" ? ".next-dev" : ".next";
+console.log(`[next-bin] distDir=${distDir}`);
+
 const result = spawnSync(process.execPath, [found.binPath, ...args], {
   stdio: "inherit",
   cwd: FRONTEND_DIR,
+  env: { ...process.env, NEXT_DIST_DIR: process.env.NEXT_DIST_DIR || distDir },
 });
 
 if (result.error) {
