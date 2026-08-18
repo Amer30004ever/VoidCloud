@@ -40,11 +40,21 @@ for (const line of lines) {
     // scalar + fields/references on the other) has no join table at all.
     const rel = line.match(/\w+\s+\w+\[\]\s+@relation\("([^"]+)"\)/);
     if (rel) listRelationCounts.set(rel[1], (listRelationCounts.get(rel[1]) ?? 0) + 1);
+    // Unnamed implicit m2m: `field Other[]` with no @relation attribute on
+    // either side produces the join table `_AToB` (model names, sorted).
+    const plain = line.match(/^\s*\w+\s+(\w+)\[\]\s*$/);
+    if (plain) plainLists.push([current, plain[1]]);
   }
 }
 for (const [name, count] of listRelationCounts) {
   if (count >= 2) tables.add(`_${name}`);
 }
+for (const [a, b] of plainLists) {
+  if (plainLists.some(([x, y]) => x === b && y === a)) {
+    tables.add(`_${[a, b].sort().join('To')}`);
+  }
+}
+
 
 
 const sorted = [...tables].sort();
