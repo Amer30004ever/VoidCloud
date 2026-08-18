@@ -94,11 +94,6 @@ data:
     WhatsappContact
     WhatsappMessage
     WorkflowTemplate
-    _AdminAuditActions
-    _DocumentVersionAuthor
-    _OrgOwner
-    _Referrals
-    _UserVpsAlertRules
     _VPSKeys
     agent_invites
     bandwidth_overages
