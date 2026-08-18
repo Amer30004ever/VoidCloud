@@ -86,6 +86,7 @@ WebhookLog
 WhatsappContact
 WhatsappMessage
 WorkflowTemplate
+_DocumentToDocumentTag
 _VPSKeys
 agent_invites
 bandwidth_overages

@@ -17,6 +17,7 @@ const schema = readFileSync(resolve(repo, 'database/prisma/schema.prisma'), 'utf
 const lines = schema.split(/\r?\n/);
 const tables = new Set();
 const listRelationCounts = new Map();
+const plainLists = [];
 
 let current = null;
 let body = [];
