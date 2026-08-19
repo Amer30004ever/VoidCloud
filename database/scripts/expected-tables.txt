@@ -1,5 +1,4 @@
 APIRateLimit
-AbuseReport
 Alert
 AlertRule
 ApiKey
@@ -63,7 +62,6 @@ PasswordResetToken
 PathEnrollment
 PathProgress
 Project
-PtrRecordRequest
 Referral
 ReferralEarning
 ReferralPayoutRequest
@@ -76,7 +74,6 @@ VPSMigration
 VPSSnapshot
 VpsAlertNotification
 VpsAlertRule
-VpsProvisionJob
 VpsRecommendation
 VpsSecuritySettings
 Webhook
@@ -88,6 +85,7 @@ WhatsappMessage
 WorkflowTemplate
 _DocumentToDocumentTag
 _VPSKeys
+abuse_reports
 agent_invites
 bandwidth_overages
 bandwidth_samples
@@ -112,6 +110,7 @@ pending_allocations
 platform_secrets
 platform_settings
 proxmox_clusters
+ptr_record_requests
 rbac_permissions
 rbac_role_permissions
 rbac_roles
@@ -127,6 +126,7 @@ tos_acceptances
 user_tenants
 vm_import_jobs
 vps_health_logs
+vps_provision_jobs
 whatsapp_broadcast_recipients
 whatsapp_broadcasts
 whatsapp_templates
