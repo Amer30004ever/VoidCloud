@@ -7,7 +7,6 @@ metadata:
 data:
   expected-tables.txt: |
     APIRateLimit
-    AbuseReport
     Alert
     AlertRule
     ApiKey
@@ -71,7 +70,6 @@ data:
     PathEnrollment
     PathProgress
     Project
-    PtrRecordRequest
     Referral
     ReferralEarning
     ReferralPayoutRequest
@@ -84,7 +82,6 @@ data:
     VPSSnapshot
     VpsAlertNotification
     VpsAlertRule
-    VpsProvisionJob
     VpsRecommendation
     VpsSecuritySettings
     Webhook
@@ -96,6 +93,7 @@ data:
     WorkflowTemplate
     _DocumentToDocumentTag
     _VPSKeys
+    abuse_reports
     agent_invites
     bandwidth_overages
     bandwidth_samples
@@ -120,6 +118,7 @@ data:
     platform_secrets
     platform_settings
     proxmox_clusters
+    ptr_record_requests
     rbac_permissions
     rbac_role_permissions
     rbac_roles
@@ -135,6 +134,7 @@ data:
     user_tenants
     vm_import_jobs
     vps_health_logs
+    vps_provision_jobs
     whatsapp_broadcast_recipients
     whatsapp_broadcasts
     whatsapp_templates
