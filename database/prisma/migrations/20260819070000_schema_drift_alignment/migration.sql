@@ -161,8 +161,9 @@ ALTER TABLE "abuse_reports" ALTER COLUMN "id" DROP DEFAULT,
 ALTER COLUMN "updatedAt" DROP DEFAULT;
 
 -- AlterTable
-ALTER TABLE "agent_invites" ADD COLUMN     "createdBy" TEXT NOT NULL,
+ALTER TABLE "agent_invites" ADD COLUMN     "createdBy" TEXT NOT NULL DEFAULT '',
 ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "agent_invites" ALTER COLUMN "createdBy" DROP DEFAULT;
 
 -- AlterTable
 ALTER TABLE "credit_transactions" ALTER COLUMN "id" DROP DEFAULT;
