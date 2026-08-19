@@ -40,12 +40,18 @@ describe('OidcBootstrapService — live HTTP double', () => {
     const seen: Req[] = [];
     const s = await startServer((req, res) => {
       seen.push(req);
-      if (req.method === 'GET' && req.url === '/api/v1/admin/auths') {
+      if (req.method === 'GET' && req.url === '/api/v1/user/applications/oauth2') {
         res.writeHead(200, { 'content-type': 'application/json' });
         return res.end(JSON.stringify(authSources));
       }
-      if (req.method === 'POST' && req.url.startsWith('/api/v1/admin/auths')) {
-        const created = { id: authSources.length + 1, ...req.body };
+      if (req.method === 'POST' && req.url === '/api/v1/user/applications/oauth2') {
+        const created = {
+          id: authSources.length + 1,
+          name: req.body.name,
+          client_id: `client-${authSources.length + 1}`,
+          client_secret: 'minted-by-gitea',
+          redirect_uris: req.body.redirect_uris,
+        };
         authSources.push(created);
         res.writeHead(201, { 'content-type': 'application/json' });
         return res.end(JSON.stringify(created));
@@ -61,17 +67,16 @@ describe('OidcBootstrapService — live HTTP double', () => {
     process.env.OIDC_ISSUER = 'https://api.voidcloud.cc.cd';
 
     const svc = new OidcBootstrapService();
-    const first = await svc.bootstrapGitea();
+    const first = await svc.registerGitea();
     expect(first.status).toBe('success');
+    expect(JSON.stringify(first.details)).not.toContain('minted-by-gitea');
 
     // The server really holds a registration now.
-    const readBack = await fetch(`${s.url}/api/v1/admin/auths`).then((r) => r.json());
+    const readBack = await fetch(`${s.url}/api/v1/user/applications/oauth2`).then((r) => r.json());
     expect(readBack).toHaveLength(1);
     expect(readBack[0]).toMatchObject({
       name: 'VoidCloud SSO',
-      provider: 'oauth2_generic',
-      clientId: 'gitea',
-      clientSecret: 'secret-live',
+      redirect_uris: ['https://api.voidcloud.cc.cd/oidc/callback/gitea'],
     });
 
     // Second run must be idempotent against the now-populated server.
@@ -81,7 +86,7 @@ describe('OidcBootstrapService — live HTTP double', () => {
 
     // Record the exact wire path used, so drift from the k8s Job is visible.
     expect(seen.filter((r) => r.method === 'POST').map((r) => r.url)).toEqual([
-      '/api/v1/admin/auths/oauth2/gitea',
+      '/api/v1/user/applications/oauth2',
     ]);
   });
 
