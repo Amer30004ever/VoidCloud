@@ -88,11 +88,13 @@ export class OidcBootstrapService {
       }
 
       const data = (await response.json()) as Record<string, unknown>;
+      // Gitea mints the client secret; never echo it back through result logs.
+      const { client_secret: mintedSecret, ...safe } = data;
       this.logger.log('Gitea OIDC bootstrap completed');
       return {
         status: 'success',
         message: 'Gitea OIDC configured successfully',
-        details: { ...data, redirectUri, cliCommand },
+        details: { ...safe, clientSecretIssued: Boolean(mintedSecret), redirectUri, cliCommand },
       };
     } catch (err) {
       this.logger.error(`Gitea OIDC bootstrap error: ${err}`);
