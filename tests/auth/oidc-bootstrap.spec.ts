@@ -79,43 +79,47 @@ describe('OidcBootstrapService', () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it('is idempotent: skips when the VoidCloud SSO auth source already exists', async () => {
+    it('is idempotent: skips when the VoidCloud SSO application already exists', async () => {
       configureGitea();
-      fetchMock.mockResolvedValueOnce(
-        res([{ id: 7, provider: 'oauth2_generic', name: 'VoidCloud SSO' }]),
-      );
+      fetchMock.mockResolvedValueOnce(res([{ id: 7, name: 'VoidCloud SSO' }]));
       const r = await service.bootstrapGitea();
       expect(r.status).toBe('skipped');
-      expect(r.details).toEqual({ authSourceId: 7 });
+      expect(r.details).toMatchObject({ applicationId: 7 });
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
-    it('creates the auth source with discovery URL and bearer auth when absent', async () => {
+    it('registers the OAuth2 application on the real Gitea endpoint when absent', async () => {
       configureGitea();
       fetchMock
-        .mockResolvedValueOnce(res([{ id: 1, provider: 'ldap', name: 'Corp LDAP' }]))
-        .mockResolvedValueOnce(res({ id: 42 }, true, 201));
+        .mockResolvedValueOnce(res([{ id: 1, name: 'Something else' }]))
+        .mockResolvedValueOnce(res({ id: 42, client_id: 'abc', client_secret: 'shh' }, true, 201));
 
       const r = await service.bootstrapGitea();
       expect(r.status).toBe('success');
-      expect(r.details).toEqual({ id: 42 });
+      expect(r.details).toMatchObject({ id: 42, client_id: 'abc', clientSecretIssued: true });
+      // The minted secret must never be echoed back through the result.
+      expect(JSON.stringify(r.details)).not.toContain('shh');
 
       const [createUrl, createInit] = fetchMock.mock.calls[1];
-      expect(createUrl).toBe('https://git.example.com/api/v1/admin/auths/oauth2/gitea');
+      expect(createUrl).toBe('https://git.example.com/api/v1/user/applications/oauth2');
       expect(createInit.method).toBe('POST');
-      expect(createInit.headers.Authorization).toBe('Bearer gitea-token');
+      expect(createInit.headers.Authorization).toBe('token gitea-token');
       const body = JSON.parse(createInit.body);
       expect(body).toMatchObject({
         name: 'VoidCloud SSO',
-        provider: 'oauth2_generic',
-        clientId: 'gitea-client',
-        clientSecret: 'gitea-secret',
-        openidConnectAutoDiscoveryUrl:
-          'https://issuer.example.com/oidc/.well-known/openid-configuration',
-        redirectUri: 'https://issuer.example.com/oidc/callback/gitea',
-        scopes: ['openid', 'profile', 'email'],
+        redirect_uris: ['https://issuer.example.com/oidc/callback/gitea'],
+        confidential_client: true,
       });
     });
+
+    it('surfaces a rejected admin token as an error', async () => {
+      configureGitea();
+      fetchMock.mockResolvedValueOnce(res('unauthorized', false, 401));
+      const r = await service.bootstrapGitea();
+      expect(r.status).toBe('error');
+      expect(r.message).toMatch(/401/);
+    });
+
 
     it('returns an error result (does not throw) when Gitea rejects the create', async () => {
       configureGitea();
