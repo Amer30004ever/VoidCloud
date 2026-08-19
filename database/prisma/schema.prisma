@@ -1243,6 +1243,8 @@ model AbuseReport {
   @@index([targetVpsId])
   @@index([category])
   @@index([createdAt])
+
+  @@map("abuse_reports")
 }
 
 model PtrRecordRequest {
@@ -1262,6 +1264,8 @@ model PtrRecordRequest {
   @@index([userId])
   @@index([status])
   @@index([vpsId])
+
+  @@map("ptr_record_requests")
 }
 
 // ============================================================
@@ -1297,6 +1301,8 @@ model VpsProvisionJob {
   @@index([userId])
   @@index([status])
   @@index([idempotencyKey])
+
+  @@map("vps_provision_jobs")
 }
 
 model VPSSnapshot {
