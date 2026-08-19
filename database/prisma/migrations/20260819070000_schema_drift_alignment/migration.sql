@@ -164,6 +164,8 @@ ALTER COLUMN "updatedAt" DROP DEFAULT;
 ALTER TABLE "agent_invites" ADD COLUMN     "createdBy" TEXT NOT NULL DEFAULT '',
 ALTER COLUMN "id" DROP DEFAULT;
 ALTER TABLE "agent_invites" ALTER COLUMN "createdBy" DROP DEFAULT;
+-- Drop invites whose creator cannot be resolved, so the FK below can be added.
+DELETE FROM "agent_invites" WHERE "createdBy" NOT IN (SELECT "id" FROM "User");
 
 -- AlterTable
 ALTER TABLE "credit_transactions" ALTER COLUMN "id" DROP DEFAULT;
