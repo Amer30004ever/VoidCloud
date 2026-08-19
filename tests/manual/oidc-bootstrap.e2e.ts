@@ -17,17 +17,17 @@ async function main() {
   const svc = new OidcBootstrapService();
   let failed = false;
 
-  const gitea = await svc.bootstrapGitea();
+  const gitea = await svc.registerGitea();
   console.log('[gitea] ', JSON.stringify(gitea, null, 2));
   if (gitea.status === 'error') failed = true;
 
-  // Read back the auth source from the live Gitea to prove persistence.
+  // Read back the OAuth2 application from the live Gitea to prove persistence.
   if (gitea.status === 'success' && process.env.GITEA_URL) {
-    const res = await fetch(`${process.env.GITEA_URL}/api/v1/admin/auths`, {
-      headers: { Authorization: `Bearer ${process.env.GITEA_ADMIN_TOKEN}` },
+    const res = await fetch(`${process.env.GITEA_URL}/api/v1/user/applications/oauth2`, {
+      headers: { Authorization: `token ${process.env.GITEA_ADMIN_TOKEN}` },
     });
-    const sources = (await res.json()) as Array<Record<string, unknown>>;
-    const found = sources.find((s) => s['name'] === 'VoidCloud SSO');
+    const apps = (await res.json()) as Array<Record<string, unknown>>;
+    const found = apps.find((a) => a['name'] === 'VoidCloud SSO');
     console.log('[gitea] readback:', found ? JSON.stringify(found) : 'NOT FOUND');
     if (!found) failed = true;
   }
