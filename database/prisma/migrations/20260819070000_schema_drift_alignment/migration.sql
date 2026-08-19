@@ -128,6 +128,7 @@ ALTER TABLE "BillingPaymentAlert" ALTER COLUMN "id" DROP DEFAULT;
 ALTER TABLE "Conversation" ADD COLUMN     "assignedTo" TEXT;
 
 -- AlterTable
+UPDATE "CustomImage" SET "storageUrl" = '' WHERE "storageUrl" IS NULL;
 ALTER TABLE "CustomImage" ALTER COLUMN "type" DROP DEFAULT,
 ALTER COLUMN "sizeMB" DROP DEFAULT,
 ALTER COLUMN "storageUrl" SET NOT NULL;
