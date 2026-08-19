@@ -10,8 +10,19 @@ interface BootstrapResult {
 export class OidcBootstrapService {
   private readonly logger = new Logger(OidcBootstrapService.name);
 
+  /**
+   * Registers Void Cloud as an OAuth2 application inside Gitea.
+   *
+   * Real Gitea (verified against 1.25.x) exposes NO REST API for login
+   * (auth) sources — `/api/v1/admin/auths` returns 404. The only supported
+   * API surface is `/api/v1/user/applications/oauth2`, which registers an
+   * OAuth2 client so users can sign in to Void Cloud with their Gitea
+   * account. The reverse direction (Gitea consuming Void Cloud as an OIDC
+   * provider) is CLI-only; the command is returned in `details.cliCommand`
+   * so an operator can run it inside the Gitea pod.
+   */
   async bootstrapGitea(): Promise<BootstrapResult> {
-    const giteaUrl = process.env.GITEA_URL;
+    const giteaUrl = process.env.GITEA_URL?.replace(/\/+$/, '');
     const giteaAdminToken = process.env.GITEA_ADMIN_TOKEN;
     const clientId = process.env.OIDC_GITEA_CLIENT_ID;
     const clientSecret = process.env.OIDC_GITEA_CLIENT_SECRET;
@@ -23,44 +34,51 @@ export class OidcBootstrapService {
       return { status: 'skipped', message: 'OIDC_GITEA_CLIENT_ID or OIDC_GITEA_CLIENT_SECRET not configured' };
     }
 
+    const issuer = (process.env.OIDC_ISSUER || 'https://api.voidcloud.cc.cd').replace(/\/+$/, '');
+    const redirectUri = `${issuer}/oidc/callback/gitea`;
+    const appName = 'VoidCloud SSO';
+    const headers = {
+      Authorization: `token ${giteaAdminToken}`,
+      'Content-Type': 'application/json',
+    };
+    const cliCommand =
+      `gitea admin auth add-oauth --name "${appName}" --provider openidConnect ` +
+      `--key "${clientId}" --secret "<OIDC_GITEA_CLIENT_SECRET>" ` +
+      `--auto-discover-url "${issuer}/oidc/.well-known/openid-configuration" --scopes "openid profile email"`;
+
     try {
-      const listResponse = await fetch(`${giteaUrl}/api/v1/admin/auths`, {
+      const listResponse = await fetch(`${giteaUrl}/api/v1/user/applications/oauth2`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${giteaAdminToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
+      if (listResponse.status === 401 || listResponse.status === 403) {
+        return {
+          status: 'error',
+          message: `Gitea OIDC setup failed: admin token rejected (${listResponse.status})`,
+        };
+      }
+
       if (listResponse.ok) {
-        const authSources = await listResponse.json();
-        const existingOidc = authSources.find((source: any) => 
-          source.provider === 'oauth2_generic' && 
-          source.name === 'VoidCloud SSO'
-        );
-        if (existingOidc) {
-          this.logger.log('Gitea OIDC already configured, skipping');
-          return { status: 'skipped', message: 'Gitea OIDC already configured', details: { authSourceId: existingOidc.id } };
+        const apps = (await listResponse.json()) as Array<{ id: number; name: string }>;
+        const existing = Array.isArray(apps) ? apps.find((app) => app.name === appName) : undefined;
+        if (existing) {
+          this.logger.log('Gitea OAuth2 application already registered, skipping');
+          return {
+            status: 'skipped',
+            message: 'Gitea OIDC already configured',
+            details: { applicationId: existing.id, cliCommand },
+          };
         }
       }
 
-      const issuer = process.env.OIDC_ISSUER || 'https://api.voidcloud.cc.cd';
-      const redirectUri = `${issuer}/oidc/callback/gitea`;
-
-      const response = await fetch(`${giteaUrl}/api/v1/admin/auths/oauth2/gitea`, {
+      const response = await fetch(`${giteaUrl}/api/v1/user/applications/oauth2`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${giteaAdminToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
-          name: 'VoidCloud SSO',
-          provider: 'oauth2_generic',
-          clientId,
-          clientSecret,
-          openidConnectAutoDiscoveryUrl: `${issuer}/oidc/.well-known/openid-configuration`,
-          redirectUri,
-          scopes: ['openid', 'profile', 'email'],
+          name: appName,
+          redirect_uris: [redirectUri],
+          confidential_client: true,
         }),
       });
 
@@ -69,14 +87,26 @@ export class OidcBootstrapService {
         return { status: 'error', message: `Gitea OIDC setup failed: ${response.status} ${text}` };
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as Record<string, unknown>;
+      // Gitea mints the client secret; never echo it back through result logs.
+      const { client_secret: mintedSecret, ...safe } = data;
       this.logger.log('Gitea OIDC bootstrap completed');
-      return { status: 'success', message: 'Gitea OIDC configured successfully', details: data };
+      return {
+        status: 'success',
+        message: 'Gitea OIDC configured successfully',
+        details: { ...safe, clientSecretIssued: Boolean(mintedSecret), redirectUri, cliCommand },
+      };
     } catch (err) {
       this.logger.error(`Gitea OIDC bootstrap error: ${err}`);
       return { status: 'error', message: `Gitea OIDC bootstrap error: ${err}` };
     }
   }
+
+  /** Alias kept for callers that speak in registration terms. */
+  registerGitea(): Promise<BootstrapResult> {
+    return this.bootstrapGitea();
+  }
+
 
   async bootstrapPortainer(): Promise<BootstrapResult> {
     const portainerUrl = process.env.PORTAINER_URL;
