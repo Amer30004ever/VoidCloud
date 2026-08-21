@@ -11,6 +11,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 /**
  * Every CRM DTO is an explicit allow-list.
@@ -75,7 +76,17 @@ export class CreateLeadDto {
   @IsOptional() @IsString() assignedTo?: string;
 }
 
-export class UpdateLeadDto extends CreateLeadDto {}
+export class UpdateLeadDto {
+  @IsOptional() @IsString() @MaxLength(200) name?: string;
+  @IsOptional() @IsString() @MaxLength(320) email?: string;
+  @IsOptional() @IsString() @MaxLength(50) phone?: string;
+  @IsOptional() @IsIn(LEAD_SOURCES) source?: string;
+  @IsOptional() @IsIn(LEAD_STATUSES) status?: string;
+  @IsOptional() @IsNumber() @Min(0) value?: number;
+  @IsOptional() @IsString() @MaxLength(3) currency?: string;
+  @IsOptional() @IsString() @MaxLength(5000) notes?: string;
+  @IsOptional() @IsString() assignedTo?: string;
+}
 
 // --------------------------------------------------------------- Companies
 
@@ -138,8 +149,14 @@ export class CreateTaskDto {
   @IsOptional() @IsString() relatedId?: string;
 }
 
-export class UpdateTaskDto extends CreateTaskDto {
-  @IsOptional() @IsString() @MaxLength(200) declare title?: string;
+export class UpdateTaskDto {
+  @IsOptional() @IsString() @MaxLength(200) title?: string;
+  @IsOptional() @IsString() @MaxLength(5000) description?: string;
+  @IsOptional() @IsDateString() dueDate?: string;
+  @IsOptional() @IsIn(TASK_PRIORITIES) priority?: string;
+  @IsOptional() @IsIn(TASK_STATUSES) status?: string;
+  @IsOptional() @IsIn(['lead', 'deal', 'contact']) relatedTo?: string;
+  @IsOptional() @IsString() relatedId?: string;
 }
 
 // -------------------------------------------------------------- Activities
@@ -179,7 +196,7 @@ export class UpdateWhatsappMessageDto {
 // ------------------------------------------------------------------ Paging
 
 export class ListQueryDto {
-  @IsOptional() @IsInt() @Min(1) @Max(200) take?: number;
-  @IsOptional() @IsInt() @Min(0) skip?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(200) take?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) skip?: number;
   @IsOptional() @IsString() @MaxLength(200) q?: string;
 }
