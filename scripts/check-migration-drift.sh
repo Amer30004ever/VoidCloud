@@ -12,6 +12,10 @@
 #      schema.prisma exactly.
 #   3. expected-tables manifest — every table the manifest lists must exist
 #      (catches a restore/DR gap that step 2 alone can miss on partial DBs).
+#   4. migration checksums — `prisma migrate status` does NOT verify the
+#      recorded checksums, so an edited-after-apply migration passes step 1
+#      silently. Compare each _prisma_migrations.checksum against the sha256
+#      of the migration.sql actually in the repo.
 #
 # Neither prisma command writes to the database: `migrate status` only reads
 # _prisma_migrations, and `migrate diff` is a pure comparison that prints SQL.
@@ -57,7 +61,7 @@ FAILED=0
 
 # --- 1. migrate status ------------------------------------------------------
 echo ""
-echo "-- [1/3] prisma migrate status"
+echo "-- [1/4] prisma migrate status"
 STATUS_OUT="$(DATABASE_URL="$TARGET_URL" npx --yes "prisma@${PRISMA_VERSION}" migrate status 2>&1)"
 STATUS_RC=$?
 echo "$STATUS_OUT"
@@ -74,7 +78,7 @@ fi
 
 # --- 2. migrate diff --------------------------------------------------------
 echo ""
-echo "-- [2/3] prisma migrate diff (live schema vs schema.prisma)"
+echo "-- [2/4] prisma migrate diff (live schema vs schema.prisma)"
 DIFF_OUT="$(DATABASE_URL="$TARGET_URL" npx --yes "prisma@${PRISMA_VERSION}" migrate diff \
   --from-url "$TARGET_URL" \
   --to-schema-datamodel prisma/schema.prisma \
@@ -95,7 +99,7 @@ fi
 
 # --- 3. expected-tables manifest -------------------------------------------
 echo ""
-echo "-- [3/3] expected-tables manifest completeness"
+echo "-- [3/4] expected-tables manifest completeness"
 MANIFEST="$REPO_ROOT/database/scripts/expected-tables.txt"
 if [ "${SKIP_TABLE_MANIFEST:-0}" = "1" ]; then
   echo "SKIPPED (SKIP_TABLE_MANIFEST=1)."
@@ -121,6 +125,52 @@ else
     FAILED=1
   fi
   rm -f "$ACTUAL"
+fi
+
+# --- 4. migration checksum verification ------------------------------------
+# `migrate status` reports "up to date" even when a migration file was edited
+# after being applied (verified: tampering with a checksum row leaves step 1
+# green). Prisma stores a plain sha256 hex of migration.sql, so re-derive it.
+echo ""
+echo "-- [4/4] migration checksum verification"
+if [ "${SKIP_TABLE_MANIFEST:-0}" = "1" ]; then
+  echo "SKIPPED (SKIP_TABLE_MANIFEST=1)."
+elif ! command -v psql >/dev/null 2>&1; then
+  echo "SKIPPED: psql not installed."
+elif ! command -v sha256sum >/dev/null 2>&1; then
+  echo "SKIPPED: sha256sum not available."
+else
+  RECORDED="$(mktemp)"
+  if psql "$TARGET_URL" -Atc \
+      "SELECT migration_name || ' ' || checksum FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY 1" \
+      > "$RECORDED" 2>/dev/null; then
+    MISMATCHES=0
+    while read -r NAME SUM; do
+      [ -z "${NAME:-}" ] && continue
+      FILE="$REPO_ROOT/database/prisma/migrations/$NAME/migration.sql"
+      if [ ! -f "$FILE" ]; then
+        echo "::error::migration applied on ${LABEL} but missing from the repo: $NAME"
+        MISMATCHES=$((MISMATCHES + 1))
+        continue
+      fi
+      ACTUAL_SUM="$(sha256sum "$FILE" | cut -d' ' -f1)"
+      if [ "$ACTUAL_SUM" != "$SUM" ]; then
+        echo "::error::checksum mismatch for $NAME (migration.sql was edited after it was applied)"
+        echo "         recorded on ${LABEL}: $SUM"
+        echo "         sha256 of repo file: $ACTUAL_SUM"
+        MISMATCHES=$((MISMATCHES + 1))
+      fi
+    done < "$RECORDED"
+    if [ "$MISMATCHES" -ne 0 ]; then
+      FAILED=1
+    else
+      echo "OK: all $(grep -c . "$RECORDED") applied migrations match their repo checksums."
+    fi
+  else
+    echo "::error::could not read _prisma_migrations from ${LABEL}."
+    FAILED=1
+  fi
+  rm -f "$RECORDED"
 fi
 
 echo ""
