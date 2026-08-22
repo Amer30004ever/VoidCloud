@@ -1185,14 +1185,14 @@ model CloudDeployment {
   vpsHealthLogs           VpsHealthLog[]
 
   // Tier 9.2 — CI/CD, staging clones, load balancing
-  cicdConfig     VpsCicdConfig?
-  deployRuns     VpsDeployRun[]
-  loadBalancers  LoadBalancer[]
-  lbBackends     LoadBalancerBackend[]
-  clonedFromId   String?
-  clonedFrom     CloudDeployment?       @relation("VpsClone", fields: [clonedFromId], references: [id], onDelete: SetNull)
-  clones         CloudDeployment[]      @relation("VpsClone")
-  isStaging      Boolean                @default(false)
+  cicdConfig    VpsCicdConfig?
+  deployRuns    VpsDeployRun[]
+  loadBalancers LoadBalancer[]
+  lbBackends    LoadBalancerBackend[]
+  clonedFromId  String?
+  clonedFrom    CloudDeployment?      @relation("VpsClone", fields: [clonedFromId], references: [id], onDelete: SetNull)
+  clones        CloudDeployment[]     @relation("VpsClone")
+  isStaging     Boolean               @default(false)
 
   @@index([userId, status])
   @@index([tenantId, status])
@@ -1254,7 +1254,6 @@ model AbuseReport {
   @@index([targetVpsId])
   @@index([category])
   @@index([createdAt])
-
   @@map("abuse_reports")
 }
 
@@ -1275,7 +1274,6 @@ model PtrRecordRequest {
   @@index([userId])
   @@index([status])
   @@index([vpsId])
-
   @@map("ptr_record_requests")
 }
 
@@ -1312,7 +1310,6 @@ model VpsProvisionJob {
   @@index([userId])
   @@index([status])
   @@index([idempotencyKey])
-
   @@map("vps_provision_jobs")
 }
 
@@ -2356,7 +2353,7 @@ model ManagedDatabase {
   /// is treated as a crashed worker and may be re-claimed.
   provisionLockedAt DateTime?
   /// Monotonic counter of provisioning attempts, for observability/backoff.
-  provisionAttempts Int      @default(0)
+  provisionAttempts Int       @default(0)
   /// Set once the LXC exists, so a retry reconciles instead of re-creating.
   provisionedAt     DateTime?
   /// Earliest time a retry may re-claim the row (exponential backoff).
@@ -2380,23 +2377,22 @@ model ManagedDatabase {
 /// streams these rows to show PROVISIONING -> RUNNING/FAILED transitions with
 /// the exact errorMessage that was persisted on the parent row.
 model ManagedDatabaseEvent {
-  id         String               @id @default(uuid())
-  databaseId String
-  database   ManagedDatabase      @relation(fields: [databaseId], references: [id], onDelete: Cascade)
-  status     ManagedServiceStatus
+  id            String               @id @default(uuid())
+  databaseId    String
+  database      ManagedDatabase      @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  status        ManagedServiceStatus
   /// Short human-readable step label, e.g. "Creating LXC container".
-  step       String
+  step          String
   /// Failure detail copied from the provisioning error, when the step failed.
-  message    String?
+  message       String?
   /// Non-sensitive structured detail (vmid, node, endpoint, durationMs).
-  detail     Json?
+  detail        Json?
   /// Trace id shared with the structured proxmox.api log lines of the attempt.
   correlationId String?
-  createdAt  DateTime             @default(now())
+  createdAt     DateTime             @default(now())
 
   @@index([databaseId, createdAt])
   @@index([correlationId])
-
   @@map("managed_database_events")
 }
 
@@ -2660,4 +2656,129 @@ model DdosMitigationEvent {
   @@index([vpsId])
   @@index([startedAt])
   @@map("ddos_mitigation_events")
+}
+
+// ============================================================
+// Tier 9.2 — CI/CD, staging clones, load balancing
+// ============================================================
+
+enum CicdProvider {
+  NONE
+  GITHUB
+  GITLAB
+}
+
+enum DeployRunStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+/// Per-VPS continuous delivery configuration. One row per VPS.
+model VpsCicdConfig {
+  id       String          @id @default(uuid())
+  vpsId    String          @unique
+  vps      CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  userId   String
+  provider CicdProvider    @default(NONE)
+
+  /// owner/repo for GitHub, group/project for GitLab.
+  repository        String?
+  /// Branch that triggers an auto-deploy on push.
+  autoDeployBranch  String  @default("main")
+  autoDeploy        Boolean @default(false)
+  /// Spin an ephemeral preview deploy per pull/merge request.
+  prPreview         Boolean @default(false)
+  /// Shell command executed on the VPS after the artifact lands.
+  buildCommand      String?
+  deployCommand     String?
+  /// Provider access token, AES-256-GCM encrypted (never returned to clients).
+  accessTokenCipher String?
+
+  /// Opaque token embedded in the public webhook URL.
+  webhookToken        String    @unique
+  /// HMAC-SHA256 signing secret, AES-256-GCM encrypted at rest.
+  webhookSecretCipher String
+  lastTriggeredAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("vps_cicd_configs")
+}
+
+/// Append-only history of deploys triggered for a VPS (webhook or manual).
+model VpsDeployRun {
+  id         String          @id @default(uuid())
+  vpsId      String
+  vps        CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  userId     String
+  provider   CicdProvider    @default(NONE)
+  status     DeployRunStatus @default(QUEUED)
+  ref        String?
+  commitSha  String?
+  message    String?
+  /// webhook | manual | pr-preview
+  trigger    String          @default("manual")
+  detail     Json?
+  startedAt  DateTime        @default(now())
+  finishedAt DateTime?
+
+  @@index([vpsId, startedAt])
+  @@index([userId])
+  @@map("vps_deploy_runs")
+}
+
+enum LoadBalancerAlgorithm {
+  ROUND_ROBIN
+  LEAST_CONNECTIONS
+  IP_HASH
+}
+
+enum LoadBalancerStatus {
+  PROVISIONING
+  ACTIVE
+  DEGRADED
+  DISABLED
+}
+
+model LoadBalancer {
+  id              String                @id @default(uuid())
+  userId          String
+  name            String
+  /// VPS that terminates traffic (the entry node) — optional while provisioning.
+  vpsId           String?
+  vps             CloudDeployment?      @relation(fields: [vpsId], references: [id], onDelete: SetNull)
+  algorithm       LoadBalancerAlgorithm @default(ROUND_ROBIN)
+  status          LoadBalancerStatus    @default(PROVISIONING)
+  listenPort      Int                   @default(80)
+  targetPort      Int                   @default(80)
+  healthCheckPath String                @default("/")
+  ipAddress       String?
+  monthlyUsd      Float                 @default(5)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  backends LoadBalancerBackend[]
+
+  @@unique([userId, name])
+  @@index([status])
+  @@map("load_balancers")
+}
+
+model LoadBalancerBackend {
+  id             String          @id @default(uuid())
+  loadBalancerId String
+  loadBalancer   LoadBalancer    @relation(fields: [loadBalancerId], references: [id], onDelete: Cascade)
+  vpsId          String
+  vps            CloudDeployment @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  weight         Int             @default(1)
+  healthy        Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+
+  @@unique([loadBalancerId, vpsId])
+  @@index([vpsId])
+  @@map("load_balancer_backends")
 }
