@@ -1184,8 +1184,19 @@ model CloudDeployment {
   controlPanelInstalledAt DateTime?
   vpsHealthLogs           VpsHealthLog[]
 
+  // Tier 9.2 — CI/CD, staging clones, load balancing
+  cicdConfig     VpsCicdConfig?
+  deployRuns     VpsDeployRun[]
+  loadBalancers  LoadBalancer[]
+  lbBackends     LoadBalancerBackend[]
+  clonedFromId   String?
+  clonedFrom     CloudDeployment?       @relation("VpsClone", fields: [clonedFromId], references: [id], onDelete: SetNull)
+  clones         CloudDeployment[]      @relation("VpsClone")
+  isStaging      Boolean                @default(false)
+
   @@index([userId, status])
   @@index([tenantId, status])
+  @@index([clonedFromId])
 }
 
 // ============================================================
