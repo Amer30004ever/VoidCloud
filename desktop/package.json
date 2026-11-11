@@ -1,0 +1,14 @@
+{
+  "name": "@voidcloud/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Amer DevOps Portal — Tauri desktop client for Void Cloud",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "icons": "tauri icon src-tauri/icons/icon.png"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.1.0"
+  }
+}
