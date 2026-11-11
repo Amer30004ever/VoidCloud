@@ -201,16 +201,6 @@ export class VpsController {
     return this.vpsService.console(id, user);
   }
 
-  @Post(':id/clone')
-  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
-  clone(
-    @Param('id') id: string,
-    @Body() body: { name: string },
-    @CurrentUser() user: { id: string; role: never },
-  ) {
-    return this.vpsService.clone(id, body.name, user);
-  }
-
   @Get(':id/domains')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
   listDomains(
