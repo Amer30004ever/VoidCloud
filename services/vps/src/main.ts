@@ -15,7 +15,7 @@ const structuredLogger = new StructuredLogger('vps');
 async function bootstrap() {
   initSentry('vps-service');
   initTracing('vps-service');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const rateLimitRedis = getRedis();
   if (rateLimitRedis) {
     app.use(createRateLimitMiddleware(rateLimitRedis));

@@ -97,6 +97,8 @@ ddos_mitigation_events
 eta_invoice_submissions
 floating_ips
 ip_block_list
+load_balancer_backends
+load_balancers
 managed_database_backups
 managed_database_events
 managed_databases
@@ -125,6 +127,8 @@ tenants
 tos_acceptances
 user_tenants
 vm_import_jobs
+vps_cicd_configs
+vps_deploy_runs
 vps_health_logs
 vps_provision_jobs
 whatsapp_broadcast_recipients

@@ -18,6 +18,7 @@ import { Roles } from '../decorators/roles.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { VpsService } from './vps.service';
 import { VpsProvisionService } from './vps-provision.service';
+import { VpsCloneService, CloneVpsInput } from './vps-clone.service';
 import { CreateVpsDto, UpdateVpsDto } from './dto/vps.dto';
 import { CreateBackupScheduleDto } from '../backup/backup.dto';
 import { VPS_PROVISION_QUEUE } from './rabbitmq.config';
@@ -30,6 +31,7 @@ export class VpsController {
   constructor(
     private readonly vpsService: VpsService,
     private readonly vpsProvisionService: VpsProvisionService,
+    private readonly vpsCloneService: VpsCloneService,
   ) {}
 
   @Get()
@@ -166,26 +168,37 @@ export class VpsController {
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
   resize(
     @Param('id') id: string,
-    @Body() body: { cpu?: number; memory?: number; storage?: number },
+    @Body() body: { cpu?: number; memory?: number; storage?: number; live?: boolean },
     @CurrentUser() user: { id: string; role: never },
   ) {
-    return this.vpsService.resize(id, body, user);
+    const { cpu, memory, storage, live } = body ?? {};
+    return this.vpsService.resize(id, { cpu, memory, storage }, user).then((vps) => ({
+      ...vps,
+      resizeMode: live ? 'live' : 'reboot',
+    }));
+  }
+
+  @Post(':id/clone')
+  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Clone a VPS into a staging copy or a cluster peer' })
+  clone(
+    @Param('id') id: string,
+    @Body() body: CloneVpsInput,
+    @CurrentUser() user: { id: string; role: Role },
+  ) {
+    return this.vpsCloneService.clone(id, body ?? {}, user);
+  }
+
+  @Get(':id/clones')
+  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
+  clones(@Param('id') id: string, @CurrentUser() user: { id: string; role: Role }) {
+    return this.vpsCloneService.listClones(id, user);
   }
 
   @Get(':id/console')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
   console(@Param('id') id: string, @CurrentUser() user: { id: string; role: never }) {
     return this.vpsService.console(id, user);
-  }
-
-  @Post(':id/clone')
-  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
-  clone(
-    @Param('id') id: string,
-    @Body() body: { name: string },
-    @CurrentUser() user: { id: string; role: never },
-  ) {
-    return this.vpsService.clone(id, body.name, user);
   }
 
   @Get(':id/domains')
