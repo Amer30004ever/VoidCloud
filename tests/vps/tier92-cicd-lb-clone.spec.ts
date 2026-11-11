@@ -2,6 +2,7 @@
  * Tier 9.2 — per-VPS CI/CD webhooks, load balancers, staging clones.
  * Focus: signature enforcement, branch filtering, and cross-tenant isolation.
  */
+jest.mock('../../services/vps/src/vps/vps.service', () => ({ VpsService: class {} }));
 import { createHmac } from 'crypto';
 import { VpsCicdService } from '../../services/vps/src/cicd/vps-cicd.service';
 import { verifyDeploySignature, branchFromRef } from '../../services/vps/src/cicd/cicd-signature';

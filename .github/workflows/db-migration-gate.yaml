@@ -131,13 +131,15 @@ jobs:
       - name: Install psql client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
+      # Fails loudly (not a silent skip) when STAGING_DATABASE_URL is missing
+      # or malformed, naming the secret and where to set it.
+      - name: Validate required secrets
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: node scripts/check-required-secrets.mjs --profile staging-drift
+
       - name: prisma migrate status + diff against staging
         env:
           STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DRIFT_TARGET_LABEL: staging
-        run: |
-          if [ -z "${STAGING_DATABASE_URL}" ]; then
-            echo "::warning::STAGING_DATABASE_URL secret not configured — staging drift check skipped."
-            exit 0
-          fi
-          bash scripts/check-migration-drift.sh
+        run: bash scripts/check-migration-drift.sh
