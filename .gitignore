@@ -65,3 +65,5 @@ reference-only/
 
 
 /dist
+
+desktop/src-tauri/target/
