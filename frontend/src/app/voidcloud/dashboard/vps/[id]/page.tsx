@@ -7,10 +7,13 @@ import { cloudApi, cloudMonitoring, cloudBackups, cloudDomains, type CloudDeploy
 import { VpsStatusBadge } from "@/features/vps/VpsStatusBadge";
 import { VpsTerminal } from "@/features/vps/VpsTerminal";
 import { VpsResizeModal } from "@/features/vps/VpsResizeModal";
+import { CICDPanel } from "@/features/vps/CICDPanel";
+import { LoadBalancerPanel } from "@/features/vps/LoadBalancerPanel";
+import { CloneVpsModal } from "@/features/vps/CloneVpsModal";
 import { auditApiClient } from "@/features/admin/audit";
 import ActivityTimeline from "@/components/ui/activity-timeline";
 
-type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "firewall" | "migration" | "activity" | "snapshot" | "recommendations" | "security";
+type Tab = "overview" | "usage" | "terminal" | "env" | "domains" | "backups" | "alerts" | "firewall" | "migration" | "activity" | "snapshot" | "recommendations" | "security" | "ci/cd" | "scaling";
 type Vps = CloudDeployment & { ipv4Address?: string; hostname?: string; billingMode?: string; statusMessage?: string };
 
 export default function VpsDetailPage() {
@@ -25,6 +28,7 @@ export default function VpsDetailPage() {
   const [domainsText, setDomainsText] = useState("");
   const [msg, setMsg] = useState("");
   const [showResize, setShowResize] = useState(false);
+  const [showClone, setShowClone] = useState(false);
   const [startBlocked, setStartBlocked] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
@@ -95,7 +99,7 @@ export default function VpsDetailPage() {
         <div>
           <h1 className="vc-h1">{d.name}</h1>
           <p className="mt-1 text-sm font-mono text-cyan-300">{d.ipv4Address ?? "no IP yet"}</p>
-          <div className="mt-2 flex gap-2 items-center"><VpsStatusBadge status={d.status} /><button onClick={() => setShowResize(true)} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200 hover:bg-cyan-400/20">⇅ Change Plan</button></div>
+          <div className="mt-2 flex gap-2 items-center"><VpsStatusBadge status={d.status} /><button onClick={() => setShowResize(true)} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200 hover:bg-cyan-400/20">⇅ Change Plan</button><button onClick={() => setShowClone(true)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80 hover:bg-white/10">⧉ Clone to staging</button></div>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={handleStart} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 disabled:opacity-50">▶ Start</button>
@@ -113,7 +117,7 @@ export default function VpsDetailPage() {
       {msg && <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-xs text-emerald-200">{msg}</div>}
 
       <div className="mb-4 flex gap-1 border-b border-white/5 overflow-x-auto">
-        {(["overview", "usage", "terminal", "env", "domains", "backups", "alerts", "firewall", "migration", "activity", "snapshot", "recommendations", "security"] as Tab[]).map((t) => (
+        {(["overview", "usage", "terminal", "env", "domains", "backups", "alerts", "firewall", "migration", "activity", "snapshot", "recommendations", "security", "ci/cd", "scaling"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm capitalize whitespace-nowrap ${tab === t ? "border-b-2 border-cyan-400 text-white" : "text-white/50 hover:text-white"}`}>{t}</button>
         ))}
       </div>
@@ -206,6 +210,8 @@ export default function VpsDetailPage() {
         {tab === "security" && (
           <SecurityTab vpsId={id} />
         )}
+        {tab === "ci/cd" && <CICDPanel vpsId={id} />}
+        {tab === "scaling" && <LoadBalancerPanel vpsId={id} vpsName={d.name} />}
 
         {tab === "snapshot" && (
           <div className="space-y-3 text-sm">
@@ -223,6 +229,7 @@ export default function VpsDetailPage() {
           />
         )}
       </div>
+      {showClone && <CloneVpsModal vpsId={d.id} vpsName={d.name} onClose={() => setShowClone(false)} />}
       {showResize && <VpsResizeModal vpsId={d.id} onClose={() => setShowResize(false)} onDone={() => cloudApi.deployments.get(d.id).then(setD).catch(() => { })} />}
     </div>
   );
