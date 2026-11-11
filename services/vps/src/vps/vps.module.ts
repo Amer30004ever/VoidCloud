@@ -25,12 +25,21 @@ import { ManagedK8sController } from '../managed/managed-k8s.controller';
 import { VmImportService } from '../managed/vm-import.service';
 import { VmImportController } from '../managed/vm-import.controller';
 
+import { VpsCloneService } from './vps-clone.service';
+import { VpsCicdService } from '../cicd/vps-cicd.service';
+import { VpsCicdController, PublicDeployController } from '../cicd/vps-cicd.controller';
+import { LoadBalancerService } from '../loadbalancer/load-balancer.service';
+import { LoadBalancerController } from '../loadbalancer/load-balancer.controller';
+
 import { CreditService } from '../../../billing/src/billing/credit.service';
 
 @Module({
   imports: [ClustersModule, ScheduleModule.forRoot(), BackupModule, ApiUsageModule],
-  controllers: [VpsController, IsolationController, FloatingIpController, ManagedDatabaseController, ObjectStorageController, ManagedK8sController, VmImportController],
+  // LoadBalancerController must register before VpsController so /vps/load-balancers
+  // is not swallowed by VpsController's /vps/:id route.
+  controllers: [LoadBalancerController, VpsCicdController, PublicDeployController, VpsController, IsolationController, FloatingIpController, ManagedDatabaseController, ObjectStorageController, ManagedK8sController, VmImportController],
   providers: [VpsService, VpsProvisionService, QuotaReconciliationService, DomainVerificationScheduler, ProxmoxService, IsolationReconcilerService, K8sAppService, FloatingIpService, ManagedDatabaseService,
-    ManagedDatabaseProvisionerService, ObjectStorageService, ManagedK8sService, VmImportService, CreditService],
+    ManagedDatabaseProvisionerService, ObjectStorageService, ManagedK8sService, VmImportService, CreditService,
+    VpsCloneService, VpsCicdService, LoadBalancerService],
 })
 export class VpsModule { }
